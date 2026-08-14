@@ -44,7 +44,11 @@ export default async function handler(req, res) {
         reply_to: email,
         subject: `New letter from ${name}`,
         text: `From: ${name} <${email}>\n\n${message}`,
-        html: `<p><strong>From:</strong> ${escapeHtml(name)} &lt;${escapeHtml(email)}&gt;</p><p>${escapeHtml(message).replace(/\n/g, '<br>')}</p>`,
+        html: `<div style="font-family: Georgia, serif; max-width: 480px;">
+          <img src="https://cargroff.com/assets/logo-email.png" alt="Carter Groff" width="120" style="display:block; margin-bottom: 20px;" />
+          <p><strong>From:</strong> ${escapeHtml(name)} &lt;${escapeHtml(email)}&gt;</p>
+          <p>${escapeHtml(message).replace(/\n/g, '<br>')}</p>
+        </div>`,
       }),
     });
 

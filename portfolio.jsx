@@ -106,6 +106,7 @@ function Nav() {
       <a href="#sec-top" className="cg-nav-logo" style={{ display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none' }}>
         <div className="cg-nav-mark" style={{ width: 38, height: 38, border: '1px solid var(--ink-dim)',
           display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span className="cg-candle-pulse cg-nav-mark-glow" />
           <img src="assets/logo.png" alt="Carter Groff" style={{ width: '76%', height: '76%', objectFit: 'contain' }} />
         </div>
         <div>
@@ -1407,9 +1408,10 @@ function Resume() {
                     color: 'var(--ink-mute)', fontStyle: 'italic' }}>{r.city}</div>
                 </div>
 
-                {/* timeline dot — sits on the rail */}
+                {/* timeline dot — sits on the rail, lights up as the rail draws past it */}
                 <div className="cg-resume-dot" style={{ position: 'absolute', left: 138, top: 14,
                   width: 13, height: 13, borderRadius: '50%',
+                  animationDelay: (0.2 + (i / Math.max(1, D.resume.length - 1)) * 0.9).toFixed(2) + 's',
                   background: 'var(--bg-deep)', border: '1px solid var(--amber)',
                   boxShadow: '0 0 0 5px var(--bg-deep), 0 0 14px var(--amber-glow)' }} />
 
@@ -1992,6 +1994,24 @@ function Portfolio() {
         .cg-send:hover { background: var(--amber); color: #15100a; }
         nav a:hover { color: var(--amber) !important; }
         a:hover { color: var(--amber); }
+
+        /* Nav mark — a faint amber ember breathes behind the antler at rest,
+           and it catches like a struck match on hover. */
+        .cg-nav-mark { position: relative; overflow: hidden; transition: border-color .4s ease, box-shadow .4s ease; }
+        .cg-nav-mark-glow { inset: -40%; opacity: 0.32; }
+        .cg-nav-mark img { position: relative; z-index: 1; transition: transform .5s cubic-bezier(.2,.7,.3,1); }
+        .cg-nav-logo:hover .cg-nav-mark { border-color: var(--amber); box-shadow: 0 0 16px rgba(217,154,61,0.4); }
+        .cg-nav-logo:hover .cg-nav-mark img { transform: scale(1.1) rotate(-4deg); }
+        .cg-nav-logo:hover .cg-nav-mark-glow { opacity: 0.6; }
+
+        /* Resume timeline — the rail draws downward and each dot catches
+           like a struck match as the line reaches it. */
+        @keyframes cg-rail-draw { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+        @keyframes cg-dot-light { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: scale(1); } }
+        .cg-resume-rail { transform: scaleY(0); transform-origin: top; }
+        .cg-resume-dot { opacity: 0; transform: scale(0.3); }
+        .cg-reveal.is-in .cg-resume-rail { animation: cg-rail-draw 1.1s cubic-bezier(.4,0,.2,1) both; }
+        .cg-reveal.is-in .cg-resume-dot { animation: cg-dot-light .5s cubic-bezier(.34,1.4,.64,1) both; }
 
         /* ── Mobile nav: hamburger + slide-in drawer ─────────────────
            Base styles exist at all widths but the burger + drawer are

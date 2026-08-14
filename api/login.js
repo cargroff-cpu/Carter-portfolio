@@ -20,11 +20,13 @@ export default async function handler(req, res) {
     return;
   }
 
-  // 30-day session. The cookie value is the password itself — HttpOnly so
-  // page scripts never see it, Secure so it only ever travels over HTTPS.
+  // Session-only cookie (no Max-Age) — cleared when the browser fully closes,
+  // so the password prompt appears again on every new visit rather than
+  // silently signing back in. The cookie value is the password itself —
+  // HttpOnly so page scripts never see it, Secure so it only travels over HTTPS.
   res.setHeader(
     'Set-Cookie',
-    `cg_admin=${encodeURIComponent(password)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000`
+    `cg_admin=${encodeURIComponent(password)}; HttpOnly; Secure; SameSite=Lax; Path=/`
   );
   res.status(200).json({ ok: true });
 }
