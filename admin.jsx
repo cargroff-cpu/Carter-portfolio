@@ -4,6 +4,11 @@
 const { Field, Btn, SectionHead, SEED, SITE_KEY, card, labelStyle, isPdfData } = window.AdminPrimitives;
 const { loadInitial, normalizeSite, Identity, About, Videos, Designs, Resume, Travels, JsonPreview, SIZE_TO_SPAN } = window.AdminSections;
 
+// Must match data.jsx's CG_COPY_REV — Admin.html doesn't load data.jsx, so
+// that global would otherwise be undefined here, making every publish look
+// "stale" to the portfolio's merge logic and silently drop bio/tools.
+window.CG_COPY_REV = 6;
+
 const NAV = [
   ['identity', 'Identity'],
   ['about', 'About'],
