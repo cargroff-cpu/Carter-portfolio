@@ -109,16 +109,16 @@ function GasLamp({ height = 640, style = {}, out = false, onGlobeClick }) {
           <stop offset="74%"  stopColor="#c98a34" stopOpacity="0.05" />
           <stop offset="100%" stopColor="#c98a34" stopOpacity="0" />
         </radialGradient>
-        <filter id="lamp-haze" x="-60%" y="-60%" width="220%" height="220%">
-          <feGaussianBlur stdDeviation="26" />
-        </filter>
       </defs>
 
-      {/* Halo — large, diffuse, irregular (overlapping offset blobs, blurred)
-         so it reads as ambient haze rather than a perfect circle of light.
+      {/* Halo — large, diffuse, irregular (overlapping offset blobs) so it
+         reads as ambient haze rather than a perfect circle of light. No blur
+         filter — the gradient itself already fades out gradually, and a
+         large-radius feGaussianBlur here was rendering as a corrupted black
+         blob on some Windows/GPU combinations (Opera in particular).
          Outer group fades the whole halo on/off; inner group keeps its flicker. */}
       <g style={halo}>
-      <g filter="url(#lamp-haze)">
+      <g>
         <animate attributeName="opacity"
           values="0.95;0.95;0.6;0.95;0.95;0.7;0.95"
           keyTimes="0;0.45;0.52;0.6;0.82;0.88;1"
