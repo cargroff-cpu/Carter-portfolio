@@ -437,6 +437,19 @@ function Hero() {
   const timers = React.useRef([]);
   const busy = React.useRef(false);                   // ignore clicks mid-transition
 
+  // Dust motes are ~18 always-looping animated elements — pause/unmount
+  // them once the hero scrolls out of view so they aren't doing ongoing
+  // work for the rest of the browsing session.
+  const heroRef = React.useRef(null);
+  const [heroVisible, setHeroVisible] = React.useState(true);
+  React.useEffect(() => {
+    const el = heroRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([entry]) => setHeroVisible(entry.isIntersecting), { threshold: 0 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   const clearTimers = () => { timers.current.forEach(clearTimeout); timers.current = []; };
   const after = (ms, fn) => { const t = setTimeout(fn, ms); timers.current.push(t); return t; };
   React.useEffect(() => clearTimers, []);
@@ -489,7 +502,7 @@ function Hero() {
     : 'none';
 
   return (
-    <section id="sec-top" className="cg-wood" style={{
+    <section id="sec-top" ref={heroRef} className="cg-wood" style={{
       position: 'relative', overflow: 'hidden',
       minHeight: '100vh', padding: '180px 80px 80px',
       display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
@@ -525,7 +538,7 @@ function Hero() {
         <div style={{ position: 'relative' }}>
           <GasLamp height={680} out={lampOut} onGlobeClick={toggleLamp} />
           <div style={{ opacity: lampOut ? 0 : 1, transition: 'opacity 0.6s ease' }}>
-            <DustMotes />
+            {heroVisible && <DustMotes />}
           </div>
         </div>
       </div>
@@ -2303,7 +2316,7 @@ function Portfolio() {
           /* Reveal-gated content must still be visible with no JS-timed motion */
           .cg-reveal, .cg-fadeup, .cg-portrait-reveal, .cg-botanical { opacity: 1 !important; transform: none !important; }
           .cg-portrait-float { transform: none !important; }
-          .cg-curtain-content { opacity: 1 !important; filter: none !important; transform: none !important; }
+          .cg-curtain-content { opacity: 1 !important; transform: none !important; }
           .cg-curtain-panel { transform: scaleX(0) !important; }
         }
       `}</style>

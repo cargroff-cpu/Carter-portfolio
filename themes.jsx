@@ -330,21 +330,26 @@ window.CG_THEME = PARLOR;
     .cg-reveal.is-in { opacity: 1; transform: none; }
 
     /* Curtain reveal — a signature moment used sparingly (About + Travel),
-       not a replacement for cg-reveal everywhere. Content starts blurred/
-       faded/settled-down; on reveal it clears while two panels retreat
-       toward the section's outer edges like curtains parting. Panels
-       shrink via scaleX toward their own edge rather than sliding via
-       translateX, so they never exceed their own box — no overflow:hidden
-       needed on the wrapper, which matters wherever a sticky descendant
-       (e.g. the About portrait) can't tolerate a clipping ancestor. */
+       not a replacement for cg-reveal everywhere. Two panels retreat toward
+       the section's outer edges like curtains parting, while the content
+       fades/settles in behind them. Deliberately opacity + translateY only
+       (no filter:blur, no scale) — a blur filter transitioning across a
+       large subtree is genuinely expensive to repaint, and Travel wraps a
+       real-geometry world map with thousands of SVG path points, which is
+       exactly the kind of content that made the blur version feel janky.
+       Panels shrink via scaleX toward their own edge rather than sliding
+       via translateX, so they never exceed their own box — no
+       overflow:hidden needed on the wrapper, which matters wherever a
+       sticky descendant (e.g. the About portrait) can't tolerate a
+       clipping ancestor. */
     .cg-curtain-content {
-      filter: blur(9px); opacity: 0; transform: translateY(16px) scale(0.985);
-      transition: filter 1s ease .12s, opacity 1s ease .12s, transform 1s cubic-bezier(.2,.7,.3,1) .12s;
+      opacity: 0; transform: translateY(14px);
+      transition: opacity .7s ease .12s, transform .7s cubic-bezier(.2,.7,.3,1) .12s;
     }
-    .cg-curtain.is-in .cg-curtain-content { filter: blur(0); opacity: 1; transform: none; }
+    .cg-curtain.is-in .cg-curtain-content { opacity: 1; transform: none; }
     .cg-curtain-panel {
       position: absolute; top: 0; bottom: 0; width: 50%; z-index: 6; pointer-events: none;
-      background: var(--bg-deep); transition: transform 1.05s cubic-bezier(.4,0,.2,1);
+      background: var(--bg-deep); transition: transform .85s cubic-bezier(.4,0,.2,1);
     }
     .cg-curtain-left { left: 0; transform-origin: left center; }
     .cg-curtain-right { right: 0; transform-origin: right center; }
