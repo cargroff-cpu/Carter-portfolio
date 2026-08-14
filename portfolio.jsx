@@ -197,7 +197,7 @@ function RainLayer() {
 // repeated, and clustered toward the globe rather than spread evenly.
 function DustMotes() {
   const motes = React.useMemo(() => {
-    const n = 18;
+    const n = 12;   // trimmed from 18 — still reads as "a handful", fewer concurrent loops
     return Array.from({ length: n }, (_, i) => {
       const r = (s) => { const x = Math.sin((i + 1) * s) * 43758.5453; return x - Math.floor(x); };
       return {
@@ -525,16 +525,10 @@ function Hero() {
       {/* High-fidelity SVG lamp post on the right — anchored at the hero bottom. */}
       <div className="cg-fadeup cg-fadeup-3 cg-hero-lamp" style={{ position: 'absolute',
         right: '6vw', bottom: 0, zIndex: 2, pointerEvents: 'none' }}>
-        {/* Extra ambient pool right at the globe, on top of the lamp's own
-            halo — reuses the existing irregular cg-flicker keyframe so it
-            reads as the same candlelight, just a touch more felt. Fades
-            with the lamp's own out/lit state via an outer wrapper, since
-            cg-flicker's keyframes fully own the inner element's own
-            opacity and would otherwise ignore an inline value here. */}
-        <div style={{ position: 'absolute', left: '50%', bottom: '82%', transform: 'translate(-50%, 50%)',
-          width: 460, height: 460, opacity: lampOut ? 0 : 1, transition: 'opacity 0.6s ease' }}>
-          <div className="cg-candlelight" style={{ position: 'absolute', inset: 0 }} />
-        </div>
+        {/* No separate ambient glow here — the lamp's own halo (in
+            motifs.jsx) already flickers irregularly on its own; a second
+            mix-blend-mode layer stacked on top was redundant and one more
+            thing running forever regardless of scroll position. */}
         <div style={{ position: 'relative' }}>
           <GasLamp height={680} out={lampOut} onGlobeClick={toggleLamp} />
           <div style={{ opacity: lampOut ? 0 : 1, transition: 'opacity 0.6s ease' }}>

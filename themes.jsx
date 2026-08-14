@@ -198,7 +198,7 @@ window.CG_THEME = PARLOR;
       position: absolute; border-radius: 50%; opacity: 0;
       background: radial-gradient(circle, rgba(244,200,105,0.9) 0%, rgba(217,154,61,0.4) 60%, transparent 100%);
       animation-name: cg-mote-drift; animation-timing-function: linear;
-      animation-iteration-count: infinite; will-change: transform, opacity;
+      animation-iteration-count: infinite;
     }
 
     /* Fog — slow lateral drift of large blurred bands */
