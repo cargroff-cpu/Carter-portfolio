@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Carter Groff — Admin</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Karla:wght@400;500;600;700&display=swap" />
+<style>
+  :root {
+    --bg: #1a120b;
+    --bg-soft: #221710;
+    --bg-deep: #0f0a06;
+    --card: #241810;
+    --card-edge: rgba(236,217,178,0.12);
+    --ink: #ecd9b2;
+    --ink-soft: #c9b48a;
+    --ink-mute: #8a7758;
+    --ink-dim: #5a4a36;
+    --amber: #f5cd6a;
+    --amber-deep: #d99a3d;
+    --sage: #8e9462;
+    --sage-deep: #5a6132;
+    --terracotta: #b8643f;
+    --rule: rgba(236,217,178,0.14);
+    --rule-strong: rgba(236,217,178,0.30);
+    --shadow: 0 24px 50px -28px rgba(0,0,0,0.85), 0 2px 6px rgba(0,0,0,0.5);
+    --display-font: "Cormorant Garamond", Georgia, serif;
+    --body-font: "Spectral", Georgia, serif;
+    --ui-font: "Karla", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #0d0905; color: var(--ink); font-family: var(--ui-font); }
+  body { min-height: 100vh; }
+  ::selection { background: var(--amber); color: #1a120b; }
+  #root:empty::before { content: ''; }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) { pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }
+  </script>
+  <script src="cg-store.js"></script>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel" src="admin-ui.jsx"></script>
+  <script type="text/babel" src="admin-sections.jsx"></script>
+  <script type="text/babel" src="admin.jsx"></script>
+</body>
+</html>

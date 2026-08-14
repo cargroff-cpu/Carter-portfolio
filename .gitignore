@@ -1,0 +1,17 @@
+# OS
+.DS_Store
+
+# Editor / tooling
+.claude/settings.local.json
+
+# Node (future build tooling / serverless functions)
+node_modules/
+npm-debug.log*
+
+# Env / secrets
+.env
+.env.local
+.env*.local
+
+# Vercel
+.vercel
