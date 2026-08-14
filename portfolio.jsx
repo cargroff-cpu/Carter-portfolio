@@ -981,6 +981,7 @@ function TravelDrawer() {
   const viewRef = React.useRef({ x: 0, y: 0, w: TV_W, h: TV_H });
   const rafRef = React.useRef(0);
   const cardRef = React.useRef(null);
+  const closeTimerRef = React.useRef(0);
 
   // Travel pins come from the admin (D.travels); fall back to the built-ins.
   const travels = (Array.isArray(D.travels) && D.travels.length) ? D.travels : TRAVELS;
@@ -1016,8 +1017,8 @@ function TravelDrawer() {
   const cur = detail ? travels[Math.min(activeIdx, n - 1)] : null;
   const highlightD = cur ? byName[(cur.name || '').toLowerCase()] : null;
 
-  const select = (i) => { setLightbox(false); setClosing(false); setHover(false); setActiveIdx((i + n) % n); };
-  const viewAll = () => { setLightbox(false); setClosing(false); setHover(false); setActiveIdx(null); };
+  const select = (i) => { clearTimeout(closeTimerRef.current); setLightbox(false); setClosing(false); setHover(false); setActiveIdx((i + n) % n); };
+  const viewAll = () => { clearTimeout(closeTimerRef.current); setLightbox(false); setClosing(false); setHover(false); setActiveIdx(null); };
   // Open the photo card anchored to the active country's on-screen point.
   const openLightbox = () => {
     const fr = frameRef.current;
@@ -1032,8 +1033,14 @@ function TravelDrawer() {
     setLightbox(true); setClosing(false);
   };
 
-  // Close the photo card.
-  const closeLightbox = () => { setLightbox(false); setClosing(false); };
+  // Close the photo card — plays a shrink-out animation before actually unmounting.
+  const closeLightbox = () => {
+    if (!lightbox) return;
+    clearTimeout(closeTimerRef.current);
+    setLightbox(false);
+    setClosing(true);
+    closeTimerRef.current = setTimeout(() => setClosing(false), 210);
+  };
 
   // Clamp the photo card fully inside the visible map, anchored toward center.
   const placeCard = React.useCallback(() => {
@@ -1095,6 +1102,7 @@ function TravelDrawer() {
   // Reset to overview (full world) when the drawer closes.
   React.useEffect(() => {
     if (open) return;
+    clearTimeout(closeTimerRef.current);
     setActiveIdx(null); setLightbox(false); setClosing(false); setHover(false);
     cancelAnimationFrame(rafRef.current);
     viewRef.current = { x: 0, y: 0, w: TV_W, h: TV_H };
@@ -1143,7 +1151,7 @@ function TravelDrawer() {
         .cg-tv-trigger.is-open .cg-tv-chev { transform: rotate(180deg); }
         /* Stage: grid that animates from full-width map → split */
         .cg-tv-stage { display: grid; grid-template-columns: 1fr 0fr; column-gap: 0; align-items: stretch; position: relative;
-          margin-top: 40px; }
+          margin-top: 40px; transition: grid-template-columns .6s cubic-bezier(.4,0,.2,1), column-gap .6s cubic-bezier(.4,0,.2,1); }
         .cg-tv-stage.is-detail { grid-template-columns: 1.3fr 1fr; column-gap: 24px; }
         .cg-tv-left { display: flex; flex-direction: column; min-width: 0; height: 520px; }
         .cg-tv-mapframe { position: relative; flex: 1; min-height: 260px; background: #080604; overflow: visible;
@@ -1183,7 +1191,8 @@ function TravelDrawer() {
         .cg-tv-info { min-width: 0; overflow: hidden; display: flex; height: 520px;
           background: #160e07; border: 1px solid rgba(217,154,61,0.22); box-shadow: var(--shadow); }
         .cg-tv-stage:not(.is-detail) .cg-tv-info { border-color: transparent; background: none; box-shadow: none; }
-        .cg-tv-info-inner { width: 100%; min-width: 300px; padding: 32px; display: flex; flex-direction: column; }
+        .cg-tv-info-inner { width: 100%; min-width: 300px; padding: 32px; display: flex; flex-direction: column;
+          animation: cg-tv-slidein .5s cubic-bezier(.2,.8,.25,1) both; }
         .cg-tv-place { font-family: var(--display-font); font-weight: 500; font-size: 46px; line-height: 1.02;
           letter-spacing: -0.02em; color: var(--amber); margin: 0 0 18px; }
         .cg-tv-desc { font-family: var(--body-font); font-size: 15px; line-height: 1.72; color: var(--ink-soft); margin: 0; }
@@ -1197,7 +1206,9 @@ function TravelDrawer() {
           font-family: var(--ui-font); font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
           padding: 5px 9px; white-space: nowrap; }
         .cg-tv-lb { position: absolute; inset: 0; z-index: 20; background: transparent; }
-        .cg-tv-lb-card { position: absolute; cursor: default; transform: rotate(2.5deg); }
+        .cg-tv-lb-card { position: absolute; cursor: default; transform: rotate(2.5deg);
+          animation: cg-tv-lbpop .3s cubic-bezier(.2,.8,.25,1) both; }
+        .cg-tv-lb-card.is-closing { animation: cg-tv-lbpop-out .2s ease both; pointer-events: none; }
         @keyframes cg-tv-lbpop { from { transform: scale(0.1) rotate(2.5deg); opacity: 0; } to { transform: scale(1) rotate(2.5deg); opacity: 1; } }
         @keyframes cg-tv-lbpop-out { from { transform: scale(1) rotate(2.5deg); opacity: 1; } to { transform: scale(0.1) rotate(2.5deg); opacity: 0; } }
         .cg-tv-lb-card img { display: block; width: 220px; height: auto; border: 1px solid #c8821e;
@@ -1325,12 +1336,12 @@ function TravelDrawer() {
             )}
           </div>
 
-          {lightbox && cur && (
+          {(lightbox || closing) && cur && (
             <div className="cg-tv-lb" onClick={closeLightbox}
               style={{ cursor: hover ? 'pointer' : 'default' }}
               onMouseMove={(e) => { const r = frameRef.current && frameRef.current.getBoundingClientRect(); if (r) setTip({ x: e.clientX - r.left, y: e.clientY - r.top }); const overCountry = document.elementsFromPoint(e.clientX, e.clientY).some((el) => el.classList && el.classList.contains('cg-tv-country')); setHover(overCountry); }}>
               <span className="cg-tv-lb-pin" style={{ left: lbPos.sx, top: lbPos.sy }} />
-              <div ref={cardRef} className="cg-tv-lb-card"
+              <div ref={cardRef} className={'cg-tv-lb-card' + (closing ? ' is-closing' : '')}
                 onClick={(e) => e.stopPropagation()}
                 onMouseMove={(e) => { e.stopPropagation(); setHover(false); }}
                 style={{ left: cardPos.left, top: cardPos.top,
@@ -1494,7 +1505,7 @@ function Contact() {
 
       <div style={{ position: 'relative', zIndex: 2, maxWidth: 900, margin: '0 auto' }}>
         {sent ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', position: 'relative', zIndex: 2 }}>
+          <div className="cg-fadeup" style={{ textAlign: 'center', padding: '60px 0', position: 'relative', zIndex: 2 }}>
             <div className="cg-divider" style={{ width: 220 }}>
               <span className="line" style={{ background: 'var(--amber)' }} />
               <span className="dot" />
@@ -1935,17 +1946,28 @@ function Portfolio() {
     document.querySelectorAll('.cg-reveal, .cg-botanical').forEach((el) => io.observe(el));
     return () => io.disconnect();
   }, []);
+  // The middle sections' scroll order is editable from the admin's Page
+  // Order panel (D.sectionOrder); Hero and Footer always stay fixed.
+  const DEFAULT_SECTION_ORDER = ['about', 'videos', 'designs', 'resume', 'contact'];
+  const SECTION_RENDERERS = {
+    about:   () => <About key="about" />,
+    videos:  () => <VideoWork key="videos" onOpen={(index) => setLb({ open: true, index, kind: 'video' })} />,
+    designs: () => <DesignWork key="designs" onOpen={(index) => setLb({ open: true, index, kind: 'design' })} />,
+    resume:  () => <React.Fragment key="resume"><Resume /><StatBand /></React.Fragment>,
+    contact: () => <Contact key="contact" />,
+  };
+  const wantedOrder = (Array.isArray(D.sectionOrder) && D.sectionOrder.length) ? D.sectionOrder : DEFAULT_SECTION_ORDER;
+  const sectionOrder = [
+    ...wantedOrder.filter((id) => SECTION_RENDERERS[id]),
+    ...DEFAULT_SECTION_ORDER.filter((id) => !wantedOrder.includes(id)),
+  ];
+
   return (
     <div className="cg-root cg-grain" style={rootStyle}>
       <BotanicalDefs />
       <Nav />
       <Hero />
-      <About />
-      <VideoWork onOpen={(index) => setLb({ open: true, index, kind: 'video' })} />
-      <DesignWork onOpen={(index) => setLb({ open: true, index, kind: 'design' })} />
-      <Resume />
-      <StatBand />
-      <Contact />
+      {sectionOrder.map((id) => SECTION_RENDERERS[id]())}
       <Footer />
       <Lightbox open={lb.open} item={lb} onClose={() => setLb({ ...lb, open: false })} />
       <style>{`
@@ -2043,7 +2065,7 @@ function Portfolio() {
              touch tighter paragraph rhythm so there's less to wade through */
           .cg-about-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
           .cg-about-grid > div:first-child > div { position: static !important; padding-top: 0 !important; }
-          .cg-portrait-col { max-width: 220px; margin: 0 auto; }
+          .cg-portrait-col { width: 100%; max-width: 280px; margin: 0 auto; }
           .cg-plate-caption { font-size: 8px !important; letter-spacing: 0.1em !important; gap: 4px; }
           #sec-about p { font-size: 17px !important; line-height: 1.6 !important; margin-bottom: 18px !important; }
           .cg-about-stats { grid-template-columns: 1fr 1fr !important; gap: 26px !important; }

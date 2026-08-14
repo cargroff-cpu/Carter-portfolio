@@ -77,6 +77,10 @@ const CG_DATA = {
   },
 
   nav: ['About', 'Video', 'Design', 'Resume'],
+
+  // Order the scrolling sections appear in below the hero (editable from
+  // the admin's Page Order panel). Hero and footer are always fixed.
+  sectionOrder: ['about', 'videos', 'designs', 'resume', 'contact'],
 };
 
 window.CG_DATA = CG_DATA;
@@ -117,7 +121,7 @@ window.CG_READY = (async function applyOverrides() {
         else localStorage.setItem('cg_site_data', JSON.stringify(restamped));
       } catch (e) {}
     }
-    const keys = ['name', 'role', 'location', 'email', 'sinceYear', 'tools', 'bio', 'videos', 'designs', 'resume', 'travels'];
+    const keys = ['name', 'role', 'location', 'email', 'sinceYear', 'tools', 'bio', 'videos', 'designs', 'resume', 'travels', 'sectionOrder'];
     keys.forEach((k) => { if (o[k] != null) CG_DATA[k] = o[k]; });
     // socials merge field-by-field so a partial save keeps the defaults.
     if (o.socials && typeof o.socials === 'object') {

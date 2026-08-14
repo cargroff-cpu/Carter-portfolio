@@ -14,6 +14,9 @@ const sizeFromSpan = (span) => {
   if (r >= 2) return 'tall';
   return 'small';
 };
+const DEFAULT_SECTION_ORDER = ['about', 'videos', 'designs', 'resume', 'contact'];
+const SECTION_LABELS = { about: 'About', videos: 'Video Work', designs: 'Design Work', resume: 'Resume & Travels', contact: 'Contact' };
+
 const SEED = {
   name: 'Carter Groff',
   tagline: 'Storytelling through strategy, screen, and design.',
@@ -23,6 +26,7 @@ const SEED = {
   sinceYear: '2021',
   tools: 'video · copy · design · strategy',
   closing: 'Let’s make something worth remembering.',
+  sectionOrder: DEFAULT_SECTION_ORDER,
   socials: {
     tiktok:    'https://www.tiktok.com/@cargli',
     instagram: 'https://www.instagram.com/cargli',
@@ -202,7 +206,7 @@ const card = {
 // True when a stored value is a PDF data URL (vs an image).
 const isPdfData = (v) => typeof v === 'string' && v.startsWith('data:application/pdf');
 
-window.AdminPrimitives = { Field, Btn, SectionHead, ImageUpload, AssetField, ColorPicker, isPdfData, SEED, SIZES, sizeFromSpan, SITE_KEY, uid, card, labelStyle, TILE_SWATCHES, gradFromHex };
+window.AdminPrimitives = { Field, Btn, SectionHead, ImageUpload, AssetField, ColorPicker, isPdfData, SEED, SIZES, sizeFromSpan, SITE_KEY, uid, card, labelStyle, TILE_SWATCHES, gradFromHex, DEFAULT_SECTION_ORDER, SECTION_LABELS };
 
 // ── Image upload, reads a file to a data URL, shows a thumbnail ─────
 // Also accepts PDFs (pass accept="image/*,application/pdf"); shows a PDF chip.

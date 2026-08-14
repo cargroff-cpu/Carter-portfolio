@@ -1,7 +1,7 @@
 // admin.jsx — Parlor CMS mirroring the live site's CG_DATA, with two-way
 // localStorage sync so edits drive Carter Portfolio.html.
 
-const { Field, Btn, SectionHead, ImageUpload, AssetField, ColorPicker, SEED, SIZES, sizeFromSpan, SITE_KEY, uid, card, labelStyle } = window.AdminPrimitives;
+const { Field, Btn, SectionHead, ImageUpload, AssetField, ColorPicker, SEED, SIZES, sizeFromSpan, SITE_KEY, uid, card, labelStyle, DEFAULT_SECTION_ORDER, SECTION_LABELS } = window.AdminPrimitives;
 
 // span <-> size helpers (site stores designs as span:[c,r])
 const SIZE_TO_SPAN = { small: [1, 1], wide: [2, 1], tall: [1, 2], large: [2, 2] };
@@ -36,6 +36,7 @@ function normalizeSite(o) {
         lon: t.lon != null ? t.lon : (SEED.travels[i] ? SEED.travels[i].lon : 0),
         lat: t.lat != null ? t.lat : (SEED.travels[i] ? SEED.travels[i].lat : 0),
         blurb: t.blurb || '', image: t.image || '' })),
+      sectionOrder: (Array.isArray(o.sectionOrder) && o.sectionOrder.length) ? o.sectionOrder : SEED.sectionOrder,
     };
   } catch (e) { return SEED; }
 }
@@ -333,6 +334,49 @@ function Travels({ items, setItems, selectedId, onSelect }) {
   );
 }
 
+// ── Section 7: Page order — reorder which sections scroll where ────
+const arrowBtn = {
+  width: 30, height: 30, borderRadius: 3, border: '1px solid var(--card-edge)',
+  background: 'var(--bg-deep)', color: 'var(--ink-soft)', fontSize: 14, fontFamily: 'var(--ui-font)',
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transition: 'border-color .15s, color .15s',
+};
+function Layout({ order, setOrder }) {
+  const list = (Array.isArray(order) && order.length) ? order : DEFAULT_SECTION_ORDER;
+  const move = (i, dir) => {
+    const j = i + dir;
+    if (j < 0 || j >= list.length) return;
+    const next = [...list];
+    [next[i], next[j]] = [next[j], next[i]];
+    setOrder(next);
+  };
+  return (
+    <div>
+      <SectionHead kicker="Layout" title="Page Order" />
+      <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
+        {list.map((id, i) => (
+          <div key={id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '13px 18px', borderBottom: i < list.length - 1 ? '1px solid var(--rule)' : 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <span style={{ fontFamily: 'var(--display-font)', fontStyle: 'italic', fontSize: 14,
+                color: 'var(--amber)', width: 18 }}>{i + 1}</span>
+              <span style={{ fontFamily: 'var(--display-font)', fontSize: 18, color: 'var(--ink)' }}>{SECTION_LABELS[id] || id}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button onClick={() => move(i, -1)} disabled={i === 0}
+                style={{ ...arrowBtn, opacity: i === 0 ? 0.3 : 1, cursor: i === 0 ? 'default' : 'pointer' }}>↑</button>
+              <button onClick={() => move(i, 1)} disabled={i === list.length - 1}
+                style={{ ...arrowBtn, opacity: i === list.length - 1 ? 0.3 : 1, cursor: i === list.length - 1 ? 'default' : 'pointer' }}>↓</button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ marginTop: 12, fontFamily: 'var(--body-font)', fontStyle: 'italic', fontSize: 12.5, color: 'var(--ink-mute)' }}>
+        Controls the order these sections scroll in on the live site. The hero and footer always stay fixed at the top and bottom.
+      </div>
+    </div>
+  );
+}
+
 // ── JSON preview ────────────────────────────────────────────────────
 // Replace heavy data URLs (uploaded images / PDF thumbnails) with short
 // placeholders so stringifying on each keystroke stays cheap (no lag).
@@ -368,4 +412,4 @@ function JsonPreview({ data }) {
   );
 }
 
-window.AdminSections = { loadInitial, normalizeSite, Identity, About, Videos, Designs, Resume, Travels, JsonPreview, SIZE_TO_SPAN };
+window.AdminSections = { loadInitial, normalizeSite, Identity, About, Videos, Designs, Resume, Travels, Layout, JsonPreview, SIZE_TO_SPAN };

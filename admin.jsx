@@ -1,8 +1,8 @@
 // admin.jsx — main CMS app. Mirrors the live site's content model and
 // publishes to localStorage so Carter Portfolio.html picks up edits.
 
-const { Field, Btn, SectionHead, SEED, SITE_KEY, card, labelStyle, isPdfData } = window.AdminPrimitives;
-const { loadInitial, normalizeSite, Identity, About, Videos, Designs, Resume, Travels, JsonPreview, SIZE_TO_SPAN } = window.AdminSections;
+const { Field, Btn, SectionHead, SEED, SITE_KEY, card, labelStyle, isPdfData, DEFAULT_SECTION_ORDER } = window.AdminPrimitives;
+const { loadInitial, normalizeSite, Identity, About, Videos, Designs, Resume, Travels, Layout, JsonPreview, SIZE_TO_SPAN } = window.AdminSections;
 
 // Must match data.jsx's CG_COPY_REV — Admin.html doesn't load data.jsx, so
 // that global would otherwise be undefined here, making every publish look
@@ -11,6 +11,7 @@ window.CG_COPY_REV = 6;
 
 const NAV = [
   ['identity', 'Identity'],
+  ['layout', 'Page Order'],
   ['about', 'About'],
   ['videos', 'Video Work'],
   ['designs', 'Design Work'],
@@ -250,6 +251,7 @@ function App() {
     designs: data.designs.map((g) => ({ title: g.title, kind: g.kind, desc: g.desc || '', span: SIZE_TO_SPAN[g.size] || [1, 1], color: g.color || '', image: g.image || '', pdf: g.pdf || '', thumb: g.thumb || '' })),
     resume: data.resume.map(({ id, ...rest }) => rest),
     travels: (data.travels || []).map(({ id, ...rest }) => rest),
+    sectionOrder: data.sectionOrder || DEFAULT_SECTION_ORDER,
   });
 
   // ── Hydrate from IndexedDB (falls back to localStorage) on mount ──
@@ -394,6 +396,7 @@ function App() {
           </div>
           <div style={{ flex: 1, overflowY: 'auto', padding: '30px 26px 80px' }}>
             <section id="sec-identity" style={{ marginBottom: 46 }}><Identity d={d} set={setD} /></section>
+            <section id="sec-layout" style={{ marginBottom: 46 }}><Layout order={d.sectionOrder} setOrder={f('sectionOrder')} /></section>
             <section id="sec-about" style={{ marginBottom: 46 }}><About bio={d.bio} setBio={f('bio')} /></section>
             <section id="sec-videos" style={{ marginBottom: 46 }}>
               <Videos items={d.videos} setItems={f('videos')} selectedId={selId('videos')} onSelect={onSelEdit('videos')} /></section>

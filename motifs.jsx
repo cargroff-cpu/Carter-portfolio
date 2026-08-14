@@ -276,13 +276,25 @@ function GasLamp({ height = 640, style = {}, out = false, onGlobeClick }) {
       {/* Ground contact shadow pooled under the base */}
       <ellipse cx="100" cy="898" rx="86" ry="6" fill="#000" opacity="0.55" />
 
+      {/* Once snuffed, a faint slow-breathing ember hints the globe is still
+          clickable (to relight) without giving away the easter egg upfront —
+          only appears in the "out" state, after it's already been found. */}
+      {out && onGlobeClick && (
+        <ellipse cx="100" cy="102" rx="60" ry="78" fill="rgba(217,154,61,0.16)"
+          style={{ filter: 'blur(9px)', pointerEvents: 'none' }}>
+          <animate attributeName="opacity" values="0.5;1;0.5" dur="3.4s" repeatCount="indefinite" />
+        </ellipse>
+      )}
+
       {/* Invisible click target over the glass globe — re-enables pointer
           events inside the otherwise non-interactive lamp container.
-          No label/tooltip: discovered, not announced. */}
+          No label/tooltip: discovered, not announced. outline/tap-highlight
+          suppressed since browsers otherwise flash a default focus box here
+          on click. */}
       {onGlobeClick && (
         <rect x="26" y="18" width="148" height="200" rx="24" fill="transparent"
           onClick={onGlobeClick}
-          style={{ cursor: 'pointer', pointerEvents: 'auto' }} />
+          style={{ cursor: 'pointer', pointerEvents: 'auto', outline: 'none', WebkitTapHighlightColor: 'transparent' }} />
       )}
     </svg>
   );
