@@ -343,8 +343,17 @@ function App() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <style>{`
+        @media (max-width: 900px) {
+          .admin-topbar { flex-wrap: wrap; padding: 12px 16px !important; gap: 10px 16px; }
+          .admin-split { flex-direction: column !important; }
+          .admin-editor { width: 100% !important; border-right: none !important;
+            border-bottom: 1px solid var(--rule); flex: none !important; max-height: 65vh; }
+          .admin-preview { flex: none !important; min-height: 480px; }
+        }
+      `}</style>
       {/* top bar */}
-      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      <div className="admin-topbar" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '14px 28px', background: 'rgba(13,9,5,0.92)', backdropFilter: 'blur(10px)',
         borderBottom: '1px solid var(--rule)', zIndex: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -366,9 +375,9 @@ function App() {
       </div>
 
       {/* split */}
-      <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+      <div className="admin-split" style={{ flex: 1, display: 'flex', minHeight: 0 }}>
         {/* editor */}
-        <div style={{ width: 580, flexShrink: 0, display: 'flex', flexDirection: 'column',
+        <div className="admin-editor" style={{ width: 580, flexShrink: 0, display: 'flex', flexDirection: 'column',
           borderRight: '1px solid var(--rule)', minHeight: 0 }}>
           <div style={{ flexShrink: 0, display: 'flex', gap: 3, padding: '12px 22px', flexWrap: 'wrap',
             borderBottom: '1px solid var(--rule)', background: 'var(--bg-deep)' }}>
@@ -398,7 +407,7 @@ function App() {
         </div>
 
         {/* live preview */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: 'var(--bg-deep)' }}>
+        <div className="admin-preview" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: 'var(--bg-deep)' }}>
           <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '12px 24px', borderBottom: '1px solid var(--rule)' }}>
             <span style={{ fontFamily: 'var(--ui-font)', fontSize: 11, letterSpacing: '0.2em',
