@@ -610,7 +610,7 @@ function About() {
         maxWidth: 1320, margin: '0 auto', position: 'relative', zIndex: 2 }}>
 
         {/* Portrait — sticky so it follows the bio copy as you scroll past. */}
-        <div>
+        <div className="cg-portrait-col">
           <div style={{ position: 'sticky', top: 100, paddingTop: 30 }}>
             <div className="cg-portrait-reveal">
             <div className="cg-portrait-float">
@@ -1989,13 +1989,16 @@ function Portfolio() {
           #sec-stat { padding: 64px 16px !important; }
           footer { padding: 40px 16px !important; }
 
-          /* Hero */
+          /* Hero — calmer on a small screen: fewer competing ambient layers,
+             meta footer condensed to a 2x2 grid instead of a 4-row stack */
           #sec-top h1 { font-size: clamp(58px, 17vw, 96px) !important; }
+          .cg-fog-band { display: none !important; }
+          .cg-candlelight { opacity: 0.5 !important; }
           .cg-hero-tagrow { grid-template-columns: 1fr !important; gap: 30px !important; margin-top: 40px !important; }
           .cg-hero-tagrow p { font-size: 21px !important; }
           .cg-hero-tagrow > div:last-child { text-align: left !important; }
-          .cg-hero-foot { flex-direction: column !important; align-items: flex-start !important; gap: 34px !important; padding-top: 36px !important; }
-          .cg-hero-meta { flex-direction: column !important; gap: 22px !important; }
+          .cg-hero-foot { flex-direction: column !important; align-items: flex-start !important; gap: 30px !important; padding-top: 30px !important; }
+          .cg-hero-meta { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 20px 16px !important; }
           .cg-hero-lamp { right: -48px !important; transform: scale(0.62); transform-origin: bottom right; opacity: 0.78; }
 
           /* Section headers (two-col → stacked) */
@@ -2003,9 +2006,12 @@ function Portfolio() {
           .cg-sec-head p { text-align: left !important; max-width: 100% !important; }
           #sec-about h2, #sec-work h2, #sec-design h2, #sec-resume h2, #sec-contact h2 { font-size: clamp(40px, 12vw, 62px) !important; }
 
-          /* About */
-          .cg-about-grid { grid-template-columns: 1fr !important; gap: 48px !important; }
+          /* About — smaller portrait plate so the bio starts sooner, and a
+             touch tighter paragraph rhythm so there's less to wade through */
+          .cg-about-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
           .cg-about-grid > div:first-child > div { position: static !important; padding-top: 0 !important; }
+          .cg-portrait-col { max-width: 220px; margin: 0 auto; }
+          #sec-about p { font-size: 17px !important; line-height: 1.6 !important; margin-bottom: 18px !important; }
           .cg-about-stats { grid-template-columns: 1fr 1fr !important; gap: 26px !important; }
 
           /* Video work → 2-up compact cards instead of one long single column */
