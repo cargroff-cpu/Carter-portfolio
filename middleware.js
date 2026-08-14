@@ -15,10 +15,18 @@ export const config = {
 
 export default function middleware(request) {
   const password = process.env.ADMIN_PASSWORD;
-  const auth = request.headers.get('authorization');
-  const expected = password ? 'Basic ' + btoa(`admin:${password}`) : null;
+  const auth = request.headers.get('authorization') || '';
 
-  if (expected && auth === expected) return;
+  if (password && auth.startsWith('Basic ')) {
+    try {
+      // Basic Auth encodes "username:password" — the username is ignored
+      // entirely; only the password after the first colon is checked.
+      const decoded = atob(auth.slice(6));
+      const sep = decoded.indexOf(':');
+      const providedPassword = sep >= 0 ? decoded.slice(sep + 1) : decoded;
+      if (providedPassword === password) return;
+    } catch (e) { /* malformed header — fall through to 401 */ }
+  }
 
   return new Response('Authentication required.', {
     status: 401,
