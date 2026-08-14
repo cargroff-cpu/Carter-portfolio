@@ -21,7 +21,9 @@ function getCookie(request, name) {
 
 export default function middleware(request) {
   const password = process.env.ADMIN_PASSWORD;
-  const cookie = getCookie(request, 'cg_admin');
+  // Renamed from cg_admin so anyone with an old long-lived cookie (set
+  // before session-only cookies were introduced) is forced to log in again.
+  const cookie = getCookie(request, 'cg_admin_s');
 
   if (password && cookie === password) return;
 
