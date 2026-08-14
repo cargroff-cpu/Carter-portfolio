@@ -506,7 +506,7 @@ function Hero() {
       <div style={{ position: 'relative', zIndex: 7, marginTop: 60, ...contentLit }}>
         <div className="cg-fadeup" style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 42 }}>
           <span style={{ width: 56, height: 1, background: 'var(--amber)' }} />
-          <span className="cg-eyebrow">Portfolio · MMXXVI · {D.location}</span>
+          <span className="cg-eyebrow">Portfolio · MMIII · {D.location}</span>
         </div>
 
         <h1 className="cg-fadeup cg-fadeup-1" style={{
