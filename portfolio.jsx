@@ -190,6 +190,41 @@ function RainLayer() {
   );
 }
 
+// ── Hero ambiance — dust motes in the lamplight ─────────────────────
+// A handful of tiny embers drifting up and sideways through the gas
+// lamp's glow, twinkling in and out. Randomized once (useMemo, same
+// seeded-sine approach as RainLayer) so they never look mechanically
+// repeated, and clustered toward the globe rather than spread evenly.
+function DustMotes() {
+  const motes = React.useMemo(() => {
+    const n = 18;
+    return Array.from({ length: n }, (_, i) => {
+      const r = (s) => { const x = Math.sin((i + 1) * s) * 43758.5453; return x - Math.floor(x); };
+      return {
+        left: (8 + r(11.3) * 84).toFixed(1),      // % across the lamp's glow width
+        bottom: (58 + r(6.7) * 36).toFixed(1),    // % up the post — clustered near the globe
+        size: (1.4 + r(4.1) * 2.1).toFixed(2),    // px
+        driftX: (-16 + r(8.9) * 32).toFixed(1),   // px sideways sway
+        riseY: (36 + r(5.3) * 56).toFixed(0),     // px upward travel
+        dur: (10 + r(3.7) * 9).toFixed(2),        // 10–19s
+        delay: (-r(7.1) * 18).toFixed(2),
+        peak: (0.25 + r(9.4) * 0.4).toFixed(2),   // peak opacity
+      };
+    });
+  }, []);
+  return (
+    <div className="cg-motes" aria-hidden="true">
+      {motes.map((m, i) => (
+        <span key={i} className="cg-mote" style={{
+          left: m.left + '%', bottom: m.bottom + '%', width: m.size + 'px', height: m.size + 'px',
+          '--mote-drift': m.driftX + 'px', '--mote-rise': '-' + m.riseY + 'px', '--mote-peak': m.peak,
+          animationDuration: m.dur + 's', animationDelay: m.delay + 's',
+        }} />
+      ))}
+    </div>
+  );
+}
+
 // ── Easter-egg candle ───────────────────────────────────────────────
 // Three depth planes receding into a cavernous dark: near (large, sharp,
 // saturated), mid (smaller, soft), far (tiny, dim, blurred). Each plane
@@ -477,8 +512,21 @@ function Hero() {
       {/* High-fidelity SVG lamp post on the right — anchored at the hero bottom. */}
       <div className="cg-fadeup cg-fadeup-3 cg-hero-lamp" style={{ position: 'absolute',
         right: '6vw', bottom: 0, zIndex: 2, pointerEvents: 'none' }}>
+        {/* Extra ambient pool right at the globe, on top of the lamp's own
+            halo — reuses the existing irregular cg-flicker keyframe so it
+            reads as the same candlelight, just a touch more felt. Fades
+            with the lamp's own out/lit state via an outer wrapper, since
+            cg-flicker's keyframes fully own the inner element's own
+            opacity and would otherwise ignore an inline value here. */}
+        <div style={{ position: 'absolute', left: '50%', bottom: '82%', transform: 'translate(-50%, 50%)',
+          width: 460, height: 460, opacity: lampOut ? 0 : 1, transition: 'opacity 0.6s ease' }}>
+          <div className="cg-candlelight" style={{ position: 'absolute', inset: 0 }} />
+        </div>
         <div style={{ position: 'relative' }}>
           <GasLamp height={680} out={lampOut} onGlobeClick={toggleLamp} />
+          <div style={{ opacity: lampOut ? 0 : 1, transition: 'opacity 0.6s ease' }}>
+            <DustMotes />
+          </div>
         </div>
       </div>
 
@@ -595,6 +643,34 @@ function Hero() {
 }
 
 // ── About ───────────────────────────────────────────────────────────
+// ── Curtain reveal — two panels part from center while the content
+//    beneath un-blurs and settles. Panels shrink via scaleX toward their
+//    own outer edge (not translateX off-screen), so nothing ever exceeds
+//    its own box and no overflow:hidden is needed on the wrapper — safe
+//    to use even around sticky-positioned descendants elsewhere on the
+//    page. IntersectionObserver-driven, fires once. Used sparingly (About
+//    + Travel only) rather than replacing the site's usual fade-up reveal.
+function CurtainReveal({ children, curtainColor, style }) {
+  const ref = React.useRef(null);
+  const [inView, setInView] = React.useState(false);
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) { setInView(true); io.unobserve(e.target); } });
+    }, { threshold: 0.15 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <div ref={ref} className={'cg-curtain' + (inView ? ' is-in' : '')} style={{ position: 'relative', ...style }}>
+      <div className="cg-curtain-content">{children}</div>
+      <div className="cg-curtain-panel cg-curtain-left" style={curtainColor ? { background: curtainColor } : undefined} />
+      <div className="cg-curtain-panel cg-curtain-right" style={curtainColor ? { background: curtainColor } : undefined} />
+    </div>
+  );
+}
+
 function About() {
   return (
     <section id="sec-about" style={{ position: 'relative', padding: '160px 80px',
@@ -654,9 +730,10 @@ function About() {
         </div>
         </div>
 
-        {/* Letter copy — restrained, no handwriting cosplay */}
-        <div style={{ paddingTop: 8 }}>
-          <div className="cg-reveal">
+        {/* Letter copy — restrained, no handwriting cosplay. A curtain
+            parts to reveal the whole column together, rather than the
+            usual fade-up — a signature moment for this section only. */}
+        <CurtainReveal curtainColor="var(--bg-soft)" style={{ paddingTop: 8 }}>
           <span className="cg-eyebrow">About · A Few Words</span>
           <h2 style={{
             fontFamily: 'var(--display-font)', fontWeight: 500,
@@ -666,9 +743,8 @@ function About() {
             A studio of one,<br />
             <span style={{ fontStyle: 'italic', fontWeight: 400 }}>telling stories worth keeping.</span>
           </h2>
-          </div>
-          <div className="cg-reveal" style={{ fontFamily: 'var(--body-font)', fontSize: 19, lineHeight: 1.75,
-            color: 'var(--ink-soft)', maxWidth: 640, transitionDelay: '.12s' }}>
+          <div style={{ fontFamily: 'var(--body-font)', fontSize: 19, lineHeight: 1.75,
+            color: 'var(--ink-soft)', maxWidth: 640 }}>
             {D.bio.map((p, i) => (
               <p key={i} style={{ margin: '0 0 26px',
                 textIndent: i === 0 ? 0 : '2em' }}>{p}</p>
@@ -693,7 +769,7 @@ function About() {
                 lineHeight: 1.55, fontStyle: 'italic' }}>{D.tools || 'video · copy · design · strategy'}</div>
             </div>
           </div>
-        </div>
+        </CurtainReveal>
       </div>
     </section>
   );
@@ -966,6 +1042,23 @@ function tvGeoPath(geom) {
 // The coarse outlines below stand in until it arrives / if it fails.
 const TV_GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json';
 
+// A small hand-drawn-style compass rose for the map corner — a decorative
+// wayfinding touch, not another interactive control. Rotates a few degrees
+// on hover, purely for feel.
+function CompassRose() {
+  return (
+    <svg className="cg-tv-compass" width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+      <circle cx="20" cy="20" r="17" fill="none" stroke="rgba(217,154,61,0.5)" strokeWidth="1" />
+      <circle cx="20" cy="20" r="1.7" fill="#f4c869" />
+      <path d="M20 4.5 L23 20 L20 22 L17 20 Z" fill="#d99a3d" />
+      <path d="M20 35.5 L23 20 L20 18 L17 20 Z" fill="#8a7758" opacity="0.75" />
+      <path d="M4.5 20 L20 17 L22 20 L20 23 Z" fill="#8a7758" opacity="0.75" />
+      <path d="M35.5 20 L20 17 L18 20 L20 23 Z" fill="#8a7758" opacity="0.75" />
+      <text x="20" y="11.5" textAnchor="middle" fontSize="6" fontFamily="var(--ui-font)" fill="#f4c869">N</text>
+    </svg>
+  );
+}
+
 function TravelDrawer() {
   const [open, setOpen] = React.useState(false);
   const [activeIdx, setActiveIdx] = React.useState(null);  // null = overview (full world)
@@ -990,6 +1083,26 @@ function TravelDrawer() {
   const n = travels.length;
   const ZOOM = 2.4;   // gentle regional zoom — not drastic
   const detail = activeIdx != null;
+
+  // Hand-drawn-style dotted route connecting the pins in order — a gentle
+  // alternating bow (not a ruler-straight line) so it reads as sketched
+  // rather than plotted. Drawn in the same SVG coordinate space as the
+  // country shapes, so it pans/zooms with the map for free.
+  const routeD = React.useMemo(() => {
+    if (n < 2) return '';
+    const pts = travels.map((t) => [tvX(t.lon), tvY(t.lat)]);
+    let d = `M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+    for (let i = 1; i < pts.length; i++) {
+      const [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
+      const dx = x1 - x0, dy = y1 - y0;
+      const len = Math.hypot(dx, dy) || 1;
+      const nx = -dy / len, ny = dx / len;
+      const bow = Math.min(26, len * 0.1) * (i % 2 ? 1 : -1);
+      const cx = (x0 + x1) / 2 + nx * bow, cy = (y0 + y1) / 2 + ny * bow;
+      d += ` Q ${cx.toFixed(1)} ${cy.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+    }
+    return d;
+  }, [travels, n]);
 
   // Fetch + decode the high-detail world (TopoJSON → GeoJSON features).
   React.useEffect(() => {
@@ -1148,7 +1261,7 @@ function TravelDrawer() {
   }, [lightbox]);
 
   return (
-    <div style={{ marginTop: 64 }}>
+    <CurtainReveal curtainColor="var(--bg-deep)" style={{ marginTop: 64 }}>
       <style>{`
         @keyframes cg-tv-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(3px); } }
         @keyframes cg-tv-slidein { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
@@ -1190,6 +1303,9 @@ function TravelDrawer() {
           padding: 8px 12px; border-radius: 2px; backdrop-filter: blur(2px);
           transition: background .2s ease, border-color .2s ease; }
         .cg-tv-viewall:hover { background: rgba(13,9,5,0.95); border-color: var(--amber); }
+        .cg-tv-compass-wrap { position: absolute; top: 10px; right: 12px; z-index: 6; opacity: 0.8;
+          cursor: default; transition: transform .5s cubic-bezier(.2,.7,.3,1), opacity .3s ease; }
+        .cg-tv-compass-wrap:hover { transform: rotate(16deg); opacity: 1; }
         /* Country tabs (below the map) */
         .cg-tv-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
         .cg-tv-caption + .cg-tv-tabs { margin-top: 8px; }
@@ -1277,6 +1393,11 @@ function TravelDrawer() {
                           points={ring.map(([lon, lat]) => `${tvX(lon).toFixed(1)},${tvY(lat).toFixed(1)}`).join(' ')} />
                       ))}
                 </g>
+                {routeD && (
+                  <path d={routeD} fill="none" stroke="#d99a3d" strokeOpacity="0.55"
+                    strokeWidth="1.4" strokeDasharray="1.5 7" strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke" pointerEvents="none" />
+                )}
                 {highlightD && (
                   <path d={highlightD} fillRule="evenodd" className="cg-tv-country"
                     fill={hover ? '#f4c869' : '#d99a3d'} fillOpacity={hover ? 0.55 : 0.34}
@@ -1289,6 +1410,10 @@ function TravelDrawer() {
                 )}
                 <rect x="0" y="0" width={TV_W} height={TV_H} fill="url(#cgTvVig)" pointerEvents="none" />
               </svg>
+
+              <div className="cg-tv-compass-wrap" title="A rough compass, for the flavor of it">
+                <CompassRose />
+              </div>
 
               {/* HTML pins */}
               <div className="cg-tv-markers">
@@ -1368,7 +1493,7 @@ function TravelDrawer() {
           )}
         </div>
       </div>
-    </div>
+    </CurtainReveal>
   );
 }
 
@@ -2174,10 +2299,12 @@ function Portfolio() {
             scroll-behavior: auto !important;
           }
           /* Purely ambient/decorative loops — hide rather than freeze mid-cycle */
-          .cg-fog-band, .cg-rain-drop, .cg-egg-fog { display: none !important; }
+          .cg-fog-band, .cg-rain-drop, .cg-egg-fog, .cg-motes { display: none !important; }
           /* Reveal-gated content must still be visible with no JS-timed motion */
           .cg-reveal, .cg-fadeup, .cg-portrait-reveal, .cg-botanical { opacity: 1 !important; transform: none !important; }
           .cg-portrait-float { transform: none !important; }
+          .cg-curtain-content { opacity: 1 !important; filter: none !important; transform: none !important; }
+          .cg-curtain-panel { transform: scaleX(0) !important; }
         }
       `}</style>
     </div>

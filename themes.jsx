@@ -183,6 +183,24 @@ window.CG_THEME = PARLOR;
       animation-iteration-count: infinite; will-change: transform;
     }
 
+    /* Dust motes — tiny embers drifting up + sideways through the lamplight,
+       twinkling in and out. Each instance sets --mote-drift/--mote-rise/
+       --mote-peak inline so no two motes move quite the same way. */
+    @keyframes cg-mote-drift {
+      0%   { transform: translate(0, 0); opacity: 0; }
+      12%  { opacity: var(--mote-peak); }
+      50%  { transform: translate(calc(var(--mote-drift) * 0.5), calc(var(--mote-rise) * 0.55)); opacity: var(--mote-peak); }
+      88%  { opacity: 0; }
+      100% { transform: translate(var(--mote-drift), var(--mote-rise)); opacity: 0; }
+    }
+    .cg-motes { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+    .cg-mote {
+      position: absolute; border-radius: 50%; opacity: 0;
+      background: radial-gradient(circle, rgba(244,200,105,0.9) 0%, rgba(217,154,61,0.4) 60%, transparent 100%);
+      animation-name: cg-mote-drift; animation-timing-function: linear;
+      animation-iteration-count: infinite; will-change: transform, opacity;
+    }
+
     /* Fog — slow lateral drift of large blurred bands */
     @keyframes cg-fog-a {
       0%   { transform: translateX(-16%); }
@@ -310,6 +328,28 @@ window.CG_THEME = PARLOR;
     /* Reveal-on-scroll */
     .cg-reveal { opacity: 0; transform: translateY(18px); transition: opacity 1s ease-out, transform 1s cubic-bezier(.2,.7,.3,1); }
     .cg-reveal.is-in { opacity: 1; transform: none; }
+
+    /* Curtain reveal — a signature moment used sparingly (About + Travel),
+       not a replacement for cg-reveal everywhere. Content starts blurred/
+       faded/settled-down; on reveal it clears while two panels retreat
+       toward the section's outer edges like curtains parting. Panels
+       shrink via scaleX toward their own edge rather than sliding via
+       translateX, so they never exceed their own box — no overflow:hidden
+       needed on the wrapper, which matters wherever a sticky descendant
+       (e.g. the About portrait) can't tolerate a clipping ancestor. */
+    .cg-curtain-content {
+      filter: blur(9px); opacity: 0; transform: translateY(16px) scale(0.985);
+      transition: filter 1s ease .12s, opacity 1s ease .12s, transform 1s cubic-bezier(.2,.7,.3,1) .12s;
+    }
+    .cg-curtain.is-in .cg-curtain-content { filter: blur(0); opacity: 1; transform: none; }
+    .cg-curtain-panel {
+      position: absolute; top: 0; bottom: 0; width: 50%; z-index: 6; pointer-events: none;
+      background: var(--bg-deep); transition: transform 1.05s cubic-bezier(.4,0,.2,1);
+    }
+    .cg-curtain-left { left: 0; transform-origin: left center; }
+    .cg-curtain-right { right: 0; transform-origin: right center; }
+    .cg-curtain.is-in .cg-curtain-left,
+    .cg-curtain.is-in .cg-curtain-right { transform: scaleX(0); }
 
     /* Botanical corner motifs — delayed, gentle fade-and-rise as they scroll
        into view; kept slow and subtle so they read as ambience, not UI. */
