@@ -1425,16 +1425,32 @@ function Resume() {
 function Contact() {
   const [state, setState] = React.useState({ name: '', email: '', message: '' });
   const [sent, setSent] = React.useState(false);
+  const [sending, setSending] = React.useState(false);
   const [errors, setErrors] = React.useState({});
+  const [sendErr, setSendErr] = React.useState('');
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
     const errs = {};
     if (!state.name.trim()) errs.name = 'A name, please.';
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(state.email)) errs.email = 'A working email helps me write back.';
-    if (state.message.trim().length < 8) errs.message = 'A sentence or two will do.';
+    if (!state.message.trim()) errs.message = 'A message, please.';
     setErrors(errs);
-    if (Object.keys(errs).length === 0) setSent(true);
+    if (Object.keys(errs).length > 0) return;
+
+    setSending(true); setSendErr('');
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(state),
+      });
+      if (!res.ok) throw new Error('send failed');
+      setSent(true);
+    } catch (e2) {
+      setSendErr('Could not send just now — try again, or email me directly below.');
+    }
+    setSending(false);
   }
 
   const field = (label, key, type = 'text', rows = 0) => (
@@ -1477,20 +1493,6 @@ function Contact() {
       </div>
 
       <div style={{ position: 'relative', zIndex: 2, maxWidth: 900, margin: '0 auto' }}>
-        <header className="cg-reveal" style={{ textAlign: 'center', marginBottom: 70 }}>
-          <span className="cg-eyebrow">Get in touch</span>
-          <h2 style={{ fontFamily: 'var(--display-font)', fontWeight: 500,
-            fontSize: 96, lineHeight: 0.95, letterSpacing: '-0.02em',
-            margin: '20px 0 28px', color: 'var(--ink)' }}>
-            Write me a <span style={{ fontStyle: 'italic', fontWeight: 400 }}>letter</span>.
-          </h2>
-          <p style={{ fontFamily: 'var(--body-font)', fontSize: 18, fontStyle: 'italic',
-            color: 'var(--ink-soft)', margin: 0, maxWidth: 540, marginInline: 'auto', lineHeight: 1.65 }}>
-            Project ideas, collaborations, or just a kind word. I read everything that comes in,
-            and I write back the same week.
-          </p>
-        </header>
-
         {sent ? (
           <div style={{ textAlign: 'center', padding: '60px 0', position: 'relative', zIndex: 2 }}>
             <div className="cg-divider" style={{ width: 220 }}>
@@ -1507,12 +1509,29 @@ function Contact() {
             </p>
           </div>
         ) : (
+          <React.Fragment>
+          <header className="cg-reveal" style={{ textAlign: 'center', marginBottom: 70 }}>
+            <span className="cg-eyebrow">Get in touch</span>
+            <h2 style={{ fontFamily: 'var(--display-font)', fontWeight: 500,
+              fontSize: 96, lineHeight: 0.95, letterSpacing: '-0.02em',
+              margin: '20px 0 28px', color: 'var(--ink)' }}>
+              Write me a <span style={{ fontStyle: 'italic', fontWeight: 400 }}>letter</span>.
+            </h2>
+            <p style={{ fontFamily: 'var(--body-font)', fontSize: 18, fontStyle: 'italic',
+              color: 'var(--ink-soft)', margin: 0, maxWidth: 540, marginInline: 'auto', lineHeight: 1.65 }}>
+              Project ideas, collaborations, or just a kind word. I read everything that comes in,
+              and I write back the same week.
+            </p>
+          </header>
+
           <form onSubmit={submit} style={{ maxWidth: 700, marginInline: 'auto' }}>
             <div className="cg-contact-grid cg-reveal" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 56, transitionDelay: '.1s' }}>
               {field('Your name', 'name')}
               {field('Your email', 'email', 'email')}
             </div>
             {field('Your message', 'message', 'text', 4)}
+            {sendErr && <div style={{ fontFamily: 'var(--body-font)', fontStyle: 'italic',
+              fontSize: 13.5, color: 'var(--terracotta)', marginTop: -8, marginBottom: 24 }}>{sendErr}</div>}
             <div className="cg-contact-foot" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               marginTop: 44, paddingTop: 32, borderTop: '1px solid var(--rule)' }}>
               <p style={{ fontFamily: 'var(--body-font)', fontStyle: 'italic', fontSize: 14,
@@ -1520,15 +1539,17 @@ function Contact() {
                 Or, if it&rsquo;s easier: <a href={`mailto:${D.email}`}
                   style={{ color: 'var(--amber)', textDecoration: 'none', borderBottom: '1px solid currentColor' }}>{D.email}</a>
               </p>
-              <button type="submit" className="cg-send" style={{
+              <button type="submit" className="cg-send" disabled={sending} style={{
                 background: 'transparent', color: 'var(--ink)',
-                border: '1px solid var(--amber)', padding: '18px 36px', cursor: 'pointer',
+                border: '1px solid var(--amber)', padding: '18px 36px', cursor: sending ? 'wait' : 'pointer',
+                opacity: sending ? 0.6 : 1,
                 fontFamily: 'var(--ui-font)', fontSize: 11,
                 letterSpacing: '0.3em', textTransform: 'uppercase',
                 fontWeight: 500, transition: 'background .3s ease, color .3s ease',
-              }}>Send it off &rarr;</button>
+              }}>{sending ? 'Sending…' : <React.Fragment>Send it off &rarr;</React.Fragment>}</button>
             </div>
           </form>
+          </React.Fragment>
         )}
 
         <div style={{ marginTop: 110, textAlign: 'center',
