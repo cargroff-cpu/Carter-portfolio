@@ -849,7 +849,7 @@ function DesignWork({ onOpen }) {
                   <div style={{ fontFamily: 'var(--ui-font)', fontSize: 9,
                     letterSpacing: '0.28em', textTransform: 'uppercase',
                     color: 'var(--amber)', marginBottom: 8 }}>{d.kind}</div>
-                  <div style={{ fontFamily: 'var(--display-font)', fontSize: cspan >= 2 ? 36 : 24,
+                  <div className="cg-design-tile-title" style={{ fontFamily: 'var(--display-font)', fontSize: cspan >= 2 ? 36 : 24,
                     fontWeight: 500, lineHeight: 1.05, letterSpacing: '-0.015em' }}>{d.title}</div>
                 </div>
                 <div className="cg-tile-arrow" style={{ position: 'absolute', top: 18, right: 18,
@@ -2008,10 +2008,19 @@ function Portfolio() {
           .cg-about-grid > div:first-child > div { position: static !important; padding-top: 0 !important; }
           .cg-about-stats { grid-template-columns: 1fr 1fr !important; gap: 26px !important; }
 
-          /* Video + Design → single column */
-          .cg-work-grid { grid-template-columns: 1fr !important; gap: 26px !important; }
-          .cg-design-grid { grid-template-columns: 1fr !important; grid-auto-rows: auto !important; gap: 20px !important; }
-          .cg-design-tile { grid-column: span 1 !important; grid-row: span 1 !important; height: 260px !important; }
+          /* Video work → 2-up compact cards instead of one long single column */
+          .cg-work-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 14px 12px !important; }
+          .cg-video-card > div:last-child { padding-top: 10px !important; }
+          .cg-video-card h3 { font-size: 15px !important; line-height: 1.2 !important; }
+          .cg-video-card .play-btn { width: 38px !important; height: 38px !important; }
+          .cg-video-card .play-btn svg { width: 10px !important; height: 10px !important; }
+
+          /* Design work → 2-up, keeping each tile's relative size (large/wide
+             still read as bigger, dense packing closes gaps) instead of
+             flattening everything to one uniform-height column */
+          .cg-design-grid { grid-template-columns: repeat(2, 1fr) !important;
+            grid-auto-rows: 148px !important; grid-auto-flow: dense !important; gap: 12px !important; }
+          .cg-design-tile-title { font-size: 17px !important; }
 
           /* Resume — drop the rail/dot, stack date over body */
           .cg-resume-rail, .cg-resume-dot { display: none !important; }
