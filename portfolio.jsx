@@ -104,10 +104,8 @@ function Nav() {
     }}>
       <a href="#sec-top" className="cg-nav-logo" style={{ display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none' }}>
         <div className="cg-nav-mark" style={{ width: 38, height: 38, border: '1px solid var(--ink-dim)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontFamily: 'var(--display-font)', fontSize: 17, color: 'var(--ink)',
-          letterSpacing: '0.01em' }}>
-          <span>CG</span>
+          display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <img src="assets/logo.png" alt="Carter Groff" style={{ width: '76%', height: '76%', objectFit: 'contain' }} />
         </div>
         <div>
           <div style={{ fontFamily: 'var(--display-font)', fontSize: 17,

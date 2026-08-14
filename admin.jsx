@@ -358,8 +358,9 @@ function App() {
         borderBottom: '1px solid var(--rule)', zIndex: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 32, height: 32, border: '1px solid var(--ink-dim)', display: 'flex',
-            alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--display-font)',
-            fontSize: 14, color: 'var(--ink)' }}>C<span style={{ color: 'var(--amber)' }}>·</span>G</div>
+            alignItems: 'center', justifyContent: 'center' }}>
+            <img src="assets/logo.png" alt="Carter Groff" style={{ width: '76%', height: '76%', objectFit: 'contain' }} />
+          </div>
           <div style={{ fontFamily: 'var(--ui-font)', fontSize: 11, letterSpacing: '0.24em',
             textTransform: 'uppercase', color: 'var(--ink-mute)' }}>Parlor Portfolio · Admin</div>
         </div>
