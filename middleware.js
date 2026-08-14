@@ -1,8 +1,7 @@
-// middleware.js — HTTP Basic Auth gate for the admin route and its assets.
-// Runs on Vercel's Edge Runtime, in front of every matched request, so an
-// unauthenticated visitor never even receives the admin HTML/JS. The public
-// portfolio (Carter Portfolio.html and its own scripts) is untouched — it's
-// not in the matcher below.
+// middleware.js — gates the admin route and its assets behind a session
+// cookie (set by api/login.js after a correct password), redirecting
+// anyone without one to the themed login.html page instead of the plain
+// native browser Basic Auth prompt.
 export const config = {
   matcher: [
     '/Admin.html',
@@ -14,23 +13,29 @@ export const config = {
   ],
 };
 
+function getCookie(request, name) {
+  const header = request.headers.get('cookie') || '';
+  const match = header.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 export default function middleware(request) {
   const password = process.env.ADMIN_PASSWORD;
-  const auth = request.headers.get('authorization') || '';
+  const cookie = getCookie(request, 'cg_admin');
 
-  if (password && auth.startsWith('Basic ')) {
-    try {
-      // Basic Auth encodes "username:password" — the username is ignored
-      // entirely; only the password after the first colon is checked.
-      const decoded = atob(auth.slice(6));
-      const sep = decoded.indexOf(':');
-      const providedPassword = sep >= 0 ? decoded.slice(sep + 1) : decoded;
-      if (providedPassword === password) return;
-    } catch (e) { /* malformed header — fall through to 401 */ }
+  if (password && cookie === password) return;
+
+  const url = new URL(request.url);
+
+  // API routes get a plain 401 — there's no page to redirect an API call to.
+  if (url.pathname.startsWith('/api/')) {
+    return new Response(JSON.stringify({ error: 'Not authenticated' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
-  return new Response('Authentication required.', {
-    status: 401,
-    headers: { 'WWW-Authenticate': 'Basic realm="Carter Groff Admin"' },
-  });
+  const loginUrl = new URL('/login.html', request.url);
+  loginUrl.searchParams.set('next', url.pathname);
+  return Response.redirect(loginUrl, 302);
 }
