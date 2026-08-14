@@ -6,6 +6,7 @@
 export const config = {
   matcher: [
     '/Admin.html',
+    '/admin',
     '/admin.jsx',
     '/admin-ui.jsx',
     '/admin-sections.jsx',
