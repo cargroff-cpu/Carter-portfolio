@@ -80,20 +80,22 @@ window.CG_THEME = PARLOR;
     }
 
     /* Vertical wood-panel rhythm — used on certain sections.
-       Each panel is ~9% wide; faint vertical seams between them. */
+       Fixed 34px panels (not percentage-based) so the rhythm reads the same
+       density on a wide desktop screen as it does on a phone — a percentage
+       width stretched each seam thin and faint on large viewports. */
     .cg-wood {
       background-color: var(--bg);
       background-image:
         repeating-linear-gradient(
           to right,
           transparent 0,
-          transparent calc(9% - 1px),
-          rgba(0,0,0,0.35) calc(9% - 1px),
-          rgba(0,0,0,0.35) 9%,
-          rgba(236,217,178,0.025) 9%,
-          rgba(236,217,178,0.025) calc(9% + 1px),
-          transparent calc(9% + 1px),
-          transparent 18%
+          transparent 33px,
+          rgba(0,0,0,0.35) 33px,
+          rgba(0,0,0,0.35) 34px,
+          rgba(236,217,178,0.025) 34px,
+          rgba(236,217,178,0.025) 35px,
+          transparent 35px,
+          transparent 68px
         );
     }
     /* Subtle horizontal grain mimicking sawn wood */

@@ -511,8 +511,8 @@ function Hero() {
       </div>
 
       <div style={{ position: 'relative', zIndex: 7, marginTop: 60, ...contentLit }}>
-        <div className="cg-fadeup" style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 42 }}>
-          <span style={{ width: 56, height: 1, background: 'var(--amber)' }} />
+        <div className="cg-fadeup cg-hero-eyebrow-row" style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 42 }}>
+          <span style={{ width: 56, height: 1, background: 'var(--amber)', flexShrink: 0 }} />
           <span className="cg-eyebrow">Portfolio · MMIII · {D.location}</span>
         </div>
 
@@ -1952,15 +1952,15 @@ function Portfolio() {
         .cg-burger-ico.is-open span:nth-child(1) { top: 7px; transform: rotate(45deg); }
         .cg-burger-ico.is-open span:nth-child(2) { opacity: 0; }
         .cg-burger-ico.is-open span:nth-child(3) { top: 7px; transform: rotate(-45deg); }
-        .cg-nav-drawer { display: none; position: fixed; inset: 0; z-index: 120;
+        .cg-nav-drawer { position: fixed; inset: 0; z-index: 120;
           background: rgba(8,5,2,0.55); opacity: 0; pointer-events: none;
-          transition: opacity .35s ease; }
+          transition: opacity .4s ease; }
         .cg-nav-drawer-panel { position: absolute; top: 0; right: 0; height: 100%;
           width: min(80vw, 340px); background: var(--bg-warm);
           border-left: 1px solid var(--rule); box-shadow: -30px 0 60px rgba(0,0,0,0.6);
           display: flex; flex-direction: column; justify-content: center; gap: 6px;
-          padding: 32px 30px; transform: translateX(100%); transition: transform .4s cubic-bezier(.3,.7,.2,1); }
-        .cg-nav-drawer.is-open { display: block; opacity: 1; pointer-events: auto; }
+          padding: 32px 30px; transform: translateX(100%); transition: transform .45s cubic-bezier(.25,.9,.25,1); }
+        .cg-nav-drawer.is-open { opacity: 1; pointer-events: auto; }
         .cg-nav-drawer.is-open .cg-nav-drawer-panel { transform: none; }
         .cg-nav-drawer-panel a { display: flex; align-items: center; min-height: 52px;
           font-family: var(--ui-font); font-size: 14px; letter-spacing: 0.28em;
@@ -1999,6 +1999,11 @@ function Portfolio() {
           /* Hero — calmer on a small screen: fewer competing ambient layers,
              meta footer condensed to a 2x2 grid instead of a 4-row stack */
           #sec-top h1 { font-size: clamp(58px, 17vw, 96px) !important; }
+          /* Keep clear of the lamp graphic (its scaled-down left edge sits
+             around 88% across on a phone width) — was overlapping/touching it */
+          .cg-hero-eyebrow-row { max-width: 76%; gap: 12px !important; }
+          .cg-hero-eyebrow-row .cg-eyebrow { font-size: 9.5px !important; letter-spacing: 0.18em !important;
+            white-space: normal !important; line-height: 1.5; }
           .cg-fog-band { display: none !important; }
           .cg-candlelight { opacity: 0.5 !important; }
           .cg-hero-tagrow { grid-template-columns: 1fr !important; gap: 30px !important; margin-top: 40px !important; }
