@@ -633,9 +633,9 @@ function About() {
               <div style={{ position: 'absolute', inset: 8, border: '1px solid rgba(236,217,178,0.10)',
                 pointerEvents: 'none' }} />
             </div>
-            <div style={{ marginTop: 14, display: 'flex', justifyContent: 'space-between',
+            <div className="cg-plate-caption" style={{ marginTop: 14, display: 'flex', justifyContent: 'space-between',
               alignItems: 'baseline', padding: '0 4px', fontFamily: 'var(--ui-font)', fontSize: 10,
-              letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--ink-mute)' }}>
+              letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--ink-mute)', whiteSpace: 'nowrap' }}>
               <span>Plate I</span>
               <span style={{ color: 'var(--amber)' }}>Carter Groff</span>
               <span>MMXXIV</span>
@@ -649,7 +649,7 @@ function About() {
         {/* Letter copy — restrained, no handwriting cosplay */}
         <div style={{ paddingTop: 8 }}>
           <div className="cg-reveal">
-          <span className="cg-eyebrow">About · A note from the desk</span>
+          <span className="cg-eyebrow">About · A Few Words</span>
           <h2 style={{
             fontFamily: 'var(--display-font)', fontWeight: 500,
             fontSize: 80, lineHeight: 1.0, letterSpacing: '-0.02em',
@@ -1711,7 +1711,7 @@ function Footer() {
         <span>&copy; MMXXVI · Carter Groff</span>
         <span style={{ fontFamily: 'var(--display-font)', fontStyle: 'italic', fontSize: 15,
           letterSpacing: '0.04em', textTransform: 'none', color: 'var(--ink-soft)' }}>
-          made with care
+          made to weather well
         </span>
         <a href={`mailto:${D.email}`}
           style={{ color: 'var(--ink-soft)', textDecoration: 'none' }}>
@@ -2011,6 +2011,7 @@ function Portfolio() {
           .cg-about-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
           .cg-about-grid > div:first-child > div { position: static !important; padding-top: 0 !important; }
           .cg-portrait-col { max-width: 220px; margin: 0 auto; }
+          .cg-plate-caption { font-size: 8px !important; letter-spacing: 0.1em !important; gap: 4px; }
           #sec-about p { font-size: 17px !important; line-height: 1.6 !important; margin-bottom: 18px !important; }
           .cg-about-stats { grid-template-columns: 1fr 1fr !important; gap: 26px !important; }
 

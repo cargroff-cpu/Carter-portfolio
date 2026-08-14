@@ -59,8 +59,8 @@ const SEED = {
       bullets: ['Freelance video work, produced "get-to-know-me" employee videos for client outreach.'] },
     { id: 'r3', role: 'Media Intern', company: 'Leaders Rising Network', dates: 'Jun 2025 to Aug 2025', city: 'Internship',
       bullets: ['Summer internship across media production and content workflows.'] },
-    { id: 'r4', role: 'B.A., Mass Communication / Media Studies', company: 'James Madison University', dates: 'Aug 2021 to May 2025', city: 'Harrisonburg, VA',
-      bullets: ['Concentration in Media Arts & Design, Digital Video & Cinema.'] },
+    { id: 'r4', role: 'B.A., Media Arts & Design', company: 'James Madison University', dates: 'Aug 2021 to May 2025', city: 'Harrisonburg, VA',
+      bullets: ['Concentration in Digital Video.'] },
   ],
   travels: [
     { id: 't1', name: 'Japan', year: '2024', lon: 139.6, lat: 35.6, image: '',

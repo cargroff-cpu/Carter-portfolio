@@ -52,8 +52,8 @@ const CG_DATA = {
       bullets: ['Freelance video work, produced “get-to-know-me” employee videos for client outreach.'] },
     { role: 'Media Intern',                  company: 'Leaders Rising Network',     dates: 'Jun 2025 to Aug 2025', city: 'Internship',
       bullets: ['Summer internship across media production and content workflows.'] },
-    { role: 'B.A., Mass Communication / Media Studies', company: 'James Madison University', dates: 'Aug 2021 to May 2025', city: 'Harrisonburg, VA',
-      bullets: ['Concentration in Media Arts & Design, Digital Video & Cinema.'] },
+    { role: 'B.A., Media Arts & Design', company: 'James Madison University', dates: 'Aug 2021 to May 2025', city: 'Harrisonburg, VA',
+      bullets: ['Concentration in Digital Video.'] },
   ],
 
   // Travel pins shown in the Resume “Explore My Travels” map. lon/lat place
