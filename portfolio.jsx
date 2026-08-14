@@ -92,6 +92,7 @@ function Nav() {
     return { n, anchor };
   });
   return (
+    <React.Fragment>
     <nav className="cg-nav" style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
       background: scrolled ? 'rgba(15, 10, 6, 0.78)' : 'transparent',
@@ -138,18 +139,24 @@ function Nav() {
         </span>
       </button>
 
-      {/* Mobile slide-in drawer */}
-      <div className={'cg-nav-drawer' + (menuOpen ? ' is-open' : '')}
-        role="dialog" aria-modal="true" aria-hidden={!menuOpen}
-        onClick={() => setMenuOpen(false)}>
-        <div className="cg-nav-drawer-panel" onClick={(e) => e.stopPropagation()}>
-          {links.map(({ n, anchor }) => (
-            <a key={n} href={anchor} onClick={() => setMenuOpen(false)}>{n}</a>
-          ))}
-          <a href="#sec-contact" className="cg-nav-drawer-cta" onClick={() => setMenuOpen(false)}>Get in touch</a>
-        </div>
-      </div>
     </nav>
+
+    {/* Mobile slide-in drawer — a sibling of <nav>, not nested inside it.
+        <nav> applies a backdrop-filter once scrolled, which creates a new
+        CSS containing block for any position:fixed descendant — that was
+        collapsing this drawer to the nav's own height instead of the
+        full viewport whenever the menu was opened while scrolled down. */}
+    <div className={'cg-nav-drawer' + (menuOpen ? ' is-open' : '')}
+      role="dialog" aria-modal="true" aria-hidden={!menuOpen}
+      onClick={() => setMenuOpen(false)}>
+      <div className="cg-nav-drawer-panel" onClick={(e) => e.stopPropagation()}>
+        {links.map(({ n, anchor }) => (
+          <a key={n} href={anchor} onClick={() => setMenuOpen(false)}>{n}</a>
+        ))}
+        <a href="#sec-contact" className="cg-nav-drawer-cta" onClick={() => setMenuOpen(false)}>Get in touch</a>
+      </div>
+    </div>
+    </React.Fragment>
   );
 }
 
