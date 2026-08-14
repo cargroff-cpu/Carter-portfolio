@@ -510,7 +510,7 @@ function Hero() {
         ))}
       </div>
 
-      <div style={{ position: 'relative', zIndex: 7, marginTop: 60, ...contentLit }}>
+      <div style={{ position: 'relative', zIndex: 7, marginTop: 60, pointerEvents: 'none', ...contentLit }}>
         <div className="cg-fadeup cg-hero-eyebrow-row" style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 42 }}>
           <span style={{ width: 56, height: 1, background: 'var(--amber)', flexShrink: 0 }} />
           <span className="cg-eyebrow">Portfolio · MMIII · {D.location}</span>
@@ -982,6 +982,7 @@ function TravelDrawer() {
   const rafRef = React.useRef(0);
   const cardRef = React.useRef(null);
   const closeTimerRef = React.useRef(0);
+  const reopenLightboxRef = React.useRef(false);
 
   // Travel pins come from the admin (D.travels); fall back to the built-ins.
   const travels = (Array.isArray(D.travels) && D.travels.length) ? D.travels : TRAVELS;
@@ -1017,7 +1018,13 @@ function TravelDrawer() {
   const cur = detail ? travels[Math.min(activeIdx, n - 1)] : null;
   const highlightD = cur ? byName[(cur.name || '').toLowerCase()] : null;
 
-  const select = (i) => { clearTimeout(closeTimerRef.current); setLightbox(false); setClosing(false); setHover(false); setActiveIdx((i + n) % n); };
+  // Switching destinations while a photo is open jumps straight to the new
+  // one's photo once the map finishes panning, instead of just closing.
+  const select = (i) => {
+    clearTimeout(closeTimerRef.current);
+    reopenLightboxRef.current = lightbox;
+    setLightbox(false); setClosing(false); setHover(false); setActiveIdx((i + n) % n);
+  };
   const viewAll = () => { clearTimeout(closeTimerRef.current); setLightbox(false); setClosing(false); setHover(false); setActiveIdx(null); };
   // Open the photo card anchored to the active country's on-screen point.
   const openLightbox = () => {
@@ -1079,7 +1086,7 @@ function TravelDrawer() {
     return { x: tvX(t.lon) - zw / 2, y: tvY(t.lat) - zh / 2, w: zw, h: zh };
   }, [travels]);
 
-  const animateView = React.useCallback((target, dur = 640) => {
+  const animateView = React.useCallback((target, dur = 640, onDone) => {
     cancelAnimationFrame(rafRef.current);
     const from = { ...viewRef.current };
     const t0 = performance.now();
@@ -1095,6 +1102,7 @@ function TravelDrawer() {
         `${v.x.toFixed(2)} ${v.y.toFixed(2)} ${v.w.toFixed(2)} ${v.h.toFixed(2)}`);
       placeMarkers();
       if (p < 1) rafRef.current = requestAnimationFrame(step);
+      else if (onDone) onDone();
     };
     rafRef.current = requestAnimationFrame(step);
   }, [placeMarkers]);
@@ -1103,16 +1111,21 @@ function TravelDrawer() {
   React.useEffect(() => {
     if (open) return;
     clearTimeout(closeTimerRef.current);
+    reopenLightboxRef.current = false;
     setActiveIdx(null); setLightbox(false); setClosing(false); setHover(false);
     cancelAnimationFrame(rafRef.current);
     viewRef.current = { x: 0, y: 0, w: TV_W, h: TV_H };
     if (svgRef.current) svgRef.current.setAttribute('viewBox', `0 0 ${TV_W} ${TV_H}`);
   }, [open]);
 
-  // Animate the map to the overview (full world) or the active region.
+  // Animate the map to the overview (full world) or the active region. If a
+  // photo was open when the destination changed, reopen it for the new one
+  // once the pan settles, instead of leaving the visitor to click twice.
   React.useEffect(() => {
     if (!open) return;
-    animateView(detail ? viewFor(activeIdx) : { x: 0, y: 0, w: TV_W, h: TV_H });
+    animateView(detail ? viewFor(activeIdx) : { x: 0, y: 0, w: TV_W, h: TV_H }, 640, () => {
+      if (reopenLightboxRef.current) { reopenLightboxRef.current = false; openLightbox(); }
+    });
   }, [open, activeIdx, detail, animateView, viewFor]);
 
   // Keep pins aligned after layout settles + on resize.
