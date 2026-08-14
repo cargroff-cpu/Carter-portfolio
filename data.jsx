@@ -81,23 +81,30 @@ const CG_DATA = {
 
 window.CG_DATA = CG_DATA;
 
-// ── Live overrides from the admin console ───────────────────────────
-// The admin publishes the site data into IndexedDB (with a legacy
-// localStorage fallback). We read it asynchronously, merge it over the
-// defaults, and expose CG_READY so the app waits for it before rendering.
+// Public-safe: Supabase's anon/publishable key + a table locked to
+// read-only for anyone but the server (see api/save-content.js).
+const CG_SUPABASE_URL = 'https://rodxrkzwpsgeeatmbwku.supabase.co';
+const CG_SUPABASE_ANON_KEY = 'sb_publishable_fWE-gd3uSKDe0BpUK5WSxQ_f3Uzgd0x';
+
+// ── Live overrides, published from the admin ────────────────────────
+// The admin publishes to Supabase; we read it here at load time and merge
+// it over the defaults. If Supabase is slow or unreachable, we give up
+// quietly and the hardcoded copy above stands — the site never breaks.
 window.CG_READY = (async function applyOverrides() {
   try {
     let o = null;
-    if (window.CGStore && window.CGStore.loadSite) {
-      // never let a slow/blocked IndexedDB stall the whole site
-      o = await Promise.race([
-        window.CGStore.loadSite(),
-        new Promise((res) => setTimeout(() => res(null), 2500)),
+    try {
+      const res = await Promise.race([
+        fetch(`${CG_SUPABASE_URL}/rest/v1/site_content?select=data&id=eq.1`, {
+          headers: { apikey: CG_SUPABASE_ANON_KEY },
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000)),
       ]);
-    } else {
-      const raw = localStorage.getItem('cg_site_data');
-      if (raw) o = JSON.parse(raw);
-    }
+      if (res && res.ok) {
+        const rows = await res.json();
+        if (rows && rows[0] && rows[0].data) o = rows[0].data;
+      }
+    } catch (e) { /* Supabase unreachable — hardcoded defaults stand */ }
     if (!o) return;
     // Copy revision: when data.jsx's authored copy is revised, stale saved
     // bio/tools from an older admin save must not win. Drop just those keys

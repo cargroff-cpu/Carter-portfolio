@@ -286,14 +286,23 @@ function App() {
     return { ...prev, [type]: arr };
   });
 
-  // Publish now (explicit) — same destination as autosave, with a toast.
+  // Publish now (explicit): keep the local draft in sync, then push the
+  // same payload to Supabase (via the password-gated /api/save-content
+  // endpoint) so it shows up on the live site for every visitor.
   const save = async () => {
     try {
-      await window.CGStore.saveSite(buildPayload(d));
+      const payload = buildPayload(d);
+      await window.CGStore.saveSite(payload);
+      const res = await fetch('/api/save-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error('publish failed');
       setSaveErr('');
       setSaved(true); setTimeout(() => setSaved(false), 1800);
     } catch (e) {
-      setSaveErr('Could not publish — storage error. Your work is still here; try again.');
+      setSaveErr('Could not publish to the live site — your draft is saved locally; try again.');
     }
   };
 

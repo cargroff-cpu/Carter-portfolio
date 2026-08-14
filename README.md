@@ -40,14 +40,25 @@ Then open `http://localhost:8765/Carter%20Portfolio.html` for the site, or
 ## Editing content
 
 Open `Admin.html` and edit any section (Identity, About, Video Work, Design
-Work, Résumé, Travels) — changes autosave as you type, and the live preview
-pane on the right updates instantly.
+Work, Résumé, Travels) — changes autosave as you type into the browser's
+local storage as a draft safety net. Click **Save / Publish** to push that
+draft live: it's written to Supabase, and the public site picks it up on
+its next page load — no redeploy needed.
 
-> **Status:** the admin currently saves to the browser's local storage
-> (IndexedDB), so edits show up in that same browser only. Wiring the admin
-> to a real shared database (so edits from any device show up on the live
-> site) is in progress — this section will be updated once that lands.
+The admin route is password-protected (HTTP Basic Auth, checked in
+`middleware.js` against the `ADMIN_PASSWORD` environment variable).
 
 ## Deployment
 
 Hosted on Vercel, auto-deploying from the `main` branch of this repo.
+
+**Required environment variables** (Vercel → Project Settings → Environment
+Variables — set directly there, never committed):
+
+| Variable | Used by | Notes |
+|---|---|---|
+| `ADMIN_PASSWORD` | `middleware.js` | Basic Auth password for `/Admin.html` |
+| `SUPABASE_SERVICE_ROLE_KEY` | `api/save-content.js` | Full-access key, server-side only |
+
+The Supabase project URL and public anon key are safe to expose client-side
+and are already committed in `data.jsx`.
