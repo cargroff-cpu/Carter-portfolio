@@ -39,6 +39,15 @@
 </head>
 <body>
   <div id="root"></div>
+  <!-- Logs the admin session out the moment this page is left or refreshed,
+       rather than waiting on the cookie's own expiry (or the browser
+       eventually closing) — sendBeacon reliably fires this during unload
+       without blocking navigation. -->
+  <script>
+    window.addEventListener('pagehide', function () {
+      if (navigator.sendBeacon) navigator.sendBeacon('/api/logout');
+    });
+  </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
     if (window.pdfjsLib) { pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }
