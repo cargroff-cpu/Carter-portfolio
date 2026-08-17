@@ -364,7 +364,7 @@ function App() {
             <img src="assets/logo.png" alt="Carter Groff" style={{ width: '76%', height: '76%', objectFit: 'contain' }} />
           </div>
           <div style={{ fontFamily: 'var(--ui-font)', fontSize: 11, letterSpacing: '0.24em',
-            textTransform: 'uppercase', color: 'var(--ink-mute)' }}>Carter's Portfolio · Admin</div>
+            textTransform: 'uppercase', color: 'var(--ink-mute)' }}>The Scaffold</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           {saveErr

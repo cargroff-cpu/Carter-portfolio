@@ -18,7 +18,7 @@ portfolio.jsx            Page sections + composition (Hero, About, Video, Design
 cg-store.js              Shared storage helper used by the site and the admin CMS
 assets/                  Images (portrait, etc.)
 
-Admin.html               Content editor (CMS) — not linked from the public site
+Admin.html               Content editor (CMS), "The Scaffold" — served at /scaffold, not linked from the public site
 admin.jsx                Admin app shell (editor + live preview split view)
 admin-ui.jsx             Admin form primitives (fields, buttons, image/PDF upload)
 admin-sections.jsx       Admin form sections (Identity, About, Videos, Designs, Résumé, Travels)
@@ -45,7 +45,7 @@ local storage as a draft safety net. Click **Save / Publish** to push that
 draft live: it's written to Supabase, and the public site picks it up on
 its next page load — no redeploy needed.
 
-The admin route is password-protected (HTTP Basic Auth, checked in
+The Scaffold (`/scaffold`) is password-protected (checked in
 `middleware.js` against the `ADMIN_PASSWORD` environment variable).
 
 ## Deployment

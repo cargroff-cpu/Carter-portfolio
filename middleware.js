@@ -5,7 +5,7 @@
 export const config = {
   matcher: [
     '/Admin.html',
-    '/admin',
+    '/scaffold',
     '/admin.jsx',
     '/admin-ui.jsx',
     '/admin-sections.jsx',
