@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Scaffold · Screen Transitions</title>
+<link rel="stylesheet" href="parlor.css">
+<style>
+html{overflow-x:hidden}
+body{background:#0d0904}
+.wrap{max-width:1360px;margin:0 auto;padding:64px 40px 120px}
+.eyebrow{font-family:var(--ui);font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--amber);font-weight:500}
+h1{font-family:var(--display);font-weight:500;font-size:clamp(44px,7vw,80px);line-height:.95;letter-spacing:-.03em;margin:16px 0 20px}
+.lede{font-family:var(--display);font-style:italic;font-size:21px;line-height:1.5;color:var(--ink-soft);max-width:700px;margin:0}
+.pairbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:38px 0 0;padding-top:24px;border-top:1px solid var(--rule)}
+.pairbar .lbl{font-family:var(--ui);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-dim);margin-right:6px}
+.pill{font-family:var(--ui);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-mute);background:none;border:1px solid var(--rule-strong);padding:11px 15px;min-height:40px;cursor:pointer;transition:color .25s,border-color .25s,background .25s}
+.pill:hover{color:var(--ink)}
+.pill[aria-pressed="true"]{color:#1a120b;background:var(--ink);border-color:var(--ink)}
+/* ── a direction ── */
+.dir{margin-top:72px;padding-top:34px;border-top:1px solid var(--rule)}
+.dirhead{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.dirhead .no{font-family:var(--display);font-style:italic;font-size:14px;color:var(--amber)}
+.dirhead h2{font-family:var(--display);font-weight:500;font-size:36px;letter-spacing:-.02em;margin:0}
+.dirhead .ms{font-family:var(--ui);font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim);margin-left:auto}
+.motion{font-family:var(--body);font-size:15.5px;line-height:1.6;color:var(--ink-soft);margin:12px 0 0;max-width:860px;text-wrap:pretty}
+.row{display:grid;grid-template-columns:minmax(0,1.42fr) minmax(0,1fr);gap:26px;margin-top:26px;align-items:start}
+.play{position:relative}
+.frames{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.cap{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:9px}
+.cap b{font-family:var(--ui);font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-mute);font-weight:500}
+.cap span{font-family:var(--ui);font-size:9px;letter-spacing:.16em;color:var(--ink-dim)}
+.btn{font-family:var(--ui);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);background:none;border:none;cursor:pointer;padding:6px 0;border-bottom:1px solid rgba(217,154,61,.4)}
+.btn:hover{color:var(--amber-lit)}
+/* ── the stage: two plates and an effect between them ── */
+.stage{position:relative;aspect-ratio:924/540;overflow:hidden;border:1px solid var(--rule);background:#0b0704}
+.stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.stage .to{z-index:1}
+.stage .from{z-index:2}
+.fx{position:absolute;inset:0;z-index:3;pointer-events:none}
+.notes{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:22px}
+.note b{display:block;font-family:var(--ui);font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--amber);margin-bottom:7px}
+.note p{font-family:var(--body);font-size:13.5px;line-height:1.62;color:var(--ink-mute);margin:0}
+.rec{margin-top:76px;padding:30px 0 0;border-top:1px solid var(--rule-strong)}
+.rec h3{font-family:var(--display);font-weight:500;font-size:30px;margin:0 0 12px}
+.rec p{font-family:var(--body);font-size:15px;line-height:1.68;color:var(--ink-soft);margin:0 0 12px;max-width:820px}
+.rec .amber{color:var(--amber)}
+/* ══ 1 · FOG ══ */
+.fog i{position:absolute;top:-30%;height:160%;width:70%;filter:blur(26px);mix-blend-mode:screen;
+  background:radial-gradient(ellipse 46% 52% at 50% 50%,rgba(226,216,196,.5),rgba(198,188,168,.2) 44%,transparent 74%)}
+.fog i:nth-child(1){left:-20%}
+.fog i:nth-child(2){left:6%;top:-14%;height:130%;width:56%;opacity:.8}
+.fog i:nth-child(3){left:38%;top:-24%;width:62%;opacity:.6}
+/* ══ 2 · CURTAIN ══ */
+.curtain .rod{position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(180deg,#5a4118,#241808);box-shadow:0 2px 6px rgba(0,0,0,.7)}
+.curtain .panel{position:absolute;top:0;bottom:0;width:52%;
+  background-image:repeating-linear-gradient(90deg,rgba(0,0,0,.5) 0 6px,rgba(58,26,16,.9) 6px 13px,rgba(28,12,7,.95) 13px 22px),linear-gradient(180deg,#3a1a10,#160903);
+  box-shadow:inset 0 30px 60px -30px rgba(0,0,0,.9)}
+.curtain .l{left:0;transform-origin:left center}
+.curtain .r{right:0;transform-origin:right center}
+/* ══ 3 · CANDLELIGHT ══ */
+.candle .dark{position:absolute;inset:0;background:#0a0603}
+.candle .glow{position:absolute;top:-40%;height:180%;width:44%;filter:blur(14px);mix-blend-mode:screen;
+  background:radial-gradient(ellipse 34% 50% at 50% 50%,rgba(255,243,210,.85),rgba(245,205,106,.45) 30%,rgba(217,154,61,.16) 58%,transparent 78%)}
+.candle .edge{position:absolute;top:0;bottom:0;width:2px;background:linear-gradient(180deg,transparent,rgba(255,243,210,.9) 22%,rgba(255,243,210,.9) 78%,transparent);box-shadow:0 0 24px 6px rgba(245,205,106,.6)}
+/* ══ 4 · LEDGER ══ */
+.ledger{perspective:1400px;perspective-origin:0% 50%}
+.ledger .page{position:absolute;inset:0;transform-origin:left center;transform-style:preserve-3d;overflow:hidden;background:#0b0704}
+.ledger .page img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ledger .shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.62) 0%,rgba(0,0,0,.12) 26%,transparent 62%)}
+.ledger .spine{position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(90deg,rgba(236,217,178,.4),transparent)}
+.ledger .gut{position:absolute;left:0;top:0;bottom:0;width:12%;z-index:2;background:linear-gradient(90deg,rgba(0,0,0,.75),transparent)}
+@media(max-width:1080px){.row{grid-template-columns:1fr}.frames{grid-template-columns:repeat(3,1fr)}.wrap{padding:48px 22px 90px}.notes{grid-template-columns:1fr}}
+</style>
+</head>
+<body class="p-grain">
+<div class="wrap">
+  <span class="eyebrow">Motion Study · Between Rooms</span>
+  <h1>Four ways to cross the hall.</h1>
+  <p class="lede">Each direction is shown as three locked keyframes, plus a stage you can play at real speed. Switch the journey to see how the same idea behaves on a heavy context shift versus a light in-app move.</p>
+
+  <div class="pairbar">
+    <span class="lbl">Journey</span>
+    <button class="pill" data-pair="heavy" aria-pressed="true">Hub → Command Center</button>
+    <button class="pill" data-pair="light" aria-pressed="false">Within Command Center</button>
+    <button class="pill" data-pair="wick" aria-pressed="false">Hub → Wick's room</button>
+    <button class="pill" id="playall" style="margin-left:auto;color:var(--amber);border-color:rgba(217,154,61,.5)">Play all four</button>
+  </div>
+
+  <div id="dirs"></div>
+
+  <div class="rec">
+    <h3>What I'd hand off</h3>
+    <p><span class="amber">Candlelight wipe as the family, ledger slide for the light moves.</span> The wipe is the only one of the four that is already true of this product: every space in The Scaffold is lit by one amber source, so moving the light between rooms explains the navigation instead of decorating it. It also flexes honestly, since a full sweep with darkness trailing reads as a big move, while the same sweep shortened to a brightness pass over a held layout reads as a tab change.</p>
+    <p>Into and out of Wick's room, let the wipe start at his lamp and leave with it. Going in, the light arrives from the right and warms the room by about 8% past the Command Center's level; coming out, it drains left and the temperature drops back. That single asymmetry is what makes his room feel like a different place rather than another screen.</p>
+    <p>Tradeoffs worth knowing: the curtain is the most theatrical and the least reusable, and at anything under about 900ms it reads as a glitch rather than drapery, so I would keep it for a first-load or lock-screen moment only. The ledger flip is the most on-theme for campaign history but costs a full second at full size and needs a 3D transform on a whole screen, so it is best reserved for moving through records, previous month, next month, rather than between rooms. Fog is the easiest to build and the most forgiving on slow machines, but it says the least about where you are going.</p>
+  </div>
+</div>
+
+<script>
+const PLATES = {
+  heavy: { from:'assets/plate-hub.jpg', to:'assets/plate-mcc.jpg', ms:{fog:820,curtain:1100,candle:850,ledger:1000} },
+  light: { from:'assets/plate-mcc.jpg', to:'assets/plate-mcc2.jpg', ms:{fog:320,curtain:520,candle:300,ledger:380} },
+  wick:  { from:'assets/plate-hub.jpg', to:'assets/plate-wick.jpg', ms:{fog:900,curtain:1150,candle:900,ledger:1050} },
+};
+const DIRS = [
+  { key:'fog', name:'Fog reveal', motion:'A mist bank drifts in from the left while the room you are leaving blurs and loses its colour into it; the new room resolves out of the same mist as it clears off the right edge.',
+    heavy:'Full-frame fog, the outgoing screen blurring to 14px and desaturating; slow enough to feel like weather.',
+    light:'Only a haze at the leading edge with a 3px blur on the layout, which keeps a tab change from feeling like travel.',
+    wick:'The mist warms as it crosses, cool grey on the hub side and amber-lit by the time it clears on his.' },
+  { key:'curtain', name:'Curtain parting', motion:'Two velvet panels sweep in from the sides and meet over the departing room, hold for a beat on the closed seam, then part to reveal the new one already lit behind them.',
+    heavy:'A full close and part on a brass rod, the panels catching a highlight as they move. Reads as a scene change.',
+    light:'Panels travel only a fraction of the way in, which honestly does not read as curtains, so I would not use this family for in-app moves.',
+    wick:'Warmest use of the four: the closed seam glows along its centre before parting, as if his lamp is already burning behind it.' },
+  { key:'candle', name:'Candlelight wipe', motion:'The amber light itself travels: a soft lit edge sweeps across the frame, darkness trailing behind it, and whatever the light has already passed over is the new room, lit as it arrives.',
+    heavy:'A full sweep with the old room falling to black behind the edge, so the light appears to carry you into the next space.',
+    light:'The same edge, shortened and dimmed, passing over a layout that never leaves, so the screen looks relit rather than replaced.',
+    wick:'The strongest fit. The sweep begins at his lamp and the room warms about 8% past the Command Center as the light lands.' },
+  { key:'ledger', name:'Ledger flip', motion:'The departing room lifts at its right edge and turns like a page hinged on the left, its back face shading as it goes, revealing the next room printed on the sheet beneath.',
+    heavy:'A full page turn with a soft gutter shadow, the most physical and most old-world of the four.',
+    light:'Shortened to a quick sheet slide of about 12 degrees, right for stepping through records but slightly odd between rooms.',
+    wick:'Weakest of the four here. A page turn treats his room as another record rather than a different place.' },
+];
+const FX = {
+  fog:      '<div class="fx fog"><i></i><i></i><i></i></div>',
+  curtain:  '<div class="fx curtain"><span class="panel l"></span><span class="panel r"></span><span class="rod"></span></div>',
+  candle:   '<div class="fx candle"><span class="dark"></span><span class="glow"></span><span class="edge"></span></div>',
+  ledger:   '',
+};
+let pair = 'heavy';
+
+/* progress p in 0..1 applied to one stage */
+function apply(stage, key, p) {
+  const from = stage.querySelector('.from'), fx = stage.querySelector('.fx');
+  const light = pair === 'light';
+  if (key === 'fog') {
+    const x = -30 + p * 150;
+    fx.querySelectorAll('i').forEach((el, i) => { el.style.transform = `translateX(${x + i * 9}%)`; });
+    fx.style.opacity = Math.sin(Math.min(p, 1) * Math.PI) * (light ? .7 : 1);
+    from.style.filter = `blur(${p * (light ? 3 : 14)}px) saturate(${1 - p * (light ? .3 : .85)})`;
+    from.style.opacity = p < .48 ? 1 : Math.max(0, 1 - (p - .48) / .3);
+  }
+  if (key === 'curtain') {
+    const close = Math.min(p / .46, 1), openP = Math.max(0, (p - .58) / .42);
+    const reach = light ? .34 : 1;
+    const l = fx.querySelector('.l'), r = fx.querySelector('.r');
+    const inPos = -100 + close * 100 * reach, outPos = inPos - openP * 100 * reach;
+    l.style.transform = `translateX(${outPos}%)`;
+    r.style.transform = `translateX(${-outPos}%)`;
+    fx.querySelector('.rod').style.opacity = String(Math.min(1, p * 4));
+    from.style.opacity = light ? 1 : (p > .44 && p < .62 ? 0 : 1);
+    from.style.filter = 'none';
+  }
+  if (key === 'candle') {
+    const x = -22 + p * 128;
+    fx.querySelector('.glow').style.left = (x - 8) + '%';
+    fx.querySelector('.edge').style.left = x + '%';
+    fx.querySelector('.dark').style.opacity = light ? 0 : String(Math.sin(Math.min(p, 1) * Math.PI) * .5);
+    fx.querySelector('.dark').style.clipPath = `inset(0 ${Math.max(0, 100 - x)}% 0 0)`;
+    from.style.clipPath = `inset(0 0 0 ${Math.min(100, Math.max(0, x))}%)`;
+    from.style.filter = light ? 'brightness(.9)' : `brightness(${1 - p * .55})`;
+    from.style.opacity = 1;
+    stage.style.filter = pair === 'wick' ? `brightness(${1 + p * .08}) saturate(${1 + p * .06})` : 'none';
+  }
+  if (key === 'ledger') {
+    const page = stage.querySelector('.page');
+    const deg = p * (light ? 12 : 96);
+    page.style.transform = `rotateY(-${deg}deg)`;
+    page.querySelector('.shade').style.opacity = String(Math.min(1, p * 1.5));
+    stage.querySelector('.gut').style.opacity = String(Math.min(1, p * 2));
+  }
+}
+function stageMarkup(key, cls) {
+  const P = PLATES[pair];
+  if (key === 'ledger') return `<div class="stage ledger ${cls}">
+    <img class="to" src="${P.to}" alt="">
+    <span class="gut"></span>
+    <div class="page"><img src="${P.from}" alt=""><span class="shade"></span><span class="spine"></span></div>
+  </div>`;
+  return `<div class="stage ${key} ${cls}"><img class="to" src="${P.to}" alt=""><img class="from" src="${P.from}" alt="">${FX[key]}</div>`;
+}
+function build() {
+  document.getElementById('dirs').innerHTML = DIRS.map((d, i) => `<section class="dir" data-key="${d.key}">
+    <div class="dirhead"><span class="no">0${i + 1}</span><h2>${d.name}</h2><span class="ms">${PLATES[pair].ms[d.key]}ms on this journey</span></div>
+    <p class="motion">${d.motion}</p>
+    <div class="row">
+      <div class="play">
+        <div class="cap"><b>Play at speed</b><button class="btn" data-play="${d.key}">Play →</button></div>
+        ${stageMarkup(d.key, 'live')}
+      </div>
+      <div>
+        <div class="cap"><b>Keyframes</b><span>15% · 50% · 88%</span></div>
+        <div class="frames">
+          ${[.15, .5, .88].map(() => stageMarkup(d.key, 'kf')).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="notes">
+      <div class="note"><b>${pair === 'light' ? 'As a light move' : 'As a heavy move'}</b><p>${pair === 'light' ? d.light : d.heavy}</p></div>
+      <div class="note"><b>Into Wick's room</b><p>${d.wick}</p></div>
+    </div>
+  </section>`).join('');
+  document.querySelectorAll('.dir').forEach(sec => {
+    const key = sec.dataset.key;
+    sec.querySelectorAll('.kf').forEach((st, i) => apply(st, key, [.15, .5, .88][i]));
+    apply(sec.querySelector('.live'), key, 0);
+  });
+  document.querySelectorAll('[data-play]').forEach(b => b.onclick = () => play(b.dataset.play));
+}
+function play(key) {
+  const sec = document.querySelector(`.dir[data-key="${key}"]`), st = sec.querySelector('.live');
+  const ms = PLATES[pair].ms[key], t0 = performance.now();
+  const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const step = now => {
+    const t = Math.min(1, (now - t0) / ms);
+    apply(st, key, ease(t));
+    if (t < 1) requestAnimationFrame(step);
+    else setTimeout(() => apply(st, key, 0), 900);
+  };
+  requestAnimationFrame(step);
+}
+document.querySelectorAll('[data-pair]').forEach(b => b.onclick = () => {
+  pair = b.dataset.pair;
+  document.querySelectorAll('[data-pair]').forEach(x => x.setAttribute('aria-pressed', x === b));
+  build();
+});
+document.getElementById('playall').onclick = () => DIRS.forEach((d, i) => setTimeout(() => play(d.key), i * 260));
+build();
+</script>
+</body>
+</html>

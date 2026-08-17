@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/", "destination": "/Carter%20Portfolio.html" },
-    { "source": "/scaffold", "destination": "/Admin.html" }
+    { "source": "/scaffold", "destination": "/Admin.html" },
+    { "source": "/command-center", "destination": "/Command%20Center.html" }
   ]
 }

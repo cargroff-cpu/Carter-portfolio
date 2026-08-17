@@ -10,6 +10,11 @@ export const config = {
     '/admin-ui.jsx',
     '/admin-sections.jsx',
     '/api/save-content',
+    '/command-center',
+    '/Command Center.html',
+    '/command-center-data.jsx',
+    '/command-center.jsx',
+    '/api/scaffold-write',
   ],
 };
 

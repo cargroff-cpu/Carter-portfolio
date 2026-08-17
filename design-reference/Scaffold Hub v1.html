@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>The Scaffold · Carter Groff</title>
+<link rel="stylesheet" href="parlor.css">
+<style>
+body{min-height:100vh;overflow-x:hidden}
+.stage{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:96px 28px 120px;background:radial-gradient(120% 90% at 50% -10%,#241810 0%,var(--bg) 48%,var(--bg-deep) 100%)}
+.lamplight{width:min(760px,120vw);height:620px;top:-190px;left:50%;transform:translateX(-50%);opacity:.85}
+.ivy{position:absolute;pointer-events:none;color:var(--sage);opacity:.30}
+.ivy.l{left:-30px;top:0;width:190px}
+.ivy.r{right:-30px;bottom:-10px;width:220px;transform:scaleX(-1)}
+.plate{position:relative;text-align:center;max-width:640px}
+.mono{width:52px;height:52px;margin:0 auto 26px;border:1px solid var(--ink-dim);display:grid;place-items:center;font-family:var(--display);font-size:19px;font-weight:500;letter-spacing:.01em;color:var(--ink-soft)}
+h1{font-family:var(--display);font-weight:500;font-size:clamp(56px,11vw,124px);line-height:.86;letter-spacing:-.03em;margin:0}
+h1 em{font-style:italic;color:var(--amber)}
+.plaque{margin:30px auto 0;display:inline-flex;align-items:center;gap:16px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:13px 26px}
+.plaque span{font-family:var(--ui);font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--ink-mute)}
+.plaque .dot{width:4px;height:4px;background:var(--amber);transform:rotate(45deg)}
+.line{font-family:var(--display);font-style:italic;font-size:clamp(18px,2.6vw,23px);line-height:1.5;color:var(--ink-soft);margin:26px auto 0;max-width:430px}
+.swap{margin-top:14px;font-family:var(--ui);font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-dim);background:none;border:none;cursor:pointer;padding:8px}
+.swap:hover{color:var(--ink-mute)}
+.tiles{position:relative;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;width:min(880px,100%);margin-top:72px}
+.tile{position:relative;display:flex;flex-direction:column;gap:0;padding:38px 32px 32px;background:linear-gradient(180deg,rgba(42,28,17,.62),rgba(26,18,11,.5));border:1px solid var(--card-edge);overflow:hidden;transition:border-color .45s ease,transform .45s cubic-bezier(.2,.7,.3,1)}
+.tile::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(90% 70% at 50% -20%,var(--amber-glow),transparent 68%);opacity:0;transition:opacity .5s ease}
+.tile:hover,.tile:focus-visible{border-color:rgba(217,154,61,.5);transform:translateY(-3px);outline:none}
+.tile:hover::after,.tile:focus-visible::after{opacity:1;animation:p-breathe 4.5s ease-in-out infinite}
+.tile svg{color:var(--ink-mute);transition:color .45s ease}
+.tile:hover svg{color:var(--amber-lit)}
+.tile h2{font-family:var(--display);font-weight:500;font-size:34px;line-height:1.05;letter-spacing:-.02em;margin:26px 0 0}
+.tile p{font-family:var(--body);font-size:14.5px;line-height:1.62;color:var(--ink-soft);margin:11px 0 0;text-wrap:pretty}
+.tile .go{margin-top:24px;display:flex;align-items:center;gap:10px;font-family:var(--ui);font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--ink-dim);transition:color .4s}
+.tile:hover .go{color:var(--amber)}
+.foot{position:relative;margin-top:76px;display:flex;align-items:center;gap:18px}
+.foot a,.foot button{font-family:var(--ui);font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-dim);background:none;border:none;cursor:pointer;padding:8px}
+.foot a:hover,.foot button:hover{color:var(--ink-mute)}
+/* ── lock screen ── */
+.lock{position:fixed;inset:0;z-index:800;display:none;place-items:center;padding:28px;background:radial-gradient(90% 70% at 50% 34%,#20160d 0%,var(--bg-deep) 70%)}
+body.locked .lock{display:grid}
+body.locked .stage{filter:blur(7px) brightness(.5)}
+.lockbox{position:relative;width:min(360px,100%);text-align:center}
+.lockflame{width:26px;height:34px;margin:0 auto 22px;display:block}
+.lockbox h2{font-family:var(--display);font-weight:500;font-size:40px;letter-spacing:-.02em;margin:0 0 8px}
+.lockbox p{font-family:var(--body);font-size:14px;line-height:1.6;color:var(--ink-mute);margin:0 0 28px}
+.lockrow{display:flex;flex-direction:column;gap:12px}
+.lockhint{margin-top:20px;font-family:var(--ui);font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-dim)}
+.lockglow{width:420px;height:420px;left:50%;top:44%;transform:translate(-50%,-50%);opacity:.6}
+@media(max-width:760px){.stage{padding:72px 20px 130px}.tiles{grid-template-columns:1fr;gap:14px;margin-top:52px}.tile{padding:30px 24px 26px}.tile h2{font-size:29px;margin-top:20px}.ivy{display:none}.line{margin-top:22px}.foot{margin-top:56px;flex-direction:column;gap:6px}}
+</style>
+</head>
+<body class="p-grain">
+<div class="stage">
+  <div class="p-glow lamplight"></div>
+  <svg class="ivy l" viewBox="0 0 120 460" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M14 0c0 90 26 130 26 200s-20 100-20 160"/><g stroke-linecap="round"><path d="M18 58c22-6 34-20 36-38M20 58c-14-8-18-22-16-36"/><path d="M26 130c24-4 38-18 42-36M28 130c-14-8-20-22-18-38"/><path d="M36 208c22-8 32-24 32-42M38 208c-14-6-20-20-20-36"/><path d="M34 288c22-6 34-20 36-38M32 288c-14-8-18-22-16-36"/><path d="M24 368c22-6 34-20 36-38M22 368c-14-8-18-22-16-36"/></g></svg>
+  <svg class="ivy r" viewBox="0 0 120 460" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M14 0c0 90 26 130 26 200s-20 100-20 160"/><g stroke-linecap="round"><path d="M18 58c22-6 34-20 36-38M20 58c-14-8-18-22-16-36"/><path d="M26 130c24-4 38-18 42-36M28 130c-14-8-20-22-18-38"/><path d="M36 208c22-8 32-24 32-42M38 208c-14-6-20-20-20-36"/><path d="M34 288c22-6 34-20 36-38M32 288c-14-8-18-22-16-36"/></g></svg>
+
+  <div class="plate p-fadeup p-d1">
+    <div class="mono">CG</div>
+    <h1>Carter <em>Groff</em></h1>
+    <div class="plaque"><span>The Scaffold</span><span class="dot"></span><span>Private Workshop</span></div>
+    <p class="line" id="line">Behind the parlor door. Tools, ledgers, and the things not meant for guests.</p>
+    <button class="swap" id="swap">Try the other line</button>
+  </div>
+
+  <div class="tiles p-fadeup p-d3">
+    <a class="tile" href="Admin.html">
+      <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M31 2c-8 1-16 6-20 13l-2 7 7-2C23 16 30 9 31 2z"/><path d="M9 22l-3 6 6-3"/><path d="M3 32h16"/><path d="M15 15l4 4"/></svg>
+      <h2>Website Backend</h2>
+      <p>The editor behind cargroff.com. Copy, work, resume, travel pins, everything the public side reads from.</p>
+      <div class="go">Open the editor <span>→</span></div>
+    </a>
+    <a class="tile" href="Marketing Command Center.html">
+      <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2v3"/><path d="M11 5h12l2 7H9z"/><circle cx="17" cy="19" r="7"/><path d="M20 16l-1.6 4.4L14 22l1.6-4.4z"/><path d="M8 31h18"/><path d="M25 12v3M9 12v3"/></svg>
+      <h2>Marketing Command Center</h2>
+      <p>Every campaign for Log &amp; Timber Worx and Squeeky Clean, what it cost, what it produced, and what's still untracked.</p>
+      <div class="go">Open the ledger <span>→</span></div>
+    </a>
+  </div>
+
+  <div class="foot p-fadeup p-d4">
+    <a href="Carter Portfolio.html">← Back to the portfolio</a>
+    <button id="lock">Show the lock screen</button>
+  </div>
+</div>
+
+<div class="lock" role="dialog" aria-modal="true" aria-label="Locked">
+  <div class="p-glow lockglow"></div>
+  <div class="lockbox">
+    <svg class="lockflame" viewBox="0 0 20 26" aria-hidden="true"><path d="M10 1C6 7 3 10 3 15a7 7 0 0014 0c0-5-3-8-7-14z" fill="rgba(217,154,61,.22)"/><path d="M10 7c-2.4 3.6-4 5.6-4 8.4A4 4 0 0014 15.4c0-2.8-1.6-4.8-4-8.4z" fill="#f5cd6a"/></svg>
+    <h2>The Scaffold</h2>
+    <p>Private. One password, one person.</p>
+    <form class="lockrow" id="lockform">
+      <input class="p-field" type="password" placeholder="Password" autocomplete="current-password" aria-label="Password">
+      <button class="p-btn" type="submit">Unlock</button>
+    </form>
+    <div class="lockhint">Carter only</div>
+  </div>
+</div>
+
+<wick-assistant></wick-assistant>
+<script src="wick.js"></script>
+<script>
+const LINES=["Behind the parlor door. Tools, ledgers, and the things not meant for guests.","A private workshop. Sawdust on the floor, numbers on the wall."];
+let li=0;document.getElementById('swap').onclick=()=>{li=1-li;document.getElementById('line').textContent=LINES[li]};
+const body=document.body;
+if(new URLSearchParams(location.search).get('lock')==='1')body.classList.add('locked');
+document.getElementById('lock').onclick=()=>{body.classList.add('locked');setTimeout(()=>document.querySelector('.lock input').focus(),80)};
+document.getElementById('lockform').onsubmit=e=>{e.preventDefault();body.classList.remove('locked');e.target.reset()};
+addEventListener('keydown',e=>{if(e.key==='Escape')body.classList.remove('locked')});
+</script>
+</body>
+</html>

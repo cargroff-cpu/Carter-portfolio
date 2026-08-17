@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wick · dock state</title>
+<link rel="stylesheet" href="parlor.css">
+<style>
+body{height:100vh;overflow:hidden}
+.room{position:relative;height:100vh;display:grid;place-items:center;background:radial-gradient(115% 120% at 74% 46%,#2a1d10,#1a120b 42%,#0d0905 82%)}
+.note{position:relative;text-align:center;max-width:340px;padding:0 24px}
+.note h2{font-family:var(--display);font-weight:500;font-size:34px;letter-spacing:-.02em;margin:0 0 10px}
+.note p{font-family:var(--body);font-size:13.5px;line-height:1.65;color:var(--ink-mute);margin:0}
+</style>
+</head>
+<body class="p-grain">
+<div class="room">
+  <div class="note"><h2 id="t">Quiet</h2><p id="d">Dim at the edge of the screen. Nothing worth saying, so he doesn't.</p></div>
+</div>
+<wick-assistant></wick-assistant>
+<script src="mcc-data.js"></script>
+<script src="wick-brain.js"></script>
+<script src="wick.js"></script>
+<script>
+const q=new URLSearchParams(location.search),w=document.querySelector('wick-assistant');
+const mode=q.get('mode')||'quiet';
+w.setAttribute('screen',q.get('screen')||'links');
+const copy={
+ quiet:['Quiet','Dim at the edge of the screen. Nothing worth flagging, so he says nothing.'],
+ speaking:['A word','One line when something is actually wrong, then it recedes on its own.'],
+ asking:['Quick question','A hairline field for a follow-up, the full room is for real work.']
+};
+setTimeout(()=>{
+  if(mode!=='quiet'){w.setAttribute('screen','home');w.speak('Monthly restoration letter still has no attribution on it. Anything it pulled is landing nowhere.',999999);}
+  if(mode==='asking')w.setAttribute('asking','');
+},300);
+const c=copy[mode]||copy.quiet;
+document.getElementById('t').textContent=c[0];document.getElementById('d').textContent=c[1];
+</script>
+</body>
+</html>

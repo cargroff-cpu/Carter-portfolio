@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="design_doc_mode" content="canvas">
+<title>The Scaffold · System Overview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+body{margin:0;background:#0b0d0e;font-family:"IBM Plex Sans",system-ui,sans-serif;color:#e9edf0}
+.title{position:absolute;font-family:"Cormorant Garamond",Georgia,serif;font-weight:500;letter-spacing:-.02em}
+.sect{position:absolute;display:flex;align-items:baseline;gap:16px;white-space:nowrap}
+.sect b{font-family:"Cormorant Garamond",Georgia,serif;font-size:44px;font-weight:500;letter-spacing:-.02em}
+.sect span{font-size:14px;color:#8d979f;max-width:900px;white-space:normal;line-height:1.5}
+.frame{position:absolute}
+.cap{display:flex;align-items:baseline;gap:10px;margin-bottom:11px;white-space:nowrap}
+.cap b{font-size:14.5px;font-weight:600}
+.cap span{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:#69747c}
+.cap i{font-size:12.5px;color:#8d979f;font-style:normal;white-space:normal}
+.frame iframe{display:block;border:1px solid #262d33;background:#0e1113}
+.phone iframe{border-radius:26px;border:8px solid #1b2024;box-shadow:0 30px 60px -30px rgba(0,0,0,.9)}
+</style>
+</head>
+<body>
+<div class="title" style="left:80px;top:70px;font-size:92px">The Scaffold</div>
+<div class="title" style="left:80px;top:180px;font-size:26px;font-style:italic;color:#9aa5ad">Hub, Marketing Command Center, and Wick, every screen, one Parlor language.</div>
+
+<!-- ── Parlor: the hub ── -->
+<div class="sect" style="left:80px;top:290px"><b>1 · The Parlor</b><span>Wick anchors the room, the lit brass tube, off-center and tallest on the page, lighting everything else. The greeting carries the scale; the two tools land a beat later as a considered pair.</span></div>
+<div class="frame" style="left:80px;top:380px"><div class="cap"><b>Scaffold hub</b><span>Desktop</span><i>Sconce lights first, greeting rises, the pair settles</i></div><iframe src="Scaffold Hub.html" width="1280" height="860" loading="lazy" title="Scaffold hub desktop"></iframe></div>
+<div class="frame phone" style="left:1420px;top:380px"><div class="cap"><b>Hub</b><span>Mobile</span></div><iframe src="Scaffold Hub.html" width="390" height="844" loading="lazy" title="Scaffold hub mobile"></iframe></div>
+<div class="frame" style="left:1900px;top:380px"><div class="cap"><b>Lock screen</b><span>Reusable</span><i>One password, one person, sits in front of whatever needs it</i></div><iframe src="Scaffold Hub.html?lock=1" width="1280" height="860" loading="lazy" title="Lock screen"></iframe></div>
+
+<!-- ── MCC core ── -->
+<div class="sect" style="left:80px;top:1360px"><b>2 · Command Center, daily</b><span>Same Parlor skin as the rest of the site: bone type, hairlines instead of cards, brand only as a dot. Goals are read from Pipedrive, never set here. The builder writes into the history Wick reads.</span></div>
+<div class="frame" style="left:80px;top:1490px"><div class="cap"><b>Home</b><span>Desktop</span><i>Pipedrive goal, spend and cost per lead, channels, recent log, untracked callout</i></div><iframe src="Marketing Command Center.html?screen=home&brand=both" width="1280" height="900" loading="lazy" title="Home desktop"></iframe></div>
+<div class="frame phone" style="left:1420px;top:1490px"><div class="cap"><b>Home</b><span>Mobile</span><i>Monday morning, one thumb</i></div><iframe src="Marketing Command Center.html?screen=home&brand=ltw" width="390" height="844" loading="lazy" title="Home mobile"></iframe></div>
+<div class="frame" style="left:1900px;top:1490px"><div class="cap"><b>Campaign log</b><span>Desktop</span><i>Filterable by brand, channel, type, date range</i></div><iframe src="Marketing Command Center.html?screen=campaigns&brand=both" width="1280" height="900" loading="lazy" title="Campaign list desktop"></iframe></div>
+<div class="frame phone" style="left:3240px;top:1490px"><div class="cap"><b>Log</b><span>Mobile</span></div><iframe src="Marketing Command Center.html?screen=campaigns&brand=both" width="390" height="844" loading="lazy" title="Campaign list mobile"></iframe></div>
+<div class="frame" style="left:3720px;top:1490px"><div class="cap"><b>Campaign detail</b><span>Direct mail</span><i>Piece economics, attribution, checklist gate, clone</i></div><iframe src="Marketing Command Center.html?screen=detail&id=c-101&brand=ltw" width="1280" height="1080" loading="lazy" title="Campaign detail"></iframe></div>
+<div class="frame" style="left:5080px;top:1490px"><div class="cap"><b>Quick-add</b><span>Desktop</span><i>Three required fields, everything else optional</i></div><iframe src="Marketing Command Center.html?screen=campaigns&sheet=quickadd&brand=ltw" width="1280" height="900" loading="lazy" title="Quick add desktop"></iframe></div>
+<div class="frame phone" style="left:6440px;top:1490px"><div class="cap"><b>Quick-add</b><span>Mobile sheet</span></div><iframe src="Marketing Command Center.html?screen=home&sheet=quickadd&brand=ltw" width="390" height="844" loading="lazy" title="Quick add mobile"></iframe></div>
+<div class="frame" style="left:6920px;top:1490px"><div class="cap"><b>UTM builder</b><span>Desktop</span><i>Live link, enforced naming, every link ever built</i></div><iframe src="Marketing Command Center.html?screen=links&brand=ltw" width="1280" height="900" loading="lazy" title="UTM builder"></iframe></div>
+<div class="frame" style="left:8280px;top:1490px"><div class="cap"><b>Content builder</b><span>Desktop</span><i>Brand kit in, on-brand piece out, attachable to a campaign</i></div><iframe src="Marketing Command Center.html?screen=builder&brand=ltw" width="1280" height="1180" loading="lazy" title="Content builder"></iframe></div>
+<div class="frame phone" style="left:9640px;top:1490px"><div class="cap"><b>Builder</b><span>Mobile</span></div><iframe src="Marketing Command Center.html?screen=builder&brand=sq" width="390" height="844" loading="lazy" title="Content builder mobile"></iframe></div>
+<div class="frame" style="left:10120px;top:1490px"><div class="cap"><b>No goal in Pipedrive</b><span>Quiet state</span><i>Informational, not an error</i></div><iframe src="Marketing Command Center.html?screen=home&brand=both&state=nogoal" width="1280" height="900" loading="lazy" title="No goal state"></iframe></div>
+
+<!-- ── MCC later ── -->
+<div class="sect" style="left:80px;top:2650px"><b>3 · Command Center, later</b><span>Designed now so the build sequences correctly: present mode, calendar, connections, revenue. Shown dimmed and locked in the nav until they exist.</span></div>
+<div class="frame" style="left:80px;top:2770px"><div class="cap"><b>Present mode</b><span>Full screen</span><i>No chrome, big type, chart-forward, export to PDF</i></div><iframe src="Marketing Command Center.html?screen=present&brand=both" width="1440" height="1100" loading="lazy" title="Present mode"></iframe></div>
+<div class="frame" style="left:1600px;top:2770px"><div class="cap"><b>Campaign calendar</b><span>Later</span><i>Month view, brand-colored chips</i></div><iframe src="Marketing Command Center.html?screen=calendar&brand=both" width="1280" height="900" loading="lazy" title="Calendar"></iframe></div>
+<div class="frame" style="left:2960px;top:2770px"><div class="cap"><b>Channel connections</b><span>Later</span><i>What this grows into</i></div><iframe src="Marketing Command Center.html?screen=connections&brand=both" width="1280" height="900" loading="lazy" title="Connections"></iframe></div>
+<div class="frame" style="left:4320px;top:2770px"><div class="cap"><b>Revenue &amp; attribution</b><span>Later</span><i>Cost against closed deal value, once Pipedrive is in</i></div><iframe src="Marketing Command Center.html?screen=revenue&brand=both" width="1400" height="900" loading="lazy" title="Revenue"></iframe></div>
+
+<!-- ── states ── -->
+<div class="sect" style="left:80px;top:3970px"><b>4 · States</b><span>First run, a month that just opened, and data still arriving.</span></div>
+<div class="frame" style="left:80px;top:4060px"><div class="cap"><b>Empty</b><span>First run</span></div><iframe src="Marketing Command Center.html?screen=campaigns&state=empty&brand=ltw" width="1280" height="620" loading="lazy" title="Empty state"></iframe></div>
+<div class="frame" style="left:1440px;top:4060px"><div class="cap"><b>Zero progress</b><span>Month just started</span></div><iframe src="Marketing Command Center.html?screen=home&state=zero&brand=both" width="1280" height="820" loading="lazy" title="Zero state"></iframe></div>
+<div class="frame" style="left:2800px;top:4060px"><div class="cap"><b>Loading</b><span>Data-dependent</span></div><iframe src="Marketing Command Center.html?screen=home&state=loading&brand=both" width="1280" height="820" loading="lazy" title="Loading state"></iframe></div>
+
+<!-- ── Wick ── -->
+<div class="sect" style="left:80px;top:5030px"><b>5 · Wick</b><span>His own room for real work, opens with an observation from live data, never a greeting, and can log campaigns, mint links and jump you into a screen. Elsewhere he's a dock: one line when something's wrong, then silence. Never modal, never dims.</span></div>
+<div class="frame" style="left:80px;top:5140px"><div class="cap"><b>Wick's room</b><span>Desktop</span><i>Proactive opener, hairline input, deep links into the Command Center</i></div><iframe src="Wick.html" width="1280" height="860" loading="lazy" title="Wick's room"></iframe></div>
+<div class="frame phone" style="left:1420px;top:5140px"><div class="cap"><b>His room</b><span>Mobile</span></div><iframe src="Wick.html" width="390" height="844" loading="lazy" title="Wick's room mobile"></iframe></div>
+<div class="frame" style="left:1900px;top:5140px"><div class="cap"><b>Dock</b><span>Quiet</span><i>Nothing noteworthy on screen</i></div><iframe src="wick-state.html?mode=quiet" width="900" height="620" loading="lazy" title="Wick quiet"></iframe></div>
+<div class="frame" style="left:2860px;top:5140px"><div class="cap"><b>Dock</b><span>One line</span><i>Recedes on its own after a beat</i></div><iframe src="wick-state.html?mode=speaking" width="900" height="620" loading="lazy" title="Wick speaking"></iframe></div>
+<div class="frame" style="left:3820px;top:5140px"><div class="cap"><b>Dock</b><span>Quick question</span><i>Follow-up without leaving the screen</i></div><iframe src="wick-state.html?mode=asking" width="900" height="620" loading="lazy" title="Wick asking"></iframe></div>
+<div class="frame phone" style="left:4780px;top:5140px"><div class="cap"><b>Dock</b><span>Mobile</span></div><iframe src="wick-state.html?mode=speaking" width="390" height="844" loading="lazy" title="Wick dock mobile"></iframe></div>
+<!-- ── The Docket ── -->
+<div class="sect" style="left:80px;top:6120px"><b>6 · The Docket</b><span>Priority by placement: which column a task sits in is the decision, and dragging up or down inside a column ranks it. Same dot language as the Command Center, with bone for personal.</span></div>
+<div class="frame" style="left:80px;top:6230px"><div class="cap"><b>The board</b><span>Desktop</span><i>Four quadrants, quiet rows, capture line per column</i></div><iframe src="The Docket.html" width="1440" height="900" loading="lazy" title="The Docket"></iframe></div>
+<div class="frame phone" style="left:1600px;top:6230px"><div class="cap"><b>The board</b><span>Mobile</span></div><iframe src="The Docket.html" width="390" height="844" loading="lazy" title="The Docket mobile"></iframe></div>
+</body>
+</html>
