@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Spectral:ital,wght@0,300;0,400;0,500;1,400&family=Karla:wght@400;500;600;700&family=Oswald:ital,wght@0,400;0,600;0,700&display=swap">
+<style>
+body{margin:0;background:#f0eee9;font-family:Karla,system-ui,sans-serif}
+a{color:#2a78d6}a:hover{color:#1a5aa8}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Karla,system-ui,sans-serif;color:#1a1a1a}
+.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 Karla,system-ui,sans-serif;color:rgba(0,0,0,.55);max-width:820px}
+.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+.dv-next{margin:22px 0 0;font:12px/1.5 Karla,system-ui,sans-serif;color:rgba(0,0,0,.5)}
+.dv-note{max-width:760px;font:13px/1.65 Karla,system-ui,sans-serif;color:rgba(0,0,0,.62)}
+.dv-note b{color:#1a1a1a}
+@keyframes gl{0%,100%{opacity:.9}50%{opacity:.62}}
+</style></helmet>
+
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Lamplight (<a class="dv-oid" href="#1b">1b</a>) carried across Campaigns, Builder, Present</span></div>
+<p class="dv-note" style="margin:0 0 22px">The rules that make it a system: <b>plate masthead + gold hairline</b> opens every screen; content sits in <b>lifted panels</b> (top-lit 1px highlight, gradient face, deep drop shadow) on a darker floor; <b>grain over everything</b>; the amber <b>glow is rationed to one element per screen</b> — the number or bar you're supposed to act on. Everything else is bone and dim gold.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="2a">
+<div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a><span><b>Campaigns.</b> Filters become one inset console strip; the table sits in a lifted panel with a lit header rule. The untracked row is the only warm-lit thing on screen.</span></div>
+<x-import component-from-global-scope="ChromeWindow" from="./browser-window.jsx" tabs="{{ tabs }}" url="thescaffold.cargroff.com/command-center/campaigns" width="{{ 880 }}" height="{{ 700 }}" hint-size="880px,700px">
+<div style="position:relative;background:#150e08;color:#ecd9b2;font-family:Spectral,Georgia,serif;min-height:100%">
+  <div style="position:absolute;inset:0;pointer-events:none;z-index:5;opacity:.1;mix-blend-mode:overlay;background-image:url(&quot;data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 0.85  0 0 0 0 0.55  0 0 0 0.45 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>&quot;);background-size:220px 220px"></div>
+  <div style="position:relative;height:104px;padding:16px 28px;display:flex;flex-direction:column;justify-content:space-between;background-image:linear-gradient(to bottom,rgba(21,14,8,.4),rgba(21,14,8,.68) 46%,#150e08 100%),url(ref/assets/plate-mcc2.jpg);background-size:cover;background-position:center 35%">
+    <div style="display:flex;align-items:center;gap:12px">
+      <img src="ref/assets/antler.png" alt="" style="width:24px;height:auto;opacity:.9">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:17px">Command Center</div>
+      <div style="margin-left:auto;display:flex;gap:16px;font-family:Karla,sans-serif;font-size:9px;letter-spacing:.22em;text-transform:uppercase">
+        <span style="display:flex;align-items:center;gap:7px;color:#ecd9b2"><i style="width:5px;height:5px;border-radius:50%;background:#b8643f;display:block;box-shadow:0 0 8px #b8643f"></i>Log &amp; Timber Worx</span>
+        <span style="display:flex;align-items:center;gap:7px;color:#5a4a36"><i style="width:5px;height:5px;border-radius:50%;background:#8e9462;display:block"></i>Squeeky</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:24px;font-family:Karla,sans-serif;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase">
+      <span style="color:#c9b48a">Home</span>
+      <span style="color:#f5cd6a;text-shadow:0 0 18px rgba(217,154,61,.6)">Campaigns</span>
+      <span style="color:#c9b48a">Links</span><span style="color:#c9b48a">Builder</span>
+      <span style="color:#5a4a36">Present</span><span style="color:#5a4a36">Calendar</span>
+    </div>
+  </div>
+  <div style="height:1px;background:linear-gradient(90deg,rgba(217,154,61,0),#d99a3d 30%,#d99a3d 70%,rgba(217,154,61,0))"></div>
+  <div style="padding:22px 28px 28px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.42);border:1px solid rgba(236,217,178,.1);box-shadow:inset 0 1px 3px rgba(0,0,0,.6);padding:10px 12px">
+      <span style="display:flex;align-items:center;gap:9px;padding:7px 11px;border:1px solid rgba(236,217,178,.14);font-family:Karla,sans-serif;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#c9b48a">All channels <svg width="9" height="6" viewBox="0 0 10 6" fill="none" stroke="#8a7758" stroke-width="1.3"><path d="M1 1l4 4 4-4"></path></svg></span>
+      <span style="display:flex;align-items:center;gap:9px;padding:7px 11px;border:1px solid rgba(236,217,178,.14);font-family:Karla,sans-serif;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#c9b48a">All types <svg width="9" height="6" viewBox="0 0 10 6" fill="none" stroke="#8a7758" stroke-width="1.3"><path d="M1 1l4 4 4-4"></path></svg></span>
+      <span style="display:flex;align-items:center;gap:9px;padding:7px 11px;border:1px solid rgba(236,217,178,.14);font-family:Karla,sans-serif;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#c9b48a">This month <svg width="9" height="6" viewBox="0 0 10 6" fill="none" stroke="#8a7758" stroke-width="1.3"><path d="M1 1l4 4 4-4"></path></svg></span>
+      <span style="margin-left:auto;font-family:Karla,sans-serif;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:#8a7758">6 campaigns · $3,998 spent</span>
+      <span style="display:inline-flex;align-items:center;gap:8px;background:#ecd9b2;color:#1a120b;font-family:Karla,sans-serif;font-size:9px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;padding:9px 13px">+ Log a campaign</span>
+    </div>
+    <div style="position:relative;background:linear-gradient(180deg,#241810,#1b120b);border:1px solid rgba(236,217,178,.1);box-shadow:0 30px 60px -30px rgba(0,0,0,.85);padding:0 20px 8px">
+      <div style="position:absolute;left:0;right:0;top:0;height:1px;background:rgba(236,217,178,.18)"></div>
+      <div style="display:grid;grid-template-columns:58px 1.7fr 96px 92px 78px 62px 96px;align-items:center;font-family:Karla,sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#5a4a36;padding:15px 0 11px;border-bottom:1px solid rgba(236,217,178,.14)">
+        <span>Date</span><span>Campaign</span><span>Channel</span><span>Type</span><span style="text-align:right">Cost</span><span style="text-align:right">Leads</span><span style="text-align:right">Status</span>
+      </div>
+      <div style="display:grid;grid-template-columns:58px 1.7fr 96px 92px 78px 62px 96px;align-items:center;padding:13px 0;border-bottom:1px solid rgba(236,217,178,.07);font-size:13.5px;color:#c9b48a">
+        <span style="font-family:Karla,sans-serif;font-size:11px;color:#8a7758">Aug 12</span><span style="color:#ecd9b2">August reactivation postcard</span><span style="font-size:12.5px">Direct Mail</span><span style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#5a4a36">Reactivation</span><span style="text-align:right;font-variant-numeric:tabular-nums">$1,642</span><span style="text-align:right;color:#ecd9b2">14</span><span style="text-align:right;font-family:Karla,sans-serif;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#8a7758">Tracked</span>
+      </div>
+      <div style="display:grid;grid-template-columns:58px 1.7fr 96px 92px 78px 62px 96px;align-items:center;padding:13px 0;border-bottom:1px solid rgba(236,217,178,.07);font-size:13.5px;color:#c9b48a">
+        <span style="font-family:Karla,sans-serif;font-size:11px;color:#8a7758">Aug 6</span><span style="color:#ecd9b2">Restoration reel, Rockingham cabin</span><span style="font-size:12.5px">Instagram</span><span style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#5a4a36">Always-on</span><span style="text-align:right;font-variant-numeric:tabular-nums">$75</span><span style="text-align:right;color:#ecd9b2">6</span><span style="text-align:right;font-family:Karla,sans-serif;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#8a7758">Tracked</span>
+      </div>
+      <div style="position:relative;display:grid;grid-template-columns:58px 1.7fr 96px 92px 78px 62px 96px;align-items:center;padding:13px 0;border-bottom:1px solid rgba(236,217,178,.07);font-size:13.5px;color:#c9b48a;background:linear-gradient(90deg,rgba(184,100,63,.16),rgba(184,100,63,0) 70%);box-shadow:inset 2px 0 0 #b8643f">
+        <span style="font-family:Karla,sans-serif;font-size:11px;color:#8a7758;padding-left:10px">Aug 2</span><span style="color:#ecd9b2">Monthly restoration letter</span><span style="font-size:12.5px">Email</span><span style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#5a4a36">Always-on</span><span style="text-align:right;font-variant-numeric:tabular-nums">$0</span><span style="text-align:right;color:#ecd9b2">3</span><span style="text-align:right;font-family:Karla,sans-serif;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#d98a63">Missing info</span>
+      </div>
+      <div style="display:grid;grid-template-columns:58px 1.7fr 96px 92px 78px 62px 96px;align-items:center;padding:13px 0;border-bottom:1px solid rgba(236,217,178,.07);font-size:13.5px;color:#c9b48a">
+        <span style="font-family:Karla,sans-serif;font-size:11px;color:#8a7758">Jul 24</span><span style="color:#ecd9b2">Chink &amp; seal season mailer</span><span style="font-size:12.5px">Direct Mail</span><span style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#5a4a36">Seasonal</span><span style="text-align:right;font-variant-numeric:tabular-nums">$2,136</span><span style="text-align:right;color:#ecd9b2">19</span><span style="text-align:right;font-family:Karla,sans-serif;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#8a7758">Tracked</span>
+      </div>
+      <div style="display:grid;grid-template-columns:58px 1.7fr 96px 92px 78px 62px 96px;align-items:center;padding:13px 0;border-bottom:1px solid rgba(236,217,178,.07);font-size:13.5px;color:#c9b48a">
+        <span style="font-family:Karla,sans-serif;font-size:11px;color:#8a7758">Jul 16</span><span style="color:#ecd9b2">Contractor referral cards</span><span style="font-size:12.5px">Referral</span><span style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#5a4a36">Always-on</span><span style="text-align:right;font-variant-numeric:tabular-nums">$145</span><span style="text-align:right;color:#ecd9b2">5</span><span style="text-align:right;font-family:Karla,sans-serif;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#8a7758">Tracked</span>
+      </div>
+      <div style="display:grid;grid-template-columns:58px 1.7fr 96px 92px 78px 62px 96px;align-items:center;padding:13px 0;font-size:13.5px;color:#c9b48a">
+        <span style="font-family:Karla,sans-serif;font-size:11px;color:#8a7758">Jul 8</span><span style="color:#ecd9b2">Second Act series, ep. 1</span><span style="font-size:12.5px">Instagram</span><span style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#5a4a36">Launch</span><span style="text-align:right;font-variant-numeric:tabular-nums">$0</span><span style="text-align:right;color:#ecd9b2">4</span><span style="text-align:right;font-family:Karla,sans-serif;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#8a7758">Tracked</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-import>
+</div>
+
+<div class="dv-opt" id="2b">
+<div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a><span><b>Builder.</b> Left is the console: recessed fields, brand context as a lit tab, the guide summarized in dim gold. Right is a lightbox, the piece itself lifted on a pale floor so LTW's cream reads as artwork and not as UI.</span></div>
+<x-import component-from-global-scope="ChromeWindow" from="./browser-window.jsx" tabs="{{ tabs }}" url="thescaffold.cargroff.com/command-center/builder" width="{{ 880 }}" height="{{ 770 }}" hint-size="880px,770px">
+<div style="position:relative;background:#150e08;color:#ecd9b2;font-family:Spectral,Georgia,serif;min-height:100%">
+  <div style="position:absolute;inset:0;pointer-events:none;z-index:5;opacity:.1;mix-blend-mode:overlay;background-image:url(&quot;data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 0.85  0 0 0 0 0.55  0 0 0 0.45 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>&quot;);background-size:220px 220px"></div>
+  <div style="position:relative;padding:16px 28px 14px;display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,#1f150d,#150e08)">
+    <img src="ref/assets/antler.png" alt="" style="width:24px;height:auto;opacity:.9">
+    <div style="font-family:'Cormorant Garamond',serif;font-size:17px">Command Center</div>
+    <div style="margin-left:auto;display:flex;gap:24px;font-family:Karla,sans-serif;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase">
+      <span style="color:#c9b48a">Home</span><span style="color:#c9b48a">Campaigns</span><span style="color:#c9b48a">Links</span>
+      <span style="color:#f5cd6a;text-shadow:0 0 18px rgba(217,154,61,.6)">Builder</span>
+      <span style="color:#5a4a36">Present</span>
+    </div>
+  </div>
+  <div style="height:1px;background:linear-gradient(90deg,rgba(217,154,61,0),#d99a3d 30%,#d99a3d 70%,rgba(217,154,61,0))"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:22px 28px 28px">
+    <div style="position:relative;background:linear-gradient(180deg,#241810,#1b120b);border:1px solid rgba(236,217,178,.1);box-shadow:0 30px 60px -30px rgba(0,0,0,.85);padding:20px 22px 22px">
+      <div style="position:absolute;left:0;right:0;top:0;height:1px;background:rgba(236,217,178,.18)"></div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:21px">Ask for a piece</div>
+      <div style="font-size:12.5px;line-height:1.6;color:#8a7758;margin-top:6px">Describe it the way you would to Wick. Same engine, same brand guides.</div>
+      <div style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:#5a4a36;margin-top:20px">Brand context</div>
+      <div style="display:flex;margin-top:8px;border:1px solid rgba(236,217,178,.13)">
+        <span style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 13px;background:rgba(236,217,178,.07);box-shadow:inset 0 1px 0 rgba(236,217,178,.12);font-family:Karla,sans-serif;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:#ecd9b2"><i style="width:5px;height:5px;border-radius:50%;background:#b8643f;display:block;box-shadow:0 0 8px #b8643f"></i>LTW</span>
+        <span style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 13px;border-left:1px solid rgba(236,217,178,.13);font-family:Karla,sans-serif;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:#5a4a36"><i style="width:5px;height:5px;border-radius:50%;background:#8e9462;display:block"></i>Squeeky</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(236,217,178,.1);margin-top:16px;padding-top:12px">
+        <span style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:#5a4a36">Palette</span>
+        <span style="display:flex;gap:5px"><i style="width:15px;height:15px;display:block;background:#b33624"></i><i style="width:15px;height:15px;display:block;background:#ffc20e"></i><i style="width:15px;height:15px;display:block;background:#231f1e;border:1px solid rgba(236,217,178,.18)"></i><i style="width:15px;height:15px;display:block;background:#f6f1e6"></i></span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;border-top:1px solid rgba(236,217,178,.1);margin-top:12px;padding-top:12px">
+        <span style="font-family:Karla,sans-serif;font-size:10px;letter-spacing:.05em;color:#8a7758;padding-left:12px;position:relative"><i style="position:absolute;left:0;top:6px;width:5px;height:1px;background:#5a4a36;display:block"></i>Oswald caps for display, DM Serif italic for the greeting</span>
+        <span style="font-family:Karla,sans-serif;font-size:10px;letter-spacing:.05em;color:#8a7758;padding-left:12px;position:relative"><i style="position:absolute;left:0;top:6px;width:5px;height:1px;background:#5a4a36;display:block"></i>Gold is a band and highlight, never a fill behind body copy</span>
+        <span style="font-family:Karla,sans-serif;font-size:10px;letter-spacing:.05em;color:#8a7758;padding-left:12px;position:relative"><i style="position:absolute;left:0;top:6px;width:5px;height:1px;background:#5a4a36;display:block"></i>Opens with Howdy, signs off Plan Ahead with Confidence</span>
+      </div>
+      <div style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:#5a4a36;margin-top:20px">Piece</div>
+      <div style="display:flex;margin-top:8px;border:1px solid rgba(236,217,178,.13)">
+        <span style="flex:1;text-align:center;padding:10px;background:rgba(236,217,178,.07);font-family:Karla,sans-serif;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:#ecd9b2">Email</span>
+        <span style="flex:1;text-align:center;padding:10px;border-left:1px solid rgba(236,217,178,.13);font-family:Karla,sans-serif;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:#5a4a36">Social</span>
+        <span style="flex:1;text-align:center;padding:10px;border-left:1px solid rgba(236,217,178,.13);font-family:Karla,sans-serif;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:#5a4a36">Postcard</span>
+      </div>
+      <div style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:#5a4a36;margin-top:16px">What's it for</div>
+      <div style="background:rgba(0,0,0,.42);border:1px solid rgba(236,217,178,.13);box-shadow:inset 0 1px 3px rgba(0,0,0,.6);padding:12px 13px;margin-top:8px;min-height:66px;font-size:13.5px;line-height:1.55;color:#c9b48a">Reactivation email for past estimates, push the fall chinking window</div>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <span style="display:inline-flex;align-items:center;padding:12px 18px;background:#ecd9b2;color:#1a120b;font-family:Karla,sans-serif;font-size:9.5px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;box-shadow:0 0 26px rgba(217,154,61,.28)">Generate</span>
+        <span style="display:inline-flex;align-items:center;padding:12px 18px;border:1px solid rgba(236,217,178,.22);font-family:Karla,sans-serif;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:#c9b48a">Refine this one</span>
+      </div>
+    </div>
+    <div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:21px">Preview</div>
+        <div style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#8a7758">Email · Log &amp; Timber Worx</div>
+      </div>
+      <div style="margin-top:12px;padding:16px;background:radial-gradient(120% 80% at 50% 0%,rgba(236,217,178,.09),rgba(236,217,178,.02) 60%,transparent);border:1px solid rgba(236,217,178,.08)">
+        <div style="background:#f6f1e6;box-shadow:0 26px 50px -18px rgba(0,0,0,.8)">
+          <div style="height:7px;background:#ffc20e"></div>
+          <div style="height:3px;background:#231f1e"></div>
+          <div style="background:#231f1e;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+            <img src="ref/assets/ltw-logo.png" alt="Log &amp; Timber Worx" style="height:38px;width:auto;display:block;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))">
+            <span style="font-family:Oswald,sans-serif;font-weight:600;font-style:italic;font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;color:#ffc20e">Wood Restoration Specialists</span>
+          </div>
+          <div style="height:132px;display:flex;align-items:flex-end;padding:14px 16px;background-image:linear-gradient(to bottom,rgba(35,31,30,.05),rgba(35,31,30,.34) 46%,rgba(35,31,30,.92)),url(ref/assets/plate-mcc.jpg);background-size:cover;background-position:center">
+            <div>
+              <div style="font-family:Oswald,sans-serif;font-weight:600;font-style:italic;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#ffc20e">Fall chinking window</div>
+              <div style="font-family:Oswald,sans-serif;font-weight:700;font-size:24px;line-height:.96;text-transform:uppercase;color:#fff;margin-top:6px;text-shadow:0 4px 20px rgba(0,0,0,.5)">Same wood. One<br>more <span style="color:#ffc20e">season</span>.</div>
+            </div>
+          </div>
+          <div style="height:5px;background:#b33624"></div>
+          <div style="padding:18px 16px">
+            <div style="font-family:'DM Serif Display',Georgia,serif;font-style:italic;font-size:20px;color:#b33624">Howdy,</div>
+            <div style="font-family:Karla,sans-serif;font-size:12.5px;line-height:1.7;color:#3a3634;margin-top:9px">You had us out for an estimate. The sun and water do not wait for a decision. If you want it looked at before winter, we have two crews with room in September.</div>
+            <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+              <span style="background:#b33624;color:#fff;font-family:Oswald,sans-serif;font-weight:700;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;padding:10px 12px">Call (844) STAINER</span>
+              <span style="border:1px solid #231f1e;color:#231f1e;font-family:Oswald,sans-serif;font-weight:700;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;padding:10px 12px">Get the 5-year guide</span>
+            </div>
+            <div style="font-family:Karla,sans-serif;font-size:12px;line-height:1.7;color:#4f4e4f;margin-top:16px">Dan Link<br><b style="color:#231f1e">Plan Ahead with Confidence</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-import>
+</div>
+
+<div class="dv-opt" id="2c">
+<div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a><span><b>Present.</b> Meeting mode goes theatrical: dark floor, no chrome but the month, two brand columns lit from behind their own number, bars glowing in the brand's own hue. The one screen where the glow is allowed twice.</span></div>
+<x-import component-from-global-scope="ChromeWindow" from="./browser-window.jsx" tabs="{{ tabs }}" url="thescaffold.cargroff.com/command-center/present" width="{{ 880 }}" height="{{ 700 }}" hint-size="880px,700px">
+<div style="position:relative;background:radial-gradient(120% 90% at 50% -10%,#241810,#120c07 70%);color:#ecd9b2;font-family:Spectral,Georgia,serif;min-height:100%;padding:26px 30px 30px">
+  <div style="position:absolute;inset:0;pointer-events:none;z-index:5;opacity:.1;mix-blend-mode:overlay;background-image:url(&quot;data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 0.85  0 0 0 0 0.55  0 0 0 0.45 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>&quot;);background-size:220px 220px"></div>
+  <div style="position:relative;display:flex;align-items:center;justify-content:space-between;gap:14px;padding-bottom:16px;border-bottom:1px solid rgba(236,217,178,.13)">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span style="font-family:Karla,sans-serif;font-size:13px;color:#5a4a36">←</span>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:34px;letter-spacing:-.02em">August 2026</span>
+      <span style="font-family:Karla,sans-serif;font-size:13px;color:#5a4a36">→</span>
+    </div>
+    <div style="display:flex;gap:10px">
+      <span style="display:inline-flex;align-items:center;padding:10px 14px;border:1px solid rgba(236,217,178,.22);font-family:Karla,sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#c9b48a">Export as PDF</span>
+      <span style="display:inline-flex;align-items:center;padding:10px 14px;font-family:Karla,sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#5a4a36">Exit present mode</span>
+    </div>
+  </div>
+  <div style="position:relative;display:grid;grid-template-columns:1fr 1px 1fr;gap:26px;padding-top:24px">
+    <div style="position:relative">
+      <div style="position:absolute;left:-10px;top:6px;width:250px;height:250px;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(184,100,63,.26),rgba(184,100,63,.05) 44%,transparent 70%);mix-blend-mode:screen;animation:gl 7s ease-in-out infinite"></div>
+      <div style="position:relative;display:flex;align-items:center;gap:9px;font-family:Karla,sans-serif;font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;color:#c9b48a"><i style="width:5px;height:5px;border-radius:50%;background:#b8643f;display:block;box-shadow:0 0 8px #b8643f"></i>Log &amp; Timber Worx</div>
+      <div style="position:relative;display:flex;align-items:baseline;gap:12px;margin-top:12px">
+        <span style="font-family:'Cormorant Garamond',serif;font-size:84px;line-height:.84;letter-spacing:-.045em;color:#f7e6c4;text-shadow:0 0 44px rgba(217,154,61,.32)">42</span>
+        <span style="font-family:'Cormorant Garamond',serif;font-size:28px;color:#6b5940">/ 57</span>
+      </div>
+      <div style="position:relative;height:4px;background:rgba(0,0,0,.45);margin-top:14px"><i style="display:block;height:100%;width:74%;background:linear-gradient(90deg,#8a4a2e,#d98a63);box-shadow:0 0 14px rgba(217,138,99,.5)"></i></div>
+      <div style="position:relative;display:flex;justify-content:space-between;margin-top:8px;font-family:Karla,sans-serif;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#8a7758"><span>74% of goal</span><span style="color:#8e9462">On pace</span></div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:19px;margin-top:26px;padding-bottom:10px;border-bottom:1px solid rgba(236,217,178,.13)">Leads by channel</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
+        <div style="display:grid;grid-template-columns:104px 1fr 34px;align-items:center;gap:12px"><span style="font-size:13px;color:#c9b48a">Direct Mail</span><span style="height:3px;background:rgba(0,0,0,.4);display:block"><i style="display:block;height:100%;width:100%;background:linear-gradient(90deg,#8a5c22,#e0b25c)"></i></span><span style="font-family:'Cormorant Garamond',serif;font-size:17px;text-align:right">33</span></div>
+        <div style="display:grid;grid-template-columns:104px 1fr 34px;align-items:center;gap:12px"><span style="font-size:13px;color:#c9b48a">Trade Show</span><span style="height:3px;background:rgba(0,0,0,.4);display:block"><i style="display:block;height:100%;width:48%;background:linear-gradient(90deg,#7a5220,#c9994a)"></i></span><span style="font-family:'Cormorant Garamond',serif;font-size:17px;text-align:right">16</span></div>
+        <div style="display:grid;grid-template-columns:104px 1fr 34px;align-items:center;gap:12px"><span style="font-size:13px;color:#c9b48a">Google Ads</span><span style="height:3px;background:rgba(0,0,0,.4);display:block"><i style="display:block;height:100%;width:33%;background:linear-gradient(90deg,#7a5220,#c9994a)"></i></span><span style="font-family:'Cormorant Garamond',serif;font-size:17px;text-align:right">11</span></div>
+        <div style="display:grid;grid-template-columns:104px 1fr 34px;align-items:center;gap:12px"><span style="font-size:13px;color:#c9b48a">Instagram</span><span style="height:3px;background:rgba(0,0,0,.4);display:block"><i style="display:block;height:100%;width:30%;background:linear-gradient(90deg,#a9722a,#f5cd6a);box-shadow:0 0 12px rgba(245,205,106,.45)"></i></span><span style="font-family:'Cormorant Garamond',serif;font-size:17px;text-align:right">10</span></div>
+        <div style="display:grid;grid-template-columns:104px 1fr 34px;align-items:center;gap:12px"><span style="font-size:13px;color:#c9b48a">Referral</span><span style="height:3px;background:rgba(0,0,0,.4);display:block"><i style="display:block;height:100%;width:15%;background:#6b5940"></i></span><span style="font-family:'Cormorant Garamond',serif;font-size:17px;text-align:right">5</span></div>
+      </div>
+      <div style="border-top:1px solid rgba(236,217,178,.13);margin-top:22px;padding-top:14px">
+        <div style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:#8e9462">Carried the month</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:22px;margin-top:7px">Chink &amp; seal season mailer</div>
+        <div style="font-size:12.5px;color:#8a7758;margin-top:5px">LTW · Direct Mail · 19 leads at $112 each.</div>
+      </div>
+    </div>
+    <div style="background:rgba(236,217,178,.13)"></div>
+    <div style="position:relative">
+      <div style="position:relative;display:flex;align-items:center;gap:9px;font-family:Karla,sans-serif;font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;color:#c9b48a"><i style="width:5px;height:5px;border-radius:50%;background:#8e9462;display:block;box-shadow:0 0 8px #8e9462"></i>Squeeky Clean</div>
+      <div style="position:relative;display:flex;align-items:baseline;gap:12px;margin-top:12px">
+        <span style="font-family:'Cormorant Garamond',serif;font-size:84px;line-height:.84;letter-spacing:-.045em;color:#f7e6c4;text-shadow:0 0 44px rgba(142,148,98,.3)">31</span>
+        <span style="font-family:'Cormorant Garamond',serif;font-size:28px;color:#6b5940">/ 40</span>
+      </div>
+      <div style="position:relative;height:4px;background:rgba(0,0,0,.45);margin-top:14px"><i style="display:block;height:100%;width:78%;background:linear-gradient(90deg,#5d6340,#a8ae74);box-shadow:0 0 14px rgba(168,174,116,.45)"></i></div>
+      <div style="position:relative;display:flex;justify-content:space-between;margin-top:8px;font-family:Karla,sans-serif;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#8a7758"><span>78% of goal</span><span style="color:#8e9462">On pace</span></div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:19px;margin-top:26px;padding-bottom:10px;border-bottom:1px solid rgba(236,217,178,.13)">Cost per lead</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
+        <div style="display:grid;grid-template-columns:104px 1fr 44px;align-items:center;gap:12px"><span style="font-size:13px;color:#c9b48a">Email</span><span style="height:3px;background:rgba(0,0,0,.4);display:block"><i style="display:block;height:100%;width:7%;background:linear-gradient(90deg,#a9722a,#f5cd6a);box-shadow:0 0 12px rgba(245,205,106,.45)"></i></span><span style="font-family:'Cormorant Garamond',serif;font-size:17px;text-align:right">$8</span></div>
+        <div style="display:grid;grid-template-columns:104px 1fr 44px;align-items:center;gap:12px"><span style="font-size:13px;color:#c9b48a">Instagram</span><span style="height:3px;background:rgba(0,0,0,.4);display:block"><i style="display:block;height:100%;width:7%;background:linear-gradient(90deg,#8a5c22,#e0b25c)"></i></span><span style="font-family:'Cormorant Garamond',serif;font-size:17px;text-align:right">$8</span></div>
+        <div style="display:grid;grid-template-columns:104px 1fr 44px;align-items:center;gap:12px"><span style="font-size:13px;color:#c9b48a">Google Ads</span><span style="height:3px;background:rgba(0,0,0,.4);display:block"><i style="display:block;height:100%;width:38%;background:linear-gradient(90deg,#7a5220,#c9994a)"></i></span><span style="font-family:'Cormorant Garamond',serif;font-size:17px;text-align:right">$44</span></div>
+        <div style="display:grid;grid-template-columns:104px 1fr 44px;align-items:center;gap:12px"><span style="font-size:13px;color:#c9b48a">Yard Sign</span><span style="height:3px;background:rgba(0,0,0,.4);display:block"><i style="display:block;height:100%;width:85%;background:#6b5940"></i></span><span style="font-family:'Cormorant Garamond',serif;font-size:17px;text-align:right">$97</span></div>
+        <div style="display:grid;grid-template-columns:104px 1fr 44px;align-items:center;gap:12px"><span style="font-size:13px;color:#c9b48a">Direct Mail</span><span style="height:3px;background:rgba(0,0,0,.4);display:block"><i style="display:block;height:100%;width:100%;background:#6b5940"></i></span><span style="font-family:'Cormorant Garamond',serif;font-size:17px;text-align:right">$114</span></div>
+      </div>
+      <div style="border-top:1px solid rgba(236,217,178,.13);margin-top:22px;padding-top:14px">
+        <div style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:#d98a63">Worth a second look</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:22px;margin-top:7px">August reactivation postcard</div>
+        <div style="font-size:12.5px;color:#8a7758;margin-top:5px">LTW · Direct Mail · $1,642 for 14 leads, $117 per lead.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-import>
+</div>
+
+</div>
+<p class="dv-next">Try next: "apply Lamplight to Links, Calendar and the log-a-campaign sheet" · "write it into mcc.css as real code" · "tone the glow down 30%"</p>
+</section>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Marketing Command Center · Home, three visual treatments</span></div>
+<p class="dv-note" style="margin:0 0 22px">Same screen, same data, same Parlor bones (bone type on near-black brown, amber for the one thing that matters, square edges, hairline rules). What changes is <b>density, material, and where the eye lands first</b>. Current build reads flat because every row carries the same weight and the only structure is a horizontal hairline.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a><span><b>Ledger.</b> Nothing new added, everything ranked. Column-labeled hairline grid, tabular numerals, a fixed 2/3 : 1/3 spine, and amber reserved for exactly one element per view. The most conservative fix: 40% more information in the same height without feeling denser.</span></div>
+<x-import component-from-global-scope="ChromeWindow" from="./browser-window.jsx" tabs="{{ tabs }}" url="thescaffold.cargroff.com/command-center" width="{{ 880 }}" height="{{ 700 }}" hint-size="880px,700px">
+<div style="background:#1a120b;color:#ecd9b2;font-family:Spectral,Georgia,serif;min-height:100%">
+  <div style="display:flex;align-items:center;gap:14px;padding:13px 26px;border-bottom:1px solid rgba(236,217,178,.13)">
+    <img src="ref/assets/antler.png" alt="" style="width:24px;height:auto;opacity:.85">
+    <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;letter-spacing:-.01em">Command Center</div>
+    <div style="width:1px;height:14px;background:rgba(236,217,178,.2)"></div>
+    <div style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:#8a7758">August 2026</div>
+    <div style="margin-left:auto;display:flex;border:1px solid rgba(236,217,178,.13)">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 12px;background:rgba(236,217,178,.07);font-family:Karla,sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#ecd9b2"><i style="width:5px;height:5px;border-radius:50%;background:#b8643f;display:block"></i>LTW</div>
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 12px;border-left:1px solid rgba(236,217,178,.13);font-family:Karla,sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#5a4a36"><i style="width:5px;height:5px;border-radius:50%;background:#8e9462;display:block"></i>Squeeky</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:26px;padding:0 26px;border-bottom:1px solid rgba(236,217,178,.13);font-family:Karla,sans-serif;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase">
+    <div style="padding:12px 0;border-bottom:1px solid #d99a3d;color:#ecd9b2;margin-bottom:-1px">Home</div>
+    <div style="padding:12px 0;color:#8a7758">Campaigns</div>
+    <div style="padding:12px 0;color:#8a7758">Links</div>
+    <div style="padding:12px 0;color:#8a7758">Builder</div>
+    <div style="padding:12px 0;color:#5a4a36">Present</div>
+    <div style="padding:12px 0;color:#5a4a36">Calendar</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1.9fr 1fr;gap:0">
+    <div style="padding:22px 26px 26px;border-right:1px solid rgba(236,217,178,.13)">
+      <div style="display:flex;align-items:baseline;justify-content:space-between">
+        <div style="font-family:Karla,sans-serif;font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;color:#8a7758">Leads vs. goal</div>
+        <div style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#8e9462">On pace</div>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:16px;margin-top:6px">
+        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:76px;line-height:.84;letter-spacing:-.04em;font-variant-numeric:tabular-nums">42</div>
+        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;color:#5a4a36;padding-bottom:9px">/ 57</div>
+        <div style="flex:1;padding-bottom:11px">
+          <div style="height:2px;background:rgba(236,217,178,.12)"><i style="display:block;height:100%;width:74%;background:#d99a3d"></i></div>
+          <div style="display:flex;justify-content:space-between;margin-top:7px;font-family:Karla,sans-serif;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#8a7758"><span>74% of goal</span><span>15 to go · 14 days</span></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid rgba(236,217,178,.13);margin-top:20px">
+        <div style="padding:14px 0"><div style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#5a4a36">Spend</div><div style="font-family:'Cormorant Garamond',serif;font-size:22px;margin-top:5px;font-variant-numeric:tabular-nums">$4,018</div></div>
+        <div style="padding:14px 0 14px 16px;border-left:1px solid rgba(236,217,178,.13)"><div style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#5a4a36">Per lead</div><div style="font-family:'Cormorant Garamond',serif;font-size:22px;margin-top:5px;font-variant-numeric:tabular-nums">$95</div></div>
+        <div style="padding:14px 0 14px 16px;border-left:1px solid rgba(236,217,178,.13)"><div style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#5a4a36">Campaigns</div><div style="font-family:'Cormorant Garamond',serif;font-size:22px;margin-top:5px;font-variant-numeric:tabular-nums">6</div></div>
+        <div style="padding:14px 0 14px 16px;border-left:1px solid rgba(236,217,178,.13)"><div style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#5a4a36">Best channel</div><div style="font-family:'Cormorant Garamond',serif;font-size:22px;margin-top:5px">Instagram</div></div>
+      </div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;border-top:1px solid rgba(236,217,178,.13);padding-top:16px;margin-top:6px">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:19px">Channel breakdown</div>
+        <div style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#5a4a36">Leads · cost per lead</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 66px 74px;gap:0;margin-top:12px;font-size:13.5px;color:#c9b48a">
+        <div style="padding:9px 0;border-bottom:1px solid rgba(236,217,178,.08);display:flex;align-items:center;gap:10px"><span style="flex:none;width:88px">Direct Mail</span><span style="flex:1;height:2px;background:rgba(236,217,178,.1)"><i style="display:block;height:100%;width:100%;background:#c9b48a"></i></span></div>
+        <div style="padding:9px 0;border-bottom:1px solid rgba(236,217,178,.08);text-align:right;font-variant-numeric:tabular-nums;color:#ecd9b2">33</div>
+        <div style="padding:9px 0;border-bottom:1px solid rgba(236,217,178,.08);text-align:right;font-variant-numeric:tabular-nums">$114</div>
+        <div style="padding:9px 0;border-bottom:1px solid rgba(236,217,178,.08);display:flex;align-items:center;gap:10px"><span style="flex:none;width:88px">Instagram</span><span style="flex:1;height:2px;background:rgba(236,217,178,.1)"><i style="display:block;height:100%;width:30%;background:#c9b48a"></i></span></div>
+        <div style="padding:9px 0;border-bottom:1px solid rgba(236,217,178,.08);text-align:right;font-variant-numeric:tabular-nums;color:#ecd9b2">10</div>
+        <div style="padding:9px 0;border-bottom:1px solid rgba(236,217,178,.08);text-align:right;font-variant-numeric:tabular-nums;color:#d99a3d">$8</div>
+        <div style="padding:9px 0;border-bottom:1px solid rgba(236,217,178,.08);display:flex;align-items:center;gap:10px"><span style="flex:none;width:88px">Referral</span><span style="flex:1;height:2px;background:rgba(236,217,178,.1)"><i style="display:block;height:100%;width:15%;background:#c9b48a"></i></span></div>
+        <div style="padding:9px 0;border-bottom:1px solid rgba(236,217,178,.08);text-align:right;font-variant-numeric:tabular-nums;color:#ecd9b2">5</div>
+        <div style="padding:9px 0;border-bottom:1px solid rgba(236,217,178,.08);text-align:right;font-variant-numeric:tabular-nums">$29</div>
+        <div style="padding:9px 0;display:flex;align-items:center;gap:10px"><span style="flex:none;width:88px">Email</span><span style="flex:1;height:2px;background:rgba(236,217,178,.1)"><i style="display:block;height:100%;width:9%;background:#c9b48a"></i></span></div>
+        <div style="padding:9px 0;text-align:right;font-variant-numeric:tabular-nums;color:#ecd9b2">3</div>
+        <div style="padding:9px 0;text-align:right;font-variant-numeric:tabular-nums;color:#5a4a36">no spend</div>
+      </div>
+    </div>
+    <div style="padding:22px 26px 26px">
+      <div style="font-family:Karla,sans-serif;font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;color:#b8643f">Needs a hand</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:20px;line-height:1.25;margin-top:9px">1 campaign went out untracked</div>
+      <div style="font-size:12.5px;line-height:1.6;color:#8a7758;margin-top:7px">Monthly restoration letter, missing attribution, so any leads it produced land nowhere.</div>
+      <div style="display:inline-flex;align-items:center;padding:10px 14px;margin-top:14px;border:1px solid rgba(236,217,178,.26);font-family:Karla,sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#ecd9b2">Fix LTW · Email</div>
+      <div style="border-top:1px solid rgba(236,217,178,.13);margin-top:22px;padding-top:14px;display:flex;align-items:baseline;justify-content:space-between">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:19px">Recent</div>
+        <div style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#8a7758">All →</div>
+      </div>
+      <div style="display:flex;flex-direction:column">
+        <div style="padding:11px 0;border-bottom:1px solid rgba(236,217,178,.08)"><div style="font-size:13.5px">August reactivation postcard</div><div style="display:flex;gap:9px;margin-top:4px;font-family:Karla,sans-serif;font-size:9.5px;letter-spacing:.1em;color:#5a4a36"><span>Aug 12</span><span>·</span><span>$1,642</span><span>·</span><span style="color:#c9b48a">14 leads</span></div></div>
+        <div style="padding:11px 0;border-bottom:1px solid rgba(236,217,178,.08)"><div style="font-size:13.5px">Restoration reel, Rockingham</div><div style="display:flex;gap:9px;margin-top:4px;font-family:Karla,sans-serif;font-size:9.5px;letter-spacing:.1em;color:#5a4a36"><span>Aug 6</span><span>·</span><span>$75</span><span>·</span><span style="color:#c9b48a">6 leads</span></div></div>
+        <div style="padding:11px 0;border-bottom:1px solid rgba(236,217,178,.08)"><div style="font-size:13.5px;color:#b8643f">Monthly restoration letter</div><div style="display:flex;gap:9px;margin-top:4px;font-family:Karla,sans-serif;font-size:9.5px;letter-spacing:.1em;color:#5a4a36"><span>Aug 2</span><span>·</span><span>$0</span><span>·</span><span style="color:#b8643f">missing info</span></div></div>
+        <div style="padding:11px 0"><div style="font-size:13.5px">Chink &amp; seal season mailer</div><div style="display:flex;gap:9px;margin-top:4px;font-family:Karla,sans-serif;font-size:9.5px;letter-spacing:.1em;color:#5a4a36"><span>Jul 24</span><span>·</span><span>$2,136</span><span>·</span><span style="color:#c9b48a">19 leads</span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-import>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a><span><b>Lamplight.</b> Same structure, real material: a photo plate masthead under a gold hairline, panels lifted off the ground with a 1px top highlight, film grain over everything, and a breathing amber glow behind the number that matters. Warmest of the three, most "cargroff.com."</span></div>
+<x-import component-from-global-scope="ChromeWindow" from="./browser-window.jsx" tabs="{{ tabs }}" url="thescaffold.cargroff.com/command-center" width="{{ 880 }}" height="{{ 770 }}" hint-size="880px,770px">
+<div style="position:relative;background:#150e08;color:#ecd9b2;font-family:Spectral,Georgia,serif;min-height:100%">
+  <div style="position:absolute;inset:0;pointer-events:none;z-index:5;opacity:.1;mix-blend-mode:overlay;background-image:url(&quot;data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 0.85  0 0 0 0 0.55  0 0 0 0.45 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>&quot;);background-size:220px 220px"></div>
+  <div style="position:relative;height:132px;padding:18px 28px;display:flex;flex-direction:column;justify-content:space-between;background-image:linear-gradient(to bottom,rgba(21,14,8,.35),rgba(21,14,8,.62) 46%,#150e08 100%),url(ref/assets/plate-mcc.jpg);background-size:cover;background-position:center 30%">
+    <div style="display:flex;align-items:center;gap:12px">
+      <img src="ref/assets/antler.png" alt="" style="width:26px;height:auto;opacity:.9">
+      <div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:18px;letter-spacing:-.01em">Command Center</div>
+        <div style="font-family:Karla,sans-serif;font-size:8.5px;letter-spacing:.3em;text-transform:uppercase;color:#8a7758;margin-top:2px">The Scaffold</div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:16px;font-family:Karla,sans-serif;font-size:9px;letter-spacing:.22em;text-transform:uppercase">
+        <span style="display:flex;align-items:center;gap:7px;color:#ecd9b2"><i style="width:5px;height:5px;border-radius:50%;background:#b8643f;display:block;box-shadow:0 0 8px #b8643f"></i>Log &amp; Timber Worx</span>
+        <span style="display:flex;align-items:center;gap:7px;color:#5a4a36"><i style="width:5px;height:5px;border-radius:50%;background:#8e9462;display:block"></i>Squeeky</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:24px;font-family:Karla,sans-serif;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase">
+      <span style="color:#f5cd6a;text-shadow:0 0 18px rgba(217,154,61,.6)">Home</span>
+      <span style="color:#c9b48a">Campaigns</span><span style="color:#c9b48a">Links</span><span style="color:#c9b48a">Builder</span>
+      <span style="color:#5a4a36">Present</span><span style="color:#5a4a36">Calendar</span>
+    </div>
+  </div>
+  <div style="height:1px;background:linear-gradient(90deg,rgba(217,154,61,0),#d99a3d 30%,#d99a3d 70%,rgba(217,154,61,0))"></div>
+  <div style="padding:24px 28px 30px;display:flex;flex-direction:column;gap:16px">
+    <div style="position:relative;overflow:hidden;background:linear-gradient(180deg,#251a11,#1c130c);border:1px solid rgba(236,217,178,.1);box-shadow:0 30px 60px -30px rgba(0,0,0,.85);padding:24px 26px">
+      <div style="position:absolute;left:0;right:0;top:0;height:1px;background:rgba(236,217,178,.18)"></div>
+      <div style="position:absolute;left:8%;top:-90px;width:300px;height:300px;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(217,154,61,.3),rgba(217,154,61,.05) 42%,transparent 70%);mix-blend-mode:screen;animation:gl 7s ease-in-out infinite"></div>
+      <div style="position:relative;display:flex;align-items:flex-end;justify-content:space-between;gap:22px">
+        <div>
+          <div style="font-family:Karla,sans-serif;font-size:9.5px;letter-spacing:.26em;text-transform:uppercase;color:#8a7758">Leads vs. goal · from Pipedrive</div>
+          <div style="display:flex;align-items:baseline;gap:14px;margin-top:8px">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:92px;line-height:.82;letter-spacing:-.045em;color:#f7e6c4;text-shadow:0 0 46px rgba(217,154,61,.35)">42</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:30px;color:#6b5940">/ 57</div>
+          </div>
+        </div>
+        <div style="text-align:right;padding-bottom:6px">
+          <div style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:#8e9462">On pace</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:34px;color:#f5cd6a;margin-top:4px">74%</div>
+        </div>
+      </div>
+      <div style="position:relative;height:4px;background:rgba(0,0,0,.45);margin-top:20px;box-shadow:inset 0 1px 2px rgba(0,0,0,.6)"><i style="display:block;height:100%;width:74%;background:linear-gradient(90deg,#a9722a,#f5cd6a);box-shadow:0 0 16px rgba(245,205,106,.55)"></i></div>
+      <div style="position:relative;display:flex;justify-content:space-between;margin-top:9px;font-family:Karla,sans-serif;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#8a7758"><span>15 leads to go</span><span>Synced today, 8:12a</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:16px">
+      <div style="background:linear-gradient(180deg,#241810,#1b120b);border:1px solid rgba(236,217,178,.1);padding:20px 22px 22px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between"><div style="font-family:'Cormorant Garamond',serif;font-size:19px">Channel breakdown</div><div style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#5a4a36">August</div></div>
+        <div style="display:flex;flex-direction:column;gap:13px;margin-top:16px">
+          <div><div style="display:flex;justify-content:space-between;font-size:13px;color:#c9b48a"><span>Direct Mail</span><span style="font-family:Karla,sans-serif;font-size:11px;letter-spacing:.06em">33 · $114/lead</span></div><div style="height:3px;background:rgba(0,0,0,.4);margin-top:6px"><i style="display:block;height:100%;width:100%;background:linear-gradient(90deg,#8a5c22,#e0b25c)"></i></div></div>
+          <div><div style="display:flex;justify-content:space-between;font-size:13px;color:#c9b48a"><span>Instagram</span><span style="font-family:Karla,sans-serif;font-size:11px;letter-spacing:.06em;color:#f5cd6a">10 · $8/lead</span></div><div style="height:3px;background:rgba(0,0,0,.4);margin-top:6px"><i style="display:block;height:100%;width:30%;background:linear-gradient(90deg,#a9722a,#f5cd6a);box-shadow:0 0 14px rgba(245,205,106,.5)"></i></div></div>
+          <div><div style="display:flex;justify-content:space-between;font-size:13px;color:#c9b48a"><span>Referral Program</span><span style="font-family:Karla,sans-serif;font-size:11px;letter-spacing:.06em">5 · $29/lead</span></div><div style="height:3px;background:rgba(0,0,0,.4);margin-top:6px"><i style="display:block;height:100%;width:15%;background:linear-gradient(90deg,#8a5c22,#c9994a)"></i></div></div>
+          <div><div style="display:flex;justify-content:space-between;font-size:13px;color:#c9b48a"><span>Email</span><span style="font-family:Karla,sans-serif;font-size:11px;letter-spacing:.06em;color:#5a4a36">3 · no spend</span></div><div style="height:3px;background:rgba(0,0,0,.4);margin-top:6px"><i style="display:block;height:100%;width:9%;background:#6b5940"></i></div></div>
+        </div>
+      </div>
+      <div style="background:linear-gradient(180deg,#2a1710,#1d1109);border:1px solid rgba(184,100,63,.34);padding:20px 22px 22px;position:relative">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:2px;background:#b8643f"></div>
+        <div style="font-family:Karla,sans-serif;font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:#d98a63">Needs a hand</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:21px;line-height:1.2;margin-top:9px">1 campaign went out untracked</div>
+        <div style="font-size:12.5px;line-height:1.6;color:#a08d6c;margin-top:8px">Monthly restoration letter, missing attribution.</div>
+        <div style="display:inline-flex;padding:11px 15px;margin-top:16px;background:#ecd9b2;color:#1a120b;font-family:Karla,sans-serif;font-size:9px;font-weight:600;letter-spacing:.2em;text-transform:uppercase">Fix it</div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-import>
+</div>
+
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a><span><b>Broadsheet.</b> The departure: the working surface flips to cream paper inside dark chrome, so the app reads like the printed marketing piece it produces. LTW's own gold band and brick rules become the data colors. Best legibility in daylight; strongest identity link to the collateral.</span></div>
+<x-import component-from-global-scope="ChromeWindow" from="./browser-window.jsx" tabs="{{ tabs }}" url="thescaffold.cargroff.com/command-center" width="{{ 880 }}" height="{{ 700 }}" hint-size="880px,700px">
+<div style="background:#dcd6c8;min-height:100%;font-family:Spectral,Georgia,serif">
+  <div style="background:#231f1e;padding:0">
+    <div style="height:7px;background:#ffc20e"></div>
+    <div style="height:3px;background:#231f1e"></div>
+    <div style="display:flex;align-items:center;gap:14px;padding:13px 26px">
+      <img src="ref/assets/antler.png" alt="" style="width:24px;height:auto;opacity:.9">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:#f6f1e6">Command Center</div>
+      <div style="margin-left:auto;display:flex;gap:18px;font-family:Oswald,sans-serif;font-weight:600;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase">
+        <span style="color:#ffc20e;font-style:italic">Log &amp; Timber Worx</span>
+        <span style="color:#8b837f">Squeeky Clean</span>
+      </div>
+    </div>
+  </div>
+  <div style="background:#f6f1e6;border-bottom:3px solid #231f1e;display:flex;gap:26px;padding:0 26px;font-family:Oswald,sans-serif;font-weight:600;font-size:10px;letter-spacing:.18em;text-transform:uppercase">
+    <span style="padding:11px 0;border-bottom:3px solid #b33624;margin-bottom:-3px;color:#231f1e">Home</span>
+    <span style="padding:11px 0;color:#5f5a57">Campaigns</span><span style="padding:11px 0;color:#5f5a57">Links</span><span style="padding:11px 0;color:#5f5a57">Builder</span>
+    <span style="padding:11px 0;color:#9a938e">Present</span><span style="padding:11px 0;color:#9a938e">Calendar</span>
+  </div>
+  <div style="background:#f6f1e6;padding:22px 26px 28px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;border-bottom:1px solid #c9c0ad;padding-bottom:9px">
+      <div style="font-family:Oswald,sans-serif;font-weight:700;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#231f1e">August · Leads vs. Goal</div>
+      <div style="font-family:Oswald,sans-serif;font-weight:600;font-style:italic;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#b33624">On pace</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.15fr 1px 1fr;gap:24px;padding-top:18px">
+      <div>
+        <div style="display:flex;align-items:flex-end;gap:14px">
+          <div style="font-family:Oswald,sans-serif;font-weight:700;font-size:88px;line-height:.82;letter-spacing:-.02em;color:#231f1e">42</div>
+          <div style="font-family:Oswald,sans-serif;font-weight:400;font-size:30px;color:#9a938e;padding-bottom:8px">/57</div>
+          <div style="padding-bottom:12px;font-family:'DM Serif Display',Georgia,serif"></div>
+        </div>
+        <div style="height:5px;background:#231f1e;margin-top:14px"><i style="display:block;height:100%;width:74%;background:#ffc20e"></i></div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px;font-family:Oswald,sans-serif;font-weight:600;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#5f5a57"><span>74% of goal</span><span>15 to go · 14 days left</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid #c9c0ad;margin-top:20px">
+          <div style="padding:13px 0"><div style="font-family:Oswald,sans-serif;font-weight:600;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#5f5a57">Spend</div><div style="font-family:Oswald,sans-serif;font-weight:700;font-size:23px;color:#231f1e;margin-top:4px">$4,018</div></div>
+          <div style="padding:13px 0 13px 14px;border-left:1px solid #c9c0ad"><div style="font-family:Oswald,sans-serif;font-weight:600;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#5f5a57">Per lead</div><div style="font-family:Oswald,sans-serif;font-weight:700;font-size:23px;color:#231f1e;margin-top:4px">$95</div></div>
+          <div style="padding:13px 0 13px 14px;border-left:1px solid #c9c0ad"><div style="font-family:Oswald,sans-serif;font-weight:600;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#5f5a57">Campaigns</div><div style="font-family:Oswald,sans-serif;font-weight:700;font-size:23px;color:#231f1e;margin-top:4px">6</div></div>
+        </div>
+        <div style="background:#231f1e;padding:16px 18px;position:relative;margin-top:6px">
+          <div style="position:absolute;left:0;right:0;top:0;height:1px;background:#ffc20e"></div>
+          <div style="font-family:Oswald,sans-serif;font-weight:600;font-style:italic;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:#ffc20e">Needs a hand</div>
+          <div style="font-family:Oswald,sans-serif;font-weight:700;font-size:18px;text-transform:uppercase;color:#fff;margin-top:7px;line-height:1.1">1 campaign went out untracked</div>
+          <div style="font-family:Karla,sans-serif;font-size:12px;line-height:1.6;color:#ded8cc;margin-top:7px">Monthly restoration letter, missing attribution.</div>
+          <div style="display:inline-flex;margin-top:13px;background:#b33624;color:#fff;font-family:Oswald,sans-serif;font-weight:700;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;padding:11px 15px">Fix LTW · Email</div>
+        </div>
+      </div>
+      <div style="background:#c9c0ad"></div>
+      <div>
+        <div style="font-family:Oswald,sans-serif;font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#231f1e;border-bottom:1px solid #c9c0ad;padding-bottom:8px">Channel breakdown</div>
+        <div style="display:flex;flex-direction:column;gap:11px;margin-top:13px">
+          <div><div style="display:flex;justify-content:space-between;font-family:Karla,sans-serif;font-size:12.5px;color:#3a3634"><span>Direct Mail</span><span>33 · $114</span></div><div style="height:4px;background:#e2dccc;margin-top:5px"><i style="display:block;height:100%;width:100%;background:#231f1e"></i></div></div>
+          <div><div style="display:flex;justify-content:space-between;font-family:Karla,sans-serif;font-size:12.5px;color:#3a3634"><span>Instagram</span><span style="color:#b33624;font-weight:600">10 · $8</span></div><div style="height:4px;background:#e2dccc;margin-top:5px"><i style="display:block;height:100%;width:30%;background:#b33624"></i></div></div>
+          <div><div style="display:flex;justify-content:space-between;font-family:Karla,sans-serif;font-size:12.5px;color:#3a3634"><span>Referral Program</span><span>5 · $29</span></div><div style="height:4px;background:#e2dccc;margin-top:5px"><i style="display:block;height:100%;width:15%;background:#231f1e"></i></div></div>
+          <div><div style="display:flex;justify-content:space-between;font-family:Karla,sans-serif;font-size:12.5px;color:#3a3634"><span>Email</span><span style="color:#9a938e">3 · no spend</span></div><div style="height:4px;background:#e2dccc;margin-top:5px"><i style="display:block;height:100%;width:9%;background:#9a938e"></i></div></div>
+        </div>
+        <div style="font-family:Oswald,sans-serif;font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#231f1e;border-bottom:1px solid #c9c0ad;padding-bottom:8px;margin-top:22px">Recent campaigns</div>
+        <div style="display:flex;flex-direction:column">
+          <div style="padding:10px 0;border-bottom:1px solid #e2dccc"><div style="font-family:Karla,sans-serif;font-size:13px;color:#231f1e">August reactivation postcard</div><div style="font-family:Karla,sans-serif;font-size:11px;color:#6f6a66;margin-top:3px">Aug 12 · $1,642 · 14 leads</div></div>
+          <div style="padding:10px 0;border-bottom:1px solid #e2dccc"><div style="font-family:Karla,sans-serif;font-size:13px;color:#231f1e">Restoration reel, Rockingham</div><div style="font-family:Karla,sans-serif;font-size:11px;color:#6f6a66;margin-top:3px">Aug 6 · $75 · 6 leads</div></div>
+          <div style="padding:10px 0"><div style="font-family:Karla,sans-serif;font-size:13px;color:#b33624">Monthly restoration letter</div><div style="font-family:Karla,sans-serif;font-size:11px;color:#b33624;margin-top:3px">Aug 2 · missing info</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-import>
+</div>
+
+</div>
+<p class="dv-next">Try next: "take <a class="dv-oid" href="#1a">1a</a>'s grid but <a class="dv-oid" href="#1b">1b</a>'s glow on the number" · "show <a class="dv-oid" href="#1c">1c</a> on the Campaigns list and Builder" · "push one further, more type contrast"</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return { tabs: [{ title: 'Command Center · The Scaffold' }, { title: 'Pipedrive' }] };
+  }
+}
+</script>
+</body>
+</html>

@@ -49,16 +49,18 @@ function GoalCard({ b, brandInfo, leads }) {
   const pct = hasGoal ? Math.round((leads / brandInfo.goal) * 100) : 0;
   const pace = !hasGoal ? '' : pct >= 74 ? 'On pace' : 'Behind pace';
   return (
-    <div className="card pad goal">
+    <div className="card panel goal">
       <div className="between">
         <div className="row"><Dot b={b} /><span className="lbl">{BRANDS[b].name}</span></div>
         {hasGoal && <span className={'pill ' + (pct >= 74 ? 'ok' : 'warn')}>{pace}</span>}
       </div>
       {hasGoal ? (
         <React.Fragment>
-          <div className="bignum mono">{leads}<span>/ {brandInfo.goal}</span></div>
+          <div className="glowsrc">
+            <div className="bignum mono lit">{leads}<span>/ {brandInfo.goal}</span></div>
+          </div>
           <div className="lbl" style={{ marginBottom: 10 }}>Leads vs. goal <span style={{ color: 'var(--text-4)' }}>· from Pipedrive</span></div>
-          <div className="bar"><i className={b} style={{ width: Math.min(pct, 100) + '%' }} /></div>
+          <div className="bar big"><i className="lit" style={{ width: Math.min(pct, 100) + '%' }} /></div>
           <div className="between" style={{ marginTop: 9 }}>
             <span className="sub mono">{pct}%</span>
             <span className="sub mono">{brandInfo.goal - leads} to go</span>
@@ -79,12 +81,12 @@ function GoalCard({ b, brandInfo, leads }) {
 function SpendPanel({ brand, campaigns }) {
   const brands = brand === 'both' ? ['ltw', 'sq'] : [brand];
   return (
-    <section className="card">
-      <div className="pad between" style={{ borderBottom: '1px solid var(--line)' }}>
+    <section className="card panel">
+      <div className="between" style={{ borderBottom: '1px solid var(--hair-in)', paddingBottom: 16, marginBottom: 16 }}>
         <h2 className="h2">Spend this month</h2>
         <span className="lbl">From logged costs</span>
       </div>
-      <div className="pad spendgrid">
+      <div className="spendgrid">
         {brands.map((b) => {
           const mine = campaigns.filter((x) => x.brand === b && x.status !== 'draft');
           const spend = mine.reduce((a, x) => a + (x.cost || 0), 0);
@@ -116,23 +118,31 @@ function ChannelBreakdown({ brand, campaigns }) {
   });
   const list = Object.entries(by).sort((a, b) => b[1].leads - a[1].leads);
   const max = Math.max(1, ...list.map(([, v]) => v.leads));
+  // The one efficient channel (lowest $/lead among channels with real spend)
+  // carries the lit bar + figure -- everything else stays bone/dim gold.
+  const cpl = ([, v]) => (v.cost > 0 ? v.cost / Math.max(v.leads, 1) : Infinity);
+  const bestChannel = list.length ? list.reduce((a, b) => (cpl(b) < cpl(a) ? b : a))[0] : null;
   return (
-    <section className="card">
-      <div className="pad between" style={{ borderBottom: '1px solid var(--line)' }}>
+    <section className="card panel">
+      <div className="between" style={{ borderBottom: '1px solid var(--hair-in)', paddingBottom: 16, marginBottom: 16 }}>
         <h2 className="h2">Channel breakdown</h2>
         <span className="lbl">{new Date().toLocaleDateString('en-US', { month: 'long' })}</span>
       </div>
-      <div className="pad" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {list.length === 0 && <p className="sub" style={{ padding: '4px 0' }}>No leads attributed yet this month. Channels appear as touches come in.</p>}
-        {list.map(([ch, v]) => (
-          <div className="chrow" key={ch}>
-            <div className="between">
-              <div className="row" style={{ gap: 8 }}>{[...v.brands].map((b) => <Dot key={b} b={b} />)}<span style={{ fontSize: 13.5 }}>{ch}</span></div>
-              <span className="mono" style={{ fontSize: 13, color: 'var(--text-2)' }}>{v.leads} · {v.cost ? money(Math.round(v.cost / Math.max(v.leads, 1))) + '/lead' : 'no spend'}</span>
+        {list.map(([ch, v]) => {
+          const isBest = ch === bestChannel;
+          const noSpend = !v.cost;
+          return (
+            <div className="chrow" key={ch}>
+              <div className="between">
+                <div className="row" style={{ gap: 8 }}>{[...v.brands].map((b) => <Dot key={b} b={b} />)}<span style={{ fontSize: 13.5, color: noSpend ? 'var(--text-4)' : undefined }}>{ch}</span></div>
+                <span className="mono" style={{ fontSize: 13, color: isBest ? 'var(--accent-lit)' : noSpend ? 'var(--text-4)' : 'var(--text-2)' }}>{v.leads} · {v.cost ? money(Math.round(v.cost / Math.max(v.leads, 1))) + '/lead' : 'no spend'}</span>
+              </div>
+              <div className="bar" style={{ marginTop: 7, height: 5 }}><i className={isBest ? 'lit' : noSpend ? 'dead' : ''} style={{ width: (v.leads / max) * 100 + '%' }} /></div>
             </div>
-            <div className="bar" style={{ marginTop: 7, height: 5 }}><i style={{ width: (v.leads / max) * 100 + '%' }} /></div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
@@ -161,7 +171,7 @@ function ScreenHome({ s, campaigns, onGo }) {
   return (
     <div className="stack">
       {flagged.length > 0 && (
-        <div className="flagbox">
+        <div className="flagbox panel flag">
           <div className="row" style={{ gap: 10, alignItems: 'flex-start' }}>
             <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" style={{ flex: 'none', marginTop: 1 }}>
               <path d="M10 2.5l8 15H2z" /><path d="M10 8v4M10 14.5v.5" />
@@ -184,8 +194,8 @@ function ScreenHome({ s, campaigns, onGo }) {
       </div>
       <SpendPanel brand={s.brand} campaigns={campaigns} />
       <ChannelBreakdown brand={s.brand} campaigns={campaigns} />
-      <section className="card">
-        <div className="pad between" style={{ borderBottom: '1px solid var(--line)' }}>
+      <section className="card panel">
+        <div className="between" style={{ borderBottom: '1px solid var(--hair-in)', paddingBottom: 16, marginBottom: 16 }}>
           <h2 className="h2">Recent campaigns</h2>
           <button className="btn quiet sm" onClick={() => onGo('campaigns')}>All campaigns →</button>
         </div>
@@ -198,11 +208,11 @@ function ScreenHome({ s, campaigns, onGo }) {
 }
 
 // ── Campaign list ─────────────────────────────────────────────────────
-function ScreenCampaigns({ s, campaigns, onGo, onFilter }) {
+function ScreenCampaigns({ s, campaigns, onGo, onFilter, onLogCampaign }) {
   const rows = inBrand(campaigns, s.brand).filter((c) => (!s.ch || c.channel === s.ch) && (!s.type || c.type === s.type));
   if (campaigns.length === 0) {
     return (
-      <div className="card pad empty">
+      <div className="card panel pad empty">
         <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" strokeWidth="1.3"><path d="M3 6h18M3 12h18M3 18h11" /></svg>
         <h2 className="h1" style={{ marginTop: 16 }}>Nothing logged yet</h2>
         <p className="sub" style={{ maxWidth: 340, margin: '8px auto 0' }}>The first campaign you log sets the baseline. Thirty seconds now beats reconstructing it in November.</p>
@@ -211,7 +221,7 @@ function ScreenCampaigns({ s, campaigns, onGo, onFilter }) {
   }
   return (
     <div className="stack">
-      <div className="filters">
+      <div className="filters console">
         <select className="select" value={s.ch} onChange={(e) => onFilter('ch', e.target.value)}>
           <option value="">All channels</option>
           {CHANNELS.map((c) => <option key={c}>{c}</option>)}
@@ -220,14 +230,15 @@ function ScreenCampaigns({ s, campaigns, onGo, onFilter }) {
           <option value="">All types</option>
           {TYPES.map((c) => <option key={c}>{c}</option>)}
         </select>
-        <span className="lbl" style={{ marginLeft: 'auto', whiteSpace: 'nowrap' }}>{rows.length} campaigns · {money(rows.reduce((a, c) => a + (c.cost || 0), 0))} spent</span>
+        <span className="lbl spacer" style={{ whiteSpace: 'nowrap' }}>{rows.length} campaigns · {money(rows.reduce((a, c) => a + (c.cost || 0), 0))} spent</span>
+        <button className="btn" onClick={onLogCampaign}>+ Log a campaign</button>
       </div>
-      <div className="card scroll-x desktop-only">
+      <div className="card panel tight scroll-x desktop-only">
         <table>
           <thead><tr><th>Date</th><th>Brand</th><th>Campaign</th><th>Channel</th><th>Type</th><th>Cost</th><th>Qty</th><th>Leads</th><th>Status</th></tr></thead>
           <tbody>
             {rows.map((c) => (
-              <tr key={c.id} onClick={() => onGo('detail', c.id)}>
+              <tr key={c.id} className={c.status === 'flagged' ? 'flagrow' : ''} onClick={() => onGo('detail', c.id)}>
                 <td className="mono" style={{ color: 'var(--text-2)' }}>{fmtDate(c.date)}</td>
                 <td><Dot b={c.brand} /></td>
                 <td style={{ fontWeight: 500 }}>{c.name}</td>
@@ -242,7 +253,7 @@ function ScreenCampaigns({ s, campaigns, onGo, onFilter }) {
           </tbody>
         </table>
       </div>
-      <div className="mobile-only reclistwrap card">
+      <div className="mobile-only reclistwrap card panel">
         {rows.map((c) => <RecentRow key={c.id} c={c} onGo={onGo} />)}
       </div>
     </div>
@@ -263,7 +274,7 @@ function Field({ label, value, mono }) {
 
 function ScreenDetail({ s, campaigns, onGo, onSaved }) {
   const c = campaigns.find((x) => x.id === s.id) || campaigns[0];
-  if (!c) return <div className="card pad empty"><p className="sub">No campaigns yet.</p></div>;
+  if (!c) return <div className="card panel pad empty"><p className="sub">No campaigns yet.</p></div>;
   const done = checklistDone(c);
   const items = [['cost', 'Cost entered'], ['attr', 'Attribution mechanism assigned'], ['qty', 'Audience quantity logged']];
   const [saving, setSaving] = React.useState(false);
@@ -541,7 +552,7 @@ function ScreenLinks({ links, onSaved }) {
 // ── Shell ──────────────────────────────────────────────────────────────
 function LaterScreen({ label, reason }) {
   return (
-    <div className="card pad empty">
+    <div className="card panel pad empty">
       <h2 className="h1">{label}</h2>
       <p className="sub" style={{ maxWidth: 380, margin: '8px auto 0' }}>{reason}</p>
     </div>
@@ -575,48 +586,60 @@ function CommandCenter() {
   }, [s.sheet]);
 
   const isPresent = s.screen === 'present';
+  // Photographic masthead per the Lamplight treatment — Home and Campaigns get
+  // a job photo scrim; everything else (its own content is the "artwork", or
+  // isn't built yet) gets the flat gradient variant instead.
+  const plateVariant = s.screen === 'home' ? { photo: 'plate-mcc.jpg' }
+    : (s.screen === 'campaigns' || s.screen === 'detail') ? { photo: 'plate-mcc2.jpg', short: true }
+    : { flat: true };
 
   return (
     <React.Fragment>
       {!isPresent && (
         <header className="top">
-          <div className="topin">
-            <a className="mark" href="/scaffold">
-              <img src="assets/antler.png" alt="" />
-              <div><b>Command Center</b><span>The Scaffold</span></div>
-            </a>
-            <div className="spacer" />
-            <a className="btn quiet sm" href="/docket">Docket</a>
-            <a className="btn quiet sm" style={{ marginRight: 4 }} href="/wick">Wick</a>
-            <div className="seg" id="brandtoggle">
-              <button aria-pressed={s.brand === 'ltw'} onClick={() => setBrand('ltw')}><Dot b="ltw" />LTW</button>
-              <button aria-pressed={s.brand === 'sq'} onClick={() => setBrand('sq')}><Dot b="sq" />Squeeky</button>
-              <button aria-pressed={s.brand === 'both'} onClick={() => setBrand('both')}>Both</button>
+          <div className={'plate' + (plateVariant.flat ? ' flat' : '')}
+            style={plateVariant.flat ? undefined : {
+              '--plate-photo': `url(assets/${plateVariant.photo})`,
+              ...(plateVariant.short ? { minHeight: 104, backgroundPosition: 'center 35%' } : {}),
+            }}>
+            <div className="topin">
+              <a className="mark" href="/scaffold">
+                <img src="assets/antler.png" alt="" />
+                <div><b>Command Center</b><span>The Scaffold</span></div>
+              </a>
+              <div className="spacer" />
+              <a className="btn quiet sm" href="/docket">Docket</a>
+              <a className="btn quiet sm" style={{ marginRight: 4 }} href="/wick">Wick</a>
+              <div className="seg" id="brandtoggle">
+                <button aria-pressed={s.brand === 'ltw'} onClick={() => setBrand('ltw')}><Dot b="ltw" />LTW</button>
+                <button aria-pressed={s.brand === 'sq'} onClick={() => setBrand('sq')}><Dot b="sq" />Squeeky</button>
+                <button aria-pressed={s.brand === 'both'} onClick={() => setBrand('both')}>Both</button>
+              </div>
             </div>
+            <nav className="nav">
+              {SCREENS.map((sc, i) => sc.id === 'divider'
+                ? <span className="navdiv" key={i} />
+                : (
+                  <button key={sc.id} className={sc.later ? 'later' : ''}
+                    aria-current={s.screen === sc.id || (sc.id === 'campaigns' && s.screen === 'detail')}
+                    onClick={() => onGo(sc.id)}>
+                    {sc.later && <svg className="lock" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.3"><rect x="2" y="5" width="8" height="6" /><path d="M4 5V3.6a2 2 0 014 0V5" /></svg>}
+                    {sc.label}
+                  </button>
+                ))}
+            </nav>
           </div>
-          <nav className="nav">
-            {SCREENS.map((sc, i) => sc.id === 'divider'
-              ? <span className="navdiv" key={i} />
-              : (
-                <button key={sc.id} className={sc.later ? 'later' : ''}
-                  aria-current={s.screen === sc.id || (sc.id === 'campaigns' && s.screen === 'detail')}
-                  onClick={() => onGo(sc.id)}>
-                  {sc.later && <svg className="lock" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.3"><rect x="2" y="5" width="8" height="6" /><path d="M4 5V3.6a2 2 0 014 0V5" /></svg>}
-                  {sc.label}
-                </button>
-              ))}
-          </nav>
         </header>
       )}
       <main>
         {loading ? (
-          <div className="card pad empty"><p className="sub">Loading…</p></div>
+          <div className="card panel pad empty"><p className="sub">Loading…</p></div>
         ) : err ? (
-          <div className="card pad empty"><p className="sub" style={{ color: 'var(--danger)' }}>{err}</p></div>
+          <div className="card panel pad empty"><p className="sub" style={{ color: 'var(--danger)' }}>{err}</p></div>
         ) : (
           <React.Fragment>
             {s.screen === 'home' && <ScreenHome s={s} campaigns={campaigns} onGo={onGo} />}
-            {(s.screen === 'campaigns') && <ScreenCampaigns s={s} campaigns={campaigns} onGo={onGo} onFilter={onFilter} />}
+            {(s.screen === 'campaigns') && <ScreenCampaigns s={s} campaigns={campaigns} onGo={onGo} onFilter={onFilter} onLogCampaign={() => openSheet('quickadd')} />}
             {s.screen === 'detail' && <ScreenDetail s={s} campaigns={campaigns} onGo={onGo} onSaved={reload} />}
             {s.screen === 'links' && <ScreenLinks links={links} onSaved={reload} />}
             {s.screen === 'builder' && <LaterScreen label="Content Builder" reason="Not built yet — this is next up, right after the Docket and Wick." />}

@@ -97,6 +97,10 @@
   }
   @media (min-width: 1100px) { main { padding: 16px 40px 90px; } .fldgrid { grid-template-columns: 1fr 1fr 1fr; } }
 </style>
+<!-- Lamplight — a visual-only overlay pass (backgrounds/panels/glow), loaded
+     last so it wins the cascade over mcc.css and the shell styles above.
+     No structural/behavior change; safe to remove this one line to revert. -->
+<link rel="stylesheet" href="lamplight.css" />
 </head>
 <body>
   <div id="root"></div>

@@ -1,0 +1,133 @@
+/* lamplight.css — visual overlay for the Marketing Command Center.
+   Load AFTER mcc.css:  <link rel="stylesheet" href="mcc.css">
+                        <link rel="stylesheet" href="lamplight.css">
+   Class names from the existing app are reused; new ones are .plate, .panel,
+   .console, .lit, .flagrow. Structure and JS need no changes except moving the
+   nav inside .plate and the FAB inside .console. */
+
+:root{
+  --floor:#150e08;
+  --panel:linear-gradient(180deg,#241810,#1b120b);
+  --panel-flag:linear-gradient(180deg,#2a1710,#1d1109);
+  --panel-edge:rgba(236,217,178,.10);
+  --panel-top:rgba(236,217,178,.18);
+  --panel-shadow:0 30px 60px -30px rgba(0,0,0,.85);
+  --hair-in:rgba(236,217,178,.07);
+  --recess:rgba(0,0,0,.42);
+  --recess-shadow:inset 0 1px 3px rgba(0,0,0,.6);
+  --plate-grad:linear-gradient(to bottom,rgba(21,14,8,.35),rgba(21,14,8,.62) 46%,#150e08 100%);
+  --ink-lit:#f7e6c4;
+  --glow:rgba(217,154,61,.30);
+  --glow-text:0 0 46px rgba(217,154,61,.35);
+  --glow-bar:0 0 16px rgba(245,205,106,.55);
+  --bar-track:rgba(0,0,0,.40);
+  --bar-fill:linear-gradient(90deg,#8a5c22,#e0b25c);
+  --bar-lit:linear-gradient(90deg,#a9722a,#f5cd6a);
+  --bar-dead:#6b5940;
+}
+
+/* ── floor + grain ─────────────────────────────────────────────── */
+html,body{background:var(--floor)}
+body{min-height:100vh;background-image:none}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:100;opacity:.10;
+  mix-blend-mode:overlay;background-size:220px 220px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 0.85  0 0 0 0 0.55  0 0 0 0.45 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")}
+
+/* ── plate masthead (wrap .topin + .nav in .plate) ─────────────── */
+.plate{position:relative;background-image:var(--plate-grad),var(--plate-photo,none);
+  background-size:cover;background-position:center 30%;
+  padding:16px 28px 0;display:flex;flex-direction:column;justify-content:space-between;min-height:132px}
+.plate.flat{background-image:linear-gradient(180deg,#1f150d,#150e08);min-height:auto;padding-bottom:14px}
+.plate::after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;
+  background:linear-gradient(90deg,rgba(217,154,61,0),var(--accent) 30%,var(--accent) 70%,rgba(217,154,61,0))}
+.plate .topin{padding:0;background:none;border:none}
+.plate .nav{border-bottom:none;padding:0 0 14px}
+.plate .nav button{padding:0 0 2px;border-bottom:none;margin:0 24px 0 0;min-height:0;line-height:1.6}
+.plate .nav button[aria-current="true"]{color:var(--accent-lit);text-shadow:0 0 18px rgba(217,154,61,.6)}
+.top{position:static;background:none;backdrop-filter:none;border-bottom:none}
+
+/* ── lifted panels (wrap existing .card groups) ────────────────── */
+.panel{position:relative;background:var(--panel);border:1px solid var(--panel-edge);
+  box-shadow:var(--panel-shadow);padding:22px 24px}
+.panel::before{content:'';position:absolute;left:0;right:0;top:0;height:1px;background:var(--panel-top)}
+.panel.flag{background:var(--panel-flag);border-color:rgba(184,100,63,.34)}
+.panel.flag::after{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--ltw)}
+.panel.tight{padding:0 20px 8px}
+a.panel:hover,button.panel:hover{border-color:rgba(236,217,178,.20);transition:border-color .25s}
+.panel .card,.panel td,.panel .chk,.panel .spendrow{border-color:var(--hair-in)}
+main{padding:24px 28px 30px;display:flex;flex-direction:column;gap:16px}
+.stack>*+*{margin-top:0}
+
+/* ── recessed inputs + filter console ──────────────────────────── */
+.input,.select,textarea.input{background:var(--recess);box-shadow:var(--recess-shadow)}
+.console{display:flex;align-items:center;gap:10px;padding:10px 12px;
+  background:var(--recess);border:1px solid var(--panel-edge);box-shadow:var(--recess-shadow)}
+.console .select{flex:0 1 auto;min-height:36px;padding:7px 30px 7px 11px;box-shadow:none;
+  background-color:transparent;border-color:rgba(236,217,178,.14);
+  font-family:var(--ui);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+.console .spacer{margin-left:auto}
+.console .btn{min-height:36px;padding:9px 13px;font-size:9px;font-weight:600}
+/* the FAB moves into .console; keep the class for mobile only */
+.qa{display:none}
+@media(max-width:759px){.qa{display:flex}}
+
+/* ── the one glow per screen ───────────────────────────────────── */
+.lit{color:var(--ink-lit);text-shadow:var(--glow-text)}
+.glowsrc{position:relative}
+.glowsrc::before{content:'';position:absolute;left:8%;top:-90px;width:300px;height:300px;
+  border-radius:50%;pointer-events:none;mix-blend-mode:screen;
+  background:radial-gradient(circle,var(--glow),rgba(217,154,61,.05) 42%,transparent 70%);
+  animation:lamp-breathe 7s ease-in-out infinite}
+.btn.lit{color:#1a120b;text-shadow:none;box-shadow:0 0 26px rgba(217,154,61,.28)}
+.btn:hover{box-shadow:0 0 26px rgba(217,154,61,.32)}
+@keyframes lamp-breathe{
+  0%,100%{opacity:1;filter:brightness(1)}
+  45%{opacity:.95}48%{opacity:.78;filter:brightness(.94)}
+  52%{opacity:.92}70%{opacity:.88;filter:brightness(.98)}}
+
+/* ── bars ──────────────────────────────────────────────────────── */
+.bar{height:3px;background:var(--bar-track)}
+.bar.big{height:4px;box-shadow:inset 0 1px 2px rgba(0,0,0,.6)}
+.bar i{background:var(--bar-fill)}
+.bar i.lit{background:var(--bar-lit);box-shadow:var(--glow-bar)}
+.bar i.dead{background:var(--bar-dead)}
+.bar i.ltw{background:linear-gradient(90deg,#8a4a2e,#d98a63);box-shadow:0 0 14px rgba(217,138,99,.5)}
+.bar i.sq{background:linear-gradient(90deg,#5d6340,#a8ae74);box-shadow:0 0 14px rgba(168,174,116,.45)}
+
+/* ── numbers ───────────────────────────────────────────────────── */
+.goal .bignum,.pgoal .pnum{color:var(--ink-lit);text-shadow:var(--glow-text);letter-spacing:-.045em;line-height:.82}
+.kpi .kpin,.spendnum,.pv{font-variant-numeric:tabular-nums}
+.dot.ltw{box-shadow:0 0 8px var(--ltw)}
+.dot.sq{box-shadow:0 0 8px var(--sq)}
+
+/* ── table inside a panel ──────────────────────────────────────── */
+.panel th{padding:15px 16px 11px;border-bottom:1px solid rgba(236,217,178,.14)}
+.panel td{border-top:none;border-bottom:1px solid var(--hair-in);padding:13px 16px}
+tbody tr.flagrow{background:linear-gradient(90deg,rgba(184,100,63,.16),rgba(184,100,63,0) 70%);
+  box-shadow:inset 2px 0 0 var(--ltw)}
+tbody tr.flagrow td:first-child{padding-left:10px}
+tbody tr.flagrow:hover{background:linear-gradient(90deg,rgba(184,100,63,.22),rgba(184,100,63,0) 70%)}
+
+/* ── builder preview lightbox ──────────────────────────────────── */
+.lightbox{padding:16px;border:1px solid rgba(236,217,178,.08);
+  background:radial-gradient(120% 80% at 50% 0%,rgba(236,217,178,.09),rgba(236,217,178,.02) 60%,transparent)}
+.lightbox .art{max-width:none;box-shadow:0 26px 50px -18px rgba(0,0,0,.8)}
+
+/* ── sheet ─────────────────────────────────────────────────────── */
+.sheet{background:var(--panel);border-color:var(--panel-edge);box-shadow:var(--panel-shadow)}
+.sheethead,.sheetfoot{border-color:var(--hair-in)}
+
+/* ── present mode: flat, dark, no panels ───────────────────────── */
+.present{background:radial-gradient(120% 90% at 50% -10%,#241810,#120c07 70%);
+  margin:0 -28px;padding:26px 30px 30px}
+.present .panel{background:none;border:none;box-shadow:none;padding:0}
+.present .panel::before{display:none}
+
+/* ── responsive ────────────────────────────────────────────────── */
+@media(max-width:759px){
+  .plate{min-height:96px;padding:14px 18px 0}
+  main{padding:18px 18px 90px;gap:12px}
+  .panel{padding:16px 18px}
+  .glowsrc::before{width:180px;height:180px;top:-54px}
+}
+@media(prefers-reduced-motion:reduce){.glowsrc::before{animation:none}}
