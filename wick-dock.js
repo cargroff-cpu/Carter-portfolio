@@ -39,7 +39,10 @@ button,input{font:inherit;color:inherit}
 :host([say]) .core{animation:flick 6s ease-in-out infinite}
 @keyframes flick{0%,100%{filter:brightness(1)}46%{filter:brightness(.9)}52%{filter:brightness(1.09)}70%{filter:brightness(.96)}}
 @media(max-width:759px){
-  :host{right:auto;left:50%;top:auto;bottom:0;transform:translateX(-50%);flex-direction:column-reverse;gap:10px;align-items:center}
+  /* bottom:100px clears the "Log a campaign" FAB (fixed, bottom:20px, ~52px
+     tall) that sits at the same corner on these screens -- without this the
+     speech bubble and the FAB overlap whenever Wick has something to say. */
+  :host{right:auto;left:50%;top:auto;bottom:100px;transform:translateX(-50%);flex-direction:column-reverse;gap:10px;align-items:center}
   .aside{max-width:min(360px,92vw);border:1px solid var(--w-rule);border-bottom:none;background:rgba(23,15,8,.96);padding:15px 18px;transform:translateY(14px)}
   :host([say]) .aside{transform:none}
   .bar{flex-direction:column;padding:10px 18px 12px}

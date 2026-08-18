@@ -129,5 +129,10 @@ tbody tr.flagrow:hover{background:linear-gradient(90deg,rgba(184,100,63,.22),rgb
   main{padding:18px 18px 90px;gap:12px}
   .panel{padding:16px 18px}
   .glowsrc::before{width:180px;height:180px;top:-54px}
+  /* .present's -28px margin (below) cancels out main's desktop 28px
+     horizontal padding for a full-bleed look -- main only has 18px of it
+     here, so the margin has to match or it bleeds 10px past the viewport
+     edge on both sides. */
+  .present{margin:0 -18px}
 }
 @media(prefers-reduced-motion:reduce){.glowsrc::before{animation:none}}

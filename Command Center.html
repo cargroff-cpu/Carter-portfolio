@@ -64,6 +64,7 @@
   .kit { margin-top: 14px; padding: 14px 0 2px; border-top: 1px solid var(--line); }
   .kitrow { display: flex; align-items: baseline; gap: 12px; justify-content: space-between; padding: 8px 0; }
   .kitrow .sub { text-align: right; }
+  .kitrow .lbl { flex: none; white-space: nowrap; }
   .swatches { display: flex; gap: 6px; }
   .sw { width: 16px; height: 16px; border: 1px solid var(--line-2); }
   .genwrap { display: grid; grid-template-columns: 1fr; gap: 22px; }
@@ -131,6 +132,11 @@
   .filters .select { max-width: 190px; min-height: 40px; flex: 1 1 150px; }
   .desktop-only { display: none; }
   .cols { display: grid; gap: 0; }
+  /* Grid items default to min-width:auto, so a wide child (the links table,
+     with its nowrap URL cells) can force its whole track wider than the
+     viewport on mobile, dragging every sibling card along with it. min-width:0
+     lets .scroll-x's own overflow handle it instead. */
+  .cols > * { min-width: 0; }
   .fldgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 20px; }
   .fld { min-width: 0; }
   .mailblock { border-top: 1px solid var(--line); }

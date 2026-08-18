@@ -40,7 +40,7 @@ function useQueryState() {
   return [s, setS];
 }
 
-function Dot({ b }) { return <span className={'dot ' + b} />; }
+function Dot({ b, style }) { return <span className={'dot ' + b} style={style} />; }
 function Tag({ b }) { return <span className="tag"><Dot b={b} />{BRANDS[b].short}</span>; }
 function StatusPill({ c }) {
   if (c.status === 'draft') return <span className="pill mute">Draft</span>;
@@ -158,8 +158,8 @@ function ChannelBreakdown({ brand, campaigns }) {
 function RecentRow({ c, onGo }) {
   return (
     <button className="reclist" onClick={() => onGo('detail', c.id)}>
-      <div className="between">
-        <div className="row" style={{ gap: 8 }}><Dot b={c.brand} /><span style={{ fontSize: 13.5, fontWeight: 500 }}>{c.name}</span></div>
+      <div className="between" style={{ alignItems: 'flex-start', gap: 10 }}>
+        <div className="row" style={{ gap: 8, alignItems: 'flex-start' }}><Dot b={c.brand} style={{ marginTop: 6 }} /><span style={{ fontSize: 13.5, fontWeight: 500 }}>{c.name}</span></div>
         <StatusPill c={c} />
       </div>
       <div className="row" style={{ gap: 14, marginTop: 6 }}>
