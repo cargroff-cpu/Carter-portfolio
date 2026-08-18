@@ -1124,7 +1124,7 @@ function CommandCenter() {
         ) : err ? (
           <div className="card panel pad empty"><p className="sub" style={{ color: 'var(--danger)' }}>{err}</p></div>
         ) : (
-          <div key={s.screen} className="screenfade">
+          <div key={s.screen}>
             {s.screen === 'home' && <ScreenHome s={s} campaigns={campaigns} onGo={onGo} goals={goals} />}
             {(s.screen === 'campaigns') && <ScreenCampaigns s={s} campaigns={campaigns} onGo={onGo} onFilter={onFilter} onLogCampaign={() => openSheet('quickadd')} />}
             {s.screen === 'detail' && <ScreenDetail s={s} campaigns={campaigns} onGo={onGo} onSaved={reload} />}

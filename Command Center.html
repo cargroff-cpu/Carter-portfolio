@@ -31,8 +31,13 @@
   .nav .lock { width: 10px; height: 10px; opacity: .7; }
   .navdiv { width: 1px; background: var(--line); margin: 14px 14px; flex: none; }
   main { padding: 8px 20px 120px; max-width: 1180px; margin: 0 auto; }
-  @keyframes screenfade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-  .screenfade { animation: screenfade .28s cubic-bezier(.2,.7,.3,1); }
+  /* A transform+opacity fade-in on .screenfade previously caused a
+     compositor-layer rendering glitch on this screen (the header and
+     flagbox would visually overlap in both Chromium and WebKit, even though
+     the DOM/CSSOM were correct and reloading never cleared it). Removed
+     entirely rather than risk a lighter version of the same bug. The
+     .screenfade class name stays on the wrapper div in command-center.jsx
+     harmlessly -- it just does nothing now. */
   .stack { display: flex; flex-direction: column; gap: 0; }
   .stack > * + * { margin-top: 4px; }
   .qa { position: fixed; right: 20px; bottom: 20px; z-index: 50; display: flex; align-items: center; gap: 10px; background: var(--text); color: #1a120b; border: 1px solid var(--text); font-family: var(--ui); font-size: 10px; font-weight: 500; letter-spacing: .2em; text-transform: uppercase; padding: 16px 22px; min-height: 52px; box-shadow: 0 20px 40px -18px rgba(0,0,0,.9); transition: background .25s, border-color .25s; cursor: pointer; }
