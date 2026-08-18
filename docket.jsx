@@ -244,6 +244,7 @@ function Docket() {
           </React.Fragment>
         )}
       </main>
+      <wick-assistant screen="docket"></wick-assistant>
     </React.Fragment>
   );
 }

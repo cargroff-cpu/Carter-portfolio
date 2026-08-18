@@ -4,7 +4,11 @@
 // prototype's exact visual fidelity carries over without reinventing styles
 // inline. Screen state lives in the URL (screen/brand/id/sheet/ch/type) so
 // every screen — and Wick's future deep links — stay linkable.
-const { BRANDS, BRAND_KIT, CHANNELS, TYPES, money, fmtDate, inBrand, checklistDone, fetchCampaigns, fetchLinks, saveCampaign, saveLink } = window.CC;
+const {
+  BRANDS, BRAND_KIT, CHANNELS, TYPES, CONNECTIONS, money, fmtDate, inBrand, checklistDone,
+  fetchCampaigns, fetchLinks, saveCampaign, saveLink,
+  fetchGeneratedContent, saveGeneratedContent, generateContent,
+} = window.CC;
 
 const SCREENS = [
   { id: 'home', label: 'Home' },
@@ -12,10 +16,10 @@ const SCREENS = [
   { id: 'links', label: 'Links' },
   { id: 'builder', label: 'Builder' },
   { id: 'divider' },
-  { id: 'present', label: 'Present', later: 1 },
-  { id: 'calendar', label: 'Calendar', later: 1 },
-  { id: 'connections', label: 'Connections', later: 1 },
-  { id: 'revenue', label: 'Revenue', later: 1 },
+  { id: 'present', label: 'Present' },
+  { id: 'calendar', label: 'Calendar' },
+  { id: 'connections', label: 'Connections' },
+  { id: 'revenue', label: 'Revenue' },
 ];
 
 function useQueryState() {
@@ -552,15 +556,488 @@ function ScreenLinks({ links, onSaved }) {
   );
 }
 
-// ── Shell ──────────────────────────────────────────────────────────────
-function LaterScreen({ label, reason }) {
+// ── Content Builder ───────────────────────────────────────────────────
+const PIECE_KINDS = ['Email', 'Social', 'Postcard'];
+const DEFAULT_BRIEF = {
+  ltw: 'Reactivation email for past estimates, push the fall chinking window',
+  sq: 'Pre-fall gutter push, early route offer, keep it loud',
+};
+
+function highlight(str, word) {
+  if (!word || !str || !str.includes(word)) return str;
+  const i = str.indexOf(word);
+  return <React.Fragment>{str.slice(0, i)}<span className="hi">{word}</span>{str.slice(i + word.length)}</React.Fragment>;
+}
+
+function BrandChip({ brand }) {
+  const kit = BRAND_KIT[brand];
   return (
-    <div className="card panel pad empty">
-      <h2 className="h1">{label}</h2>
-      <p className="sub" style={{ maxWidth: 380, margin: '8px auto 0' }}>{reason}</p>
+    <div className="kit">
+      <div className="kitrow"><span className="lbl">Palette</span><span className="swatches">{kit.colors.map(([n, hex]) => <span key={n} className="sw" style={{ background: hex }} title={`${n} ${hex}`} />)}</span></div>
+      <div className="kitrow"><span className="lbl">Type</span><span className="sub">{kit.typeNote}</span></div>
+      <div className="kitrow"><span className="lbl">Voice</span><span className="sub">{kit.voice}</span></div>
+      {kit.opener && <div className="kitrow"><span className="lbl">Opens with</span><span className="sub">{kit.opener}</span></div>}
+      <div className="kitrow"><span className="lbl">Sign-off</span><span className="sub">{kit.tagline}{kit.signoff ? ' · ' + kit.signoff : ''}</span></div>
+      <div className="kitrow"><span className="lbl">CTA</span><span className="sub">{kit.ctaStyle === 'buttons' ? 'Brick button plus outlined secondary' : 'Text CTA, big phone, green rule. No buttons'}</span></div>
+      <div className="rules">{kit.rules.map((r) => <span key={r} className="rule">{r}</span>)}</div>
+      <div className="kitrow"><span className="lbl">Contact</span><span className="sub">{kit.phone} · {kit.site}</span></div>
+      <div className="kitrow"><span className="lbl">Guide</span><span className="sub"><a href={`brand/Brand Guide - ${brand === 'ltw' ? 'Log and Timber Worx' : 'Squeeky Clean'}.md`} target="_blank" rel="noreferrer">Full brand guide</a></span></div>
     </div>
   );
 }
+
+function ArtLTW({ p }) {
+  const kit = BRAND_KIT.ltw;
+  return (
+    <div className="art art-ltw">
+      <div className="l-band" /><div className="l-hair" />
+      <div className="l-logo"><img className="l-logoimg" src={kit.logo} alt="Log and Timber Worx" /><span className="l-eyebrow">{kit.position}</span></div>
+      <div className="l-hero">
+        <span className="l-plate">Hero photo from photos/</span>
+        <div className="l-herotext"><span className="l-kicker">{p.eyebrow || 'Wood Restoration Specialists'}</span>
+          <h3 className="l-h1">{highlight(p.subject, p.hi)}</h3></div>
+      </div>
+      <div className="l-brick" />
+      <div className="l-body">
+        <p className="l-greet">{p.greeting || kit.opener}</p>
+        {(p.body || []).map((t, i) => <p key={i} className="l-p">{t}</p>)}
+        <div className="l-ctas"><span className="l-btn">{p.cta} · {kit.phone}</span>{p.cta2 && <span className="l-btn2">{p.cta2}</span>}</div>
+        <p className="l-sign">{kit.signoff}<br />
+          <b>{kit.tagline}</b></p>
+      </div>
+      <div className="l-foot"><span className="l-hairgold" /><span className="l-fkicker">{kit.position}</span>
+        <span className="l-fsmall">{kit.address} · {kit.phone} · {kit.site}<br />Serving {kit.states} · Unsubscribe</span></div>
+    </div>
+  );
+}
+function ArtSQ({ p }) {
+  const kit = BRAND_KIT.sq;
+  return (
+    <div className="art art-sq">
+      <div className="s-band" />
+      <div className="s-top"><img className="s-logoimg" src={kit.logo} alt="Squeeky Clean" /><span className="s-kicker">{kit.tagline}</span></div>
+      <div className="s-hero">
+        <span className="s-plate">Crew photo from squeeky-assets/</span>
+        <h3 className="s-h1">{highlight(p.subject, p.hi)}</h3>
+      </div>
+      <div className="s-body">
+        <span className="s-eyebrow">{p.eyebrow || 'This week'}</span>
+        {(p.body || []).map((t, i) => <p key={i} className="s-p">{t}</p>)}
+        <div className="s-bar">Early route, best price</div>
+        <ul className="s-check">{['Soft wash, no pressure damage', 'Same day window', 'Flat invoice'].map((t) => <li key={t}><i />{t}</li>)}</ul>
+        <div className="s-cta"><span className="s-ctaline">{p.cta}</span><span className="s-phone">{kit.phone}</span><span className="s-rule" /></div>
+      </div>
+      <div className="s-foot"><span className="s-hairgreen" />{kit.address} · {kit.phone} · {kit.site} · Unsubscribe</div>
+    </div>
+  );
+}
+
+function ScreenBuilder({ s, campaigns, onSetBrand }) {
+  const brand = s.brand === 'both' ? 'ltw' : s.brand;
+  const kit = BRAND_KIT[brand];
+  const [kind, setKind] = React.useState('Email');
+  const [mod, setMod] = React.useState('');
+  const [brief, setBrief] = React.useState(DEFAULT_BRIEF[brand]);
+  const [history, setHistory] = React.useState([]);
+  const [loadingHist, setLoadingHist] = React.useState(true);
+  const [piece, setPiece] = React.useState(null);
+  const [generating, setGenerating] = React.useState(false);
+  const [status, setStatus] = React.useState('');
+  const [campId, setCampId] = React.useState('');
+
+  const loadHistory = React.useCallback(() => {
+    setLoadingHist(true);
+    fetchGeneratedContent().then(setHistory).catch(() => setHistory([])).finally(() => setLoadingHist(false));
+  }, []);
+  React.useEffect(() => { loadHistory(); }, [loadHistory]);
+  React.useEffect(() => {
+    setPiece(null); setBrief(DEFAULT_BRIEF[brand]); setStatus(''); setCampId('');
+  }, [brand]);
+
+  const brandHist = history.filter((p) => p.brand === brand);
+  const brandCampaigns = campaigns.filter((c) => c.brand === brand).slice(0, 8);
+
+  const gen = async (refine) => {
+    if (!brief.trim()) { setStatus('Say what it is for first.'); return; }
+    setGenerating(true);
+    setStatus(refine ? 'Refining…' : 'Writing…');
+    try {
+      const data = await generateContent({ brand, kind, module: mod || null, brief: brief.trim(), refine: !!refine, previous: refine ? piece : null });
+      if (!data.configured) { setStatus(data.message || 'Not connected to the model yet.'); return; }
+      if (data.error) { setStatus(data.error); return; }
+      setPiece({ ...data.piece, id: null, campaign_id: null, date: new Date().toISOString().slice(0, 10), by: 'Builder' });
+      setStatus('');
+    } catch (e) {
+      setStatus("That call failed. Nothing written.");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const save = async () => {
+    if (!piece) return;
+    try {
+      const res = await saveGeneratedContent({
+        brand: piece.brand, kind: piece.kind, title: piece.title, eyebrow: piece.eyebrow,
+        subject: piece.subject, hi: piece.hi, preheader: piece.preheader, greeting: piece.greeting,
+        body: piece.body, cta: piece.cta, cta2: piece.cta2, campaign_id: campId || null, by: 'Builder',
+      });
+      setPiece({ ...piece, id: res.row.id, campaign_id: campId || null });
+      loadHistory();
+    } catch (e) {
+      setStatus('Could not save that piece.');
+    }
+  };
+
+  const attachedCampaign = piece && piece.campaign_id ? campaigns.find((c) => c.id === piece.campaign_id) : null;
+
+  return (
+    <div className="stack">
+      <div className="cols builder">
+        <section className="card panel">
+          <div className="pad" style={{ borderBottom: '1px solid var(--line)' }}>
+            <h2 className="h2">Ask for a piece</h2>
+            <p className="sub" style={{ marginTop: 5 }}>Describe it the way you would to Wick. Same engine, same brand guides.</p>
+          </div>
+          <div className="pad" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div>
+              <div className="lbl">Brand context</div>
+              <div className="seg" style={{ marginTop: 8, width: '100%' }}>
+                <button type="button" aria-pressed={brand === 'ltw'} style={{ flex: 1 }} onClick={() => onSetBrand('ltw')}><Dot b="ltw" />LTW</button>
+                <button type="button" aria-pressed={brand === 'sq'} style={{ flex: 1 }} onClick={() => onSetBrand('sq')}><Dot b="sq" />Squeeky</button>
+              </div>
+              <BrandChip brand={brand} />
+            </div>
+            <div>
+              <div className="lbl">Piece</div>
+              <div className="seg" style={{ marginTop: 8, width: '100%' }}>
+                {PIECE_KINDS.map((k) => <button key={k} type="button" aria-pressed={kind === k} style={{ flex: 1 }} onClick={() => setKind(k)}>{k}</button>)}
+              </div>
+            </div>
+            <div>
+              <div className="lbl">Module or angle</div>
+              <select className="select" style={{ marginTop: 8 }} value={mod} onChange={(e) => setMod(e.target.value)}>
+                <option value="">None</option>
+                {kit.modules.map((m) => <option key={m}>{m}</option>)}
+              </select>
+            </div>
+            <div>
+              <div className="lbl">What's it for</div>
+              <textarea className="input" rows={3} style={{ marginTop: 8, resize: 'vertical', minHeight: 92 }}
+                value={brief} onChange={(e) => setBrief(e.target.value)} />
+            </div>
+            <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
+              <button className="btn" disabled={generating} onClick={() => gen(false)}>Generate</button>
+              <button className="btn ghost" disabled={generating || !piece} onClick={() => gen(true)}>Refine this one</button>
+            </div>
+            <p className="sub" style={{ minHeight: 18, color: 'var(--text-3)' }}>{status}</p>
+          </div>
+        </section>
+        <section className="card panel">
+          <div className="pad between" style={{ borderBottom: '1px solid var(--line)' }}>
+            <h2 className="h2">Preview</h2>
+            <span className="lbl">{piece ? `${piece.kind} · ${kit.name}` : 'Nothing yet'}</span>
+          </div>
+          <div className="pad lightbox">
+            {piece ? (piece.brand === 'ltw' ? <ArtLTW p={piece} /> : <ArtSQ p={piece} />) : (
+              <div className="empty"><p className="sub">Describe a piece and it renders here in the brand's own identity.</p></div>
+            )}
+          </div>
+          {piece && (
+            <div className="pad between" style={{ borderTop: '1px solid var(--line)', flexWrap: 'wrap', gap: 10 }}>
+              <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
+                <select className="select" style={{ minHeight: 38, maxWidth: 220 }} value={campId} onChange={(e) => setCampId(e.target.value)}>
+                  <option value="">Attach to a campaign…</option>
+                  {brandCampaigns.map((c) => <option key={c.id} value={c.id}>{fmtDate(c.date)} · {c.name}</option>)}
+                </select>
+                <button className="btn sm" disabled={!campId} onClick={save}>Save to campaign</button>
+              </div>
+              <span className="lbl">{attachedCampaign ? `Attached to ${attachedCampaign.name}` : 'Not attached yet'}</span>
+            </div>
+          )}
+        </section>
+      </div>
+      <section className="card panel">
+        <div className="pad between" style={{ borderBottom: '1px solid var(--line)' }}>
+          <h2 className="h2">Generated for {kit.name}</h2>
+          <span className="lbl">Shared with Wick</span>
+        </div>
+        <div className="pad genwrap">
+          {loadingHist ? <p className="sub">Loading…</p> : brandHist.length === 0 ? <p className="sub">Nothing generated for this brand yet.</p> : brandHist.map((p) => (
+            <button key={p.id} className="gencard" onClick={() => { setPiece(p); setCampId(p.campaign_id || ''); }}>
+              <div className="genthumb" style={{ '--a': p.brand === 'ltw' ? '#b33624' : '#9bcf36' }}><span>{p.subject}</span></div>
+              <div className="lbl" style={{ marginTop: 11 }}>{p.kind} · {fmtDate(p.date)} · {p.by}</div>
+              <div className="sub" style={{ marginTop: 4 }}>{p.title}</div>
+            </button>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+// ── Present mode ──────────────────────────────────────────────────────
+function monthAt(offset) {
+  const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + offset);
+  return d;
+}
+
+function PresentGoal({ b, campaigns, goals, isCurrentMonth }) {
+  const leads = campaigns.filter((c) => c.brand === b).reduce((a, c) => a + (c.leads || 0), 0);
+  const pdGoal = isCurrentMonth ? goals.goals && goals.goals[b] : null;
+  const hasGoal = !!(pdGoal && pdGoal.found && pdGoal.target != null);
+  const goalLeads = hasGoal && pdGoal.current != null ? pdGoal.current : leads;
+  const pct = hasGoal ? Math.round((goalLeads / pdGoal.target) * 100) : 0;
+  return (
+    <div className="pgoal">
+      <div className="row" style={{ gap: 10 }}><Dot b={b} /><span className="lbl" style={{ fontSize: 12 }}>{BRANDS[b].name}</span></div>
+      {hasGoal ? (
+        <React.Fragment>
+          <div className="pnum mono">{goalLeads}<span>/{pdGoal.target}</span></div>
+          <div className="bar" style={{ height: 9 }}><i className={b} style={{ width: Math.min(pct, 100) + '%' }} /></div>
+          <div className="row" style={{ justifyContent: 'space-between', marginTop: 10 }}>
+            <span className="sub mono" style={{ fontSize: 15 }}>{pct}% of goal</span>
+            <span className="sub" style={{ fontSize: 15 }}>{pct >= 74 ? 'On pace' : 'Behind pace'}</span>
+          </div>
+        </React.Fragment>
+      ) : (
+        <React.Fragment>
+          <div className="pnum mono">{leads}</div>
+          <p className="sub" style={{ marginTop: 10 }}>{isCurrentMonth ? 'Leads this month. No Pipedrive goal set.' : 'Leads logged this month.'}</p>
+        </React.Fragment>
+      )}
+    </div>
+  );
+}
+
+function ScreenPresent({ campaigns, goals, onGo }) {
+  const [offset, setOffset] = React.useState(0);
+  const viewDate = React.useMemo(() => monthAt(offset), [offset]);
+  const isCurrentMonth = offset === 0;
+  const monthLabel = viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const inMonth = campaigns.filter((c) => {
+    if (c.status === 'draft') return false;
+    const [y, m] = c.date.split('-').map(Number);
+    return y === viewDate.getFullYear() && m - 1 === viewDate.getMonth();
+  });
+  const by = {};
+  inMonth.forEach((c) => { by[c.channel] = by[c.channel] || { leads: 0, cost: 0 }; by[c.channel].leads += c.leads || 0; by[c.channel].cost += c.cost || 0; });
+  const list = Object.entries(by).sort((a, b) => b[1].leads - a[1].leads);
+  const maxL = Math.max(1, ...list.map(([, v]) => v.leads));
+  const cpl = list.filter(([, v]) => v.cost > 0).map(([k, v]) => [k, Math.round(v.cost / Math.max(v.leads, 1))]).sort((a, b) => a[1] - b[1]);
+  const maxC = Math.max(1, ...cpl.map(([, v]) => v));
+  const best = inMonth.length ? inMonth.reduce((a, c) => (c.leads > a.leads ? c : a)) : null;
+  const worstPool = inMonth.filter((c) => c.cost > 200);
+  const worst = worstPool.length ? worstPool.reduce((a, c) => (c.cost / Math.max(c.leads, 1) > a.cost / Math.max(a.leads, 1) ? c : a)) : null;
+
+  return (
+    <div className="present">
+      <div className="presenthead">
+        <div className="row" style={{ gap: 14 }}>
+          <button className="btn quiet sm" onClick={() => setOffset((o) => o - 1)}>←</button>
+          <h1 className="pmonth">{monthLabel}</h1>
+          <button className="btn quiet sm" onClick={() => setOffset((o) => o + 1)}>→</button>
+        </div>
+        <div className="row" style={{ gap: 10 }}>
+          <button className="btn ghost sm" onClick={() => window.print()}>Export as PDF</button>
+          <button className="btn quiet sm" onClick={() => onGo('home')}>Exit present mode</button>
+        </div>
+      </div>
+      <div className="pgoals">
+        {['ltw', 'sq'].map((b) => <PresentGoal key={b} b={b} campaigns={campaigns} goals={goals} isCurrentMonth={isCurrentMonth} />)}
+      </div>
+      <div className="pcharts">
+        <section>
+          <h2 className="ptitle">Leads by channel</h2>
+          <div className="pchart">
+            {list.length === 0 && <p className="sub">Nothing logged this month.</p>}
+            {list.map(([k, v]) => (
+              <div className="pbar" key={k}>
+                <span className="pk">{k}</span>
+                <div className="bar" style={{ height: 22, borderRadius: 2 }}><i style={{ width: (v.leads / maxL) * 100 + '%', borderRadius: 2 }} /></div>
+                <span className="pv mono">{v.leads}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section>
+          <h2 className="ptitle">Cost per lead</h2>
+          <div className="pchart">
+            {cpl.length === 0 && <p className="sub">No costed channels this month.</p>}
+            {cpl.map(([k, v]) => (
+              <div className="pbar" key={k}>
+                <span className="pk">{k}</span>
+                <div className="bar" style={{ height: 22, borderRadius: 2 }}><i style={{ width: (v / maxC) * 100 + '%', background: 'var(--warn)', borderRadius: 2 }} /></div>
+                <span className="pv mono">{money(v)}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+      {(best || worst) && (
+        <div className="phigh">
+          {best && (
+            <div className="pcard">
+              <div className="lbl" style={{ color: 'var(--accent)' }}>Carried the month</div>
+              <h3>{best.name}</h3>
+              <p className="sub" style={{ fontSize: 15 }}>{BRANDS[best.brand].short} · {best.channel} · {best.leads} leads at {money(Math.round((best.cost || 0) / Math.max(best.leads, 1)))} each.</p>
+            </div>
+          )}
+          {worst && (
+            <div className="pcard">
+              <div className="lbl" style={{ color: 'var(--warn)' }}>Worth a second look</div>
+              <h3>{worst.name}</h3>
+              <p className="sub" style={{ fontSize: 15 }}>{BRANDS[worst.brand].short} · {worst.channel} · {money(worst.cost)} for {worst.leads} leads, {money(Math.round(worst.cost / Math.max(worst.leads, 1)))} per lead.</p>
+            </div>
+          )}
+        </div>
+      )}
+      {!inMonth.length && <p className="sub" style={{ padding: '20px 0' }}>Nothing sent in {monthLabel} yet.</p>}
+    </div>
+  );
+}
+
+// ── Calendar ──────────────────────────────────────────────────────────
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function ScreenCalendar({ s, campaigns, onGo, onLogCampaign }) {
+  const [offset, setOffset] = React.useState(0);
+  const viewDate = React.useMemo(() => monthAt(offset), [offset]);
+  const year = viewDate.getFullYear(), month = viewDate.getMonth();
+  const monthLabel = viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startWeekday = new Date(year, month, 1).getDay();
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const rows = inBrand(campaigns, s.brand);
+  const cells = [];
+  for (let i = 0; i < startWeekday; i++) cells.push(<div className="cal-cell out" key={'out' + i} />);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const evs = rows.filter((c) => c.date === dateStr);
+    cells.push(
+      <div className={'cal-cell' + (dateStr === todayStr ? ' today' : '')} key={d}>
+        <span className="cal-d mono">{d}</span>
+        {evs.map((c) => (
+          <button className="cal-ev" key={c.id} onClick={() => onGo('detail', c.id)}>
+            <Dot b={c.brand} /><span>{c.name}</span>
+          </button>
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div className="stack">
+      <div className="between">
+        <div className="row" style={{ gap: 12 }}>
+          <button className="btn quiet sm" onClick={() => setOffset((o) => o - 1)}>←</button>
+          <h2 className="h1">{monthLabel}</h2>
+          <button className="btn quiet sm" onClick={() => setOffset((o) => o + 1)}>→</button>
+        </div>
+        <button className="btn ghost sm" onClick={onLogCampaign}>Plan a campaign</button>
+      </div>
+      <div className="card panel tight scroll-x">
+        <div className="cal">
+          <div className="cal-head">{WEEKDAYS.map((d) => <span className="lbl" key={d}>{d}</span>)}</div>
+          <div className="cal-grid">{cells}</div>
+        </div>
+      </div>
+      <div className="row" style={{ gap: 14, flexWrap: 'wrap' }}>
+        <span className="tag"><Dot b="ltw" />Log & Timber Worx</span>
+        <span className="tag"><Dot b="sq" />Squeeky Clean</span>
+        <span className="sub">Brand carries the color; click a chip for the campaign.</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Connections ───────────────────────────────────────────────────────
+function ScreenConnections({ goals }) {
+  const rows = CONNECTIONS.map((c) => (c.name === 'Pipedrive' ? { ...c, status: goals.configured ? 'ok' : 'not' } : c));
+  const pill = (st) => (st === 'ok' ? <span className="pill ok">Connected</span> : st === 'manual' ? <span className="pill warn">Manual entry only</span> : <span className="pill mute">Not connected</span>);
+  return (
+    <div className="stack">
+      <div className="card panel pad">
+        <h2 className="h2">Sources</h2>
+        <p className="sub" style={{ marginTop: 5, maxWidth: 520 }}>Everything the tool can eventually pull from. Manual-entry sources still work, you type the numbers in, but connecting one means the campaign log fills itself.</p>
+      </div>
+      <div className="card panel">
+        {rows.map((c, i) => (
+          <div className={'connrow' + (i ? '' : ' first')} key={c.name}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="row" style={{ gap: 9 }}>
+                <h3 className="h2">{c.name}</h3>
+                {c.name === 'Pipedrive' && <span className="tag">Spine of attribution</span>}
+              </div>
+              <p className="sub" style={{ marginTop: 4 }}>{c.role}</p>
+              {c.name === 'Pipedrive' && c.status === 'not' && (
+                <p className="sub" style={{ marginTop: 6, color: 'var(--text-3)' }}>Set PIPEDRIVE_API_TOKEN and PIPEDRIVE_DOMAIN as Vercel environment variables to connect.</p>
+              )}
+            </div>
+            {pill(c.status)}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Revenue ───────────────────────────────────────────────────────────
+function ScreenRevenue({ s, campaigns, goals }) {
+  const rows = inBrand(campaigns.filter((c) => c.status !== 'draft'), s.brand);
+  const by = {};
+  rows.forEach((c) => {
+    by[c.channel] = by[c.channel] || { brand: c.brand, cost: 0, leads: 0 };
+    by[c.channel].cost += c.cost || 0;
+    by[c.channel].leads += c.leads || 0;
+    if (by[c.channel].brand !== c.brand) by[c.channel].brand = 'both';
+  });
+  const list = Object.entries(by).map(([channel, v]) => ({ channel, ...v })).sort((a, b) => b.leads - a.leads);
+  const totalCost = list.reduce((a, r) => a + r.cost, 0);
+  const totalLeads = list.reduce((a, r) => a + r.leads, 0);
+  const maxLeads = Math.max(1, ...list.map((r) => r.leads));
+  return (
+    <div className="stack">
+      <div className="card panel pad">
+        <div className="between">
+          <div>
+            <h2 className="h2">Cost against closed revenue</h2>
+            <p className="sub" style={{ marginTop: 5, maxWidth: 520 }}>Lead counts only tell half the story. Closed deal value waits on Pipedrive, shown here as "Awaiting Pipedrive" rather than a guess, so nothing on this screen gets mistaken for a real number.</p>
+          </div>
+          <span className="pill mute">{goals.configured ? 'Pipedrive connected' : 'Pipedrive not connected'}</span>
+        </div>
+      </div>
+      <div className="kpis">
+        <div className="card panel pad kpi"><div className="lbl">Spend</div><div className="mono kpin">{money(totalCost)}</div></div>
+        <div className="card panel pad kpi"><div className="lbl">Leads</div><div className="mono kpin">{totalLeads}</div></div>
+        <div className="card panel pad kpi"><div className="lbl">Cost / lead</div><div className="mono kpin">{totalLeads ? money(Math.round(totalCost / totalLeads)) : '·'}</div></div>
+        <div className="card panel pad kpi"><div className="lbl">Closed</div><div className="mono kpin" style={{ color: 'var(--text-3)' }}>·</div></div>
+        <div className="card panel pad kpi"><div className="lbl">Revenue</div><div className="kpin" style={{ color: 'var(--text-3)', fontSize: 15 }}>Awaiting Pipedrive</div></div>
+      </div>
+      <div className="card panel scroll-x">
+        <table>
+          <thead><tr><th>Channel</th><th>Brand</th><th>Spend</th><th>Leads</th><th>Cost / lead</th><th>Closed</th><th>Revenue</th><th style={{ width: '24%' }}>Share of leads</th></tr></thead>
+          <tbody>
+            {list.length === 0 && <tr><td colSpan="8" className="sub" style={{ padding: '20px 0' }}>Nothing logged yet.</td></tr>}
+            {list.map((r) => (
+              <tr key={r.channel}>
+                <td style={{ fontWeight: 500 }}>{r.channel}</td>
+                <td>{r.brand === 'both' ? <span className="row" style={{ gap: 6 }}><Dot b="ltw" /><Dot b="sq" /></span> : <Dot b={r.brand} />}</td>
+                <td className="mono">{money(r.cost)}</td>
+                <td className="mono">{r.leads}</td>
+                <td className="mono">{r.cost && r.leads ? money(Math.round(r.cost / r.leads)) : '·'}</td>
+                <td className="mono" style={{ color: 'var(--text-3)' }}>·</td>
+                <td className="mono" style={{ color: 'var(--text-3)' }}>Awaiting Pipedrive</td>
+                <td><div className="bar"><i className={r.brand === 'both' ? '' : r.brand} style={{ width: (r.leads / maxLeads) * 100 + '%' }} /></div></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ── Shell ──────────────────────────────────────────────────────────────
 
 function CommandCenter() {
   const [s, setS] = useQueryState();
@@ -596,8 +1073,9 @@ function CommandCenter() {
 
   const isPresent = s.screen === 'present';
   // Photographic masthead per the Lamplight treatment — Home and Campaigns get
-  // a job photo scrim; everything else (its own content is the "artwork", or
-  // isn't built yet) gets the flat gradient variant instead.
+  // a job photo scrim; everything else gets the flat gradient variant since
+  // its own content (charts, the builder preview, the calendar grid) is
+  // already the artwork.
   const plateVariant = s.screen === 'home' ? { photo: 'plate-mcc.jpg' }
     : (s.screen === 'campaigns' || s.screen === 'detail') ? { photo: 'plate-mcc2.jpg', short: true }
     : { flat: true };
@@ -646,17 +1124,17 @@ function CommandCenter() {
         ) : err ? (
           <div className="card panel pad empty"><p className="sub" style={{ color: 'var(--danger)' }}>{err}</p></div>
         ) : (
-          <React.Fragment>
+          <div key={s.screen} className="screenfade">
             {s.screen === 'home' && <ScreenHome s={s} campaigns={campaigns} onGo={onGo} goals={goals} />}
             {(s.screen === 'campaigns') && <ScreenCampaigns s={s} campaigns={campaigns} onGo={onGo} onFilter={onFilter} onLogCampaign={() => openSheet('quickadd')} />}
             {s.screen === 'detail' && <ScreenDetail s={s} campaigns={campaigns} onGo={onGo} onSaved={reload} />}
             {s.screen === 'links' && <ScreenLinks links={links} onSaved={reload} />}
-            {s.screen === 'builder' && <LaterScreen label="Content Builder" reason="Not built yet — this is next up, right after the Docket and Wick." />}
-            {s.screen === 'present' && <LaterScreen label="Present mode" reason="Designed, but waits on Pipedrive's revenue data. Unlocks once that's connected." />}
-            {s.screen === 'calendar' && <LaterScreen label="Calendar" reason="Designed, but waits on Pipedrive's revenue data. Unlocks once that's connected." />}
-            {s.screen === 'connections' && <LaterScreen label="Connections" reason="Designed, but waits on Pipedrive's revenue data. Unlocks once that's connected." />}
-            {s.screen === 'revenue' && <LaterScreen label="Revenue" reason="Designed, but waits on Pipedrive's revenue data. Unlocks once that's connected." />}
-          </React.Fragment>
+            {s.screen === 'builder' && <ScreenBuilder s={s} campaigns={campaigns} onSetBrand={setBrand} />}
+            {s.screen === 'present' && <ScreenPresent campaigns={campaigns} goals={goals} onGo={onGo} />}
+            {s.screen === 'calendar' && <ScreenCalendar s={s} campaigns={campaigns} onGo={onGo} onLogCampaign={() => openSheet('quickadd')} />}
+            {s.screen === 'connections' && <ScreenConnections goals={goals} />}
+            {s.screen === 'revenue' && <ScreenRevenue s={s} campaigns={campaigns} goals={goals} />}
+          </div>
         )}
       </main>
       {!isPresent && (
@@ -666,6 +1144,7 @@ function CommandCenter() {
         </button>
       )}
       {s.sheet === 'quickadd' && <QuickAddSheet onClose={() => openSheet('')} onSaved={reload} />}
+      {!isPresent && <wick-assistant screen={s.screen} brand={s.brand}></wick-assistant>}
     </React.Fragment>
   );
 }

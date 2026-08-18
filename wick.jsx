@@ -108,6 +108,13 @@ function Wick() {
     opener().then((observation) => {
       if (!alive) return;
       setHistory([{ role: 'assistant', greet: true, text: [greeting(), observation].filter(Boolean).join('\n\n'), links: [{ label: 'Campaign log', screen: 'campaigns' }] }]);
+      // Arrived from the docked mini-presence's quick-question field --
+      // ask it for them instead of making them retype it.
+      const ask = new URLSearchParams(location.search).get('ask');
+      if (ask) {
+        window.history.replaceState(null, '', '/wick');
+        setTimeout(() => turn(ask), 50);
+      }
     });
     return () => { alive = false; };
   }, []);

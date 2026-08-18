@@ -48,6 +48,21 @@ const BRAND_KIT = {
 const CHANNELS = ['Direct Mail', 'Email', 'Instagram', 'Google Ads', 'Referral Program', 'Facebook', 'Trade Show', 'Yard Sign'];
 const TYPES = ['Seasonal', 'Reactivation', 'Always-On', 'Launch', 'Event', 'Retargeting'];
 
+// Connections has no live-check for anything but Pipedrive (wired via
+// /api/pipedrive-goals in command-center.jsx). Everyone else here is a
+// static status board -- there's no API integration built for any of these
+// yet, this just tells you what still has to be typed in by hand.
+const CONNECTIONS = [
+  { name: 'Pipedrive', role: 'Leads & deal value, the spine of attribution', status: 'not' },
+  { name: 'CallRail', role: 'Tracked numbers per campaign', status: 'manual' },
+  { name: 'Constant Contact', role: 'Email sends, opens, clicks', status: 'manual' },
+  { name: 'Send Jim', role: 'Direct mail drops, piece counts, cost', status: 'manual' },
+  { name: 'Meta / Instagram', role: 'Paid + organic social reach and spend', status: 'not' },
+  { name: 'Google Ads', role: 'Spend and conversions by campaign', status: 'not' },
+  { name: 'ISN', role: 'Job records for close-rate context', status: 'not' },
+  { name: 'NiceJob', role: 'Reviews and referral traffic', status: 'not' },
+];
+
 const money = (n) => n == null ? '—' : '$' + Math.round(n).toLocaleString('en-US');
 // Builds dates from local parts -- parsing a bare YYYY-MM-DD as UTC and
 // formatting it locally shifts the display back a day. Don't reintroduce that.
@@ -110,9 +125,33 @@ async function saveDocketTask(task) {
   return res.json();
 }
 
+// ── Content Builder ─────────────────────────────────────────────────
+async function fetchGeneratedContent() {
+  return ccFetch('generated_content?select=*&order=created_at.desc');
+}
+async function saveGeneratedContent(piece) {
+  const res = await fetch('/api/scaffold-write', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ table: 'generated_content', row: piece }),
+  });
+  if (!res.ok) throw new Error('Could not save piece');
+  return res.json();
+}
+async function generateContent(request) {
+  const res = await fetch('/api/content-generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  if (!res.ok) throw new Error('Generation call failed');
+  return res.json();
+}
+
 window.CC = {
-  BRANDS, BRAND_KIT, CHANNELS, TYPES,
+  BRANDS, BRAND_KIT, CHANNELS, TYPES, CONNECTIONS,
   money, fmtDate, inBrand, checklistDone,
   fetchCampaigns, fetchLinks, saveCampaign, saveLink,
   fetchDocketTasks, saveDocketTask,
+  fetchGeneratedContent, saveGeneratedContent, generateContent,
 };

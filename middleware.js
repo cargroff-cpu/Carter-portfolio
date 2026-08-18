@@ -14,6 +14,7 @@ export const config = {
     '/Command Center.html',
     '/command-center-data.jsx',
     '/command-center.jsx',
+    '/wick-dock.js',
     '/api/scaffold-write',
     '/docket',
     '/The Docket.html',
@@ -28,6 +29,7 @@ export const config = {
     '/api/wick-close-session',
     '/api/wick-memory',
     '/api/wick-brain-server',
+    '/api/content-generate',
   ],
 };
 
