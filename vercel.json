@@ -2,7 +2,6 @@
   "rewrites": [
     { "source": "/", "destination": "/Carter%20Portfolio.html" },
     { "source": "/scaffold", "destination": "/Scaffold%20Hub.html" },
-    { "source": "/command-center", "destination": "/Command%20Center.html" },
     { "source": "/docket", "destination": "/The%20Docket.html" },
     { "source": "/wick", "destination": "/Wick.html" }
   ],

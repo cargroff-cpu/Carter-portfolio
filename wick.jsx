@@ -32,17 +32,12 @@ async function opener() {
     if (!campaigns.length) return `Nothing logged yet. Once a few campaigns are in I'll have something sharper to say than good morning.`;
     return `Nothing untracked and nothing sitting as a draft. Good week to work on something that isn't urgent.`;
   } catch (e) {
-    return `I couldn't reach the Command Center data just now, so I've got nothing sharp to open with.`;
+    return `I couldn't reach the campaign data just now, so I've got nothing sharp to open with.`;
   }
 }
 
 function paras(text) {
   return String(text || '').trim().split(/\n{2,}/).map((p, i) => <p key={i}>{p.split('\n').map((line, j) => (j ? [<br key={j} />, line] : line))}</p>);
-}
-function deepLink(l) {
-  const map = { campaigns: '/command-center?screen=campaigns', detail: '/command-center?screen=detail', links: '/command-center?screen=links', home: '/command-center?screen=home', calendar: '/command-center?screen=calendar', connections: '/command-center?screen=connections', revenue: '/command-center?screen=revenue', present: '/command-center?screen=present' };
-  const base = map[l.screen] || '/command-center';
-  return l.id ? base + (base.includes('?') ? '&' : '?') + 'id=' + encodeURIComponent(l.id) : base;
 }
 
 function Motes() {
@@ -107,7 +102,7 @@ function Wick() {
     let alive = true;
     opener().then((observation) => {
       if (!alive) return;
-      setHistory([{ role: 'assistant', greet: true, text: [greeting(), observation].filter(Boolean).join('\n\n'), links: [{ label: 'Campaign log', screen: 'campaigns' }] }]);
+      setHistory([{ role: 'assistant', greet: true, text: [greeting(), observation].filter(Boolean).join('\n\n') }]);
       // Arrived from the docked mini-presence's quick-question field --
       // ask it for them instead of making them retype it.
       const ask = new URLSearchParams(location.search).get('ask');
@@ -147,10 +142,10 @@ function Wick() {
     }).catch(() => {});
   }, []);
 
-  // Same-origin link clicks (the header's "The Scaffold" link, deep links
-  // into Command Center) shouldn't count as "leaving" -- only a real
-  // tab-close or refresh should log out, so those clicks are marked and
-  // pagehide skips the logout beacon for them.
+  // Same-origin link clicks (the header's "The Scaffold" link) shouldn't
+  // count as "leaving" -- only a real tab-close or refresh should log out,
+  // so those clicks are marked and pagehide skips the logout beacon for
+  // them.
   React.useEffect(() => {
     const onClick = (e) => {
       const a = e.target.closest && e.target.closest('a[href]');
@@ -180,7 +175,7 @@ function Wick() {
       });
       const data = await res.json();
       setState('answering'); setPulsing(false);
-      setHistory((h) => [...h, { role: 'assistant', text: data.reply || "That call didn't come back with anything.", links: data.links || [], did: data.did || '' }]);
+      setHistory((h) => [...h, { role: 'assistant', text: data.reply || "That call didn't come back with anything.", did: data.did || '' }]);
     } catch (e) {
       setPulsing(false);
       setHistory((h) => [...h, { role: 'assistant', text: "That call failed and I'm not going to guess at numbers. Try again in a moment." }]);
@@ -202,7 +197,7 @@ function Wick() {
     setTimeout(async () => {
       setClosing(false);
       const observation = await opener();
-      setHistory([{ role: 'assistant', greet: true, text: [greeting(), observation].filter(Boolean).join('\n\n'), links: [{ label: 'Campaign log', screen: 'campaigns' }] }]);
+      setHistory([{ role: 'assistant', greet: true, text: [greeting(), observation].filter(Boolean).join('\n\n') }]);
     }, 1000);
   };
 
@@ -232,11 +227,6 @@ function Wick() {
             <div key={i} className={'turn ' + (m.role === 'user' ? 'me' : 'him') + (m.greet ? ' greet' : '')}>
               {paras(m.text)}
               {m.did && <div className="did">{m.did}</div>}
-              {m.links && m.links.length > 0 && (
-                <div className="jump">
-                  {m.links.map((l, j) => <a key={j} href={deepLink(l)}>{l.label} →</a>)}
-                </div>
-              )}
             </div>
           ))}
           {pulsing && <div className="turn him"><span className="pulse">·</span></div>}

@@ -86,21 +86,20 @@ Who you are:
 - Two or three sentences is usually right. Longer only when he asks for a plan.
 
 What you can do, use the tools rather than describing the steps:
-- log_campaign to write a real entry in the Command Center.
+- log_campaign to write a real entry in the campaign log.
 - generate_utm to mint a properly named tracking link.
 - pull_numbers when you need a figure you do not already have in context.
-- open_screen when the answer is something he should look at, the app renders a real button.
 - draft_proposal to start a proposal or campaign brief outline.
 - remember for anything worth carrying into future sessions: decisions, preferences, what worked, what failed.
 
-CRITICAL RULE ON ACTIONS: log_campaign, generate_utm, draft_proposal, and remember all WRITE data. Before calling any of them, say plainly in your text what you are about to do and wait for him to say yes -- do not call the tool in the same turn you propose it. Only call the tool once his next message confirms it. pull_numbers and open_screen are read-only and need no confirmation, call them freely.
+CRITICAL RULE ON ACTIONS: log_campaign, generate_utm, draft_proposal, and remember all WRITE data. Before calling any of them, say plainly in your text what you are about to do and wait for him to say yes -- do not call the tool in the same turn you propose it. Only call the tool once his next message confirms it. pull_numbers is read-only and needs no confirmation, call it freely.
 
 When you write or judge copy, work from the brand guides below. The two brands are separate: never mix their palettes, fonts, imagery or language. LTW is measured and plainspoken; Squeeky is loud and neighborly. Neither uses em dashes or emoji.`;
 
 const WICK_TOOLS = [
   {
     name: 'log_campaign',
-    description: 'Create a campaign entry in the Command Center. Brand, channel and date are required; anything else can be filled later.',
+    description: 'Create a campaign entry in the campaign log. Brand, channel and date are required; anything else can be filled later.',
     input_schema: { type: 'object', properties: { brand: { type: 'string', enum: ['ltw', 'sq'] }, channel: { type: 'string' }, date: { type: 'string', description: 'YYYY-MM-DD' }, name: { type: 'string' }, cost: { type: 'number' }, qty: { type: 'number' }, type: { type: 'string' }, audience: { type: 'string' }, notes: { type: 'string' } }, required: ['brand', 'channel', 'date'] },
   },
   {
@@ -112,11 +111,6 @@ const WICK_TOOLS = [
     name: 'pull_numbers',
     description: 'Read current campaign and lead figures. scope: overview | channels | untracked.',
     input_schema: { type: 'object', properties: { brand: { type: 'string', enum: ['ltw', 'sq', 'both'] }, scope: { type: 'string' } }, required: ['brand'] },
-  },
-  {
-    name: 'open_screen',
-    description: 'Give Carter a button that jumps straight to a Command Center screen. screen: home | campaigns | detail | links | calendar | connections | revenue | present.',
-    input_schema: { type: 'object', properties: { screen: { type: 'string' }, id: { type: 'string' }, label: { type: 'string' } }, required: ['screen'] },
   },
   {
     name: 'draft_proposal',
@@ -159,13 +153,10 @@ async function runTool(name, input, sessionId) {
     const url = `https://${host}${p}?utm_source=${UTM_SRC[input.channel] || slug(input.channel)}&utm_medium=${UTM_MED[input.channel] || 'referral'}&utm_campaign=${camp}`;
     await sbInsert('links', { name: camp, brand: input.brand, channel: input.channel, date: d.toISOString().slice(0, 10), url });
     await sbInsert('wick_actions', { session_id: sessionId || null, tool: 'generate_utm', input, result: url, entity: camp, ok: true });
-    return { result: url, link: { label: 'Open the link table', screen: 'links' }, acted: 'built a link' };
+    return { result: url, link: null, acted: 'built a link' };
   }
   if (name === 'pull_numbers') {
     return { result: await liveSnapshot(), link: null, acted: null };
-  }
-  if (name === 'open_screen') {
-    return { result: 'Button rendered.', link: { label: input.label || ('Open ' + input.screen), screen: input.screen, id: input.id }, acted: null };
   }
   if (name === 'draft_proposal') {
     await sbInsert('wick_actions', { session_id: sessionId || null, tool: 'draft_proposal', input, result: 'outline only', ok: true });

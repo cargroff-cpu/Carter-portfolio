@@ -49,9 +49,9 @@ const CHANNELS = ['Direct Mail', 'Email', 'Instagram', 'Google Ads', 'Referral P
 const TYPES = ['Seasonal', 'Reactivation', 'Always-On', 'Launch', 'Event', 'Retargeting'];
 
 // Connections has no live-check for anything but Pipedrive (wired via
-// /api/pipedrive-goals in command-center.jsx). Everyone else here is a
-// static status board -- there's no API integration built for any of these
-// yet, this just tells you what still has to be typed in by hand.
+// /api/pipedrive-goals). Everyone else here is a static status board --
+// there's no API integration built for any of these yet, this just tells
+// you what still has to be typed in by hand.
 const CONNECTIONS = [
   { name: 'Pipedrive', role: 'Leads & deal value, the spine of attribution', status: 'not' },
   { name: 'CallRail', role: 'Tracked numbers per campaign', status: 'manual' },

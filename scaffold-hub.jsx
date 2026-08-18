@@ -1,7 +1,7 @@
 // scaffold-hub.jsx — The Scaffold's entry point, recreated in React from
 // design-reference/Scaffold Hub.html. Establishes Wick's presence (the
-// sconce) and routes to the Command Center, the existing Website Backend
-// (Admin.html), and the Docket.
+// sconce) and routes to the existing Website Backend (Admin.html) and the
+// Docket.
 const { fetchDocketTasks } = window.CC;
 
 function hail() {
@@ -97,14 +97,8 @@ function ScaffoldHub() {
         <h1 className="greet">{hail()}, <em>Carter</em>.</h1>
 
         <div className="pair">
-          <a className="door" href="/command-center">
-            <span className="no">01</span>
-            <h2>Marketing<br />Command Center</h2>
-            <p>Every campaign for Log &amp; Timber Worx and Squeeky Clean, what it cost, what it produced.</p>
-            <span className="arrow">→</span>
-          </a>
           <a className="door" href="Admin.html">
-            <span className="no">02</span>
+            <span className="no">01</span>
             <h2>Website<br />Backend</h2>
             <p>Copy, work, resume, travel pins, everything the public side reads from.</p>
             <span className="arrow">→</span>

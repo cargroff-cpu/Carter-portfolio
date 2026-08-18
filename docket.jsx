@@ -189,7 +189,6 @@ function Docket() {
             <div><b>The Docket</b><span>The Scaffold</span></div>
           </a>
           <nav className="topnav">
-            <a href="/command-center">Command Center</a>
             <a href="/wick">Wick</a>
             <a href="/scaffold">Hub</a>
           </nav>
