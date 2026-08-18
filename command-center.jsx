@@ -1072,13 +1072,12 @@ function CommandCenter() {
   }, [s.sheet]);
 
   const isPresent = s.screen === 'present';
-  // Photographic masthead per the Lamplight treatment — Home and Campaigns get
-  // a job photo scrim; everything else gets the flat gradient variant since
-  // its own content (charts, the builder preview, the calendar grid) is
-  // already the artwork.
-  const plateVariant = s.screen === 'home' ? { photo: 'plate-mcc.jpg' }
-    : (s.screen === 'campaigns' || s.screen === 'detail') ? { photo: 'plate-mcc2.jpg', short: true }
-    : { flat: true };
+  // Photographic masthead per the Lamplight treatment was designed to use
+  // real job-site photography here -- assets/plate-mcc.jpg and plate-mcc2.jpg
+  // turned out to be screenshots of an old build of this app (mistakenly
+  // saved in place of real photos), so every screen uses the flat gradient
+  // variant for now until real photography is dropped in.
+  const plateVariant = { flat: true };
 
   return (
     <React.Fragment>
