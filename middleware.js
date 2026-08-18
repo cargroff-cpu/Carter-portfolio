@@ -21,6 +21,13 @@ export const config = {
     '/Scaffold Hub.html',
     '/scaffold-hub.jsx',
     '/api/pipedrive-goals',
+    '/wick',
+    '/Wick.html',
+    '/wick.jsx',
+    '/api/wick-chat',
+    '/api/wick-close-session',
+    '/api/wick-memory',
+    '/api/wick-brain-server',
   ],
 };
 
