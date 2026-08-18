@@ -147,10 +147,23 @@ function Wick() {
     }).catch(() => {});
   }, []);
 
+  // Same-origin link clicks (the header's "The Scaffold" link, deep links
+  // into Command Center) shouldn't count as "leaving" -- only a real
+  // tab-close or refresh should log out, so those clicks are marked and
+  // pagehide skips the logout beacon for them.
+  React.useEffect(() => {
+    const onClick = (e) => {
+      const a = e.target.closest && e.target.closest('a[href]');
+      if (a && a.origin === location.origin) window.__skipLogout = true;
+    };
+    window.addEventListener('click', onClick, true);
+    return () => window.removeEventListener('click', onClick, true);
+  }, []);
+
   React.useEffect(() => {
     const onPageHide = () => {
       if (history.length > 3) closeSession(history);
-      if (navigator.sendBeacon) navigator.sendBeacon('/api/logout');
+      if (!window.__skipLogout && navigator.sendBeacon) navigator.sendBeacon('/api/logout');
     };
     window.addEventListener('pagehide', onPageHide);
     return () => window.removeEventListener('pagehide', onPageHide);

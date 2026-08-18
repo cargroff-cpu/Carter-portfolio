@@ -210,8 +210,16 @@
 <body>
   <div id="root"></div>
   <script>
+    // Same-origin link clicks (Docket/Wick/Command Center/Hub all share this
+    // login) shouldn't count as "leaving" -- only a real tab-close or
+    // refresh should log out, so those clicks are marked and pagehide skips
+    // the beacon for them.
+    window.addEventListener('click', function (e) {
+      var a = e.target.closest && e.target.closest('a[href]');
+      if (a && a.origin === location.origin) window.__skipLogout = true;
+    }, true);
     window.addEventListener('pagehide', function () {
-      if (navigator.sendBeacon) navigator.sendBeacon('/api/logout');
+      if (!window.__skipLogout && navigator.sendBeacon) navigator.sendBeacon('/api/logout');
     });
   </script>
 

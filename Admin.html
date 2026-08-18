@@ -39,13 +39,19 @@
 </head>
 <body>
   <div id="root"></div>
-  <!-- Logs the admin session out the moment this page is left or refreshed,
-       rather than waiting on the cookie's own expiry (or the browser
-       eventually closing) — sendBeacon reliably fires this during unload
-       without blocking navigation. -->
+  <!-- Logs the admin session out the moment this page is closed or
+       refreshed, rather than waiting on the cookie's own expiry — sendBeacon
+       reliably fires this during unload without blocking navigation. Same-
+       origin link clicks are marked first and skip the beacon, since the
+       Hub/Command Center/Docket/Wick all share this one login and clicking
+       between them shouldn't force a re-login. -->
   <script>
+    window.addEventListener('click', function (e) {
+      var a = e.target.closest && e.target.closest('a[href]');
+      if (a && a.origin === location.origin) window.__skipLogout = true;
+    }, true);
     window.addEventListener('pagehide', function () {
-      if (navigator.sendBeacon) navigator.sendBeacon('/api/logout');
+      if (!window.__skipLogout && navigator.sendBeacon) navigator.sendBeacon('/api/logout');
     });
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>

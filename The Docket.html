@@ -90,8 +90,16 @@ main { padding: 22px 20px 120px; max-width: 1420px; margin: 0 auto; }
 <body>
   <div id="root"></div>
   <script>
+    // Same-origin link clicks (Docket/Wick/Command Center/Hub all share this
+    // login) shouldn't count as "leaving" -- only a real tab-close or
+    // refresh should log out, so those clicks are marked and pagehide skips
+    // the beacon for them.
+    window.addEventListener('click', function (e) {
+      var a = e.target.closest && e.target.closest('a[href]');
+      if (a && a.origin === location.origin) window.__skipLogout = true;
+    }, true);
     window.addEventListener('pagehide', function () {
-      if (navigator.sendBeacon) navigator.sendBeacon('/api/logout');
+      if (!window.__skipLogout && navigator.sendBeacon) navigator.sendBeacon('/api/logout');
     });
   </script>
   <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
