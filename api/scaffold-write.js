@@ -4,7 +4,7 @@
 // cookie check has already passed. Uses the service-role key (server-side
 // env var, never sent to the browser). Whitelisted tables only.
 const SCAFFOLD_SUPABASE_URL = 'https://kvgeimwitzdlstagqumw.supabase.co';
-const ALLOWED_TABLES = new Set(['campaigns', 'links', 'wick_memory', 'wick_sessions', 'wick_messages', 'wick_actions']);
+const ALLOWED_TABLES = new Set(['campaigns', 'links', 'wick_memory', 'wick_sessions', 'wick_messages', 'wick_actions', 'docket_tasks']);
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

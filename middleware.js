@@ -15,6 +15,11 @@ export const config = {
     '/command-center-data.jsx',
     '/command-center.jsx',
     '/api/scaffold-write',
+    '/docket',
+    '/The Docket.html',
+    '/docket.jsx',
+    '/Scaffold Hub.html',
+    '/scaffold-hub.jsx',
   ],
 };
 

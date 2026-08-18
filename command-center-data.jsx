@@ -96,8 +96,23 @@ async function saveLink(link) {
   return res.json();
 }
 
+// ── Docket ───────────────────────────────────────────────────────────
+async function fetchDocketTasks() {
+  return ccFetch('docket_tasks?select=*&order=rank.asc');
+}
+async function saveDocketTask(task) {
+  const res = await fetch('/api/scaffold-write', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ table: 'docket_tasks', row: task }),
+  });
+  if (!res.ok) throw new Error('Could not save task');
+  return res.json();
+}
+
 window.CC = {
   BRANDS, BRAND_KIT, CHANNELS, TYPES,
   money, fmtDate, inBrand, checklistDone,
   fetchCampaigns, fetchLinks, saveCampaign, saveLink,
+  fetchDocketTasks, saveDocketTask,
 };
