@@ -20,6 +20,7 @@ export const config = {
     '/docket.jsx',
     '/Scaffold Hub.html',
     '/scaffold-hub.jsx',
+    '/api/pipedrive-goals',
   ],
 };
 

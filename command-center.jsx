@@ -44,9 +44,12 @@ function StatusPill({ c }) {
 }
 
 // ── Home ──────────────────────────────────────────────────────────────
-function GoalCard({ b, brandInfo, leads }) {
-  const hasGoal = brandInfo.goal != null;
-  const pct = hasGoal ? Math.round((leads / brandInfo.goal) * 100) : 0;
+function GoalCard({ b, pdGoal, leads }) {
+  // pdGoal is this brand's entry from /api/pipedrive-goals -- { found, target,
+  // current, syncedAt } once configured, or undefined/not-found before then.
+  const hasGoal = !!(pdGoal && pdGoal.found && pdGoal.target != null);
+  const goalLeads = hasGoal && pdGoal.current != null ? pdGoal.current : leads;
+  const pct = hasGoal ? Math.round((goalLeads / pdGoal.target) * 100) : 0;
   const pace = !hasGoal ? '' : pct >= 74 ? 'On pace' : 'Behind pace';
   return (
     <div className="card panel goal">
@@ -57,15 +60,15 @@ function GoalCard({ b, brandInfo, leads }) {
       {hasGoal ? (
         <React.Fragment>
           <div className="glowsrc">
-            <div className="bignum mono lit">{leads}<span>/ {brandInfo.goal}</span></div>
+            <div className="bignum mono lit">{goalLeads}<span>/ {pdGoal.target}</span></div>
           </div>
           <div className="lbl" style={{ marginBottom: 10 }}>Leads vs. goal <span style={{ color: 'var(--text-4)' }}>· from Pipedrive</span></div>
           <div className="bar big"><i className="lit" style={{ width: Math.min(pct, 100) + '%' }} /></div>
           <div className="between" style={{ marginTop: 9 }}>
             <span className="sub mono">{pct}%</span>
-            <span className="sub mono">{brandInfo.goal - leads} to go</span>
+            <span className="sub mono">{pdGoal.target - goalLeads} to go</span>
           </div>
-          <div className="lbl" style={{ marginTop: 14, color: 'var(--text-4)' }}>Synced {brandInfo.goalSynced || ''}</div>
+          <div className="lbl" style={{ marginTop: 14, color: 'var(--text-4)' }}>Synced {pdGoal.syncedAt ? new Date(pdGoal.syncedAt).toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' }) : ''}</div>
         </React.Fragment>
       ) : (
         <React.Fragment>
@@ -165,7 +168,7 @@ function RecentRow({ c, onGo }) {
   );
 }
 
-function ScreenHome({ s, campaigns, onGo }) {
+function ScreenHome({ s, campaigns, onGo, goals }) {
   const brands = s.brand === 'both' ? ['ltw', 'sq'] : [s.brand];
   const flagged = inBrand(campaigns.filter((c) => c.status === 'flagged'), s.brand);
   return (
@@ -189,7 +192,7 @@ function ScreenHome({ s, campaigns, onGo }) {
       <div className={'goals' + (brands.length > 1 ? ' two' : '')}>
         {brands.map((b) => {
           const leads = campaigns.filter((c) => c.brand === b).reduce((a, c) => a + (c.leads || 0), 0);
-          return <GoalCard key={b} b={b} brandInfo={BRANDS[b]} leads={leads} />;
+          return <GoalCard key={b} b={b} pdGoal={goals.goals && goals.goals[b]} leads={leads} />;
         })}
       </div>
       <SpendPanel brand={s.brand} campaigns={campaigns} />
@@ -565,6 +568,9 @@ function CommandCenter() {
   const [links, setLinks] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [err, setErr] = React.useState('');
+  // Pipedrive goals load independently of campaigns/links -- Home shouldn't
+  // wait on (or break for) a slow/unconfigured Pipedrive connection.
+  const [goals, setGoals] = React.useState({ configured: false, goals: {} });
 
   const reload = React.useCallback(() => {
     Promise.all([fetchCampaigns(), fetchLinks()])
@@ -573,6 +579,9 @@ function CommandCenter() {
       .finally(() => setLoading(false));
   }, []);
   React.useEffect(() => { reload(); }, [reload]);
+  React.useEffect(() => {
+    fetch('/api/pipedrive-goals').then((r) => r.json()).then(setGoals).catch(() => {});
+  }, []);
 
   const onGo = (screen, id) => { setS((prev) => ({ ...prev, screen, id: id || prev.id })); window.scrollTo(0, 0); };
   const onFilter = (key, value) => setS((prev) => ({ ...prev, [key]: value }));
@@ -638,7 +647,7 @@ function CommandCenter() {
           <div className="card panel pad empty"><p className="sub" style={{ color: 'var(--danger)' }}>{err}</p></div>
         ) : (
           <React.Fragment>
-            {s.screen === 'home' && <ScreenHome s={s} campaigns={campaigns} onGo={onGo} />}
+            {s.screen === 'home' && <ScreenHome s={s} campaigns={campaigns} onGo={onGo} goals={goals} />}
             {(s.screen === 'campaigns') && <ScreenCampaigns s={s} campaigns={campaigns} onGo={onGo} onFilter={onFilter} onLogCampaign={() => openSheet('quickadd')} />}
             {s.screen === 'detail' && <ScreenDetail s={s} campaigns={campaigns} onGo={onGo} onSaved={reload} />}
             {s.screen === 'links' && <ScreenLinks links={links} onSaved={reload} />}
