@@ -27,6 +27,23 @@
 <body>
   <div id="root"></div>
 
+  <!-- Reveal-on-scroll leaves .cg-reveal at opacity:0 until an
+       IntersectionObserver fires. If scripting is off, that observer never
+       runs and every section below the hero would stay invisible, so unhide
+       it up front and let the page render as plain static content. -->
+  <noscript>
+    <style>
+      .cg-reveal, .cg-fadeup, .cg-portrait-reveal, .cg-botanical {
+        opacity: 1 !important; transform: none !important;
+      }
+    </style>
+    <p style="max-width:46rem;margin:0 auto;padding:14vh 24px 0;color:#c9b48a;
+              font:400 1.05rem/1.75 'Spectral',Georgia,serif;text-align:center">
+      This portfolio needs JavaScript to assemble itself. Reach Carter directly at
+      <a href="mailto:car.groff@gmail.com" style="color:#f5cd6a">car.groff@gmail.com</a>.
+    </p>
+  </noscript>
+
   <!-- React + Babel (pinned, required) -->
   <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>

@@ -103,7 +103,7 @@ function Nav() {
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       fontFamily: 'var(--ui-font)',
     }}>
-      <a href="#sec-top" className="cg-nav-logo" style={{ display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none' }}>
+      <a href="#sec-top" className="cg-nav-logo" style={{ display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none', minHeight: 44 }}>
         <div className="cg-nav-mark" style={{ width: 38, height: 38, border: '1px solid var(--ink-dim)',
           display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <span className="cg-candle-pulse cg-nav-mark-glow" />
@@ -113,7 +113,7 @@ function Nav() {
           <div style={{ fontFamily: 'var(--display-font)', fontSize: 17,
             fontWeight: 500, letterSpacing: '-0.01em',
             color: 'var(--ink)', lineHeight: 1 }}>Carter Groff</div>
-          <div style={{ fontSize: 9, letterSpacing: '0.3em', textTransform: 'uppercase',
+          <div style={{ fontSize: 10, letterSpacing: '0.28em', textTransform: 'uppercase',
             color: 'var(--ink-mute)', marginTop: 4 }}>Marketing &amp; Media</div>
         </div>
       </a>
@@ -122,11 +122,13 @@ function Nav() {
           <a key={n} href={anchor}
             style={{ fontSize: 11, color: 'var(--ink-soft)', textDecoration: 'none',
               letterSpacing: '0.24em', textTransform: 'uppercase', fontFamily: 'var(--ui-font)',
-              fontWeight: 500 }}>{n}</a>
+              fontWeight: 500, display: 'inline-flex', alignItems: 'center',
+              minHeight: 44, padding: '0 2px' }}>{n}</a>
         ))}
         <a href="#sec-contact" style={{
           fontSize: 10, color: 'var(--ink)', border: '1px solid var(--ink-dim)',
-          padding: '11px 18px', textDecoration: 'none', whiteSpace: 'nowrap',
+          padding: '0 18px', minHeight: 44, display: 'inline-flex', alignItems: 'center',
+          textDecoration: 'none', whiteSpace: 'nowrap',
           letterSpacing: '0.26em', textTransform: 'uppercase', fontFamily: 'var(--ui-font)',
           fontWeight: 500,
         }}>Get in touch</a>
@@ -565,7 +567,7 @@ function Hero() {
           display: 'inline-flex', alignItems: 'center', gap: 14,
           color: 'var(--ink)', textDecoration: 'none',
           fontFamily: 'var(--ui-font)', fontSize: 11, letterSpacing: '0.3em',
-          textTransform: 'uppercase',
+          textTransform: 'uppercase', minHeight: 44,
         }}>
           <span style={{ width: 28, height: 1, background: 'var(--amber)' }} />
           See the work
@@ -573,19 +575,19 @@ function Hero() {
         <div className="cg-hero-meta" style={{ display: 'flex', gap: 56, fontFamily: 'var(--ui-font)', fontSize: 10,
           color: 'var(--ink-mute)', letterSpacing: '0.26em', textTransform: 'uppercase' }}>
           <div>
-            <div style={{ color: 'var(--ink-dim)', marginBottom: 6 }}>Discipline</div>
+            <div style={{ color: 'var(--ink-mute)', marginBottom: 6 }}>Discipline</div>
             <div style={{ color: 'var(--ink-soft)' }}>Marketing · Video · Design</div>
           </div>
           <div>
-            <div style={{ color: 'var(--ink-dim)', marginBottom: 6 }}>Based</div>
+            <div style={{ color: 'var(--ink-mute)', marginBottom: 6 }}>Based</div>
             <div style={{ color: 'var(--ink-soft)' }}>{D.location}</div>
           </div>
           <div>
-            <div style={{ color: 'var(--ink-dim)', marginBottom: 6 }}>Reach</div>
+            <div style={{ color: 'var(--ink-mute)', marginBottom: 6 }}>Reach</div>
             <div style={{ color: 'var(--ink-soft)' }}>{D.email}</div>
           </div>
           <div>
-            <div style={{ color: 'var(--ink-dim)', marginBottom: 6 }}>This site</div>
+            <div style={{ color: 'var(--ink-mute)', marginBottom: 6 }}>This site</div>
             <div style={{ color: 'var(--ink-soft)' }}>Designed &amp; developed by me</div>
           </div>
         </div>
@@ -628,6 +630,7 @@ function About() {
               background: '#0e0805' }}>
               {/* Real portrait photo */}
               <img src="assets/portrait.jpg" alt="Carter Groff"
+                width={900} height={1200} loading="lazy" decoding="async"
                 style={{ position: 'absolute', inset: 0, width: '100%', height: '100%',
                   objectFit: 'cover', objectPosition: 'center 30%',
                   filter: 'saturate(0.85) contrast(1.04)' }} />
@@ -647,7 +650,7 @@ function About() {
               letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--ink-mute)', whiteSpace: 'nowrap' }}>
               <span>Plate I</span>
               <span style={{ color: 'var(--amber)' }}>Carter Groff</span>
-              <span>MMXXIV</span>
+              <span>MMIII</span>
             </div>
           </PaperFrame>
           </div>
@@ -736,7 +739,7 @@ function VideoWork({ onOpen }) {
             style={{ cursor: 'pointer' }}>
             <div className="cg-photo" style={{ aspectRatio: '16/10', position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', inset: 0, background: tint }} />
-              {effImg && <img src={effImg} alt="" style={{ position: 'absolute', inset: 0,
+              {effImg && <img src={effImg} alt="" loading="lazy" decoding="async" style={{ position: 'absolute', inset: 0,
                 width: '100%', height: '100%', objectFit: 'cover' }} />}
               {/* keep the parlor color reading through an auto-pulled YouTube still */}
               {autoThumb && <div style={{ position: 'absolute', inset: 0, background: tint,
@@ -834,7 +837,7 @@ function DesignWork({ onOpen }) {
                 cursor: 'pointer', position: 'relative' }}>
               <div className="cg-photo" style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', inset: 0, background: d.color || TILE_HUES[i % TILE_HUES.length] }} />
-                {disp && <img src={disp} alt="" style={{ position: 'absolute', inset: 0,
+                {disp && <img src={disp} alt="" loading="lazy" decoding="async" style={{ position: 'absolute', inset: 0,
                   width: '100%', height: '100%', objectFit: 'cover' }} />}
                 {pdfOnly && <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
                   alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--ink)' }}>
@@ -1154,13 +1157,16 @@ function TravelDrawer() {
         @keyframes cg-tv-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(3px); } }
         @keyframes cg-tv-slidein { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
         @keyframes cg-tv-ping { 0% { transform: translate(-50%,-50%) scale(1); opacity: 0.55; } 70% { opacity: 0; } 100% { transform: translate(-50%,-50%) scale(3.4); opacity: 0; } }
-        .cg-tv-trigger { cursor: pointer; background: none; border: 0; padding: 0;
-          display: inline-flex; align-items: center; gap: 12px;
+        .cg-tv-drawer { transition: grid-template-rows .6s cubic-bezier(.22,1,.36,1); }
+        .cg-tv-drawer > * { min-height: 0; }
+        .cg-tv-trigger { cursor: pointer; background: none; border: 0;
+          display: inline-flex; align-items: flex-end; gap: 12px;
           font-family: var(--ui-font); font-size: 12px; letter-spacing: 0.32em;
           text-transform: uppercase; color: var(--amber); font-weight: 500;
-          padding-bottom: 6px; border-bottom: 1px solid var(--amber);
+          padding: 16px 0 6px; min-height: 44px;
+          border-bottom: 1px solid var(--amber);
           transition: color .3s ease, border-color .3s ease; }
-        .cg-tv-trigger:hover { color: var(--amber-light, #f5cd6a); }
+        .cg-tv-trigger:hover { color: var(--amber-lit); }
         .cg-tv-chev { transition: transform .6s cubic-bezier(.2,.7,.3,1); }
         .cg-tv-trigger:not(.is-open) .cg-tv-chev { animation: cg-tv-bob 1.8s ease-in-out infinite; }
         .cg-tv-trigger.is-open .cg-tv-chev { transform: rotate(180deg); }
@@ -1194,7 +1200,8 @@ function TravelDrawer() {
         /* Country tabs (below the map) */
         .cg-tv-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
         .cg-tv-caption + .cg-tv-tabs { margin-top: 8px; }
-        .cg-tv-tab { background: none; border: 1px solid var(--card-edge); cursor: pointer; padding: 9px 16px;
+        .cg-tv-tab { background: none; border: 1px solid var(--card-edge); cursor: pointer;
+          padding: 11px 16px; min-height: 44px;
           border-radius: 2px; font-family: var(--ui-font); font-size: 10px; letter-spacing: 0.2em;
           text-transform: uppercase; color: var(--ink-mute);
           transition: color .2s ease, border-color .2s ease, background .2s ease; }
@@ -1215,7 +1222,7 @@ function TravelDrawer() {
           cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-family: var(--ui-font);
           font-size: 11px; letter-spacing: 0.26em; text-transform: uppercase; color: var(--amber);
           border-bottom: 1px solid transparent; transition: border-color .25s ease, color .25s ease; }
-        .cg-tv-viewphoto:hover { border-bottom-color: var(--amber); color: var(--amber-light, #f5cd6a); }
+        .cg-tv-viewphoto:hover { border-bottom-color: var(--amber); color: var(--amber-lit); }
         .cg-tv-tip { position: absolute; z-index: 6; pointer-events: none; transform: translateY(-50%);
           background: rgba(13,9,5,0.82); border: 1px solid rgba(217,154,61,0.4); color: var(--amber);
           font-family: var(--ui-font); font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
@@ -1249,8 +1256,8 @@ function TravelDrawer() {
       </div>
 
       {/* Drawer */}
-      <div style={{ maxHeight: open ? 1240 : 0, overflow: 'hidden',
-        transition: 'max-height .6s cubic-bezier(.4,0,.2,1)' }}>
+      <div className="cg-tv-drawer" style={{ display: 'grid',
+        gridTemplateRows: open ? '1fr' : '0fr', overflow: 'hidden' }}>
         <div className={'cg-tv-stage' + (detail ? ' is-detail' : '')}>
           {/* LEFT — map + tabs (+ caption in overview) */}
           <div className="cg-tv-left">
@@ -1480,6 +1487,7 @@ function Contact() {
     setSending(false);
   }
 
+  const AUTOCOMPLETE = { name: 'name', email: 'email', message: 'off' };
   const field = (label, key, type = 'text', rows = 0) => (
     <label style={{ display: 'block', marginBottom: 32 }}>
       <div style={{ fontFamily: 'var(--ui-font)', fontSize: 10,
@@ -1488,6 +1496,9 @@ function Contact() {
       {rows ? (
         <textarea value={state[key]} rows={rows}
           onChange={(e) => setState({ ...state, [key]: e.target.value })}
+          autoComplete={AUTOCOMPLETE[key]} aria-required="true"
+          aria-invalid={errors[key] ? 'true' : undefined}
+          aria-describedby={errors[key] ? `cg-err-${key}` : undefined}
           style={{ width: '100%', background: 'transparent',
             border: 'none', borderBottom: `1px solid ${errors[key] ? 'var(--terracotta)' : 'var(--rule-strong)'}`,
             fontFamily: 'var(--display-font)', fontSize: 22, lineHeight: 1.5,
@@ -1495,13 +1506,17 @@ function Contact() {
       ) : (
         <input value={state[key]} type={type}
           onChange={(e) => setState({ ...state, [key]: e.target.value })}
+          autoComplete={AUTOCOMPLETE[key]} aria-required="true"
+          aria-invalid={errors[key] ? 'true' : undefined}
+          aria-describedby={errors[key] ? `cg-err-${key}` : undefined}
           style={{ width: '100%', background: 'transparent',
             border: 'none', borderBottom: `1px solid ${errors[key] ? 'var(--terracotta)' : 'var(--rule-strong)'}`,
             fontFamily: 'var(--display-font)', fontSize: 24,
             color: 'var(--ink)', padding: '10px 0', outline: 'none' }} />
       )}
-      {errors[key] && <div style={{ fontFamily: 'var(--body-font)', fontStyle: 'italic',
-        fontSize: 13, color: 'var(--terracotta)', marginTop: 8 }}>{errors[key]}</div>}
+      {errors[key] && <div id={`cg-err-${key}`} role="alert"
+        style={{ fontFamily: 'var(--body-font)', fontStyle: 'italic',
+        fontSize: 13, color: 'var(--terracotta-lit)', marginTop: 8 }}>{errors[key]}</div>}
     </label>
   );
 
@@ -1558,7 +1573,7 @@ function Contact() {
             </div>
             {field('Your message', 'message', 'text', 4)}
             {sendErr && <div style={{ fontFamily: 'var(--body-font)', fontStyle: 'italic',
-              fontSize: 13.5, color: 'var(--terracotta)', marginTop: -8, marginBottom: 24 }}>{sendErr}</div>}
+              fontSize: 13.5, color: 'var(--terracotta-lit)', marginTop: -8, marginBottom: 24 }}>{sendErr}</div>}
             <div className="cg-contact-foot" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               marginTop: 44, paddingTop: 32, borderTop: '1px solid var(--rule)' }}>
               <p style={{ fontFamily: 'var(--body-font)', fontStyle: 'italic', fontSize: 14,
@@ -1638,7 +1653,7 @@ function SocialWindow({ s, index, total, onClose }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px',
           background: 'var(--bg-deep)', borderBottom: '1px solid var(--rule)' }}>
           <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--terracotta)' }} />
-          <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--amber-deep)' }} />
+          <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--amber)' }} />
           <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--sage)' }} />
           <span style={{ marginLeft: 'auto', fontFamily: 'var(--ui-font)', fontSize: 9.5,
             letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--ink-mute)' }}>{s.label}</span>
@@ -1763,18 +1778,19 @@ function Footer() {
       <div className="cg-footer-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         fontFamily: 'var(--ui-font)', fontSize: 10,
         color: 'var(--ink-mute)', letterSpacing: '0.26em', textTransform: 'uppercase' }}>
-        <span>&copy; MMXXVI · Carter Groff</span>
+        <span>&copy; MMIII · Carter Groff</span>
         <span style={{ fontFamily: 'var(--display-font)', fontStyle: 'italic', fontSize: 15,
           letterSpacing: '0.04em', textTransform: 'none', color: 'var(--ink-soft)' }}>
           made to weather well
         </span>
         <a href={`mailto:${D.email}`}
-          style={{ color: 'var(--ink-soft)', textDecoration: 'none' }}>
+          style={{ color: 'var(--ink-soft)', textDecoration: 'none',
+            display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>
           {D.email}
         </a>
       </div>
       <div style={{ marginTop: 26, textAlign: 'center', fontFamily: 'var(--ui-font)', fontSize: 10,
-        letterSpacing: '0.26em', textTransform: 'uppercase', color: 'var(--ink-dim)' }}>
+        letterSpacing: '0.26em', textTransform: 'uppercase', color: 'var(--ink-mute)' }}>
         Website designed &amp; developed by Carter Groff
       </div>
     </footer>
@@ -1981,13 +1997,26 @@ function Portfolio() {
   return (
     <div className="cg-root cg-grain" style={rootStyle}>
       <BotanicalDefs />
+      <a className="cg-skip" href="#cg-main">Skip to content</a>
       <Nav />
-      <Hero />
-      {sectionOrder.map((id) => SECTION_RENDERERS[id]())}
+      <main id="cg-main">
+        <Hero />
+        {sectionOrder.map((id) => SECTION_RENDERERS[id]())}
+      </main>
       <Footer />
       <Lightbox open={lb.open} item={lb} onClose={() => setLb({ ...lb, open: false })} />
       <style>{`
         html { scroll-behavior: smooth; }
+
+        /* Skip link — invisible until keyboard focus, then a lit brass plate. */
+        .cg-root .cg-skip { position: fixed; top: 14px; left: 14px; z-index: 300;
+          transform: translateY(-160%); transition: transform .28s cubic-bezier(.2,.7,.3,1);
+          background: var(--ink); color: #15100a; padding: 0 20px;
+          min-height: 44px; display: inline-flex; align-items: center;
+          font-family: var(--ui-font); font-size: 11px; font-weight: 600;
+          letter-spacing: 0.22em; text-transform: uppercase; text-decoration: none;
+          box-shadow: 0 18px 40px -18px rgba(0,0,0,.9); }
+        .cg-root .cg-skip:focus-visible { transform: none; }
         .cg-video-card:hover .cg-photo { transform: translateY(-6px); box-shadow: 0 40px 80px -28px rgba(0,0,0,0.95), 0 0 0 1px var(--card-edge); }
         .cg-video-card:hover .play-btn { background: rgba(217,154,61,0.85) !important; border-color: var(--amber) !important; transform: translate(-50%, -50%) scale(1.06); }
         .cg-design-tile:hover .cg-photo { transform: translateY(-4px); }
@@ -2012,12 +2041,13 @@ function Portfolio() {
         .cg-resume-rail { transform: scaleY(0); transform-origin: top; }
         .cg-resume-dot { opacity: 0; transform: scale(0.3); }
         .cg-reveal.is-in .cg-resume-rail { animation: cg-rail-draw 1.1s cubic-bezier(.4,0,.2,1) both; }
-        .cg-reveal.is-in .cg-resume-dot { animation: cg-dot-light .5s cubic-bezier(.34,1.4,.64,1) both; }
+        .cg-reveal.is-in .cg-resume-dot { animation: cg-dot-light .5s cubic-bezier(.22,1,.36,1) both; }
 
         /* ── Mobile nav: hamburger + slide-in drawer ─────────────────
            Base styles exist at all widths but the burger + drawer are
            hidden on desktop; only revealed under 1024px. */
         .cg-nav-burger { display: none; width: 44px; height: 44px; padding: 0;
+          min-width: 44px; flex: none;
           background: none; border: 0; cursor: pointer; align-items: center;
           justify-content: center; color: var(--ink); margin: -8px -8px -8px 0; }
         .cg-burger-ico { position: relative; display: block; width: 26px; height: 16px; }
@@ -2144,7 +2174,7 @@ function Portfolio() {
           .cg-tv-tabs { flex-wrap: nowrap !important; overflow-x: auto; -webkit-overflow-scrolling: touch;
             scrollbar-width: none; padding-bottom: 2px; }
           .cg-tv-tabs::-webkit-scrollbar { display: none; }
-          .cg-tv-tab { flex: none; min-height: 40px; }
+          .cg-tv-tab { flex: none; min-height: 44px; }
           /* enlarge dot hit target to 44px (dot visual stays small) */
           .cg-tv-pin { width: 44px !important; height: 44px !important; }
           /* photo popup: center on the map panel (fixed 250px tall at stage top), sized to fit */
@@ -2168,11 +2198,15 @@ function Portfolio() {
 
         /* ════ Respect reduced-motion ════ */
         @media (prefers-reduced-motion: reduce) {
+          /* Kill ambient/decorative animation and travel, but keep colour and
+             opacity transitions alive — those are hover/focus feedback, and a
+             blanket 0.001ms makes every control feel dead. */
           *, *::before, *::after {
             animation-duration: 0.001ms !important;
             animation-iteration-count: 1 !important;
-            transition-duration: 0.001ms !important;
             scroll-behavior: auto !important;
+            transition-property: color, background-color, border-color, box-shadow, opacity !important;
+            transition-duration: 120ms !important;
           }
           /* Purely ambient/decorative loops — hide rather than freeze mid-cycle */
           .cg-fog-band, .cg-rain-drop, .cg-egg-fog { display: none !important; }

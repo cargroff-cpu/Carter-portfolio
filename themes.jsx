@@ -14,13 +14,15 @@ const PARLOR = {
     // Type: warm bone, never pure white. Cinematic sepia hierarchy.
     '--ink':       '#ecd9b2',       // primary headings (bone)
     '--ink-soft':  '#c9b48a',       // body
-    '--ink-mute':  '#8a7758',       // labels
-    '--ink-dim':   '#5a4a36',       // captions / dividers
+    '--ink-mute':  '#9a8462',       // labels + captions (AA on every surface)
+    '--ink-dim':   '#5a4a36',       // hairlines / dividers / dots — NON-TEXT ONLY
     // Accents: pooled amber (candle) + dusty terracotta + sage — the sage
     // is what carries the new green character into ornaments + accents.
     '--amber':     '#d99a3d',
+    '--amber-lit': '#f5cd6a',       // lit filament — hover/focus highlight
     '--amber-glow':'rgba(217, 154, 61, 0.32)',
-    '--terracotta':'#b8643f',
+    '--terracotta':'#b8643f',       // accent: hairlines, dots, ornament (non-text)
+    '--terracotta-lit':'#c37350',   // error TEXT — AA on every surface
     '--sage':      '#8e9462',       // warmer olive-sage (yellow undertone)
     '--sage-deep': '#5a6132',       // deep warm moss
     '--sage-pale': '#aab074',       // pale sage for fills
@@ -69,6 +71,35 @@ window.CG_THEME = PARLOR;
     .cg-root img { display: block; max-width: 100%; }
     .cg-root a { color: inherit; }
     .cg-root ::selection { background: var(--amber); color: #0d0905; }
+
+    /* ── Browser surfaces ────────────────────────────────────────────────
+       The parts we didn't draw still have to read as the Parlor. Left at
+       their defaults these ship as Chrome's blue/orange and betray the world. */
+    html { color-scheme: dark; }
+    .cg-root { accent-color: var(--amber); caret-color: var(--amber-lit); }
+    .cg-root a:not([class]) { text-underline-offset: 0.18em; text-decoration-thickness: 1px; }
+    /* Candle-lit focus ring: bone core so it reads on wood, amber bloom around it.
+       :focus-visible only, so mouse users never see it. */
+    .cg-root :focus-visible {
+      outline: 2px solid var(--ink);
+      outline-offset: 3px;
+      border-radius: 1px;
+    }
+    .cg-root :focus-visible:not(input):not(textarea) {
+      box-shadow: 0 0 0 5px rgba(217, 154, 61, 0.22), 0 0 18px -2px var(--amber-glow);
+    }
+    /* Inputs already draw their own lit underline; keep the ring tight on them. */
+    .cg-root input:focus-visible, .cg-root textarea:focus-visible { outline-offset: 4px; }
+    /* Numerals in dated/tabular material shouldn't wobble between rows. */
+    .cg-root time, .cg-root .cg-num { font-variant-numeric: tabular-nums; }
+    /* Scrollbar, dressed as a brass rail rather than system chrome. */
+    .cg-root { scrollbar-color: var(--ink-dim) transparent; scrollbar-width: thin; }
+    .cg-root ::-webkit-scrollbar { width: 10px; height: 10px; }
+    .cg-root ::-webkit-scrollbar-track { background: var(--bg-deep); }
+    .cg-root ::-webkit-scrollbar-thumb {
+      background: var(--ink-dim); border: 2px solid var(--bg-deep); border-radius: 6px;
+    }
+    .cg-root ::-webkit-scrollbar-thumb:hover { background: var(--ink-mute); }
 
     /* Filmic grain overlay across the entire page. Sits above bg, below content. */
     .cg-grain::before {
@@ -332,7 +363,7 @@ window.CG_THEME = PARLOR;
       from { transform: translateY(26px) scale(0.92); }
       to   { transform: none; }
     }
-    .cg-handle:hover { color: var(--amber-light, #f5cd6a) !important; border-bottom-color: var(--amber) !important; }
+    .cg-handle:hover { color: var(--amber-lit) !important; border-bottom-color: var(--amber) !important; }
 
     /* ── Easter-egg candle flames ──────────────────────────────── */
     /* Organic flame dance: subtle scale + skew about the wick (origin bottom). */
