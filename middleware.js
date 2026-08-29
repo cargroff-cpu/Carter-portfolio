@@ -27,6 +27,10 @@ export const config = {
     '/api/wick-memory',
     '/api/wick-brain-server',
     '/api/content-generate',
+    '/business',
+    '/Business Hub.html',
+    '/business-hub.jsx',
+    '/api/create-invoice-link',
   ],
 };
 
