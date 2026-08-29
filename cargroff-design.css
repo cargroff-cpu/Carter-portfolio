@@ -1,0 +1,124 @@
+/* cargroff-design.css — Cargroff Design (cargroff.com/design). Built on
+   parlor.css's tokens (Parlor language, shared with the rest of the site).
+   Ported structurally from design-reference/Carter Groff Design v2.dc.html;
+   decorative scroll-linked motion was simplified to a load fade — see
+   DECISIONS.md. */
+.cgd { overflow-x: hidden; }
+.dwrap { max-width: 1180px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 56px); }
+
+.dnav { position: sticky; top: 0; z-index: 50; background: rgba(15,10,6,.88); backdrop-filter: blur(12px); border-bottom: 1px solid var(--rule); }
+.dnavin { max-width: 1180px; margin: 0 auto; padding: 16px clamp(20px, 5vw, 56px); display: flex; align-items: center; gap: 24px; }
+.dbrand { display: flex; align-items: center; gap: 11px; flex: none; }
+.dbrand img { width: 28px; height: auto; opacity: .92; }
+.dbrand b { font-family: var(--display); font-size: 17px; font-weight: 500; }
+.dbrand b i { font-style: italic; color: var(--amber); }
+.dsub { display: block; font-family: var(--ui); font-size: 8px; letter-spacing: .3em; text-transform: uppercase; color: var(--ink-dim); margin-top: 2px; }
+.dnavlinks { display: none; gap: 22px; margin-left: auto; }
+.dnavlinks a { font-family: var(--ui); font-size: 10.5px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-mute); }
+.dnavlinks a:hover { color: var(--ink); }
+@media (min-width: 900px) { .dnavlinks { display: flex; } }
+
+.dhero { position: relative; padding: clamp(70px, 12vh, 130px) 0 clamp(50px, 8vh, 90px); text-align: center; background: radial-gradient(120% 90% at 50% 0%, #241a10 0%, var(--bg) 55%, var(--bg-deep) 100%); }
+.dcrest { width: 52px; margin: 0 auto 22px; opacity: .85; }
+.dcrest img { width: 100%; display: block; }
+.ddisplay { font-family: var(--display); font-weight: 500; letter-spacing: -.02em; line-height: 1.02; margin: 18px 0 0; }
+.dhero h1.ddisplay, .dhero .ddisplay { font-size: clamp(40px, 7vw, 84px); }
+.ddisplay em { font-style: italic; color: var(--amber); }
+.ddeck { max-width: 46ch; margin: 20px auto 0; font-family: var(--body); font-style: italic; font-size: 17px; color: var(--ink-soft); line-height: 1.6; }
+.dacts { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 30px; }
+.p-btn.ghost { background: none; }
+
+.dproofline { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 24px; padding: 18px clamp(20px,5vw,56px); border-bottom: 1px solid var(--rule); font-family: var(--ui); font-size: 10px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-dim); text-align: center; }
+
+.dsection { padding: clamp(64px, 10vh, 110px) 0; border-bottom: 1px solid var(--rule); }
+.dsection.dwood { background: var(--bg-warm); }
+.dsection.ddeep { background: var(--bg-deep); border-bottom: none; }
+.dshead { max-width: 640px; }
+.didxrow { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.didx { font-family: var(--ui); font-size: 10px; letter-spacing: .24em; color: var(--ink-dim); }
+.dln { flex: 1; height: 1px; background: var(--rule); max-width: 60px; }
+.dp { margin-top: 16px; font-size: 15px; line-height: 1.7; color: var(--ink-mute); }
+.dsection h2.ddisplay { font-size: clamp(30px, 4.4vw, 48px); }
+
+.dcards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1px; background: var(--rule); margin-top: 44px; }
+.dcard { background: var(--bg); padding: 26px; display: flex; flex-direction: column; gap: 8px; }
+.dcardn { font-family: var(--ui); font-size: 10px; letter-spacing: .2em; color: var(--ink-dim); }
+.dcard h3 { font-family: var(--display); font-size: 21px; font-weight: 500; margin: 4px 0 0; }
+.dcard p { font-size: 14px; color: var(--ink-mute); line-height: 1.6; margin: 0; flex: 1; }
+.dcard a { font-family: var(--ui); font-size: 10px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--amber); margin-top: 8px; }
+.dcard a:hover { color: var(--amber-lit); }
+
+.dworkhead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 60px; flex-wrap: wrap; }
+.dworkhead h3 { font-family: var(--display); font-size: 22px; font-weight: 500; margin: 0; }
+.dsamples { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-top: 20px; }
+.dslot { aspect-ratio: 4/3; border: 1px solid var(--rule); display: grid; place-content: center; text-align: center; gap: 8px; padding: 18px; }
+.dslot em { font-style: italic; color: var(--ink-dim); font-size: 13px; }
+
+.dsteps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 34px; margin-top: 46px; }
+.dstp h3 { font-family: var(--display); font-size: 20px; font-weight: 500; margin: 10px 0 0; }
+.dstp p { font-size: 14px; color: var(--ink-mute); line-height: 1.6; margin: 8px 0 0; }
+
+.dwhy { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 34px; margin-top: 46px; }
+.dwhy b { display: block; font-family: var(--ui); font-size: 10.5px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: var(--amber); }
+.dwhy p { margin: 10px 0 0; font-size: 14.5px; color: var(--ink-mute); line-height: 1.65; }
+
+.dbig { max-width: 60ch; margin-top: 20px; font-family: var(--body); font-size: 19px; line-height: 1.6; color: var(--ink-soft); }
+.dalso { display: flex; flex-wrap: wrap; gap: 12px 22px; margin-top: 26px; }
+.dalso span { font-family: var(--ui); font-size: 10.5px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-mute); padding-bottom: 5px; border-bottom: 1px solid var(--rule); }
+.dquiet { margin-top: 22px; font-size: 13px; color: var(--ink-dim); font-style: italic; }
+
+.dbriefhead { text-align: center; max-width: 44ch; margin: 0 auto; }
+.dbriefmeta { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 22px; margin-top: 24px; }
+.dbriefmeta span { font-family: var(--ui); font-size: 9.5px; font-weight: 500; letter-spacing: .22em; text-transform: uppercase; color: var(--ink-dim); }
+.dprog { max-width: 640px; margin: 40px auto 0; }
+.dprogrow { display: flex; justify-content: space-between; gap: 12px; font-family: var(--ui); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-mute); flex-wrap: wrap; }
+.dprogbars { display: flex; gap: 6px; margin-top: 10px; }
+.dprogbars i { flex: 1; height: 2px; background: var(--rule); position: relative; }
+.dprogbars i.done { background: var(--amber); }
+.dform { max-width: 640px; margin: 30px auto 0; }
+.dmv { animation: dmvin .5s ease both; }
+@keyframes dmvin { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.dfields { display: grid; gap: 24px; margin-top: 26px; }
+.dfields.two { grid-template-columns: 1fr 1fr; }
+.dfl { display: block; }
+.dlb { display: block; font-family: var(--ui); font-size: 10.5px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-mute); }
+.dlb i { font-style: normal; color: var(--amber); margin-left: 4px; }
+.dhint { display: block; font-size: 12px; color: var(--ink-dim); margin-top: 4px; }
+.dfl input, .dfl textarea { width: 100%; background: none; border: none; border-bottom: 1px solid var(--rule-strong); font-family: var(--body); font-size: clamp(16px, 2vw, 18px); color: var(--ink); padding: 10px 0; outline: none; resize: none; margin-top: 6px; }
+.dfl input:focus, .dfl textarea:focus { border-bottom-color: var(--amber); }
+.dfl input::placeholder, .dfl textarea::placeholder { color: var(--ink-dim); font-style: italic; }
+.dqlb { display: block; font-family: var(--ui); font-size: 10.5px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-mute); margin-bottom: 12px; }
+.dchips { display: flex; flex-wrap: wrap; gap: 9px; }
+.dchip { display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border: 1px solid var(--rule-strong); cursor: pointer; font-family: var(--ui); font-size: 10.5px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-mute); }
+.dchip input { position: absolute; opacity: 0; pointer-events: none; }
+.dchip.on { color: var(--amber-lit); border-color: var(--amber); background: rgba(217,154,61,.08); }
+.dchoices { display: flex; flex-direction: column; gap: 10px; }
+.dchoice { display: inline-flex; align-items: center; gap: 11px; cursor: pointer; font-family: var(--ui); font-size: 13px; color: var(--ink-mute); }
+.dchoice input { position: absolute; opacity: 0; pointer-events: none; }
+.dchoice .mk { display: none; }
+.dchoice.on { color: var(--amber-lit); }
+.dchoice::before { content: ''; width: 7px; height: 7px; background: var(--ink-dim); transform: rotate(45deg); flex: none; }
+.dchoice.on::before { background: var(--amber-lit); }
+.ddatewrap { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 6px; }
+.ddatewrap input[type=date] { max-width: 220px; width: auto; }
+.dflex { display: inline-flex; align-items: center; gap: 8px; font-family: var(--ui); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-mute); cursor: pointer; }
+.derr { margin-top: 20px; font-family: var(--ui); font-size: 12px; color: var(--terracotta, #b8643f); }
+.dwalk { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-top: 36px; }
+.dback { background: none; border: none; cursor: pointer; font-family: var(--ui); font-size: 10px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-dim); padding: 14px 0; }
+.dback:hover { color: var(--ink-mute); }
+.dfine { flex: 1; min-width: 180px; font-size: 12px; color: var(--ink-dim); margin: 0; }
+.dsent { text-align: center; max-width: 46ch; margin: 0 auto; padding: 40px 0; }
+.dsent .ddisplay { font-size: 34px; }
+.dsent .dp { margin-top: 14px; }
+
+.dfooter { padding: 54px 0; }
+.dfootin { display: flex; align-items: center; gap: 26px; flex-wrap: wrap; }
+.dfootin .dcrest { margin: 0; }
+.dfootlinks { display: flex; gap: 20px; flex-wrap: wrap; margin-left: auto; align-items: center; }
+.dfootlinks a, .dfootlinks span { font-family: var(--ui); font-size: 10px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-mute); }
+.dfootlinks a:hover { color: var(--ink); }
+
+@media (max-width: 760px) {
+  .dfields.two { grid-template-columns: 1fr; }
+  .dnavin { gap: 14px; }
+}

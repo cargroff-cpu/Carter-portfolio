@@ -44,7 +44,7 @@ function useCollection(fetcher) {
 // ── Overview ─────────────────────────────────────────────────────────
 function Overview({ clients, leads, projects, invoices, notes, go }) {
   const openLeads = leads.filter((l) => l.status !== 'Converted' && l.status !== 'Dead');
-  const overdue = invoices.filter((i) => i.status === 'overdue');
+  const overdue = invoices.filter((i) => effectiveStatus(i) === 'overdue');
   const outstanding = invoices.filter((i) => i.status === 'sent' || i.status === 'overdue').reduce((a, i) => a + Number(i.amount || 0), 0);
   const today = new Date();
   const active = projects.filter((p) => p.status !== 'Delivered');
@@ -300,6 +300,10 @@ function NewInvoiceForm({ clients, projects, onCreated }) {
   );
 }
 
+// Overdue is derived, not stored: a 'sent' invoice past its due date reads
+// as overdue in the UI without a cron job to flip a status column.
+const effectiveStatus = (i) => (i.status === 'sent' && i.due_date && new Date(i.due_date) < new Date() ? 'overdue' : i.status);
+
 function Invoices({ invoices, clients, projects, reload }) {
   const [linking, setLinking] = React.useState(null);
   const clientOf = (id) => clients.find((c) => c.id === id);
@@ -340,7 +344,7 @@ function Invoices({ invoices, clients, projects, reload }) {
                   <td>{projectOf(i.project_id) ? projectOf(i.project_id).name : '—'}</td>
                   <td className="mono" style={{ color: 'var(--text)' }}>{usd(i.amount)}</td>
                   <td className="mono">{fdate(i.due_date)}</td>
-                  <td>{pill(i.status, statusKind(i.status))}</td>
+                  <td>{pill(effectiveStatus(i), statusKind(effectiveStatus(i)))}</td>
                   <td>{i.status === 'draft' && (
                     <button className="btn ghost sm" disabled={linking === i.id} onClick={() => sendInvoice(i)}>
                       {linking === i.id ? 'Creating…' : 'Send via Stripe'}

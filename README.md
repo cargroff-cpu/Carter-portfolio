@@ -22,6 +22,14 @@ Admin.html               Content editor (CMS), "The Scaffold" — served at /sca
 admin.jsx                Admin app shell (editor + live preview split view)
 admin-ui.jsx             Admin form primitives (fields, buttons, image/PDF upload)
 admin-sections.jsx       Admin form sections (Identity, About, Videos, Designs, Résumé, Travels)
+
+Carter Groff Design.html  Cargroff Design, the public design-service page — served at /design
+design.jsx                Design page sections + the three-movement brief form
+cargroff-design.css       Design page styles, built on parlor.css's tokens
+
+Business Hub.html         The Business Hub CRM, door 02 of The Scaffold — served at /business
+business-hub.jsx          Clients, leads (+ thread), projects (+ deliverables), invoices, notes, Design-briefs inbox
+freelance-schema.sql      Migration for the Business Hub's Supabase tables (Scaffold project) — run once by hand
 ```
 
 ## Running locally
@@ -59,6 +67,13 @@ Variables — set directly there, never committed):
 |---|---|---|
 | `ADMIN_PASSWORD` | `middleware.js` | Basic Auth password for `/Admin.html` |
 | `SUPABASE_SERVICE_ROLE_KEY` | `api/save-content.js` | Full-access key, server-side only |
+| `SCAFFOLD_SUPABASE_SERVICE_ROLE_KEY` | `api/scaffold-write.js`, `api/design-brief.js`, `api/create-invoice-link.js`, `api/stripe-webhook.js` | Full-access key for the Scaffold's separate Supabase project (business data) |
+| `RESEND_API_KEY` | `api/contact.js`, `api/design-brief.js` | Sends the portfolio contact form and design-brief notifications |
+| `STRIPE_SECRET_KEY` | `api/create-invoice-link.js` | Not set yet — TODO(carter). Needed to turn a draft invoice into a real Stripe Payment Link |
+| `STRIPE_WEBHOOK_SECRET` | `api/stripe-webhook.js` | Not set yet — TODO(carter). Signing secret for a webhook pointed at `/api/stripe-webhook`, event `checkout.session.completed` |
 
 The Supabase project URL and public anon key are safe to expose client-side
-and are already committed in `data.jsx`.
+and are already committed in `data.jsx`. The Business Hub uses a second,
+separate Supabase project for real business data (see `command-center-data.jsx`);
+run `freelance-schema.sql` against it once before using clients, leads,
+projects, invoices, notes, or the Design-briefs inbox.
