@@ -148,10 +148,58 @@ async function generateContent(request) {
   return res.json();
 }
 
+// ── Business Hub: clients, leads, projects, invoices, notes, briefs ────
+function ccWrite(table, row) {
+  return fetch('/api/scaffold-write', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ table, row }),
+  }).then((res) => { if (!res.ok) throw new Error(`Could not save ${table}`); return res.json(); });
+}
+function ccDelete(table, id) {
+  return fetch('/api/scaffold-write', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ table, deleteId: id }),
+  }).then((res) => { if (!res.ok) throw new Error(`Could not delete from ${table}`); return res.json(); });
+}
+
+const fetchClients = () => ccFetch('clients?select=*&order=name.asc');
+const saveClient = (row) => ccWrite('clients', row);
+const deleteClient = (id) => ccDelete('clients', id);
+
+const fetchLeads = () => ccFetch('leads?select=*&order=last_activity_at.desc');
+const saveLead = (row) => ccWrite('leads', row);
+const fetchLeadMessages = (leadId) => ccFetch(`lead_messages?select=*&lead_id=eq.${leadId}&order=sent_at.asc`);
+const saveLeadMessage = (row) => ccWrite('lead_messages', row);
+
+const fetchProjects = () => ccFetch('projects?select=*&order=due.asc');
+const saveProject = (row) => ccWrite('projects', row);
+const fetchProjectDeliverables = (projectId) => ccFetch(`project_deliverables?select=*&project_id=eq.${projectId}&order=sort_order.asc`);
+const saveProjectDeliverable = (row) => ccWrite('project_deliverables', row);
+const deleteProjectDeliverable = (id) => ccDelete('project_deliverables', id);
+
+const fetchInvoices = () => ccFetch('invoices?select=*&order=created_at.desc');
+const saveInvoice = (row) => ccWrite('invoices', row);
+
+const fetchNotes = () => ccFetch('notes?select=*&order=created_at.desc');
+const saveNote = (row) => ccWrite('notes', row);
+const deleteNote = (id) => ccDelete('notes', id);
+
+const fetchDesignBriefs = () => ccFetch('design_briefs?select=*&order=created_at.desc');
+const saveDesignBrief = (row) => ccWrite('design_briefs', row);
+const fetchDesignBriefAttachments = (briefId) => ccFetch(`design_brief_attachments?select=*&design_brief_id=eq.${briefId}`);
+
 window.CC = {
   BRANDS, BRAND_KIT, CHANNELS, TYPES, CONNECTIONS,
   money, fmtDate, inBrand, checklistDone,
   fetchCampaigns, fetchLinks, saveCampaign, saveLink,
   fetchDocketTasks, saveDocketTask,
   fetchGeneratedContent, saveGeneratedContent, generateContent,
+  fetchClients, saveClient, deleteClient,
+  fetchLeads, saveLead, fetchLeadMessages, saveLeadMessage,
+  fetchProjects, saveProject, fetchProjectDeliverables, saveProjectDeliverable, deleteProjectDeliverable,
+  fetchInvoices, saveInvoice,
+  fetchNotes, saveNote, deleteNote,
+  fetchDesignBriefs, saveDesignBrief, fetchDesignBriefAttachments,
 };
