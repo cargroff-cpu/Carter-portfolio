@@ -1783,6 +1783,11 @@ function Footer() {
           letterSpacing: '0.04em', textTransform: 'none', color: 'var(--ink-soft)' }}>
           made to weather well
         </span>
+        <a href="/design"
+          style={{ color: 'var(--ink-soft)', textDecoration: 'none',
+            display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>
+          Design services →
+        </a>
         <a href={`mailto:${D.email}`}
           style={{ color: 'var(--ink-soft)', textDecoration: 'none',
             display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>

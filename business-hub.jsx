@@ -24,6 +24,7 @@ const pill = (txt, kind) => <span className={'pill ' + (kind || 'mute')}>{txt}</
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
+  { id: 'clients', label: 'Clients' },
   { id: 'leads', label: 'Leads' },
   { id: 'projects', label: 'Projects' },
   { id: 'invoices', label: 'Invoices' },
@@ -95,7 +96,118 @@ function Overview({ clients, leads, projects, invoices, notes, go }) {
   );
 }
 
+// ── Clients ──────────────────────────────────────────────────────────
+function NewClientForm({ onCreated }) {
+  const [open, setOpen] = React.useState(false);
+  const [f, setF] = React.useState({ name: '', contact: '', email: '', rate: '', prefers: '', notes: '' });
+  const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
+
+  const create = () => {
+    if (!f.name.trim()) return;
+    saveClient({
+      name: f.name.trim(), contact: f.contact.trim() || null, email: f.email.trim() || null,
+      rate: f.rate ? Number(f.rate) : null, prefers: f.prefers.trim() || null, notes: f.notes.trim() || null,
+      since: new Date().toISOString().slice(0, 10),
+    }).then(() => { setF({ name: '', contact: '', email: '', rate: '', prefers: '', notes: '' }); setOpen(false); onCreated(); }).catch(() => {});
+  };
+
+  if (!open) return <button className="btn sm" onClick={() => setOpen(true)}>New client</button>;
+  return (
+    <div className="formgrid">
+      <input className="input" placeholder="Client or business name" value={f.name} onChange={set('name')} />
+      <input className="input" placeholder="Contact name" value={f.contact} onChange={set('contact')} />
+      <input className="input" placeholder="Email" value={f.email} onChange={set('email')} />
+      <input className="input" placeholder="Rate, per hour" inputMode="numeric" value={f.rate} onChange={set('rate')} />
+      <input className="input" placeholder="Prefers (how they like to be reached)" value={f.prefers} onChange={set('prefers')} />
+      <input className="input" placeholder="Notes" value={f.notes} onChange={set('notes')} />
+      <div className="row" style={{ gap: 10, gridColumn: '1/-1' }}>
+        <button className="btn sm" onClick={create}>Save client</button>
+        <button className="btn ghost sm" onClick={() => setOpen(false)}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+function ClientDetail({ client, projects, invoices }) {
+  const clientProjects = projects.filter((p) => p.client_id === client.id);
+  const clientInvoices = invoices.filter((i) => i.client_id === client.id);
+  return (
+    <section className="tile">
+      <div className="tilehead"><h2 className="h2">{client.name}</h2></div>
+      <div className="vrow"><span className="lbl">Contact</span><span className="mono">{client.contact || '—'}</span></div>
+      <div className="vrow"><span className="lbl">Email</span><span className="mono">{client.email || '—'}</span></div>
+      <div className="vrow"><span className="lbl">Rate</span><span className="mono">{client.rate != null ? usd(client.rate) + '/h' : '—'}</span></div>
+      <div className="vrow"><span className="lbl">Since</span><span className="mono">{fdate(client.since)}</span></div>
+      {client.prefers && <p className="sub" style={{ marginTop: 12 }}>{client.prefers}</p>}
+      {client.notes && <p className="sub" style={{ marginTop: 8 }}>{client.notes}</p>}
+      <div className="minirows" style={{ marginTop: 16 }}>
+        {clientProjects.map((p) => (
+          <div className="minirow plain" key={p.id}><span className="mtxt">{p.name}</span>{pill(p.status, p.status === 'Delivered' ? 'ok' : 'warn')}</div>
+        ))}
+        {!clientProjects.length && <p className="sub">No projects yet.</p>}
+      </div>
+      <div className="vrow" style={{ marginTop: 8 }}>
+        <span className="lbl">Invoiced total</span>
+        <span className="mono">{usd(clientInvoices.reduce((a, i) => a + Number(i.amount || 0), 0))}</span>
+      </div>
+    </section>
+  );
+}
+
+function Clients({ clients, projects, invoices, reload }) {
+  const [sel, setSel] = React.useState(null);
+  const client = clients.find((c) => c.id === sel);
+  return (
+    <div className="cols leadcols">
+      <section className="card">
+        <div className="pad between" style={{ borderBottom: '1px solid var(--line)' }}><h2 className="h2">Clients</h2></div>
+        <div className="pad"><NewClientForm onCreated={reload} /></div>
+        <div className="reclistwrap">
+          {clients.map((c) => (
+            <button key={c.id} className={'reclist' + (c.id === sel ? ' on' : '')} onClick={() => setSel(c.id)}>
+              <div className="between"><span style={{ fontSize: 13.5, fontWeight: 500 }}>{c.name}</span>{c.rate != null && <span className="sub mono">{usd(c.rate)}/h</span>}</div>
+              <div className="row" style={{ gap: 12, marginTop: 5 }}><span className="sub">{c.contact}</span></div>
+            </button>
+          ))}
+          {!clients.length && <p className="sub" style={{ padding: '20px 2px' }}>No clients yet.</p>}
+        </div>
+      </section>
+      {client ? <ClientDetail client={client} projects={projects} invoices={invoices} /> : <p className="sub">Select a client.</p>}
+    </div>
+  );
+}
+
 // ── Leads ────────────────────────────────────────────────────────────
+function NewLeadForm({ onCreated }) {
+  const [open, setOpen] = React.useState(false);
+  const [f, setF] = React.useState({ name: '', contact: '', email: '', source: '', ask: '', value: '' });
+  const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
+
+  const create = () => {
+    if (!f.name.trim()) return;
+    saveLead({
+      name: f.name.trim(), contact: f.contact.trim() || null, email: f.email.trim() || null,
+      source: f.source.trim() || null, ask: f.ask.trim() || null, value: f.value ? Number(f.value) : null, status: 'New',
+    }).then(() => { setF({ name: '', contact: '', email: '', source: '', ask: '', value: '' }); setOpen(false); onCreated(); }).catch(() => {});
+  };
+
+  if (!open) return <button className="btn sm" onClick={() => setOpen(true)}>New lead</button>;
+  return (
+    <div className="formgrid">
+      <input className="input" placeholder="Who's asking" value={f.name} onChange={set('name')} />
+      <input className="input" placeholder="Contact name" value={f.contact} onChange={set('contact')} />
+      <input className="input" placeholder="Email" value={f.email} onChange={set('email')} />
+      <input className="input" placeholder="Source (referral, website, etc.)" value={f.source} onChange={set('source')} />
+      <input className="input" placeholder="What they're asking for" value={f.ask} onChange={set('ask')} />
+      <input className="input" placeholder="Estimated value" inputMode="numeric" value={f.value} onChange={set('value')} />
+      <div className="row" style={{ gap: 10, gridColumn: '1/-1' }}>
+        <button className="btn sm" onClick={create}>Save lead</button>
+        <button className="btn ghost sm" onClick={() => setOpen(false)}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
 function LeadDetail({ lead, clients, projects, onSaved }) {
   const [messages, setMessages] = React.useState([]);
   const [reply, setReply] = React.useState('');
@@ -170,11 +282,22 @@ function LeadDetail({ lead, clients, projects, onSaved }) {
 function Leads({ leads, clients, projects, reload }) {
   const [sel, setSel] = React.useState(null);
   const lead = leads.find((l) => l.id === sel) || leads[0];
-  if (!lead) return <p className="sub">No leads yet. New leads from the /design brief form land here automatically.</p>;
+  if (!lead) {
+    return (
+      <section className="card">
+        <div className="pad between" style={{ borderBottom: '1px solid var(--line)' }}><h2 className="h2">Lead inbox</h2></div>
+        <div className="pad">
+          <NewLeadForm onCreated={reload} />
+          <p className="sub" style={{ marginTop: 16 }}>No leads yet. New leads from the /design brief form land here automatically too.</p>
+        </div>
+      </section>
+    );
+  }
   return (
     <div className="cols leadcols">
       <section className="card">
         <div className="pad between" style={{ borderBottom: '1px solid var(--line)' }}><h2 className="h2">Lead inbox</h2></div>
+        <div className="pad"><NewLeadForm onCreated={reload} /></div>
         <div className="reclistwrap">
           {leads.map((l) => (
             <button key={l.id} className={'reclist' + (l.id === lead.id ? ' on' : '')} onClick={() => setSel(l.id)}>
@@ -252,18 +375,61 @@ function ProjectDetail({ project, clients, onSaved }) {
   );
 }
 
+function NewProjectForm({ clients, onCreated }) {
+  const [open, setOpen] = React.useState(false);
+  const [f, setF] = React.useState({ clientId: '', name: '', kind: '', fee: '', due: '', scope: '' });
+  const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
+
+  const create = () => {
+    if (!f.name.trim()) return;
+    saveProject({
+      client_id: f.clientId || null, name: f.name.trim(), kind: f.kind.trim() || null,
+      status: 'Scheduled', fee: f.fee ? Number(f.fee) : null, due: f.due || null, scope: f.scope.trim() || null,
+    }).then(() => { setF({ clientId: '', name: '', kind: '', fee: '', due: '', scope: '' }); setOpen(false); onCreated(); }).catch(() => {});
+  };
+
+  if (!open) return <button className="btn sm" onClick={() => setOpen(true)}>New project</button>;
+  return (
+    <div className="formgrid">
+      <input className="input" placeholder="Project name" value={f.name} onChange={set('name')} />
+      <select className="select" value={f.clientId} onChange={set('clientId')}>
+        <option value="">Client…</option>
+        {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+      </select>
+      <input className="input" placeholder="Kind (Video, Design, Photo…)" value={f.kind} onChange={set('kind')} />
+      <input className="input" placeholder="Fee" inputMode="numeric" value={f.fee} onChange={set('fee')} />
+      <input className="input" type="date" placeholder="Due" value={f.due} onChange={set('due')} />
+      <input className="input" placeholder="Scope" value={f.scope} onChange={set('scope')} />
+      <div className="row" style={{ gap: 10, gridColumn: '1/-1' }}>
+        <button className="btn sm" onClick={create}>Save project</button>
+        <button className="btn ghost sm" onClick={() => setOpen(false)}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
 function Projects({ projects, clients, reload }) {
   const [sel, setSel] = React.useState(null);
   const project = projects.find((p) => p.id === sel) || projects[0];
-  if (!project) return <p className="sub">No projects yet. Convert a lead to create one.</p>;
+  if (!project) {
+    return (
+      <div className="stack">
+        <NewProjectForm clients={clients} onCreated={reload} />
+        <p className="sub">No projects yet. Add one here, or convert a lead from the Leads tab.</p>
+      </div>
+    );
+  }
   return (
     <div className="stack">
-      <div className="projrail">
-        {projects.map((p) => (
-          <button key={p.id} className={'projchip' + (p.id === project.id ? ' on' : '')} onClick={() => setSel(p.id)}>
-            <span className="pname">{p.name}</span><span className="lbl">{p.status}</span>
-          </button>
-        ))}
+      <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div className="projrail">
+          {projects.map((p) => (
+            <button key={p.id} className={'projchip' + (p.id === project.id ? ' on' : '')} onClick={() => setSel(p.id)}>
+              <span className="pname">{p.name}</span><span className="lbl">{p.status}</span>
+            </button>
+          ))}
+        </div>
+        <NewProjectForm clients={clients} onCreated={reload} />
       </div>
       <ProjectDetail key={project.id} project={project} clients={clients} onSaved={reload} />
     </div>
@@ -499,6 +665,7 @@ function BusinessHub() {
         {loading ? <p className="sub" style={{ padding: '20px 2px' }}>Loading…</p> : (
           <React.Fragment>
             {tab === 'overview' && <Overview clients={clients} leads={leads} projects={projects} invoices={invoices} notes={notes} go={setTab} />}
+            {tab === 'clients' && <Clients clients={clients} projects={projects} invoices={invoices} reload={reloadClients} />}
             {tab === 'leads' && <Leads leads={leads} clients={clients} projects={projects} reload={() => { reloadLeads(); reloadProjects(); }} />}
             {tab === 'projects' && <Projects projects={projects} clients={clients} reload={reloadProjects} />}
             {tab === 'invoices' && <Invoices invoices={invoices} clients={clients} projects={projects} reload={reloadInvoices} />}
