@@ -237,11 +237,17 @@ function LeadDetail({ lead, clients, projects, onSaved }) {
   };
 
   const convert = () => {
-    const client = clients.find((c) => c.name === lead.name);
-    saveProject({
-      client_id: client ? client.id : null, name: lead.name + ' — ' + (lead.ask || 'project'), kind: null,
-      status: 'Scheduled', fee: lead.value || null, scope: lead.ask || '',
-    }).then((res) => saveLead({ id: lead.id, status: 'Converted', converted_project_id: res.row.id, last_activity_at: new Date().toISOString() }))
+    const existing = clients.find((c) => c.name === lead.name);
+    const clientPromise = existing
+      ? Promise.resolve(existing)
+      : saveClient({ name: lead.name, contact: lead.contact || null, email: lead.email || null, since: new Date().toISOString().slice(0, 10) })
+          .then((res) => res.row);
+    clientPromise
+      .then((client) => saveProject({
+        client_id: client.id, name: lead.name + ' — ' + (lead.ask || 'project'), kind: null,
+        status: 'Scheduled', fee: lead.value || null, scope: lead.ask || '',
+      }))
+      .then((res) => saveLead({ id: lead.id, status: 'Converted', converted_project_id: res.row.id, last_activity_at: new Date().toISOString() }))
       .then(onSaved).catch(() => {});
   };
 
@@ -487,6 +493,13 @@ function Invoices({ invoices, clients, projects, reload }) {
     }).catch(() => alert('Could not create the payment link.')).finally(() => setLinking(null));
   };
 
+  // Manual fallback so invoices are usable before STRIPE_SECRET_KEY is set —
+  // see DECISIONS.md. Once Stripe is wired, "Send via Stripe" is the normal
+  // path and the webhook marks paid automatically; these stay as an escape
+  // hatch for cash, check, or anything paid outside Stripe.
+  const markSent = (inv) => { saveInvoice({ id: inv.id, status: 'sent', sent_at: new Date().toISOString() }).then(reload).catch(() => {}); };
+  const markPaid = (inv) => { saveInvoice({ id: inv.id, status: 'paid', paid_at: new Date().toISOString() }).then(reload).catch(() => {}); };
+
   return (
     <div className="stack">
       <div className="kpis">
@@ -511,11 +524,21 @@ function Invoices({ invoices, clients, projects, reload }) {
                   <td className="mono" style={{ color: 'var(--text)' }}>{usd(i.amount)}</td>
                   <td className="mono">{fdate(i.due_date)}</td>
                   <td>{pill(effectiveStatus(i), statusKind(effectiveStatus(i)))}</td>
-                  <td>{i.status === 'draft' && (
-                    <button className="btn ghost sm" disabled={linking === i.id} onClick={() => sendInvoice(i)}>
-                      {linking === i.id ? 'Creating…' : 'Send via Stripe'}
-                    </button>
-                  )}</td>
+                  <td>
+                    <div className="row" style={{ gap: 8 }}>
+                      {i.status === 'draft' && (
+                        <React.Fragment>
+                          <button className="btn ghost sm" disabled={linking === i.id} onClick={() => sendInvoice(i)}>
+                            {linking === i.id ? 'Creating…' : 'Send via Stripe'}
+                          </button>
+                          <button className="btn quiet sm" onClick={() => markSent(i)}>Mark sent</button>
+                        </React.Fragment>
+                      )}
+                      {(i.status === 'sent' || effectiveStatus(i) === 'overdue') && (
+                        <button className="btn quiet sm" onClick={() => markPaid(i)}>Mark paid</button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -666,7 +689,7 @@ function BusinessHub() {
           <React.Fragment>
             {tab === 'overview' && <Overview clients={clients} leads={leads} projects={projects} invoices={invoices} notes={notes} go={setTab} />}
             {tab === 'clients' && <Clients clients={clients} projects={projects} invoices={invoices} reload={reloadClients} />}
-            {tab === 'leads' && <Leads leads={leads} clients={clients} projects={projects} reload={() => { reloadLeads(); reloadProjects(); }} />}
+            {tab === 'leads' && <Leads leads={leads} clients={clients} projects={projects} reload={() => { reloadLeads(); reloadProjects(); reloadClients(); }} />}
             {tab === 'projects' && <Projects projects={projects} clients={clients} reload={reloadProjects} />}
             {tab === 'invoices' && <Invoices invoices={invoices} clients={clients} projects={projects} reload={reloadInvoices} />}
             {tab === 'notes' && <Notes notes={notes} clients={clients} projects={projects} reload={reloadNotes} />}
