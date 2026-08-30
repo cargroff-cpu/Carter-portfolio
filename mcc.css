@@ -131,4 +131,53 @@ tbody tr:hover{background:rgba(236,217,178,.035);cursor:pointer}
 .formgrid.one{grid-template-columns:1fr}
 .field-lbl{display:block;font-family:var(--ui);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-3);margin-bottom:7px}
 @media(max-width:900px){.cols,.cols.leadcols,.cols.workcols{grid-template-columns:1fr}.formgrid{grid-template-columns:1fr}}
+
+/* ── The ring: Business Hub's launcher, adapted from Business Hub.dc.html's
+   orbit. Six brass plates evenly spaced by CSS custom property (--a) rather
+   than the source's runtime-measured geometry engine, and no flying "carry"
+   transition between ring and sidebar — see DECISIONS.md. */
+.launch{position:relative;width:100%;min-height:min(74vh,620px);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.launch{--ring:min(64vmin,520px)}
+.rings{position:absolute;width:var(--ring);height:var(--ring);border-radius:50%;pointer-events:none}
+.ring-outer{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(217,154,61,.16);animation:ringspin 90s linear infinite}
+.ring-mid{position:absolute;inset:7%;border-radius:50%;border:1px dashed rgba(217,154,61,.14)}
+.ring-inner{position:absolute;inset:15%;border-radius:50%;border:1px solid rgba(217,154,61,.1);animation:ringspinrev 70s linear infinite}
+@keyframes ringspin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes ringspinrev{from{transform:rotate(0)}to{transform:rotate(-360deg)}}
+.lwick{position:relative;z-index:3;width:16px;height:min(20vmin,150px);border-radius:20px;
+  background:linear-gradient(90deg,#0e0904,#221809 34%,#33260f 58%,#140d06);border:1px solid rgba(217,154,61,.4);
+  box-shadow:inset 0 0 20px rgba(0,0,0,.9),0 6px 22px rgba(0,0,0,.6);display:flex;justify-content:center;padding:7px 0;
+  text-decoration:none;transition:box-shadow .3s ease,border-color .3s ease}
+.lwick:hover,.lwick:focus-visible{border-color:rgba(245,205,106,.95);box-shadow:inset 0 0 22px rgba(0,0,0,.85),0 0 42px -6px rgba(217,154,61,.55),0 6px 22px rgba(0,0,0,.6);outline:none}
+.lwick .core{width:6px;border-radius:6px;background:linear-gradient(to bottom,rgba(245,205,106,.4),rgba(245,205,106,.9) 9%,#fff3d2 50%,rgba(245,205,106,.9) 91%,rgba(245,205,106,.4));
+  box-shadow:0 0 14px #f5cd6a,0 0 46px rgba(245,205,106,.72),0 0 110px rgba(217,154,61,.48);animation:lflick 4.4s ease-in-out infinite}
+@keyframes lflick{0%,100%{filter:brightness(1)}45%{filter:brightness(.9)}60%{filter:brightness(1.15)}}
+.lwall{position:absolute;left:50%;top:50%;width:min(46vmin,400px);height:min(46vmin,400px);transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;z-index:1;
+  background:radial-gradient(closest-side,rgba(245,205,106,.16),rgba(217,154,61,.05) 46%,transparent 76%);mix-blend-mode:screen;animation:lbreathe 4.2s ease-in-out infinite}
+@keyframes lbreathe{0%,100%{opacity:.6;transform:translate(-50%,-50%) scale(.9)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}}
+.orbit{position:absolute;left:50%;top:50%;width:var(--ring);height:var(--ring);transform:translate(-50%,-50%);pointer-events:none}
+.tnode{position:absolute;left:50%;top:50%;width:120px;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:auto;
+  background:none;border:none;cursor:pointer;padding:8px;text-decoration:none;
+  transform:translate(-50%,-50%) rotate(var(--a)) translateY(calc(var(--ring) / -2)) rotate(calc(var(--a) * -1))}
+.plate{width:56px;height:56px;border-radius:12px;background:linear-gradient(180deg,#1c140a,#120c06);border:1px solid rgba(217,154,61,.3);
+  display:flex;align-items:center;justify-content:center;transition:border-color .3s ease,box-shadow .3s ease,transform .3s ease}
+.plate img{max-width:30px;max-height:42px;opacity:.68;transition:opacity .3s ease}
+.tnode:hover .plate,.tnode:focus-visible .plate{border-color:rgba(245,205,106,.9);box-shadow:0 0 20px rgba(245,205,106,.4),0 0 50px rgba(217,154,61,.25);transform:scale(1.08)}
+.tnode:hover .plate img,.tnode:focus-visible .plate img{opacity:1}
+.tnode:focus-visible{outline:none}
+.tlabel{font-family:var(--ui);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-3);transition:color .3s ease}
+.tsub{font-family:var(--display);font-size:13px;color:var(--text-4)}
+.tdesc{display:none}
+.tnode:hover .tlabel,.tnode:focus-visible .tlabel{color:var(--text)}
+@media(max-width:760px){
+  .launch{min-height:0}
+  .rings,.lwall{display:none}
+  .lwick{margin-bottom:20px}
+  .orbit{position:relative;left:auto;top:auto;width:auto;height:auto;transform:none;display:flex;flex-direction:column;gap:2px}
+  .tnode{position:relative;left:auto;top:auto;width:100%;transform:none!important;flex-direction:row;justify-content:flex-start;gap:14px;
+    padding:14px 2px;border-bottom:1px solid var(--line);text-align:left}
+  .tlabel,.tsub{text-align:left}
+  .tdesc{display:block;font-size:12px;color:var(--text-3);margin-top:2px}
+}
+.ringback{margin-bottom:16px}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}

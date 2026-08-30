@@ -1,5 +1,22 @@
 # Decisions
 
+## The ring: real radial nav, simplified geometry
+
+Carter asked for the actual ring back after seeing the tab-bar version.
+Built it: `Business Hub.dc.html`'s six-tool orbit, brass plates with icons,
+Wick's glowing tube at the center linking out to `/wick`. Two things were
+deliberately not replicated: the source's runtime-measured layout engine
+(`wireOrbit()`, which measures every node's bounding box on resize to fit
+the ring to the viewport) is replaced with fixed CSS custom-property angles
+(`--a`) and a `clamp()`-style responsive radius — visually equivalent,
+without the measurement code. And the "carry" animation (a tool's plate
+visibly flying from the ring into a sidebar position on click) isn't
+built — clicking a node just navigates, same as any other link here.
+`Acquire` (proposals/referrals — out of scope, see below) is replaced by
+`Clients` in the ring's six slots, since that's a real tool in this build
+and Acquire isn't. `Notes` isn't one of the six — it wasn't in the source's
+six either — reachable from the top bar instead, same as Docket.
+
 ## The Scaffold's Supabase project was deleted; everything now lives in one project
 
 The Scaffold's business data lived in a second Supabase project
