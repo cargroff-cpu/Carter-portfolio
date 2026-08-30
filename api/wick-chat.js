@@ -3,7 +3,7 @@
 // digest), then runs the real Anthropic tool-use loop server-side (the
 // design prototype's window.claude.complete was a design-canvas stand-in,
 // not a real API -- this is the actual replacement).
-import { liveSnapshot, memoryDigest, brandBrief, WICK_PERSONA, WICK_TOOLS, runTool, pickModel } from './_lib/wick-brain-server.js';
+import { liveSnapshot, memoryDigest, brandBrief, WICK_PERSONA, WICK_TOOLS, runTool, pickModel } from '../lib/wick-brain-server.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

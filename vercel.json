@@ -9,7 +9,6 @@
   ],
   "functions": {
     "api/wick-chat.js": { "includeFiles": "brand/**" },
-    "api/wick-close-session.js": { "includeFiles": "brand/**" },
     "api/content-generate.js": { "includeFiles": "brand/**" }
   },
   "headers": [
