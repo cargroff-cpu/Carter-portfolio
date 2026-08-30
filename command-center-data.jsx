@@ -1,8 +1,10 @@
 // command-center-data.jsx — brand constants (from brand/*.md) + Supabase-backed
-// reads/writes for campaigns and links. Separate Supabase project from the
-// public portfolio's (real business data, not public content).
-const CC_SUPABASE_URL = 'https://kvgeimwitzdlstagqumw.supabase.co';
-const CC_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2Z2VpbXdpdHpkbHN0YWdxdW13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5ODk0ODUsImV4cCI6MjEwMjU2NTQ4NX0.t9-opIQWY95kj1qFfdiuQbtaiPyxpCvnmY-Jt-o-Dvk';
+// reads/writes for campaigns, links, the Docket, and the Business Hub.
+// Originally a separate Supabase project from the public portfolio's; that
+// project was deleted (moved-device cleanup, see DECISIONS.md) and
+// everything now lives in the one remaining project, same as site_content.
+const CC_SUPABASE_URL = 'https://rodxrkzwpsgeeatmbwku.supabase.co';
+const CC_SUPABASE_ANON_KEY = 'sb_publishable_fWE-gd3uSKDe0BpUK5WSxQ_f3Uzgd0x';
 
 const BRANDS = {
   ltw: { key: 'ltw', name: 'Log & Timber Worx', short: 'LTW' },

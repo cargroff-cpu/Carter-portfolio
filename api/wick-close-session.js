@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   const history = Array.isArray(body && body.history) ? body.history : [];
   const userTurns = history.filter((m) => m.role === 'user').length;
 
-  const serviceKey = process.env.SCAFFOLD_SUPABASE_SERVICE_ROLE_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceKey) { res.status(200).json({ ok: true, filed: 0, note: 'Supabase not configured.' }); return; }
 
   // Always log the session itself, even if it's too short to summarize --

@@ -11,7 +11,7 @@ import crypto from 'node:crypto';
 
 export const config = { api: { bodyParser: false } };
 
-const SCAFFOLD_SUPABASE_URL = 'https://kvgeimwitzdlstagqumw.supabase.co';
+const SCAFFOLD_SUPABASE_URL = 'https://rodxrkzwpsgeeatmbwku.supabase.co';
 
 function readRawBody(req) {
   return new Promise((resolve, reject) => {
@@ -42,9 +42,9 @@ export default async function handler(req, res) {
   }
 
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-  const serviceKey = process.env.SCAFFOLD_SUPABASE_SERVICE_ROLE_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!webhookSecret || !serviceKey) {
-    res.status(500).json({ error: 'Server is not configured (missing STRIPE_WEBHOOK_SECRET or SCAFFOLD_SUPABASE_SERVICE_ROLE_KEY).' });
+    res.status(500).json({ error: 'Server is not configured (missing STRIPE_WEBHOOK_SECRET or SUPABASE_SERVICE_ROLE_KEY).' });
     return;
   }
 

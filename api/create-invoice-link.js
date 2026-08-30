@@ -4,7 +4,7 @@
 // invoice row and STRIPE_SECRET_KEY to create the link — both server-side
 // only. TODO(carter): set STRIPE_SECRET_KEY in Vercel before using this;
 // there's no fallback, the button just errors until it's set.
-const SCAFFOLD_SUPABASE_URL = 'https://kvgeimwitzdlstagqumw.supabase.co';
+const SCAFFOLD_SUPABASE_URL = 'https://rodxrkzwpsgeeatmbwku.supabase.co';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -12,10 +12,10 @@ export default async function handler(req, res) {
     return;
   }
 
-  const serviceKey = process.env.SCAFFOLD_SUPABASE_SERVICE_ROLE_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const stripeKey = process.env.STRIPE_SECRET_KEY;
   if (!serviceKey) {
-    res.status(500).json({ error: 'Server is not configured (missing SCAFFOLD_SUPABASE_SERVICE_ROLE_KEY).' });
+    res.status(500).json({ error: 'Server is not configured (missing SUPABASE_SERVICE_ROLE_KEY).' });
     return;
   }
   if (!stripeKey) {

@@ -8,7 +8,7 @@
 // in the Leads inbox immediately. The v2 form ships no file input, so
 // design_brief_attachments (in freelance-schema.sql) isn't written here —
 // nothing to attach yet.
-const SCAFFOLD_SUPABASE_URL = 'https://kvgeimwitzdlstagqumw.supabase.co';
+const SCAFFOLD_SUPABASE_URL = 'https://rodxrkzwpsgeeatmbwku.supabase.co';
 const SERVICES = ['Social graphics', 'Business card or print', 'Flyer or one-pager',
   'Document or report', 'Presentation or deck', 'Brand basics', 'Video', 'Something else'];
 
@@ -18,9 +18,9 @@ export default async function handler(req, res) {
     return;
   }
 
-  const serviceKey = process.env.SCAFFOLD_SUPABASE_SERVICE_ROLE_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceKey) {
-    res.status(500).json({ error: 'Server is not configured (missing SCAFFOLD_SUPABASE_SERVICE_ROLE_KEY).' });
+    res.status(500).json({ error: 'Server is not configured (missing SUPABASE_SERVICE_ROLE_KEY).' });
     return;
   }
 

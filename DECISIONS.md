@@ -1,5 +1,35 @@
 # Decisions
 
+## The Scaffold's Supabase project was deleted; everything now lives in one project
+
+The Scaffold's business data lived in a second Supabase project
+(`kvgeimwitzdlstagqumw`, separate from the portfolio's `rodxrkzwpsgeeatmbwku`)
+— that's what the Docket, Wick, campaigns/links, and generated_content
+already wrote to, and what `freelance-schema.sql` was written against.
+Carter deleted that project (moved-device cleanup, believing it was
+disposable "work stuff") before the Business Hub tables were ever created in
+it, and confirmed he didn't want to attempt recovery. All of its data —
+Docket tasks, Wick's memory and conversation history, campaign/link
+tracking, generated content — is gone; nothing in this repo depends on that
+data existing, only on the schema, which is version-controlled.
+
+Fix, confirmed with Carter: consolidate everything into the one remaining
+Supabase project rather than provisioning a new second project. Applied
+`supabase-schema.sql` (superseding both `freelance-schema.sql`, now
+deleted, and `content-builder-schema.sql`, kept only as a historical
+pointer) directly via the Supabase MCP connection to `rodxrkzwpsgeeatmbwku`.
+Updated every file that referenced the old project URL or the
+`SCAFFOLD_SUPABASE_SERVICE_ROLE_KEY` env var (`command-center-data.jsx`,
+`api/scaffold-write.js`, `api/design-brief.js`, `api/create-invoice-link.js`,
+`api/stripe-webhook.js`, `api/wick-brain-server.js`, `api/wick-close-session.js`)
+to point at the portfolio's project and reuse the existing
+`SUPABASE_SERVICE_ROLE_KEY` instead of a second key — one project, one
+service-role key, no new Vercel env var needed. RLS policies mirror the
+original design: public-read for anon-key tables (campaigns, links,
+docket_tasks, generated_content, and the whole Business Hub CRM), no select
+policy at all for `wick_*` tables (service-role only), matching
+`api/wick-memory.js`'s documented intent.
+
 Judgment calls made while building out the Business Hub CRM and the Cargroff
 Design public page from `design-reference/`, per the build-to-completion
 handoff. One entry per call, newest first.
