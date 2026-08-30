@@ -46,18 +46,24 @@ const RING_NODES = [
   { id: 'design', label: 'Design', icon: 'assets/tool-vault.png', mirror: true, desc: 'The back end for cargroff.com/design — briefs in.' },
 ];
 
+function ringMetaOf(id, { leads, projects, invoices, clients }) {
+  if (id === 'leads') return leads.filter((l) => l.status !== 'Converted' && l.status !== 'Dead').length + ' open';
+  if (id === 'projects') return projects.filter((p) => p.status !== 'Delivered').length + ' active';
+  if (id === 'invoices') return usd(invoices.filter((i) => i.status === 'sent' || i.status === 'overdue').reduce((a, i) => a + Number(i.amount || 0), 0)) + ' out';
+  if (id === 'clients') return clients.length + ' on the books';
+  if (id === 'design') return 'The site';
+  return 'Today';
+}
+
 function Ring({ go, leads, projects, invoices, clients }) {
-  const metaOf = (id) => {
-    if (id === 'leads') return leads.filter((l) => l.status !== 'Converted' && l.status !== 'Dead').length + ' open';
-    if (id === 'projects') return projects.filter((p) => p.status !== 'Delivered').length + ' active';
-    if (id === 'invoices') return usd(invoices.filter((i) => i.status === 'sent' || i.status === 'overdue').reduce((a, i) => a + Number(i.amount || 0), 0)) + ' out';
-    if (id === 'clients') return clients.length + ' on the books';
-    if (id === 'design') return 'The site';
-    return 'Today';
-  };
+  const data = { leads, projects, invoices, clients };
   return (
     <div className="launch">
-      <div className="rings"><span className="ring-outer" /><span className="ring-mid" /><span className="ring-inner" /></div>
+      <img className="lamp L" src="assets/lamppost.png" alt="" aria-hidden="true" />
+      <img className="lamp R" src="assets/lamppost.png" alt="" aria-hidden="true" />
+      <div className="rings">
+        <span className="ring-outer" /><span className="ring-mid" /><span className="ring-inner" /><span className="ticks" />
+      </div>
       <a className="lwick" href="/wick" title="Talk to Wick" aria-label="Talk to Wick"><span className="core" /></a>
       <div className="lwall" aria-hidden="true" />
       <div className="orbit">
@@ -65,12 +71,29 @@ function Ring({ go, leads, projects, invoices, clients }) {
           <button key={n.id} className="tnode" style={{ '--a': (i * (360 / RING_NODES.length) - 90) + 'deg' }} onClick={() => go(n.id)}>
             <span className="plate"><img src={n.icon} alt="" style={n.mirror ? { transform: 'scaleX(-1)' } : undefined} /></span>
             <span className="tlabel">{n.label}</span>
-            <span className="tsub">{metaOf(n.id)}</span>
+            <span className="tsub">{ringMetaOf(n.id, data)}</span>
             <span className="tdesc">{n.desc}</span>
           </button>
         ))}
       </div>
     </div>
+  );
+}
+
+// The persistent icon rail shown once inside a tool — same brass plates as
+// the ring, standing in a column, so the icon you clicked stays with you.
+function ToolSidebar({ tab, go, leads, projects, invoices, clients }) {
+  const data = { leads, projects, invoices, clients };
+  return (
+    <nav className="tools on">
+      {RING_NODES.map((n) => (
+        <button key={n.id} aria-current={tab === n.id ? 'true' : undefined} onClick={() => go(n.id)}>
+          <span className="tplate"><img src={n.icon} alt="" style={n.mirror ? { transform: 'scaleX(-1)' } : undefined} /></span>
+          <span><span className="tname">{n.label}</span><span className="tmeta">{ringMetaOf(n.id, data)}</span></span>
+        </button>
+      ))}
+      <button className="ring-back" onClick={() => go('ring')}><span>← Ring</span></button>
+    </nav>
   );
 }
 
@@ -728,25 +751,25 @@ function BusinessHub() {
           </nav>
         </div>
       </header>
-      <main>
-        {loading ? <p className="sub" style={{ padding: '20px 2px' }}>Loading…</p> : (
-          <React.Fragment>
-            {tab === 'ring' && <Ring go={setTab} leads={leads} projects={projects} invoices={invoices} clients={clients} />}
-            {tab !== 'ring' && (
-              <div className="ringback">
-                <button className="btn ghost sm" onClick={() => setTab('ring')}>← Ring</button>
-              </div>
-            )}
-            {tab === 'overview' && <Overview clients={clients} leads={leads} projects={projects} invoices={invoices} notes={notes} go={setTab} />}
-            {tab === 'clients' && <Clients clients={clients} projects={projects} invoices={invoices} reload={reloadClients} />}
-            {tab === 'leads' && <Leads leads={leads} clients={clients} projects={projects} reload={() => { reloadLeads(); reloadProjects(); reloadClients(); }} />}
-            {tab === 'projects' && <Projects projects={projects} clients={clients} reload={reloadProjects} />}
-            {tab === 'invoices' && <Invoices invoices={invoices} clients={clients} projects={projects} reload={reloadInvoices} />}
-            {tab === 'notes' && <Notes notes={notes} clients={clients} projects={projects} reload={reloadNotes} />}
-            {tab === 'design' && <Design briefs={briefs} reload={reloadBriefs} />}
-          </React.Fragment>
+      <div className="shell">
+        {!loading && tab !== 'ring' && (
+          <ToolSidebar tab={tab} go={setTab} leads={leads} projects={projects} invoices={invoices} clients={clients} />
         )}
-      </main>
+        <main id="app">
+          {loading ? <p className="sub" style={{ padding: '20px 2px' }}>Loading…</p> : (
+            <React.Fragment>
+              {tab === 'ring' && <Ring go={setTab} leads={leads} projects={projects} invoices={invoices} clients={clients} />}
+              {tab === 'overview' && <Overview clients={clients} leads={leads} projects={projects} invoices={invoices} notes={notes} go={setTab} />}
+              {tab === 'clients' && <Clients clients={clients} projects={projects} invoices={invoices} reload={reloadClients} />}
+              {tab === 'leads' && <Leads leads={leads} clients={clients} projects={projects} reload={() => { reloadLeads(); reloadProjects(); reloadClients(); }} />}
+              {tab === 'projects' && <Projects projects={projects} clients={clients} reload={reloadProjects} />}
+              {tab === 'invoices' && <Invoices invoices={invoices} clients={clients} projects={projects} reload={reloadInvoices} />}
+              {tab === 'notes' && <Notes notes={notes} clients={clients} projects={projects} reload={reloadNotes} />}
+              {tab === 'design' && <Design briefs={briefs} reload={reloadBriefs} />}
+            </React.Fragment>
+          )}
+        </main>
+      </div>
       <wick-assistant screen="business"></wick-assistant>
     </React.Fragment>
   );
