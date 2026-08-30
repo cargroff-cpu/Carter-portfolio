@@ -1,5 +1,51 @@
 # Decisions
 
+## Second audit pass: the design moved (lampposts out, rings need to be visible), Design page rings and reveal were never ported
+
+Carter sent a `FIXES.md` written against the live site plus an updated design
+source where `cg-room.js` had shrunk from ~90 lines of lamppost SVG to 18 —
+its own comment says the lampposts "rendered badly at most viewport sizes"
+and were deliberately dropped in favor of ambient light alone. That directly
+reverses the previous "Ring fidelity pass" entry below, which had just
+*added* lamppost art. Removed it again: `business-hub.jsx`'s two `<img
+className="lamp">` tags and mcc.css's `.launch .lamp` rules are gone,
+replaced with the source's actual current room — three blurred ambient
+blobs (`.a1`/`.a2`/`.a3`) plus grain, `position:fixed` behind everything at
+`z-index:0`. Deleted `assets/lamppost.png` and the never-committed
+`assets/sconce.png`, both now unreferenced — per the source's own
+instruction not to add lamp art back.
+
+`FIXES.md` also named two real gaps on `/design`, confirmed by comparing
+against `source/Carter Groff Design.html`:
+
+1. **The decorative rings were never built.** The source draws them as pure
+   CSS (`.rings`/`.r1-3`/`.t1-3`, no JS) behind the hero and the brief
+   section. This page's earlier build (`design.jsx`) is a from-scratch
+   rewrite with entirely different class names, so the fix isn't a literal
+   copy-paste — ported the same ring/tick-band technique onto `.dhero` and
+   `#brief` instead of the source's `.open`/`#brief` selectors, as a `<Rings
+   />` component reused in both places.
+2. **No scroll motion at all.** The source's four systems (`reveal()`,
+   `wordReveal()`, `stepLines()`, `atmosphere()`) are one ~270-line rAF
+   loop covering per-word masked headings, connector-line draw-ins, a nav
+   progress hairline, ember particles, and parallax on decorative props —
+   none of which this page has (no props, no per-word markup, nothing to
+   hang most of that on). Built the one piece that's a clean win regardless
+   of that mismatch: a scoped `.up`/`useReveal()` IntersectionObserver fade,
+   applied to each section's heading block and card/step grid. The other
+   three systems stay unported — this is a narrower, deliberate line short
+   of "identical," not an oversight.
+
+Verified both pages by rendering them standalone through Playwright (as in
+the prior audit entry) — the hero and brief rings and the Business Hub's
+ring both now match the reference screenshots.
+
+The FIXES doc's other two claims didn't hold up against this repo's actual
+state: the Business Hub already used `assets/antler.png` for its mark (not
+`logo.png`), and `assets/logo.png` itself is byte-identical to
+`assets/antler.png` — already the antler crest, not "the old CG box mark."
+Nothing to fix there; left as-is.
+
 ## Layout audit: a leftover stylesheet was corrupting the ring, and the room was too small
 
 Carter said the ring looked better but the page's overall layout and the

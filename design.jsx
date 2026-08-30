@@ -20,6 +20,17 @@ const STEPS = [
   ['III', 'Details that save rounds'],
 ];
 
+// Decorative concentric-ring instrument, reused behind the hero and the
+// brief — pure CSS (see cargroff-design.css's .rings rules), no JS.
+function Rings() {
+  return (
+    <div className="rings" aria-hidden="true">
+      <span className="r1" /><span className="r2" /><span className="r3" />
+      <span className="t1" /><span className="t2" /><span className="t3" />
+    </div>
+  );
+}
+
 function Nav() {
   return (
     <nav className="dnav">
@@ -41,6 +52,7 @@ function Nav() {
 function Hero() {
   return (
     <header className="dhero" id="top">
+      <Rings />
       <div className="dwrap">
         <div className="dcrest"><img src="assets/antler.png" alt="Carter Groff" /></div>
         <span className="p-eyebrow">Static design, delivered fast</span>
@@ -64,7 +76,7 @@ function Make({ onAddNeed }) {
   return (
     <section id="make" className="dsection">
       <div className="dwrap">
-        <div className="dshead">
+        <div className="dshead up">
           <div className="didxrow"><span className="didx">01 / 05</span><span className="dln" /></div>
           <span className="p-eyebrow">What I make</span>
           <h2 className="ddisplay">Six things I turn around quickly.</h2>
@@ -72,7 +84,7 @@ function Make({ onAddNeed }) {
         </div>
         <div className="dcards">
           {SERVICE_CARDS.map(([n, title, desc, need]) => (
-            <div className="dcard" key={n}>
+            <div className="dcard up" key={n}>
               <span className="dcardn">{n}</span><h3>{title}</h3><p>{desc}</p>
               <a href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed(need); }}>Add to brief →</a>
             </div>
@@ -100,7 +112,7 @@ function How() {
   return (
     <section id="how" className="dsection dwood">
       <div className="dwrap">
-        <div className="dshead">
+        <div className="dshead up">
           <div className="didxrow"><span className="didx">02 / 05</span><span className="dln" /></div>
           <span className="p-eyebrow">How it works</span>
           <h2 className="ddisplay">Four steps. You always know where the job stands.</h2>
@@ -108,7 +120,7 @@ function How() {
         </div>
         <div className="dsteps">
           {steps.map(([n, title, body]) => (
-            <div className="dstp" key={n}><span className="dcardn">{n}</span><h3>{title}</h3><p>{body}</p></div>
+            <div className="dstp up" key={n}><span className="dcardn">{n}</span><h3>{title}</h3><p>{body}</p></div>
           ))}
         </div>
       </div>
@@ -125,14 +137,14 @@ function Why() {
   return (
     <section id="why" className="dsection">
       <div className="dwrap">
-        <div className="dshead">
+        <div className="dshead up">
           <div className="didxrow"><span className="didx">03 / 05</span><span className="dln" /></div>
           <span className="p-eyebrow">Why work with me</span>
           <h2 className="ddisplay">A strategist who also does the design.</h2>
         </div>
         <div className="dwhy">
           {items.map(([n, title, body]) => (
-            <div key={n}><b>{title}</b><p>{body}</p></div>
+            <div className="up" key={n}><b>{title}</b><p>{body}</p></div>
           ))}
         </div>
       </div>
@@ -143,7 +155,7 @@ function Why() {
 function Beyond() {
   return (
     <section id="beyond" className="dsection">
-      <div className="dwrap">
+      <div className="dwrap up">
         <div className="didxrow"><span className="didx">04 / 05</span><span className="dln" /></div>
         <span className="p-eyebrow">Beyond static design</span>
         <h2 className="ddisplay">Static is the quickest place to start. It isn't the limit.</h2>
@@ -200,6 +212,7 @@ const Brief = React.forwardRef(function Brief(props, ref) {
   if (sent) {
     return (
       <section id="brief" className="dsection ddeep">
+        <Rings />
         <div className="dwrap">
           <div className="dsent">
             <h3 className="ddisplay">Brief received.</h3>
@@ -212,8 +225,9 @@ const Brief = React.forwardRef(function Brief(props, ref) {
 
   return (
     <section id="brief" className="dsection ddeep">
+      <Rings />
       <div className="dwrap">
-        <div className="dbriefhead">
+        <div className="dbriefhead up">
           <div className="didxrow" style={{ justifyContent: 'center' }}><span className="dln" /><span className="didx">05 / 05</span><span className="dln" /></div>
           <span className="p-eyebrow">The brief</span>
           <h2 className="ddisplay">Write me a <em>brief</em>.</h2>
@@ -342,8 +356,24 @@ function Footer() {
   );
 }
 
+// Fades .up-marked elements in as they enter view — a scoped stand-in for
+// the source's reveal(), see cargroff-design.css.
+function useReveal() {
+  React.useEffect(() => {
+    const els = document.querySelectorAll('.up');
+    if (!els.length) return;
+    if (!('IntersectionObserver' in window)) { els.forEach((el) => el.classList.add('shown')); return; }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('shown'); io.unobserve(e.target); } });
+    }, { threshold: 0.15, rootMargin: '0px 0px -8% 0px' });
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+}
+
 function CargroffDesign() {
   const briefRef = React.useRef(null);
+  useReveal();
   const onAddNeed = (v) => {
     if (briefRef.current) briefRef.current.addNeed(v);
     document.getElementById('brief').scrollIntoView({ behavior: 'smooth' });

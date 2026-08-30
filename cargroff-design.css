@@ -18,7 +18,33 @@
 .dnavlinks a:hover { color: var(--ink); }
 @media (min-width: 900px) { .dnavlinks { display: flex; } }
 
-.dhero { position: relative; padding: clamp(70px, 12vh, 130px) 0 clamp(50px, 8vh, 90px); text-align: center; background: radial-gradient(120% 90% at 50% 0%, #241a10 0%, var(--bg) 55%, var(--bg-deep) 100%); }
+.dhero { position: relative; overflow: hidden; padding: clamp(70px, 12vh, 130px) 0 clamp(50px, 8vh, 90px); text-align: center; background: radial-gradient(120% 90% at 50% 0%, #241a10 0%, var(--bg) 55%, var(--bg-deep) 100%); }
+.dhero > .dwrap { position: relative; z-index: 1; }
+
+/* ── decorative rings: two concentric-circle instruments, ported from the
+   design source's .rings/.r1-3/.t1-3 (hero + brief sections there, .dhero
+   and #brief here) — pure CSS, no JS. ── */
+.rings { position: absolute; border-radius: 50%; pointer-events: none; z-index: 0; }
+.rings > span { position: absolute; inset: 0; border-radius: 50%; }
+.dhero .rings { width: min(132vw, 1080px); aspect-ratio: 1; top: 46%; left: 50%; transform: translate(-50%, -50%); }
+#brief .rings { width: min(80vw, 560px); aspect-ratio: 1; left: 50%; top: 16%; opacity: .5; transform: translate(-50%, 0); }
+.rings .r1 { border: 1px solid rgba(217,154,61,.16); animation: dring-spin 90s linear infinite; }
+.rings .r2 { inset: 8%; border: 1px dashed rgba(217,154,61,.14); }
+.rings .r3 { inset: 17%; border: 1px solid rgba(217,154,61,.1); animation: dring-spinr 70s linear infinite; }
+.rings .t1, .rings .t2, .rings .t3 { animation: dring-spin 90s linear infinite; }
+.rings .t1 { background: repeating-conic-gradient(from 0deg, rgba(245,205,106,.5) 0 .9deg, transparent .9deg 15deg);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 15px), #000 calc(100% - 14px), #000 calc(100% - 3px), transparent calc(100% - 2px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 15px), #000 calc(100% - 14px), #000 calc(100% - 3px), transparent calc(100% - 2px)); opacity: .55; }
+.rings .t2 { background: repeating-conic-gradient(from 2.5deg, rgba(217,154,61,.32) 0 .45deg, transparent .45deg 5deg);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 10px), #000 calc(100% - 9px), #000 calc(100% - 3px), transparent calc(100% - 2px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 10px), #000 calc(100% - 9px), #000 calc(100% - 3px), transparent calc(100% - 2px)); opacity: .32; }
+.rings .t3 { inset: 9%; animation-name: dring-spinr; animation-duration: 110s;
+  background: repeating-conic-gradient(from 1deg, rgba(217,154,61,.26) 0 .3deg, transparent .3deg 2.5deg);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #000 calc(100% - 6px), #000 calc(100% - 2px), transparent calc(100% - 1px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #000 calc(100% - 6px), #000 calc(100% - 2px), transparent calc(100% - 1px)); opacity: .28; }
+@keyframes dring-spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+@keyframes dring-spinr { from { transform: rotate(0); } to { transform: rotate(-360deg); } }
+@media (prefers-reduced-motion: reduce) { .rings .r1, .rings .r3, .rings .t1, .rings .t2, .rings .t3 { animation: none; } }
 .dcrest { width: 52px; margin: 0 auto 22px; opacity: .85; }
 .dcrest img { width: 100%; display: block; }
 .ddisplay { font-family: var(--display); font-weight: 500; letter-spacing: -.02em; line-height: 1.02; margin: 18px 0 0; }
@@ -67,6 +93,8 @@
 .dalso span { font-family: var(--ui); font-size: 10.5px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-mute); padding-bottom: 5px; border-bottom: 1px solid var(--rule); }
 .dquiet { margin-top: 22px; font-size: 13px; color: var(--ink-dim); font-style: italic; }
 
+#brief { position: relative; overflow: hidden; }
+#brief > .dwrap { position: relative; z-index: 1; }
 .dbriefhead { text-align: center; max-width: 44ch; margin: 0 auto; }
 .dbriefmeta { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 22px; margin-top: 24px; }
 .dbriefmeta span { font-family: var(--ui); font-size: 9.5px; font-weight: 500; letter-spacing: .22em; text-transform: uppercase; color: var(--ink-dim); }
@@ -117,6 +145,20 @@
 .dfootlinks { display: flex; gap: 20px; flex-wrap: wrap; margin-left: auto; align-items: center; }
 .dfootlinks a, .dfootlinks span { font-family: var(--ui); font-size: 10px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-mute); }
 .dfootlinks a:hover { color: var(--ink); }
+
+/* ── scroll reveal: a scoped stand-in for the source's reveal()/wordReveal()
+   /stepLines()/atmosphere() rAF system (nav progress hairline, per-word
+   masked headings, ember particles, parallax props) — those stay unported,
+   see DECISIONS.md. This is the one piece worth having: content fades up
+   as it enters view instead of sitting fully rendered on load. */
+.up { opacity: 0; transform: translateY(14px); transition: opacity .6s ease, transform .6s cubic-bezier(.2,.7,.3,1); }
+.up.shown { opacity: 1; transform: none; }
+.dcards .up.shown:nth-child(2), .dsteps .up.shown:nth-child(2), .dwhy .up.shown:nth-child(2) { transition-delay: 70ms; }
+.dcards .up.shown:nth-child(3), .dsteps .up.shown:nth-child(3), .dwhy .up.shown:nth-child(3) { transition-delay: 140ms; }
+.dcards .up.shown:nth-child(4), .dsteps .up.shown:nth-child(4) { transition-delay: 210ms; }
+.dcards .up.shown:nth-child(5) { transition-delay: 280ms; }
+.dcards .up.shown:nth-child(6) { transition-delay: 350ms; }
+@media (prefers-reduced-motion: reduce) { .up { opacity: 1; transform: none; transition: none; } }
 
 @media (max-width: 760px) {
   .dfields.two { grid-template-columns: 1fr; }
