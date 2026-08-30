@@ -3,7 +3,7 @@
 // rather than keeping the raw transcript. Called when the thread closes
 // (the "File notes & clear" button, or pagehide if the conversation had
 // more than a couple of real turns).
-import { sbInsert } from './wick-brain-server.js';
+import { sbInsert } from './_lib/wick-brain-server.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

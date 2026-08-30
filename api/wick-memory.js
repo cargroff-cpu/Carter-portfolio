@@ -2,7 +2,7 @@
 // has RLS enabled with no policies, so the anon key (used for campaigns/
 // links/docket_tasks) gets zero access to it on purpose -- his memory of
 // business decisions goes through the service-role key only, same as writes.
-import { sbGet } from './wick-brain-server.js';
+import { sbGet } from './_lib/wick-brain-server.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {

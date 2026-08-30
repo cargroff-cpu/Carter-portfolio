@@ -1,7 +1,7 @@
 // middleware.js — gates the admin route and its assets behind a session
-// cookie (set by api/login.js after a correct password), redirecting
-// anyone without one to the themed login.html page instead of the plain
-// native browser Basic Auth prompt.
+// cookie (set by api/session.js, via the /api/login rewrite, after a
+// correct password), redirecting anyone without one to the themed
+// login.html page instead of the plain native browser Basic Auth prompt.
 export const config = {
   matcher: [
     '/Admin.html',
@@ -25,7 +25,6 @@ export const config = {
     '/api/wick-chat',
     '/api/wick-close-session',
     '/api/wick-memory',
-    '/api/wick-brain-server',
     '/api/content-generate',
     '/business',
     '/Business Hub.html',
