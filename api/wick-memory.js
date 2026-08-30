@@ -7,7 +7,7 @@
 // (decisions, preferences, results, disagreements) rather than keeping the
 // raw transcript — this used to be api/wick-close-session.js; wick.jsx's
 // "File notes & clear" call was repointed here, same request body.
-import { sbGet, sbInsert } from './_lib/wick-brain-server.js';
+import { sbGet, sbInsert } from '../lib/wick-brain-server.js';
 
 async function listMemory(req, res) {
   try {
