@@ -138,10 +138,17 @@ tbody tr:hover{background:rgba(236,217,178,.035);cursor:pointer}
    transition between ring and sidebar — see DECISIONS.md. */
 .launch{position:relative;width:100%;min-height:min(74vh,620px);display:flex;align-items:center;justify-content:center;overflow:hidden}
 .launch{--ring:min(64vmin,520px)}
+.launch .lamp{position:absolute;bottom:-4%;width:min(15vw,150px);opacity:.9;pointer-events:none;filter:drop-shadow(0 0 40px rgba(245,205,106,.35))}
+.launch .lamp.L{left:1vw}
+.launch .lamp.R{right:1vw;transform:scaleX(-1)}
 .rings{position:absolute;width:var(--ring);height:var(--ring);border-radius:50%;pointer-events:none}
 .ring-outer{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(217,154,61,.16);animation:ringspin 90s linear infinite}
 .ring-mid{position:absolute;inset:7%;border-radius:50%;border:1px dashed rgba(217,154,61,.14)}
 .ring-inner{position:absolute;inset:15%;border-radius:50%;border:1px solid rgba(217,154,61,.1);animation:ringspinrev 70s linear infinite}
+.ticks{position:absolute;inset:0;border-radius:50%;animation:ringspin 90s linear infinite;opacity:.6;
+  background:repeating-conic-gradient(from 0deg,rgba(245,205,106,.5) 0 .9deg,transparent .9deg 15deg);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 15px),#000 calc(100% - 14px),#000 calc(100% - 3px),transparent calc(100% - 2px));
+  mask:radial-gradient(farthest-side,transparent calc(100% - 15px),#000 calc(100% - 14px),#000 calc(100% - 3px),transparent calc(100% - 2px))}
 @keyframes ringspin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
 @keyframes ringspinrev{from{transform:rotate(0)}to{transform:rotate(-360deg)}}
 .lwick{position:relative;z-index:3;width:16px;height:min(20vmin,150px);border-radius:20px;
@@ -171,7 +178,7 @@ tbody tr:hover{background:rgba(236,217,178,.035);cursor:pointer}
 .tnode:hover .tlabel,.tnode:focus-visible .tlabel{color:var(--text)}
 @media(max-width:760px){
   .launch{min-height:0}
-  .rings,.lwall{display:none}
+  .rings,.lwall,.launch .lamp{display:none}
   .lwick{margin-bottom:20px}
   .orbit{position:relative;left:auto;top:auto;width:auto;height:auto;transform:none;display:flex;flex-direction:column;gap:2px}
   .tnode{position:relative;left:auto;top:auto;width:100%;transform:none!important;flex-direction:row;justify-content:flex-start;gap:14px;
@@ -179,5 +186,31 @@ tbody tr:hover{background:rgba(236,217,178,.035);cursor:pointer}
   .tlabel,.tsub{text-align:left}
   .tdesc{display:block;font-size:12px;color:var(--text-3);margin-top:2px}
 }
-.ringback{margin-bottom:16px}
+
+/* ── the tool sidebar: the ring's brass plates, standing in a column ── */
+.shell{display:flex;align-items:flex-start}
+.tools{display:none;flex:none;width:216px;box-sizing:border-box;flex-direction:column;gap:2px;
+  padding:22px 12px 20px;position:sticky;top:60px;height:calc(100dvh - 60px);overflow-y:auto;
+  border-right:1px solid var(--line)}
+.tools.on{display:flex}
+.tools button{display:flex;align-items:center;gap:12px;background:none;border:none;border-radius:9px;
+  color:var(--text-3);font-family:var(--ui);padding:9px 10px;cursor:pointer;text-align:left;
+  transition:background .3s ease,color .2s ease}
+.tools button:hover{background:rgba(217,154,61,.06);color:var(--text-2)}
+.tools button[aria-current="true"]{background:rgba(245,205,106,.09);color:var(--text);box-shadow:inset 2px 0 0 var(--accent)}
+.tools .tname{display:block;font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase}
+.tools .tmeta{display:block;font-family:var(--display);font-size:13.5px;color:var(--text-4);margin-top:2px}
+.tools button[aria-current="true"] .tmeta{color:var(--text-3)}
+.tplate{width:34px;height:34px;flex:none;border-radius:8px;background:linear-gradient(180deg,#1c140a,#120c06);border:1px solid rgba(217,154,61,.26);
+  display:flex;align-items:center;justify-content:center;transition:border-color .3s ease,box-shadow .3s ease}
+.tplate img{max-width:19px;max-height:24px;opacity:.72;transition:opacity .3s ease}
+.tools button:hover .tplate{border-color:rgba(245,205,106,.55)}
+.tools button:hover .tplate img{opacity:1}
+.tools button[aria-current="true"] .tplate{border-color:rgba(245,205,106,.85);box-shadow:0 0 12px rgba(245,205,106,.3)}
+.tools button[aria-current="true"] .tplate img{opacity:1}
+.tools .ring-back{margin-top:auto;padding-top:16px;color:var(--text-4);letter-spacing:.2em;font-size:10px;text-transform:uppercase;box-shadow:none;justify-content:flex-start}
+.tools .ring-back:hover{color:var(--accent);background:none}
+.shell main{flex:1;min-width:0;padding:20px}
+@media(max-width:900px){.tools{width:74px}.tools .tname,.tools .tmeta,.tools .ring-back span{display:none}.tools button,.tools .ring-back{justify-content:center}}
+@media(max-width:760px){.shell{display:block}.tools{display:none!important}.shell main{padding:16px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}

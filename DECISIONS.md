@@ -1,5 +1,22 @@
 # Decisions
 
+## Ring fidelity pass: lampposts, tick band, persistent tool sidebar
+
+Carter sent rendered screenshots of the actual design prototype (not
+available before — earlier sessions only had raw `.dc.html`/`.css` source),
+making clear the ring's simplification had gone further than intended: the
+two flanking lampposts and the ring's tick-mark band are load-bearing
+atmosphere, not optional decoration, and — the bigger structural gap —
+every tool screen keeps the same six brass plates as a persistent left
+sidebar once you're inside a tool, not a plain "← Ring" text link. Added
+all three: `assets/lamppost.png` flanking the launcher, a
+`repeating-conic-gradient` tick band on the ring, and a `ToolSidebar`
+component mirroring `Business Hub.dc.html`'s `.tools`/`.tplate` sidebar
+(same icons/labels/meta as the ring, current tab highlighted, collapses to
+icon-only under 900px, hidden under 760px same as the ring itself). Notes
+still isn't one of the six plates (wasn't in the source's six either) —
+stays reachable from the top bar.
+
 ## Reverted the login/logout merge — it broke the shared session
 
 Carter reported being asked to log in on every click between Scaffold
