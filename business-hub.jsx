@@ -55,20 +55,79 @@ function ringMetaOf(id, { leads, projects, invoices, clients }) {
   return 'Today';
 }
 
+// Geometry ported from Business Hub.dc.html's wireOrbit()/layout(): the
+// hovered node steps in to 0.92r, its neighbours fan out up to 16deg and
+// 1.06r weighted by ring distance, everything else dims. Simplified from
+// the source's two-pass measured-band version (no DOM measurement of label
+// overflow) since our fixed 120px node width doesn't need it — the radius
+// comes straight from the orbit container's own rendered size.
+const N_RING = RING_NODES.length;
+function ringNodeTransform(i, hover, radius) {
+  let a = (i * (360 / N_RING) - 90) * Math.PI / 180;
+  let rad = radius;
+  if (hover !== null) {
+    if (i === hover) rad = radius * 0.92;
+    else {
+      const half = N_RING / 2;
+      const d = ((i - hover + half) % N_RING) - half;
+      const w = 1 - Math.abs(d) / half;
+      a += 16 * w * Math.sign(d || 1) * Math.PI / 180;
+      rad = radius * (1 + 0.06 * w);
+    }
+  }
+  return `translate(-50%,-50%) translate(${Math.cos(a) * rad}px,${Math.sin(a) * rad}px)`;
+}
+
 function Ring({ go, leads, projects, invoices, clients }) {
+  const [hover, setHover] = React.useState(null);
+  const [wickHot, setWickHot] = React.useState(false);
+  const orbitRef = React.useRef(null);
+  const [radius, setRadius] = React.useState(220);
   const data = { leads, projects, invoices, clients };
+
+  React.useEffect(() => {
+    const measure = () => { if (orbitRef.current) setRadius(orbitRef.current.getBoundingClientRect().width / 2); };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
+
+  const warm = () => setWickHot(true);
+  const cool = () => setWickHot(false);
+
   return (
-    <div className="launch">
+    <div className={'launch' + (hover !== null ? ' hovering' : '') + (wickHot ? ' wickhot' : '')}>
       <img className="lamp L" src="assets/lamppost.png" alt="" aria-hidden="true" />
       <img className="lamp R" src="assets/lamppost.png" alt="" aria-hidden="true" />
       <div className="rings">
-        <span className="ring-outer" /><span className="ring-mid" /><span className="ring-inner" /><span className="ticks" />
+        <span className="ring-outer" /><span className="ring-mid" /><span className="ring-inner" />
+        <span className="ticks" /><span className="ticks-minor" /><span className="ticks-fine" />
       </div>
-      <a className="lwick" href="/wick" title="Talk to Wick" aria-label="Talk to Wick"><span className="core" /></a>
+      <div className="spokes">
+        {RING_NODES.map((_, i) => (
+          <span key={i} className={'spoke' + (hover === i ? ' lit' : '')} style={{ transform: `rotate(${i * (360 / N_RING) - 90}deg)` }} />
+        ))}
+      </div>
+      <div className="ldesc">{hover !== null ? RING_NODES[hover].desc : ''}</div>
       <div className="lwall" aria-hidden="true" />
-      <div className="orbit">
+      <div className="lembers" aria-hidden="true">
+        <i style={{ left: '20%', '--dx': '-14px', animationDelay: '0s' }} />
+        <i style={{ left: '38%', '--dx': '10px', animationDelay: '1.1s' }} />
+        <i style={{ left: '52%', '--dx': '-8px', animationDelay: '2.3s' }} />
+        <i style={{ left: '68%', '--dx': '16px', animationDelay: '3.4s' }} />
+        <i style={{ left: '46%', '--dx': '4px', animationDelay: '4.6s' }} />
+      </div>
+      <a className="lwick" href="/wick" title="Talk to Wick" aria-label="Talk to Wick"
+        onMouseEnter={warm} onMouseLeave={cool} onFocus={warm} onBlur={cool}>
+        <span className="core" />
+      </a>
+      <div className="orbit" ref={orbitRef}>
         {RING_NODES.map((n, i) => (
-          <button key={n.id} className="tnode" style={{ '--a': (i * (360 / RING_NODES.length) - 90) + 'deg' }} onClick={() => go(n.id)}>
+          <button key={n.id} className={'tnode' + (hover === i ? ' on' : '')}
+            style={{ transform: ringNodeTransform(i, hover, radius) }}
+            onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}
+            onFocus={() => setHover(i)} onBlur={() => setHover(null)}
+            onClick={() => go(n.id)}>
             <span className="plate"><img src={n.icon} alt="" style={n.mirror ? { transform: 'scaleX(-1)' } : undefined} /></span>
             <span className="tlabel">{n.label}</span>
             <span className="tsub">{ringMetaOf(n.id, data)}</span>

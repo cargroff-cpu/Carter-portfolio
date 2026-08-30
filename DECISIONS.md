@@ -1,5 +1,36 @@
 # Decisions
 
+## Ring interactivity pass: hover geometry, spokes, and the sidebar icon tint
+
+Carter sent an actual runnable static export of the design (`source/Business
+Hub.html` — real compiled CSS/JS, not the `.dc.html` preview-runtime
+prototype), confirmed as ground truth by its own README. Reading it exactly
+surfaced two real, high-impact gaps the earlier screenshot-based pass
+missed:
+
+1. **The sidebar's plate icons were missing a color filter**
+   (`brightness(1.5) sepia(.35) saturate(1.5) hue-rotate(-12deg)`) — without
+   it they render flat/gray instead of the warm brass tint the rest of the
+   screen has. One-line fix, likely a good chunk of what read as "wrong."
+2. **The ring had zero hover interactivity.** The source's ring is not a
+   static wheel — hovering a node steps it in to `0.92r`, fans its
+   neighbours outward (up to 16°, weighted by ring distance), lights that
+   node's spoke, dims every other plate, and reveals a description line;
+   hovering the center wick adds a warm glow. None of that existed before —
+   the ring just sat there. Ported the geometry math from `wireOrbit()`'s
+   `layout(hover)` (simplified: no DOM-measured label-overflow band/MINR
+   correction, since the fixed 120px node width doesn't need it — radius
+   comes straight from the orbit container's rendered width) as a React
+   hover-state + inline-transform system. Added the spokes, the minor/fine
+   tick-mark layers, and the ember motes that were also silently dropped.
+
+Still not built, deliberately: the "carry" flight (plates physically flying
+between ring and sidebar on navigation — genuinely described as "the
+signature interaction" in the source's own README, real Web Animations API
+choreography, high effort for a purely transitional flourish) and the
+first-arrival collapse-then-launch animation. Both are pure motion on top
+of navigation that already works; noted here rather than silently skipped.
+
 ## Ring fidelity pass: lampposts, tick band, persistent tool sidebar
 
 Carter sent rendered screenshots of the actual design prototype (not
