@@ -1,5 +1,43 @@
 # Decisions
 
+## Layout audit: a leftover stylesheet was corrupting the ring, and the room was too small
+
+Carter said the ring looked better but the page's overall layout and the
+lampposts still looked wrong, and asked for a full audit against the design
+source now that the ground-truth static export (`source/Business Hub.html`,
+`source/cg-room.js`) was available. Two real bugs found:
+
+1. **`lamplight.css` was still linked into `Business Hub.html` and `The
+   Docket.html`.** It's leftover from the retired Marketing Command Center
+   (`.plate`/`.panel`/`.console` masthead treatment, see its own header
+   comment) and neither current page's JSX uses those classes for that
+   purpose — except Business Hub's ring, which *does* have a `.plate` class
+   (the brass node buttons), and lamplight's `.plate` rule was clobbering it:
+   `padding:16px 28px 0`, `justify-content:space-between`, and
+   `min-height:132px` overriding the ring node's centered 56px square. That's
+   the real cause of "the layout doesn't look right" — not a rebuild, a
+   dead `<link>` tag. Removed it from both pages and deleted the now-fully-
+   unreferenced file.
+2. **The lampposts and ring were sized far smaller than the source.** Source
+   CSS draws them as room-height fixtures (`.lamp{height:78vh}`,
+   `.launch{height:calc(100dvh - header)}`); this build had them capped at
+   `width:min(15vw,150px)` inside a `min-height:min(74vh,620px)` box, so the
+   room never filled the screen the way the reference screenshots show.
+   Resized `.lamp` to `height:78vh` (56vh under 1100px) positioned at
+   `left:6vw`/`right:5vw` off the bottom edge, and `.launch` to
+   `height:calc(100dvh - 60px)` (matching the 60px header height already
+   assumed elsewhere in this file for the tool sidebar's sticky offset).
+   `assets/lamppost.png` itself (a raster cast-iron lamppost, not the
+   source's inline SVG) was already the right subject at the right aspect
+   ratio — the CSS sizing was the only problem, so it stays as an image
+   rather than porting `cg-room.js`'s ~90-line hand-drawn SVG for a visually
+   equivalent result.
+
+Verified locally: stubbed `window.CC`'s fetchers and rendered
+`business-hub.jsx` standalone through Playwright (React/ReactDOM/Babel
+pulled from npm since the CDN hosts aren't reachable from this sandbox) —
+both the ring and a tool screen now match the reference screenshots.
+
 ## Ring interactivity pass: hover geometry, spokes, and the sidebar icon tint
 
 Carter sent an actual runnable static export of the design (`source/Business
