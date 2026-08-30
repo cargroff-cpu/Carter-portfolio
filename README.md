@@ -22,6 +22,14 @@ Admin.html               Content editor (CMS), "The Scaffold" — served at /sca
 admin.jsx                Admin app shell (editor + live preview split view)
 admin-ui.jsx             Admin form primitives (fields, buttons, image/PDF upload)
 admin-sections.jsx       Admin form sections (Identity, About, Videos, Designs, Résumé, Travels)
+
+Carter Groff Design.html  Cargroff Design, the public design-service page — served at /design
+design.jsx                Design page sections + the three-movement brief form
+cargroff-design.css       Design page styles, built on parlor.css's tokens
+
+Business Hub.html         The Business Hub CRM, door 02 of The Scaffold — served at /business
+business-hub.jsx          Clients, leads (+ thread), projects (+ deliverables), invoices, notes, Design-briefs inbox
+supabase-schema.sql       Full schema for the one live Supabase project (already applied) — Business Hub tables, Docket, Wick, campaigns/links
 ```
 
 ## Running locally
@@ -58,7 +66,14 @@ Variables — set directly there, never committed):
 | Variable | Used by | Notes |
 |---|---|---|
 | `ADMIN_PASSWORD` | `middleware.js` | Basic Auth password for `/Admin.html` |
-| `SUPABASE_SERVICE_ROLE_KEY` | `api/save-content.js` | Full-access key, server-side only |
+| `SUPABASE_SERVICE_ROLE_KEY` | `api/save-content.js`, `api/scaffold-write.js`, `api/design-brief.js`, `api/create-invoice-link.js`, `api/stripe-webhook.js`, `api/wick-brain-server.js`, `api/wick-close-session.js` | Full-access key, server-side only. One Supabase project, one key — see DECISIONS.md for why there used to be two |
+| `RESEND_API_KEY` | `api/contact.js`, `api/design-brief.js` | Sends the portfolio contact form and design-brief notifications |
+| `STRIPE_SECRET_KEY` | `api/create-invoice-link.js` | Set. Turns a draft invoice into a real Stripe Payment Link |
+| `STRIPE_WEBHOOK_SECRET` | `api/stripe-webhook.js` | Not set yet, deliberately deferred. Invoices still work via the manual "Mark sent"/"Mark paid" buttons in the Business Hub until this is wired up |
 
 The Supabase project URL and public anon key are safe to expose client-side
-and are already committed in `data.jsx`.
+and are already committed in `data.jsx`. Everything — the public portfolio's
+content, the Docket, Wick, campaign/link tracking, and the Business Hub CRM —
+lives in this one Supabase project; see `supabase-schema.sql` for the full
+schema (already applied) and DECISIONS.md for why there used to be a second
+project.

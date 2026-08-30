@@ -8,10 +8,10 @@
 import fs from 'fs';
 import path from 'path';
 
-const SCAFFOLD_SUPABASE_URL = 'https://kvgeimwitzdlstagqumw.supabase.co';
+const SCAFFOLD_SUPABASE_URL = 'https://rodxrkzwpsgeeatmbwku.supabase.co';
 
 function serviceHeaders() {
-  const key = process.env.SCAFFOLD_SUPABASE_SERVICE_ROLE_KEY;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   return { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' };
 }
 async function sbGet(path) {

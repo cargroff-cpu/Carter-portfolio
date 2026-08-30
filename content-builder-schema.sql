@@ -1,13 +1,9 @@
--- content-builder-schema.sql — run once against the Scaffold Supabase
--- project (kvgeimwitzdlstagqumw), in the SQL editor. Not applied
--- automatically: whatever Supabase access created `campaigns`/`links`/
--- `docket_tasks` earlier isn't reachable from this session's tools, so this
--- has to be run by hand (or by a future session with access) before the
--- Content Builder screen can save or read pieces.
---
--- Mirrors the existing tables' pattern: RLS on, anon key gets read-only
--- access, all writes go through api/scaffold-write.js with the service-role
--- key (which bypasses RLS).
+-- content-builder-schema.sql — SUPERSEDED. The Scaffold Supabase project
+-- this originally targeted (kvgeimwitzdlstagqumw) was deleted; this table
+-- was recreated in the one remaining project as part of
+-- supabase-schema.sql, which is now the source of truth. Kept here only for
+-- history — do not run this file, run supabase-schema.sql instead if you
+-- ever need to rebuild from scratch (it's already applied and live).
 
 create table if not exists generated_content (
   id uuid primary key default gen_random_uuid(),

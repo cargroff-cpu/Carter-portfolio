@@ -103,6 +103,12 @@ function ScaffoldHub() {
             <p>Copy, work, resume, travel pins, everything the public side reads from.</p>
             <span className="arrow">→</span>
           </a>
+          <a className="door" href="/business">
+            <span className="no">02</span>
+            <h2>Business<br />Hub</h2>
+            <p>Clients, leads, projects, invoices, notes, and the Design-briefs inbox.</p>
+            <span className="arrow">→</span>
+          </a>
         </div>
 
         <div className="aside">

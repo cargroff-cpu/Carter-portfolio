@@ -3,7 +3,11 @@
     { "source": "/", "destination": "/Carter%20Portfolio.html" },
     { "source": "/scaffold", "destination": "/Scaffold%20Hub.html" },
     { "source": "/docket", "destination": "/The%20Docket.html" },
-    { "source": "/wick", "destination": "/Wick.html" }
+    { "source": "/wick", "destination": "/Wick.html" },
+    { "source": "/business", "destination": "/Business%20Hub.html" },
+    { "source": "/design", "destination": "/Carter%20Groff%20Design.html" },
+    { "source": "/api/login", "destination": "/api/session?action=login" },
+    { "source": "/api/logout", "destination": "/api/session?action=logout" }
   ],
   "functions": {
     "api/wick-chat.js": { "includeFiles": "brand/**" },
