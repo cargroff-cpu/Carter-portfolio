@@ -97,8 +97,6 @@ function Ring({ go, leads, projects, invoices, clients }) {
 
   return (
     <div className={'launch' + (hover !== null ? ' hovering' : '') + (wickHot ? ' wickhot' : '')}>
-      <img className="lamp L" src="assets/lamppost.png" alt="" aria-hidden="true" />
-      <img className="lamp R" src="assets/lamppost.png" alt="" aria-hidden="true" />
       <div className="rings">
         <span className="ring-outer" /><span className="ring-mid" /><span className="ring-inner" />
         <span className="ticks" /><span className="ticks-minor" /><span className="ticks-fine" />
@@ -792,6 +790,10 @@ function BusinessHub() {
 
   return (
     <React.Fragment>
+      <div className="room" aria-hidden="true">
+        <div className="amb"><i className="a1" /><i className="a2" /><i className="a3" /></div>
+        <div className="grain" />
+      </div>
       <header className="top">
         <div className="topin">
           <a className="mark" href="/scaffold">
