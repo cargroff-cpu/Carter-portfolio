@@ -32,6 +32,48 @@ const TABS = [
   { id: 'design', label: 'Design' },
 ];
 
+// Six brass plates around the ring, evenly spaced (the source's per-node
+// `a`/`fa` angles are vestigial — Business Hub.dc.html's own wireOrbit()
+// computes even spacing at runtime and ignores them). "Acquire" (proposals/
+// referrals) isn't in this build's scope, so Clients takes that slot —
+// see DECISIONS.md.
+const RING_NODES = [
+  { id: 'overview', label: 'Brief', icon: 'assets/tool-brief.png', desc: 'The daily read — what is moving and what needs you.' },
+  { id: 'leads', label: 'Leads', icon: 'assets/tool-leads.png', desc: 'Every inquiry, where it stands, what to do next.' },
+  { id: 'projects', label: 'Work', icon: 'assets/tool-work.png', desc: 'Projects in motion, deliverables ticked off.' },
+  { id: 'invoices', label: 'Money', icon: 'assets/tool-money.png', desc: 'Invoices out, paid, and what still needs chasing.' },
+  { id: 'clients', label: 'Clients', icon: 'assets/tool-acquire.png', desc: 'Who you work for, rates, and how they like to be reached.' },
+  { id: 'design', label: 'Design', icon: 'assets/tool-vault.png', mirror: true, desc: 'The back end for cargroff.com/design — briefs in.' },
+];
+
+function Ring({ go, leads, projects, invoices, clients }) {
+  const metaOf = (id) => {
+    if (id === 'leads') return leads.filter((l) => l.status !== 'Converted' && l.status !== 'Dead').length + ' open';
+    if (id === 'projects') return projects.filter((p) => p.status !== 'Delivered').length + ' active';
+    if (id === 'invoices') return usd(invoices.filter((i) => i.status === 'sent' || i.status === 'overdue').reduce((a, i) => a + Number(i.amount || 0), 0)) + ' out';
+    if (id === 'clients') return clients.length + ' on the books';
+    if (id === 'design') return 'The site';
+    return 'Today';
+  };
+  return (
+    <div className="launch">
+      <div className="rings"><span className="ring-outer" /><span className="ring-mid" /><span className="ring-inner" /></div>
+      <a className="lwick" href="/wick" title="Talk to Wick" aria-label="Talk to Wick"><span className="core" /></a>
+      <div className="lwall" aria-hidden="true" />
+      <div className="orbit">
+        {RING_NODES.map((n, i) => (
+          <button key={n.id} className="tnode" style={{ '--a': (i * (360 / RING_NODES.length) - 90) + 'deg' }} onClick={() => go(n.id)}>
+            <span className="plate"><img src={n.icon} alt="" style={n.mirror ? { transform: 'scaleX(-1)' } : undefined} /></span>
+            <span className="tlabel">{n.label}</span>
+            <span className="tsub">{metaOf(n.id)}</span>
+            <span className="tdesc">{n.desc}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function useCollection(fetcher) {
   const [rows, setRows] = React.useState(null);
   const [error, setError] = React.useState(null);
@@ -656,7 +698,7 @@ function Design({ briefs, reload }) {
 
 // ── Shell ────────────────────────────────────────────────────────────
 function BusinessHub() {
-  const [tab, setTab] = React.useState('overview');
+  const [tab, setTab] = React.useState('ring');
   const [clients, setClients, reloadClients] = useCollection(fetchClients);
   const [leads, setLeads, reloadLeads] = useCollection(fetchLeads);
   const [projects, setProjects, reloadProjects] = useCollection(fetchProjects);
@@ -675,11 +717,13 @@ function BusinessHub() {
             <div><b>Business Hub</b><span>The Scaffold</span></div>
           </a>
           <nav className="topnav">
-            {TABS.map((t) => (
-              <a key={t.id} href={'#' + t.id} aria-current={tab === t.id ? 'page' : undefined}
-                style={tab === t.id ? { color: 'var(--text)' } : undefined}
-                onClick={(e) => { e.preventDefault(); setTab(t.id); }}>{t.label}</a>
-            ))}
+            <a href="#ring" aria-current={tab === 'ring' ? 'page' : undefined}
+              style={tab === 'ring' ? { color: 'var(--text)' } : undefined}
+              onClick={(e) => { e.preventDefault(); setTab('ring'); }}>Home</a>
+            <a href="#notes" aria-current={tab === 'notes' ? 'page' : undefined}
+              style={tab === 'notes' ? { color: 'var(--text)' } : undefined}
+              onClick={(e) => { e.preventDefault(); setTab('notes'); }}>Notes</a>
+            <a href="/docket">Docket</a>
             <a href="/scaffold">Hub</a>
           </nav>
         </div>
@@ -687,6 +731,12 @@ function BusinessHub() {
       <main>
         {loading ? <p className="sub" style={{ padding: '20px 2px' }}>Loading…</p> : (
           <React.Fragment>
+            {tab === 'ring' && <Ring go={setTab} leads={leads} projects={projects} invoices={invoices} clients={clients} />}
+            {tab !== 'ring' && (
+              <div className="ringback">
+                <button className="btn ghost sm" onClick={() => setTab('ring')}>← Ring</button>
+              </div>
+            )}
             {tab === 'overview' && <Overview clients={clients} leads={leads} projects={projects} invoices={invoices} notes={notes} go={setTab} />}
             {tab === 'clients' && <Clients clients={clients} projects={projects} invoices={invoices} reload={reloadClients} />}
             {tab === 'leads' && <Leads leads={leads} clients={clients} projects={projects} reload={() => { reloadLeads(); reloadProjects(); reloadClients(); }} />}
