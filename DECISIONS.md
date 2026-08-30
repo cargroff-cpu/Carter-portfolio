@@ -1,5 +1,23 @@
 # Decisions
 
+## Reverted the login/logout merge — it broke the shared session
+
+Carter reported being asked to log in on every click between Scaffold
+screens, not just on browser restart — a real regression. The prior fix for
+Vercel's Hobby-plan 12-function cap had merged `api/login.js` and
+`api/logout.js` into one file (`api/session.js`) reached via a
+`vercel.json` rewrite (`/api/login` → `/api/session?action=login`). That
+rewrite is the one thing this session changed directly in the auth
+pathway, and auth is the highest-blast-radius place to have an unconfirmed
+bug — reverted it back to the exact two-file code that worked before,
+rather than keep debugging a live-untestable theory about rewrite/cookie
+interaction. To stay at 12 functions, merged `api/wick-close-session.js`
+into `api/wick-memory.js` instead (GET lists memory, POST closes a
+session) — same technique, but dispatched by HTTP method on the file's own
+stable URL rather than a rewritten query param, and on a much
+lower-stakes feature than login. `wick.jsx`'s one caller was repointed
+from `/api/wick-close-session` to `/api/wick-memory`.
+
 ## The ring: real radial nav, simplified geometry
 
 Carter asked for the actual ring back after seeing the tab-bar version.

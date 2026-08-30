@@ -135,7 +135,7 @@ function Wick() {
 
   const closeSession = React.useCallback((h) => {
     if (h.filter((m) => m.role === 'user').length < 2) return;
-    fetch('/api/wick-close-session', {
+    fetch('/api/wick-memory', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ history: h }),
       keepalive: true,
