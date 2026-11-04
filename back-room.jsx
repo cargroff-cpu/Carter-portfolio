@@ -1,4 +1,4 @@
-// scaffold-hub.jsx — The Scaffold's entry point, recreated in React from
+// back-room.jsx — The Back Room's entry point (formerly The Scaffold), recreated in React from
 // design-reference/Scaffold Hub.html. Establishes Wick's presence (the
 // sconce) and routes to the existing Website Backend (Admin.html) and the
 // Docket.
@@ -37,7 +37,7 @@ function LockScreen({ onUnlock }) {
     <div className="lock" role="dialog" aria-modal="true" aria-label="Locked">
       <div className="lockbox">
         <img src="assets/antler.png" alt="" />
-        <h2>The Scaffold</h2>
+        <h2>The Back Room</h2>
         <div className="sub">Private</div>
         <form className="lockrow" onSubmit={submit}>
           <input ref={inputRef} className="p-field" type="password" placeholder="Password"
@@ -51,7 +51,7 @@ function LockScreen({ onUnlock }) {
   );
 }
 
-function ScaffoldHub() {
+function BackRoom() {
   const [locked, setLocked] = React.useState(() => new URLSearchParams(location.search).get('lock') === '1');
   const [docketLine, setDocketLine] = React.useState('Open the board');
   const [wickNear, setWickNear] = React.useState(false);
@@ -93,7 +93,7 @@ function ScaffoldHub() {
           </span>
         </a>
 
-        <div className="plaque">The Scaffold</div>
+        <div className="plaque">The Back Room</div>
         <h1 className="greet">{hail()}, <em>Carter</em>.</h1>
 
         <div className="pair">
@@ -125,4 +125,4 @@ function ScaffoldHub() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<ScaffoldHub />);
+ReactDOM.createRoot(document.getElementById('root')).render(<BackRoom />);

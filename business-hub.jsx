@@ -1,4 +1,4 @@
-// business-hub.jsx — The Business Hub, door 02 of The Scaffold. Full CRUD
+// business-hub.jsx — The Business Hub, door 02 of The Back Room. Full CRUD
 // against the freelance-schema.sql tables (clients, leads + lead_messages,
 // projects + project_deliverables, invoices, notes) plus a read view over
 // design_briefs (the public /design page's submissions). Scoped to the
@@ -10,11 +10,13 @@ const {
   fetchProjects, saveProject, fetchProjectDeliverables, saveProjectDeliverable, deleteProjectDeliverable,
   fetchInvoices, saveInvoice,
   fetchNotes, saveNote, deleteNote,
-  fetchDesignBriefs, saveDesignBrief,
+  fetchDesignBriefs, saveDesignBrief, triageBrief,
 } = window.CC;
 
+// Must match the need lists in design.jsx / api/design-brief.js.
 const SERVICES = ['Social graphics', 'Business card or print', 'Flyer or one-pager',
-  'Document or report', 'Presentation or deck', 'Brand basics', 'Video', 'Something else'];
+  'Document or report', 'Presentation or deck', 'Brand basics', 'Monthly content plan',
+  'Lead and inquiry handling', 'Content pipeline', 'Dashboard or tracker', 'Custom AI assistant', 'Something else'];
 
 const usd = (n) => (n == null ? '—' : '$' + Math.round(n).toLocaleString('en-US'));
 const fdate = (s) => { if (!s) return '—'; const [y, m, d] = String(s).slice(0, 10).split('-'); return new Date(+y, +m - 1, +d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); };
@@ -43,7 +45,7 @@ const RING_NODES = [
   { id: 'projects', label: 'Work', icon: 'assets/tool-work.png', desc: 'Projects in motion, deliverables ticked off.' },
   { id: 'invoices', label: 'Money', icon: 'assets/tool-money.png', desc: 'Invoices out, paid, and what still needs chasing.' },
   { id: 'clients', label: 'Clients', icon: 'assets/tool-acquire.png', desc: 'Who you work for, rates, and how they like to be reached.' },
-  { id: 'design', label: 'Design', icon: 'assets/tool-vault.png', mirror: true, desc: 'The back end for cargroff.com/design — briefs in.' },
+  { id: 'design', label: 'Design', icon: 'assets/tool-vault.png', mirror: true, desc: 'The back end for The Scaffold (cargroff.com/design) — briefs in, AI triage, replies.' },
 ];
 
 function ringMetaOf(id, { leads, projects, invoices, clients }) {
@@ -715,11 +717,64 @@ function Notes({ notes, clients, projects, reload }) {
   );
 }
 
-// ── Design-briefs inbox ─────────────────────────────────────────────
+// ── Brief inbox (The Scaffold, cargroff.com/design) with AI triage ─────
+// New briefs without a triage are sent to api/brief-triage.js once when the
+// inbox opens. Triage only prepares a reply: you send it from your own
+// email with "Reply by email", then mark the brief answered.
+function TriageCard({ b, onRerun, busy, err }) {
+  const t = b.triage;
+  const copy = () => { try { navigator.clipboard.writeText(t.reply_body); } catch (e) {} };
+  const mailto = t ? 'mailto:' + encodeURIComponent(b.email) + '?subject=' + encodeURIComponent(t.reply_subject || 'Your brief') + '&body=' + encodeURIComponent(t.reply_body || '') : '';
+  if (busy) return <p className="sub" style={{ marginTop: 10 }}>Triaging…</p>;
+  if (!t) {
+    return (
+      <p className="sub" style={{ marginTop: 10 }}>
+        {err || 'Not triaged yet.'} <button className="btn quiet sm" onClick={onRerun}>Run triage</button>
+      </p>
+    );
+  }
+  const row = (label, items) => (items && items.length ? <p className="sub" style={{ margin: '6px 0 0' }}><b>{label}:</b> {items.join(' · ')}</p> : null);
+  return (
+    <div style={{ marginTop: 12, padding: '12px 14px', border: '1px solid var(--line-2)', background: 'rgba(236,217,178,.03)' }}>
+      <p style={{ margin: 0 }}><span className="lbl">AI triage · {t.lane} · {t.size}</span></p>
+      <p style={{ margin: '6px 0 0' }}>{t.summary}</p>
+      {row('Missing', t.missing)}
+      {row('Flags', t.flags)}
+      {row('Scope', t.scope)}
+      <p className="sub" style={{ margin: '6px 0 0' }}><b>Price:</b> {t.price || '—'}</p>
+      <details style={{ marginTop: 8 }}>
+        <summary className="sub" style={{ cursor: 'pointer' }}>Draft reply: {t.reply_subject}</summary>
+        <p style={{ whiteSpace: 'pre-wrap', margin: '8px 0 0' }}>{t.reply_body}</p>
+      </details>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+        <a className="btn sm" href={mailto}>Reply by email</a>
+        <button className="btn ghost sm" onClick={copy}>Copy reply</button>
+        <button className="btn quiet sm" onClick={onRerun}>Re-run</button>
+      </div>
+    </div>
+  );
+}
+
 function Design({ briefs, reload }) {
   const open = briefs.filter((b) => b.status !== 'answered');
   const tally = SERVICES.map((s) => ({ name: s, n: briefs.filter((b) => Array.isArray(b.need) && b.need.includes(s)).length }))
     .filter((r) => r.n > 0).sort((a, b) => b.n - a.n);
+  const [busy, setBusy] = React.useState({});
+  const [errs, setErrs] = React.useState({});
+  const tried = React.useRef(new Set());
+
+  const runTriage = (b) => {
+    setBusy((s) => ({ ...s, [b.id]: true }));
+    triageBrief(b.id).then((d) => {
+      if (d && d.configured === false) setErrs((s) => ({ ...s, [b.id]: d.message }));
+      else reload();
+    }).catch((e) => setErrs((s) => ({ ...s, [b.id]: e.message })))
+      .finally(() => setBusy((s) => ({ ...s, [b.id]: false })));
+  };
+
+  React.useEffect(() => {
+    open.filter((b) => !b.triage && !tried.current.has(b.id)).slice(0, 5).forEach((b) => { tried.current.add(b.id); runTriage(b); });
+  }, [briefs]);
 
   const markAnswered = (b) => {
     saveDesignBrief({ id: b.id, status: 'answered', answered_at: new Date().toISOString() }).then(reload).catch(() => {});
@@ -728,7 +783,7 @@ function Design({ briefs, reload }) {
   return (
     <div className="stack">
       <section className="tile brief">
-        <div className="tilehead"><h2 className="h2">Cargroff Design</h2><span className="lbl">cargroff.com/design</span></div>
+        <div className="tilehead"><h2 className="h2">The Scaffold</h2><span className="lbl">cargroff.com/design</span></div>
         <p className="briefline">
           {briefs.length ? <React.Fragment><b>{open.length} brief{open.length === 1 ? '' : 's'}</b> waiting on a reply, out of {briefs.length} received.</React.Fragment>
             : 'Live and wired — no briefs submitted yet.'}
@@ -737,17 +792,18 @@ function Design({ briefs, reload }) {
       <div className="cols workcols">
         <section className="card">
           <div className="pad between" style={{ borderBottom: '1px solid var(--line)' }}>
-            <h2 className="h2">Brief inbox</h2>{pill(briefs.length ? 'live' : 'not connected', briefs.length ? 'ok' : 'warn')}
+            <h2 className="h2">Brief inbox</h2>{pill(briefs.length ? 'live' : 'waiting', briefs.length ? 'ok' : 'mute')}
           </div>
           {briefs.length ? (
             <div className="feed">
               {briefs.map((b) => (
                 <div className="feedrow" key={b.id}>
-                  <span className="lbl fkind">{b.status === 'answered' ? 'answered' : 'new'}</span>
+                  <span className="lbl fkind">{b.status === 'answered' ? 'answered' : (b.lane === 'automation' ? 'new · auto' : 'new')}</span>
                   <span className="ftxt">
-                    {b.name}{b.business ? ' · ' + b.business : ''}{b.about ? ' — ' + b.about.slice(0, 90) : ''}
+                    {b.name}{b.business ? ' · ' + b.business : ''}{b.about ? ' — ' + b.about.slice(0, 140) : ''}
                     <br /><span className="sub mono">{b.email}</span>{Array.isArray(b.need) && b.need.length ? <span className="sub"> · {b.need.join(', ')}</span> : null}
                     {b.budget ? <span className="sub"> · {b.budget}</span> : null}
+                    {b.status !== 'answered' && <TriageCard b={b} busy={!!busy[b.id]} err={errs[b.id]} onRerun={() => runTriage(b)} />}
                   </span>
                   <span className="lbl fwhen">
                     {fdate(b.created_at)}
@@ -796,9 +852,9 @@ function BusinessHub() {
       </div>
       <header className="top">
         <div className="topin">
-          <a className="mark" href="/scaffold">
+          <a className="mark" href="/back-room">
             <img src="assets/antler.png" alt="" />
-            <div><b>Business Hub</b><span>The Scaffold</span></div>
+            <div><b>Business Hub</b><span>The Back Room</span></div>
           </a>
           <nav className="topnav">
             <a href="#ring" aria-current={tab === 'ring' ? 'page' : undefined}
@@ -808,7 +864,7 @@ function BusinessHub() {
               style={tab === 'notes' ? { color: 'var(--text)' } : undefined}
               onClick={(e) => { e.preventDefault(); setTab('notes'); }}>Notes</a>
             <a href="/docket">Docket</a>
-            <a href="/scaffold">Hub</a>
+            <a href="/back-room">Hub</a>
           </nav>
         </div>
       </header>

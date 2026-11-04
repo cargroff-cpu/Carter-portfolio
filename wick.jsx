@@ -142,7 +142,7 @@ function Wick() {
     }).catch(() => {});
   }, []);
 
-  // Same-origin link clicks (the header's "The Scaffold" link) shouldn't
+  // Same-origin link clicks (the header's "The Back Room" link) shouldn't
   // count as "leaving" -- only a real tab-close or refresh should log out,
   // so those clicks are marked and pagehide skips the logout beacon for
   // them.
@@ -212,7 +212,7 @@ function Wick() {
           <span className="who">Wick</span>
           <span className="state">{state === 'thinking' ? 'Thinking' : state === 'answering' ? 'Answering' : ''}</span>
           <span className="spacer" />
-          <a href="/scaffold">← The Scaffold</a>
+          <a href="/back-room">← The Back Room</a>
           <button onClick={() => setMemOpen(true)}>What he keeps</button>
           <button onClick={fileAndClear}>{closing ? 'Filing…' : 'File notes & clear'}</button>
         </div>

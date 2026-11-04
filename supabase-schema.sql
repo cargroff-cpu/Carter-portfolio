@@ -16,7 +16,11 @@
 -- api/create-invoice-link.js, api/stripe-webhook.js, api/wick-brain-server.js,
 -- api/wick-close-session.js) now points there instead. See DECISIONS.md.
 --
--- Pattern: RLS on everywhere. Tables read client-side via the anon key
+-- Pattern (Nov 2026): RLS on everywhere, and NO public-read policies on any
+-- private table; only site_content is publicly readable. The Back Room reads
+-- via api/back-room-read.js and writes via api/scaffold-write.js, both with
+-- the service-role key behind the session check. Superseded note below:
+-- Tables read client-side via the anon key
 -- (campaigns, links, docket_tasks, generated_content, and the Business Hub
 -- CRM tables) get a public-read policy; all writes go through
 -- api/scaffold-write.js with the service-role key, which bypasses RLS.
@@ -241,6 +245,11 @@ create table if not exists design_briefs (
   notes text,
   budget text,
   status text not null default 'new' check (status in ('new','answered')),
+  lane text not null default 'design' check (lane in ('design','automation')),
+  details jsonb not null default '{}'::jsonb,
+  ip_hash text,
+  triage jsonb,
+  triage_at timestamptz,
   converted_lead_id uuid references leads(id) on delete set null,
   created_at timestamptz not null default now(),
   answered_at timestamptz
@@ -274,16 +283,3 @@ alter table wick_memory enable row level security;
 alter table wick_messages enable row level security;
 alter table wick_actions enable row level security;
 
-create policy "Public read access" on campaigns for select using (true);
-create policy "Public read access" on links for select using (true);
-create policy "Public read access" on docket_tasks for select using (true);
-create policy "Public read access" on generated_content for select using (true);
-create policy "Public read access" on clients for select using (true);
-create policy "Public read access" on leads for select using (true);
-create policy "Public read access" on lead_messages for select using (true);
-create policy "Public read access" on projects for select using (true);
-create policy "Public read access" on project_deliverables for select using (true);
-create policy "Public read access" on invoices for select using (true);
-create policy "Public read access" on notes for select using (true);
-create policy "Public read access" on design_briefs for select using (true);
-create policy "Public read access" on design_brief_attachments for select using (true);

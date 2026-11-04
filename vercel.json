@@ -1,11 +1,19 @@
 {
   "rewrites": [
     { "source": "/", "destination": "/Carter%20Portfolio.html" },
-    { "source": "/scaffold", "destination": "/Scaffold%20Hub.html" },
+    { "source": "/back-room", "destination": "/Back%20Room.html" },
     { "source": "/docket", "destination": "/The%20Docket.html" },
     { "source": "/wick", "destination": "/Wick.html" },
     { "source": "/business", "destination": "/Business%20Hub.html" },
-    { "source": "/design", "destination": "/Carter%20Groff%20Design.html" }
+    { "source": "/design", "destination": "/The%20Scaffold.html" }
+  ],
+  "redirects": [
+    { "source": "/scaffold", "destination": "/back-room", "permanent": false },
+    { "source": "/Scaffold%20Hub.html", "destination": "/back-room", "permanent": false },
+    { "source": "/Carter%20Groff%20Design.html", "destination": "/design", "permanent": true }
+  ],
+  "crons": [
+    { "path": "/api/health", "schedule": "17 9 * * *" }
   ],
   "functions": {
     "api/wick-chat.js": { "includeFiles": "brand/**" },
@@ -21,8 +29,20 @@
       "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
     },
     {
+      "source": "/design.js",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
+    },
+    {
       "source": "/wick-dock.js",
       "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" }
+      ]
     }
   ]
 }

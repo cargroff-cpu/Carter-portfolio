@@ -3,8 +3,8 @@
 // Originally a separate Supabase project from the public portfolio's; that
 // project was deleted (moved-device cleanup, see DECISIONS.md) and
 // everything now lives in the one remaining project, same as site_content.
-const CC_SUPABASE_URL = 'https://rodxrkzwpsgeeatmbwku.supabase.co';
-const CC_SUPABASE_ANON_KEY = 'sb_publishable_fWE-gd3uSKDe0BpUK5WSxQ_f3Uzgd0x';
+// No Supabase keys here: reads go through /api/back-room-read and writes
+// through /api/scaffold-write, both behind the Back Room session.
 
 const BRANDS = {
   ltw: { key: 'ltw', name: 'Log & Timber Worx', short: 'LTW' },
@@ -72,17 +72,12 @@ const fmtDate = (s) => { const [y, m, d] = s.split('-'); return new Date(+y, +m 
 const inBrand = (rows, brand) => (brand === 'both' ? rows : rows.filter((r) => r.brand === brand));
 const checklistDone = (c) => !!(c.checklist && c.checklist.cost && c.checklist.attr && c.checklist.qty);
 
-async function ccFetch(path, opts = {}) {
-  const res = await fetch(`${CC_SUPABASE_URL}/rest/v1/${path}`, {
-    ...opts,
-    headers: {
-      apikey: CC_SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${CC_SUPABASE_ANON_KEY}`,
-      'Content-Type': 'application/json',
-      ...(opts.headers || {}),
-    },
-  });
-  if (!res.ok) throw new Error(`Command Center fetch failed: ${path} (${res.status})`);
+// Reads go through /api/back-room-read (session-gated, service-role key
+// server-side). The private tables have no public-read policy any more, so
+// the anon key can't see them.
+async function ccFetch(path) {
+  const res = await fetch(`/api/back-room-read?path=${encodeURIComponent(path)}`, { credentials: 'same-origin' });
+  if (!res.ok) throw new Error(`Back Room fetch failed: ${path} (${res.status})`);
   return res.json();
 }
 
@@ -192,6 +187,16 @@ const fetchDesignBriefs = () => ccFetch('design_briefs?select=*&order=created_at
 const saveDesignBrief = (row) => ccWrite('design_briefs', row);
 const fetchDesignBriefAttachments = (briefId) => ccFetch(`design_brief_attachments?select=*&design_brief_id=eq.${briefId}`);
 
+// AI triage for one brief (api/brief-triage.js). Prepares, never sends.
+async function triageBrief(briefId) {
+  const res = await fetch('/api/brief-triage', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ briefId }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Triage failed');
+  return data;
+}
+
 window.CC = {
   BRANDS, BRAND_KIT, CHANNELS, TYPES, CONNECTIONS,
   money, fmtDate, inBrand, checklistDone,
@@ -203,5 +208,5 @@ window.CC = {
   fetchProjects, saveProject, fetchProjectDeliverables, saveProjectDeliverable, deleteProjectDeliverable,
   fetchInvoices, saveInvoice,
   fetchNotes, saveNote, deleteNote,
-  fetchDesignBriefs, saveDesignBrief, fetchDesignBriefAttachments,
+  fetchDesignBriefs, saveDesignBrief, fetchDesignBriefAttachments, triageBrief,
 };
