@@ -1,34 +1,32 @@
-// middleware.js — gates the admin route and its assets behind a session
-// cookie (set by api/login.js after a correct password), redirecting
-// anyone without one to the themed login.html page instead of the plain
-// native browser Basic Auth prompt.
+// middleware.js — gates The Back Room (the private admin tools) and their
+// APIs behind a signed session cookie set by api/login.js, redirecting
+// anyone without a valid one to the themed login.html page. The cookie is a
+// signed, expiring token (lib/session.js), not the password.
+import { verifySessionToken, SESSION_COOKIE } from './lib/session.js';
+
 export const config = {
   matcher: [
     '/Admin.html',
     '/scaffold',
+    '/backroom',
     '/admin.jsx',
     '/admin-ui.jsx',
     '/admin-sections.jsx',
     '/api/save-content',
     '/command-center-data.jsx',
-    '/wick-dock.js',
     '/api/scaffold-write',
+    '/api/scaffold-read',
     '/docket',
     '/The Docket.html',
     '/docket.jsx',
     '/Scaffold Hub.html',
     '/scaffold-hub.jsx',
     '/api/pipedrive-goals',
-    '/wick',
-    '/Wick.html',
-    '/wick.jsx',
-    '/api/wick-chat',
-    '/api/wick-memory',
-    '/api/content-generate',
     '/business',
     '/Business Hub.html',
     '/business-hub.jsx',
     '/api/create-invoice-link',
+    '/api/brief-reply',
   ],
 };
 
@@ -38,13 +36,8 @@ function getCookie(request, name) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-export default function middleware(request) {
-  const password = process.env.ADMIN_PASSWORD;
-  // Renamed from cg_admin so anyone with an old long-lived cookie (set
-  // before session-only cookies were introduced) is forced to log in again.
-  const cookie = getCookie(request, 'cg_admin_s');
-
-  if (password && cookie === password) return;
+export default async function middleware(request) {
+  if (await verifySessionToken(getCookie(request, SESSION_COOKIE))) return;
 
   const url = new URL(request.url);
 

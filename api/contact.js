@@ -39,7 +39,7 @@ export default async function handler(req, res) {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        from: 'Carter Groff Portfolio <onboarding@resend.dev>',
+        from: process.env.RESEND_FROM || 'Carter Groff Portfolio <onboarding@resend.dev>',
         to: ['car.groff@gmail.com'],
         reply_to: email,
         subject: `New letter from ${name}`,

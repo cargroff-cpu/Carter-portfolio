@@ -1,16 +1,22 @@
 {
+  "redirects": [
+    { "source": "/scaffold", "destination": "/backroom", "permanent": false }
+  ],
   "rewrites": [
     { "source": "/", "destination": "/Carter%20Portfolio.html" },
-    { "source": "/scaffold", "destination": "/Scaffold%20Hub.html" },
+    { "source": "/backroom", "destination": "/Scaffold%20Hub.html" },
     { "source": "/docket", "destination": "/The%20Docket.html" },
-    { "source": "/wick", "destination": "/Wick.html" },
     { "source": "/business", "destination": "/Business%20Hub.html" },
-    { "source": "/design", "destination": "/Carter%20Groff%20Design.html" }
+    { "source": "/design", "destination": "/Carter%20Groff%20Design.html" },
+    { "source": "/api/health", "destination": "/api/design-brief" }
   ],
   "functions": {
-    "api/wick-chat.js": { "includeFiles": "brand/**" },
-    "api/content-generate.js": { "includeFiles": "brand/**" }
+    "api/design-brief.js": { "maxDuration": 30 },
+    "api/brief-reply.js": { "maxDuration": 30 }
   },
+  "crons": [
+    { "path": "/api/design-brief", "schedule": "17 13 * * *" }
+  ],
   "headers": [
     {
       "source": "/(.*).html",
@@ -21,7 +27,7 @@
       "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
     },
     {
-      "source": "/wick-dock.js",
+      "source": "/design.js",
       "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
     }
   ]

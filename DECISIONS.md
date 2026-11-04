@@ -1,5 +1,61 @@
 # Decisions
 
+## 2026-11-04 assessment: open for business safely, The Scaffold, two lanes
+
+Worked from the "Carter Groff Design — Full Assessment" doc. What changed
+and why, in the order the assessment ranked them:
+
+- **A database outage can't eat a lead any more.** `api/design-brief.js`
+  now emails the full brief (with a reference number like `TS-261104-AB12`)
+  *before* writing to Supabase; a failed write sends a separate alert email
+  and the visitor still sees success. Every attempt is logged to
+  `brief_events`. A daily Vercel Cron hits `GET /api/design-brief` so the
+  free-tier project doesn't pause from inactivity (it had: the project was
+  INACTIVE and every brief was failing).
+- **Client data is no longer world-readable** (once the migration runs).
+  The Business Hub and Docket read through the new `api/scaffold-read.js`
+  behind the session check instead of the browser holding the anon key;
+  `supabase/migrations/20261104_lockdown.sql` drops every public-read policy
+  except `site_content`'s. Order matters: deploy, *then* run the migration.
+- **The login cookie is no longer the password.** Signed 8-hour token
+  (`lib/session.js`, HMAC with `SESSION_SECRET`), constant-time password
+  check, 5-attempts-per-15-minutes rate limit. The limiter (and the brief
+  route's) is in-memory per serverless instance: blunt, not distributed.
+- **Spam:** hidden honeypot field + per-IP limit on the brief route.
+- **AI triage v1** (`lib/brief-triage.js`): every brief gets a summary,
+  lane, scope, missing info, red flags and a draft reply, shown as a card in
+  the Business Hub's Design tab with Approve & send / Edit / Reject
+  (`api/brief-reply.js`). It never sends on its own. The brief goes to the
+  model as tagged data with no tools; output is shape-checked and anything
+  off-format is discarded. `RATE_CARD` is empty, so it never suggests a
+  price (enforced in code, not just the prompt) until real prices exist.
+- **Name:** public brand is **The Scaffold, by Carter Groff**; the private
+  admin tools are renamed **The Back Room** (`/backroom`; `/scaffold`
+  redirects). File names (`Scaffold Hub.html`, `api/scaffold-*`) were left
+  alone to keep the diff to what visitors and Carter see.
+- **The /design page:** Design and Automation lanes (automation in a brass
+  accent), hero shows one brief beside three drafts, "AI drafts the
+  options, I finish every file" said plainly, How it works rewritten around
+  the real workflow, portrait + first-person Why me, an 8-question FAQ with
+  "Do you use AI?" first, 3-column services grid (no empty cells), brighter
+  body text and 12–13 px labels. The four "drop images here" placeholder
+  slots are gone: `WORK` and `TESTIMONIALS` arrays in `design.jsx` render
+  only when they have real entries. Prices are wired but hidden behind
+  `SHOW_PRICES = false` (the numbers are the assessment's placeholders).
+  Brief: lane toggle, automation questions, budget as ranges, optional
+  uploads (3 files, 2.5 MB each, to a private `brief-uploads` bucket).
+- **Page build:** `/design` now loads production React and a precompiled
+  `design.js` (`npm run build:design`) instead of React's dev build plus
+  in-browser Babel, and ships real HTML in `#root`, OG/Twitter tags and
+  `ProfessionalService` structured data. The Back Room pages keep in-browser
+  Babel; they're private and not worth a build step.
+- **Wick and the Content Builder were removed** at Carter's request (pages,
+  API routes, `lib/wick-brain-server.js`, the Hub/Docket dock). Their tables
+  are left in the database untouched. This also freed three of Vercel
+  Hobby's 12 function slots; `api/` is at 11.
+- **Analytics:** the Vercel Web Analytics script is on `/` and `/design`;
+  it records nothing until Web Analytics is switched on in the dashboard.
+
 ## Second audit pass: the design moved (lampposts out, rings need to be visible), Design page rings and reveal were never ported
 
 Carter sent a `FIXES.md` written against the live site plus an updated design
