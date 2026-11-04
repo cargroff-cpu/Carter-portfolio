@@ -25,8 +25,7 @@ import { triageAndSave } from '../lib/brief-triage.js';
 // Keep these lists in sync with design.jsx (the form's chips and choices).
 const DESIGN_SERVICES = ['Social graphics', 'Business card or print', 'Flyer or one-pager',
   'Document or report', 'Presentation or deck', 'Brand basics', 'Video', 'Something else'];
-const AUTOMATION_SERVICES = ['Lead and inquiry handling', 'Content pipeline', 'Dashboard or tracker',
-  'Custom AI assistant', 'Something else'];
+const AUTOMATION_SERVICES = ['Inquiries and leads', 'Quotes', 'Invoices and payments', 'Job board or dashboard', 'Review requests', 'Weekly numbers', 'Content on a schedule', 'AI assistant', 'Something else'];
 const BUDGETS = ['Under $150', '$150–$500', '$500–$1,500', '$1,500–$5,000', '$5,000+', 'Not sure yet'];
 const ASSETS = ['Yes', 'Some', 'No'];
 

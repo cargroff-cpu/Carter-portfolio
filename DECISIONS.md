@@ -1,5 +1,23 @@
 # Decisions
 
+## /design goes tools-first, copy cut down
+
+Carter's feedback on the first rework: the copy felt heavy, and the page
+needed much more weight on the kinds of tools he builds. Changes:
+
+- Hero leads with tools ("I build the tools that run the busywork"), with
+  a job-won → labels → crew checklist → follow-up chain; the three-drafts
+  visual moved into the Design section.
+- "Tools I've built": eight cards for tools Carter has built for a
+  log-home restoration company, each with a short flow line. Kept generic
+  on purpose (Carter's call): no platform name, screenshots or data.
+- "What I can build for you": eight tool kinds linking into the brief with
+  that kind pre-selected. The brief defaults to the tools lane.
+- "How a tool gets built" states the rules: prove it by hand first,
+  automate the bottleneck, a person approves anything customer-facing.
+- Design is one shorter section; copy and FAQ trimmed throughout. Why me
+  uses Carter's current title.
+
 ## 2026-11-04 assessment: open for business safely, The Scaffold, two lanes
 
 Worked from the "Carter Groff Design — Full Assessment" doc. What changed

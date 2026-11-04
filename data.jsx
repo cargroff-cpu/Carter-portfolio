@@ -45,7 +45,11 @@ const CG_DATA = {
 
   // Resume, pulled directly from LinkedIn. Edit dates / copy as needed.
   resume: [
-    { role: 'Marketing Assistant',           company: 'Log & Timber Worx',     dates: 'Oct 2025 to Present', city: 'Harrisonburg, VA',
+    { role: 'Marketing and Automation Lead', company: 'Log & Timber Worx',     dates: 'Sep 2026 to Present', city: 'Harrisonburg, VA',
+      promoted: 'Promoted from Marketing Assistant',
+      bullets: ['Lead marketing for a log-home restoration company across social, email, paid search, and direct mail.',
+                'Build the operations tools the office and field crews run on, from scheduling to customer calls to job checklists.'] },
+    { role: 'Marketing Assistant',           company: 'Log & Timber Worx',     dates: 'Oct 2025 to Sep 2026', city: 'Harrisonburg, VA',
       bullets: ['Run social, email, and local marketing for a log-home restoration company.',
                 'Capture and shape before/after stories that drive leads and referrals.'] },
     { role: 'Digital Content Creator',       company: 'FirstDay Learning',          dates: 'Aug 2025 to Jan 2026', city: 'Remote',
@@ -123,6 +127,8 @@ window.CG_READY = (async function applyOverrides() {
     }
     const keys = ['name', 'role', 'location', 'email', 'sinceYear', 'tools', 'bio', 'videos', 'designs', 'resume', 'travels', 'sectionOrder'];
     keys.forEach((k) => { if (o[k] != null) CG_DATA[k] = o[k]; });
+    // Older admin saves predate the Sept 2026 promotion (see cg-store.js).
+    if (window.CGStore && window.CGStore.migrateResume) CG_DATA.resume = window.CGStore.migrateResume(CG_DATA.resume);
     // socials merge field-by-field so a partial save keeps the defaults.
     if (o.socials && typeof o.socials === 'object') {
       CG_DATA.socials = { ...CG_DATA.socials, ...o.socials };

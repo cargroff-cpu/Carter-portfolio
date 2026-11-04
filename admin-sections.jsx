@@ -30,7 +30,8 @@ function normalizeSite(o) {
         id: d.id || 'd' + i, title: d.title, kind: d.kind, desc: d.desc || '',
         color: d.color || '', image: d.image || '', pdf: d.pdf || '', thumb: d.thumb || '',
         size: d.size || sizeFromSpan(d.span) })),
-      resume: (o.resume ?? SEED.resume).map((r, i) => ({ id: r.id || 'r' + i, ...r })),
+      resume: ((window.CGStore && window.CGStore.migrateResume) ? window.CGStore.migrateResume(o.resume ?? SEED.resume) : (o.resume ?? SEED.resume))
+        .map((r, i) => ({ id: r.id || 'r' + i, ...r })),
       travels: (o.travels ?? SEED.travels).map((t, i) => ({
         id: t.id || 't' + i, name: t.name || 'Place', year: t.year || '',
         lon: t.lon != null ? t.lon : (SEED.travels[i] ? SEED.travels[i].lon : 0),
@@ -250,6 +251,7 @@ function ResumeCard({ item, idx, set, remove, selected, onSelect }) {
         <Field label="Dates" value={item.dates} onChange={(v) => f('dates', v)} />
       </div>
       <Field label="City / location" value={item.city} onChange={(v) => f('city', v)} />
+      <Field label="Promotion note (optional, e.g. Promoted from Marketing Assistant)" value={item.promoted || ''} onChange={(v) => f('promoted', v)} />
       <span style={labelStyle}>Bullets</span>
       {item.bullets.map((b, i) => (
         <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 10 }}>
