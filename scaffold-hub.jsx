@@ -54,7 +54,6 @@ function LockScreen({ onUnlock }) {
 function ScaffoldHub() {
   const [locked, setLocked] = React.useState(() => new URLSearchParams(location.search).get('lock') === '1');
   const [docketLine, setDocketLine] = React.useState('Open the board');
-  const [wickNear, setWickNear] = React.useState(false);
 
   React.useEffect(() => {
     fetchDocketTasks().then((rows) => {
@@ -73,27 +72,11 @@ function ScaffoldHub() {
 
   return (
     <React.Fragment>
-      <div className={'stage' + (wickNear ? ' wick-near' : '')} style={locked ? { filter: 'blur(9px) brightness(.4)' } : undefined}>
+      <div className="stage" style={locked ? { filter: 'blur(9px) brightness(.4)' } : undefined}>
         <div className="fog" />
         <div className="antler"><img src="assets/antler.png" alt="Carter Groff" /></div>
 
-        <a className="sconce" href="/wick" aria-label="Talk to Wick"
-          onMouseEnter={() => setWickNear(true)} onMouseLeave={() => setWickNear(false)}>
-          <span className="tag">Wick</span>
-          <span className="tube">
-            <span className="core" />
-            <span className="wall" />
-            <span className="embers" aria-hidden="true">
-              <i style={{ left: '14%', '--dx': '-16px', animationDelay: '0s' }} />
-              <i style={{ left: '38%', '--dx': '12px', animationDelay: '.7s' }} />
-              <i style={{ left: '56%', '--dx': '-9px', animationDelay: '1.5s' }} />
-              <i style={{ left: '76%', '--dx': '18px', animationDelay: '2.3s' }} />
-              <i style={{ left: '48%', '--dx': '4px', animationDelay: '3.1s' }} />
-            </span>
-          </span>
-        </a>
-
-        <div className="plaque">The Scaffold</div>
+        <div className="plaque">The Back Room</div>
         <h1 className="greet">{hail()}, <em>Carter</em>.</h1>
 
         <div className="pair">

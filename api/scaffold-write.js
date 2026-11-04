@@ -7,7 +7,7 @@
 // Whitelisted tables only.
 const SCAFFOLD_SUPABASE_URL = 'https://rodxrkzwpsgeeatmbwku.supabase.co';
 const ALLOWED_TABLES = new Set([
-  'campaigns', 'links', 'wick_memory', 'wick_sessions', 'wick_messages', 'wick_actions', 'docket_tasks', 'generated_content',
+  'campaigns', 'links', 'docket_tasks',
   'clients', 'leads', 'lead_messages', 'projects', 'project_deliverables', 'invoices', 'notes', 'design_briefs',
 ]);
 

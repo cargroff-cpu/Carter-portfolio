@@ -16,10 +16,9 @@
 -- api/create-invoice-link.js, api/stripe-webhook.js, api/wick-brain-server.js,
 -- api/wick-close-session.js) now points there instead. See DECISIONS.md.
 --
--- Pattern: RLS on everywhere. Tables read client-side via the anon key
--- (campaigns, links, docket_tasks, generated_content, and the Business Hub
--- CRM tables) get a public-read policy; all writes go through
--- api/scaffold-write.js with the service-role key, which bypasses RLS.
+-- Pattern: RLS on everywhere, no public-read policies (see the bottom of
+-- this file). All reads go through api/scaffold-read.js and all writes
+-- through api/scaffold-write.js with the service-role key, which bypasses RLS.
 -- design_briefs/design_brief_attachments are also written by
 -- api/design-brief.js (public, unauthenticated) with the same service-role
 -- key, since a brief submitter has no Scaffold session. wick_memory/
@@ -274,16 +273,35 @@ alter table wick_memory enable row level security;
 alter table wick_messages enable row level security;
 alter table wick_actions enable row level security;
 
-create policy "Public read access" on campaigns for select using (true);
-create policy "Public read access" on links for select using (true);
-create policy "Public read access" on docket_tasks for select using (true);
-create policy "Public read access" on generated_content for select using (true);
-create policy "Public read access" on clients for select using (true);
-create policy "Public read access" on leads for select using (true);
-create policy "Public read access" on lead_messages for select using (true);
-create policy "Public read access" on projects for select using (true);
-create policy "Public read access" on project_deliverables for select using (true);
-create policy "Public read access" on invoices for select using (true);
-create policy "Public read access" on notes for select using (true);
-create policy "Public read access" on design_briefs for select using (true);
-create policy "Public read access" on design_brief_attachments for select using (true);
+-- No public-read policies on any of the tables above (dropped 2026-11-04,
+-- supabase/migrations/20261104_lockdown.sql). RLS is on with no policies, so
+-- the anon key reads nothing; the Back Room reads via /api/scaffold-read and
+-- writes via /api/scaffold-write, both with the service-role key behind the
+-- session check. The only anon-readable table is site_content (the public
+-- portfolio's content), which is managed outside this file.
+--
+-- wick_* and generated_content belonged to Wick and the Content Builder,
+-- both removed 2026-11-04. The tables are left in place (holding whatever
+-- rows they have) but nothing reads or writes them any more.
+
+-- Added 2026-11-04 (same migration): brief columns for the new brief route
+-- and AI triage, the brief_events log, and the private brief-uploads bucket.
+alter table design_briefs add column if not exists reference text;
+alter table design_briefs add column if not exists lane text not null default 'design';
+alter table design_briefs add column if not exists auto_slow text;
+alter table design_briefs add column if not exists auto_tools text;
+alter table design_briefs add column if not exists auto_who text;
+alter table design_briefs add column if not exists attachment_count integer not null default 0;
+alter table design_briefs add column if not exists triage jsonb;
+alter table design_briefs add column if not exists triaged_at timestamptz;
+
+create table if not exists brief_events (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  kind text not null,
+  ok boolean not null default true,
+  reference text,
+  detail text,
+  ip text
+);
+alter table brief_events enable row level security;

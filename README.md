@@ -18,18 +18,26 @@ portfolio.jsx            Page sections + composition (Hero, About, Video, Design
 cg-store.js              Shared storage helper used by the site and the admin CMS
 assets/                  Images (portrait, etc.)
 
-Admin.html               Content editor (CMS), "The Scaffold" — served at /scaffold, not linked from the public site
+Admin.html               Content editor (CMS), part of "The Back Room" (private tools) — served under /backroom, not linked from the public site
 admin.jsx                Admin app shell (editor + live preview split view)
 admin-ui.jsx             Admin form primitives (fields, buttons, image/PDF upload)
 admin-sections.jsx       Admin form sections (Identity, About, Videos, Designs, Résumé, Travels)
 
-Carter Groff Design.html  Cargroff Design, the public design-service page — served at /design
-design.jsx                Design page sections + the three-movement brief form
-cargroff-design.css       Design page styles, built on parlor.css's tokens
+Carter Groff Design.html  The Scaffold, by Carter Groff — the public studio page (Design + Automation lanes) — served at /design
+design.jsx                Studio page source: sections + the three-movement brief form. EDIT THIS, then run `npm run build:design`
+design.js                 GENERATED from design.jsx (precompiled, so the public page ships no in-browser Babel). Commit it with design.jsx
+cargroff-design.css       Studio page styles, built on parlor.css's tokens
 
-Business Hub.html         The Business Hub CRM, door 02 of The Scaffold — served at /business
-business-hub.jsx          Clients, leads (+ thread), projects (+ deliverables), invoices, notes, Design-briefs inbox
-supabase-schema.sql       Full schema for the one live Supabase project (already applied) — Business Hub tables, Docket, Wick, campaigns/links
+Scaffold Hub.html         The Back Room's entry (served at /backroom; /scaffold redirects there)
+Business Hub.html         The Business Hub CRM, door 02 of The Back Room — served at /business
+business-hub.jsx          Clients, leads (+ thread), projects (+ deliverables), invoices, notes, briefs inbox with AI triage
+command-center-data.jsx   Back Room data layer: reads via /api/scaffold-read, writes via /api/scaffold-write (no Supabase key in the browser)
+
+api/design-brief.js       Public brief endpoint (email first, then DB, uploads, AI triage, client confirmation, event log). GET = health check / keep-alive
+api/brief-reply.js        Back Room only: re-run triage, approve & send a reply, or reject
+lib/                      Server helpers: session tokens, rate limiting, Supabase/Resend helpers, AI triage
+supabase-schema.sql       Record of the live schema
+supabase/migrations/      Changes still to apply, in order (see the top of each file)
 ```
 
 ## Running locally
@@ -45,6 +53,12 @@ python3 -m http.server 8765
 Then open `http://localhost:8765/Carter%20Portfolio.html` for the site, or
 `http://localhost:8765/Admin.html` for the content editor.
 
+The one build step: after editing `design.jsx`, run `npm install` (first
+time) and `npm run build:design`, and commit the regenerated `design.js`.
+
+Vercel's Hobby plan allows **12 serverless functions**; every file in
+`api/` counts. There are 11. Put shared code in `lib/`, not `api/`.
+
 ## Editing content
 
 Open `Admin.html` and edit any section (Identity, About, Video Work, Design
@@ -53,27 +67,35 @@ local storage as a draft safety net. Click **Save / Publish** to push that
 draft live: it's written to Supabase, and the public site picks it up on
 its next page load — no redeploy needed.
 
-The Scaffold (`/scaffold`) is password-protected (checked in
-`middleware.js` against the `ADMIN_PASSWORD` environment variable).
+The Back Room (`/backroom`, `/business`, `/docket`, the admin) is
+password-protected: `api/login.js` checks `ADMIN_PASSWORD` and sets a
+signed, 8-hour session token (`lib/session.js`) that `middleware.js`
+verifies. Login is rate-limited.
 
 ## Deployment
 
 Hosted on Vercel, auto-deploying from the `main` branch of this repo.
 
-**Required environment variables** (Vercel → Project Settings → Environment
+**Environment variables** (Vercel → Project Settings → Environment
 Variables — set directly there, never committed):
 
 | Variable | Used by | Notes |
 |---|---|---|
-| `ADMIN_PASSWORD` | `middleware.js` | Basic Auth password for `/Admin.html` |
-| `SUPABASE_SERVICE_ROLE_KEY` | `api/save-content.js`, `api/scaffold-write.js`, `api/design-brief.js`, `api/create-invoice-link.js`, `api/stripe-webhook.js`, `api/wick-brain-server.js`, `api/wick-close-session.js` | Full-access key, server-side only. One Supabase project, one key — see DECISIONS.md for why there used to be two |
-| `RESEND_API_KEY` | `api/contact.js`, `api/design-brief.js` | Sends the portfolio contact form and design-brief notifications |
-| `STRIPE_SECRET_KEY` | `api/create-invoice-link.js` | Set. Turns a draft invoice into a real Stripe Payment Link |
-| `STRIPE_WEBHOOK_SECRET` | `api/stripe-webhook.js` | Not set yet, deliberately deferred. Invoices still work via the manual "Mark sent"/"Mark paid" buttons in the Business Hub until this is wired up |
+| `ADMIN_PASSWORD` | `api/login.js` | The Back Room password. Rotate it after deploying the 2026-11-04 changes |
+| `SESSION_SECRET` | `lib/session.js` | **New.** Long random string that signs session cookies. Until set, sessions are signed with `ADMIN_PASSWORD` |
+| `SUPABASE_SERVICE_ROLE_KEY` | every `api/` route that touches the database | Full-access key, server-side only. Rotate it after the lockdown migration |
+| `RESEND_API_KEY` | `api/contact.js`, `api/design-brief.js`, `api/brief-reply.js` | Email |
+| `RESEND_FROM` | same | **New.** e.g. `The Scaffold <studio@cargroff.com>`, on a domain verified in Resend. Until set, mail goes from Resend's test sender and client-facing email (brief confirmations, approved replies) is switched off, because the test sender can only reach the account owner |
+| `NOTIFY_EMAIL` | `lib/server.js` | Optional. Where new briefs and failure alerts go (default car.groff@gmail.com) |
+| `ANTHROPIC_API_KEY` | `lib/brief-triage.js` | AI triage on incoming briefs. Without it, briefs still work and the Hub just shows "No AI triage yet" |
+| `TRIAGE_MODEL`, `TRIAGE_DAILY_CAP` | `lib/brief-triage.js` | Optional. Model override, and the daily cap on automatic triage (default 40) |
+| `STRIPE_SECRET_KEY` | `api/create-invoice-link.js` | Turns a draft invoice into a Stripe Payment Link |
+| `STRIPE_WEBHOOK_SECRET` | `api/stripe-webhook.js` | Set. The Stripe dashboard side (endpoint → `/api/stripe-webhook`, event `checkout.session.completed`) is still to do; until then use "Mark paid" |
 
-The Supabase project URL and public anon key are safe to expose client-side
-and are already committed in `data.jsx`. Everything — the public portfolio's
-content, the Docket, Wick, campaign/link tracking, and the Business Hub CRM —
-lives in this one Supabase project; see `supabase-schema.sql` for the full
-schema (already applied) and DECISIONS.md for why there used to be a second
-project.
+The Supabase project URL and the publishable (anon) key in `data.jsx` only
+read `site_content`, the public portfolio's own content. Every other table
+has no public-read policy (`supabase/migrations/20261104_lockdown.sql`).
+
+A daily Vercel Cron (`vercel.json`) calls `GET /api/design-brief`, which
+runs one query so the free-tier Supabase project never pauses from
+inactivity.

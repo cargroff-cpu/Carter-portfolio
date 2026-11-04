@@ -1,4 +1,4 @@
-// business-hub.jsx — The Business Hub, door 02 of The Scaffold. Full CRUD
+// business-hub.jsx — The Business Hub, door 02 of The Back Room. Full CRUD
 // against the freelance-schema.sql tables (clients, leads + lead_messages,
 // projects + project_deliverables, invoices, notes) plus a read view over
 // design_briefs (the public /design page's submissions). Scoped to the
@@ -10,11 +10,12 @@ const {
   fetchProjects, saveProject, fetchProjectDeliverables, saveProjectDeliverable, deleteProjectDeliverable,
   fetchInvoices, saveInvoice,
   fetchNotes, saveNote, deleteNote,
-  fetchDesignBriefs, saveDesignBrief,
+  fetchDesignBriefs, saveDesignBrief, briefAction,
 } = window.CC;
 
 const SERVICES = ['Social graphics', 'Business card or print', 'Flyer or one-pager',
-  'Document or report', 'Presentation or deck', 'Brand basics', 'Video', 'Something else'];
+  'Document or report', 'Presentation or deck', 'Brand basics', 'Video',
+  'Lead and inquiry handling', 'Content pipeline', 'Dashboard or tracker', 'Custom AI assistant', 'Something else'];
 
 const usd = (n) => (n == null ? '—' : '$' + Math.round(n).toLocaleString('en-US'));
 const fdate = (s) => { if (!s) return '—'; const [y, m, d] = String(s).slice(0, 10).split('-'); return new Date(+y, +m - 1, +d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); };
@@ -43,7 +44,7 @@ const RING_NODES = [
   { id: 'projects', label: 'Work', icon: 'assets/tool-work.png', desc: 'Projects in motion, deliverables ticked off.' },
   { id: 'invoices', label: 'Money', icon: 'assets/tool-money.png', desc: 'Invoices out, paid, and what still needs chasing.' },
   { id: 'clients', label: 'Clients', icon: 'assets/tool-acquire.png', desc: 'Who you work for, rates, and how they like to be reached.' },
-  { id: 'design', label: 'Design', icon: 'assets/tool-vault.png', mirror: true, desc: 'The back end for cargroff.com/design — briefs in.' },
+  { id: 'design', label: 'Design', icon: 'assets/tool-vault.png', mirror: true, desc: 'The back end for cargroff.com/design — briefs in, AI triage, replies out.' },
 ];
 
 function ringMetaOf(id, { leads, projects, invoices, clients }) {
@@ -80,7 +81,6 @@ function ringNodeTransform(i, hover, radius) {
 
 function Ring({ go, leads, projects, invoices, clients }) {
   const [hover, setHover] = React.useState(null);
-  const [wickHot, setWickHot] = React.useState(false);
   const orbitRef = React.useRef(null);
   const [radius, setRadius] = React.useState(220);
   const data = { leads, projects, invoices, clients };
@@ -92,11 +92,8 @@ function Ring({ go, leads, projects, invoices, clients }) {
     return () => window.removeEventListener('resize', measure);
   }, []);
 
-  const warm = () => setWickHot(true);
-  const cool = () => setWickHot(false);
-
   return (
-    <div className={'launch' + (hover !== null ? ' hovering' : '') + (wickHot ? ' wickhot' : '')}>
+    <div className={'launch' + (hover !== null ? ' hovering' : '')}>
       <div className="rings">
         <span className="ring-outer" /><span className="ring-mid" /><span className="ring-inner" />
         <span className="ticks" /><span className="ticks-minor" /><span className="ticks-fine" />
@@ -115,10 +112,6 @@ function Ring({ go, leads, projects, invoices, clients }) {
         <i style={{ left: '68%', '--dx': '16px', animationDelay: '3.4s' }} />
         <i style={{ left: '46%', '--dx': '4px', animationDelay: '4.6s' }} />
       </div>
-      <a className="lwick" href="/wick" title="Talk to Wick" aria-label="Talk to Wick"
-        onMouseEnter={warm} onMouseLeave={cool} onFocus={warm} onBlur={cool}>
-        <span className="core" />
-      </a>
       <div className="orbit" ref={orbitRef}>
         {RING_NODES.map((n, i) => (
           <button key={n.id} className={'tnode' + (hover === i ? ' on' : '')}
@@ -716,8 +709,60 @@ function Notes({ notes, clients, projects, reload }) {
 }
 
 // ── Design-briefs inbox ─────────────────────────────────────────────
+// Each brief carries an AI triage package (lib/brief-triage.js): summary,
+// lane, scope, missing info, red flags and a draft reply. Nothing goes to a
+// client until "Approve & send" here (api/brief-reply.js).
+function TriageCard({ b, reload }) {
+  const t = b.triage || null;
+  const [reply, setReply] = React.useState(t ? (t.sent_reply || t.draft_reply || '') : '');
+  const [busy, setBusy] = React.useState('');
+  const [msg, setMsg] = React.useState('');
+  React.useEffect(() => { if (t) setReply(t.sent_reply || t.draft_reply || ''); }, [b.triaged_at]);
+
+  const run = (action, extra) => {
+    setBusy(action); setMsg('');
+    briefAction(b.id, action, extra)
+      .then(() => { setMsg(action === 'send' ? 'Sent.' : action === 'reject' ? 'Rejected.' : 'Triage updated.'); reload(); })
+      .catch((e) => setMsg(e.message))
+      .finally(() => setBusy(''));
+  };
+  const decided = t && (t.status === 'sent' || t.status === 'rejected');
+
+  return (
+    <div style={{ marginTop: 10, padding: '12px 14px', border: '1px solid var(--line)' }}>
+      {t ? (
+        <React.Fragment>
+          <div className="between" style={{ gap: 8, flexWrap: 'wrap' }}>
+            <span className="lbl">AI triage · {t.lane} · {t.scope}{t.suggested_price ? ' · ' + t.suggested_price : ''}</span>
+            {pill(t.status === 'sent' ? 'sent' : t.status === 'rejected' ? 'rejected' : 'needs you', t.status === 'pending' ? 'warn' : 'mute')}
+          </div>
+          <p style={{ margin: '8px 0' }}>{t.summary}</p>
+          {t.missing && t.missing.length ? <p className="sub">Missing: {t.missing.join(' · ')}</p> : null}
+          {t.red_flags && t.red_flags.length ? <p className="sub" style={{ color: 'var(--warn)' }}>Flags: {t.red_flags.join(' · ')}</p> : null}
+          <textarea className="input" rows={6} style={{ width: '100%', marginTop: 8, resize: 'vertical' }}
+            value={reply} onChange={(e) => setReply(e.target.value)} disabled={decided} />
+          {!decided && (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+              <button className="btn sm" disabled={!!busy} onClick={() => run('send', { reply })}>{busy === 'send' ? 'Sending…' : 'Approve & send'}</button>
+              <button className="btn ghost sm" disabled={!!busy} onClick={() => run('triage')}>{busy === 'triage' ? 'Re-running…' : 'Re-run triage'}</button>
+              <button className="btn quiet sm" disabled={!!busy} onClick={() => run('reject')}>Reject</button>
+            </div>
+          )}
+        </React.Fragment>
+      ) : (
+        <div className="between" style={{ gap: 8 }}>
+          <span className="sub">No AI triage yet.</span>
+          <button className="btn ghost sm" disabled={!!busy} onClick={() => run('triage')}>{busy ? 'Running…' : 'Run triage'}</button>
+        </div>
+      )}
+      {msg && <p className="sub" style={{ marginTop: 6 }}>{msg}</p>}
+    </div>
+  );
+}
+
 function Design({ briefs, reload }) {
   const open = briefs.filter((b) => b.status !== 'answered');
+  const [openId, setOpenId] = React.useState(null);
   const tally = SERVICES.map((s) => ({ name: s, n: briefs.filter((b) => Array.isArray(b.need) && b.need.includes(s)).length }))
     .filter((r) => r.n > 0).sort((a, b) => b.n - a.n);
 
@@ -728,7 +773,7 @@ function Design({ briefs, reload }) {
   return (
     <div className="stack">
       <section className="tile brief">
-        <div className="tilehead"><h2 className="h2">Cargroff Design</h2><span className="lbl">cargroff.com/design</span></div>
+        <div className="tilehead"><h2 className="h2">The Scaffold</h2><span className="lbl">cargroff.com/design</span></div>
         <p className="briefline">
           {briefs.length ? <React.Fragment><b>{open.length} brief{open.length === 1 ? '' : 's'}</b> waiting on a reply, out of {briefs.length} received.</React.Fragment>
             : 'Live and wired — no briefs submitted yet.'}
@@ -742,17 +787,32 @@ function Design({ briefs, reload }) {
           {briefs.length ? (
             <div className="feed">
               {briefs.map((b) => (
-                <div className="feedrow" key={b.id}>
-                  <span className="lbl fkind">{b.status === 'answered' ? 'answered' : 'new'}</span>
+                <div className="feedrow" key={b.id} style={{ flexWrap: 'wrap' }}>
+                  <span className="lbl fkind">{b.status === 'answered' ? 'answered' : 'new'}{b.lane === 'automation' ? ' · auto' : ''}</span>
                   <span className="ftxt">
+                    {b.reference ? <span className="sub mono">{b.reference} · </span> : null}
                     {b.name}{b.business ? ' · ' + b.business : ''}{b.about ? ' — ' + b.about.slice(0, 90) : ''}
                     <br /><span className="sub mono">{b.email}</span>{Array.isArray(b.need) && b.need.length ? <span className="sub"> · {b.need.join(', ')}</span> : null}
                     {b.budget ? <span className="sub"> · {b.budget}</span> : null}
+                    {b.attachment_count ? <span className="sub"> · {b.attachment_count} file{b.attachment_count === 1 ? '' : 's'}</span> : null}
+                    {b.triage && b.triage.status === 'pending' ? <span className="sub" style={{ color: 'var(--warn)' }}> · draft reply ready</span> : null}
                   </span>
                   <span className="lbl fwhen">
                     {fdate(b.created_at)}
-                    {b.status !== 'answered' && <button className="btn quiet sm" style={{ display: 'block', marginTop: 6 }} onClick={() => markAnswered(b)}>Mark answered</button>}
+                    <button className="btn quiet sm" style={{ display: 'block', marginTop: 6 }} onClick={() => setOpenId(openId === b.id ? null : b.id)}>{openId === b.id ? 'Close' : 'Open'}</button>
+                    {b.status !== 'answered' && <button className="btn quiet sm" style={{ display: 'block' }} onClick={() => markAnswered(b)}>Mark answered</button>}
                   </span>
+                  {openId === b.id && (
+                    <div style={{ flexBasis: '100%' }}>
+                      <p className="sub" style={{ whiteSpace: 'pre-wrap', marginTop: 8 }}>{[
+                        b.about,
+                        b.lane === 'automation' ? `Slow today: ${b.auto_slow || '—'}\nTools: ${b.auto_tools || '—'}\nWho does it now: ${b.auto_who || '—'}`
+                          : `Where: ${b.where || '—'} · Assets: ${b.assets || '—'}\nCopy: ${b.copy || '—'}\nRefs: ${b.refs || '—'}`,
+                        `When: ${b.when_date || (b.flexible ? 'Flexible' : '—')} · Notes: ${b.notes || '—'}`,
+                      ].join('\n\n')}</p>
+                      <TriageCard b={b} reload={reload} />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -796,9 +856,9 @@ function BusinessHub() {
       </div>
       <header className="top">
         <div className="topin">
-          <a className="mark" href="/scaffold">
+          <a className="mark" href="/backroom">
             <img src="assets/antler.png" alt="" />
-            <div><b>Business Hub</b><span>The Scaffold</span></div>
+            <div><b>Business Hub</b><span>The Back Room</span></div>
           </a>
           <nav className="topnav">
             <a href="#ring" aria-current={tab === 'ring' ? 'page' : undefined}
@@ -808,7 +868,7 @@ function BusinessHub() {
               style={tab === 'notes' ? { color: 'var(--text)' } : undefined}
               onClick={(e) => { e.preventDefault(); setTab('notes'); }}>Notes</a>
             <a href="/docket">Docket</a>
-            <a href="/scaffold">Hub</a>
+            <a href="/backroom">Hub</a>
           </nav>
         </div>
       </header>
@@ -831,7 +891,6 @@ function BusinessHub() {
           )}
         </main>
       </div>
-      <wick-assistant screen="business"></wick-assistant>
     </React.Fragment>
   );
 }
