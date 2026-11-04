@@ -184,9 +184,10 @@ function Dial() {
   return (
     <section id="how" className="dsection dwood">
       <div className="dwrap ddialwrap">
-        <div className="ddial up" aria-hidden="true">
-          <span className="ddial-face" /><span className="ddial-ticks" /><span className="ddial-heat" />
-          <span className="ddial-needle" style={{ transform: 'rotate(' + (180 + at * 90) + 'deg)' }} />
+        <div className="ddial up" aria-hidden="true" style={{ '--p': Math.max(at * 90, 10) + 'deg' }}>
+          <span className="ddial-bezel" /><span className="ddial-minor" /><span className="ddial-major" />
+          <span className="ddial-track" /><span className="ddial-heat" /><span className="ddial-face" />
+          <span className="ddial-needle" style={{ transform: 'rotate(' + at * 90 + 'deg)' }} />
           <span className="ddial-hub" />
           {HOW_STEPS.map((s, i) => (
             <button key={i} type="button" tabIndex={-1} className={'ddial-stn s' + (i + 1) + (at === i ? ' on' : '')} onClick={() => setAt(i)}>{i + 1}</button>

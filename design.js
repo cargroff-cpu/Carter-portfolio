@@ -272,17 +272,26 @@ function Dial() {
     className: "dwrap ddialwrap"
   }, React.createElement("div", {
     className: "ddial up",
-    "aria-hidden": "true"
+    "aria-hidden": "true",
+    style: {
+      '--p': Math.max(at * 90, 10) + 'deg'
+    }
   }, React.createElement("span", {
-    className: "ddial-face"
+    className: "ddial-bezel"
   }), React.createElement("span", {
-    className: "ddial-ticks"
+    className: "ddial-minor"
+  }), React.createElement("span", {
+    className: "ddial-major"
+  }), React.createElement("span", {
+    className: "ddial-track"
   }), React.createElement("span", {
     className: "ddial-heat"
   }), React.createElement("span", {
+    className: "ddial-face"
+  }), React.createElement("span", {
     className: "ddial-needle",
     style: {
-      transform: 'rotate(' + (180 + at * 90) + 'deg)'
+      transform: 'rotate(' + at * 90 + 'deg)'
     }
   }), React.createElement("span", {
     className: "ddial-hub"
