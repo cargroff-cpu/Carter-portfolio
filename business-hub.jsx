@@ -15,7 +15,7 @@ const {
 
 const SERVICES = ['Social graphics', 'Business card or print', 'Flyer or one-pager',
   'Document or report', 'Presentation or deck', 'Brand basics', 'Video',
-  'Inquiries and leads', 'Quotes', 'Invoices and payments', 'Job board or dashboard', 'Review requests', 'Weekly numbers', 'Content on a schedule', 'AI assistant', 'Something else'];
+  'Inquiries and leads', 'Quotes and invoices', 'Scheduling and bookings', 'Dashboards and reports', 'Reminders and follow-ups', 'AI assistants', 'Something else'];
 
 const usd = (n) => (n == null ? '—' : '$' + Math.round(n).toLocaleString('en-US'));
 const fdate = (s) => { if (!s) return '—'; const [y, m, d] = String(s).slice(0, 10).split('-'); return new Date(+y, +m - 1, +d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); };

@@ -1,5 +1,24 @@
 # Decisions
 
+## /design rebalanced: design and tools 50/50, broad not specific
+
+Carter's feedback on the tools-first version: too much weight on the tools
+side, and too specific about what he'd built for Operator. Changes:
+
+- Hero is two equal halves: "Design that looks right. Tools that work
+  right." with two equal CTAs (design brief, tools brief) and two equal
+  illustrative panels (three drafts / an inquiry-to-follow-up chain).
+- One "What I make" section replaces the eight-card "Tools I've built"
+  section: Design and Tools side by side, six items each.
+- Tool types are now broad and widely applicable (inquiries and leads,
+  quotes and invoices, scheduling and bookings, dashboards and reports,
+  reminders and follow-ups, AI assistants). The form, server whitelist,
+  Hub tally and triage prompt use the same list.
+- No Operator-specific modules anywhere. "Why me" says only that Carter
+  leads marketing and automation at a local company.
+- How it works gives each step a design version and a tools version. The
+  brief's lane toggle is Design | Tools, defaulting to Design.
+
 ## /design goes tools-first, copy cut down
 
 Carter's feedback on the first rework: the copy felt heavy, and the page

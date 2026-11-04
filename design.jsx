@@ -1,7 +1,6 @@
 // design.jsx — The Scaffold, by Carter Groff (cargroff.com/design). The
-// public studio page. Tools first (small working systems for businesses,
-// proven on the operations platform Carter builds for a log-home company),
-// design second. AI drafts, Carter finishes. See DECISIONS.md.
+// public studio page: design and tools, given equal weight, for small
+// businesses. AI drafts, Carter finishes. See DECISIONS.md.
 //
 // This file is the source. The page loads the precompiled design.js
 // (no in-browser Babel); after editing, run:  npm run build:design
@@ -12,43 +11,27 @@
 // placeholders; set SHOW_PRICES to true once the real numbers are in.
 const SHOW_PRICES = false;
 
-// Tools Carter has actually built, for a log-home restoration company's
-// operations platform. Described generically on purpose: no internal names,
-// screenshots or data on the public page without Carter's OK.
-const BUILT = [
-  { title: 'Scheduling that suggests itself', desc: 'Looks at open jobs, crews and timing, and recommends the next schedule. A person still decides.', flow: ['Open jobs', 'Rules', 'Suggested schedule', 'You approve'] },
-  { title: 'Calls and texts from the job', desc: 'One button to call or text the customer. Every call is logged, recorded, transcribed and summarised on their record.', flow: ['Tap call', 'Recorded', 'AI summary', 'On the record'] },
-  { title: 'A field app for crews', desc: 'One screen per job on a phone: customer, scope, videos and a checklist that changes with the phase of the work.', flow: ['Job', 'Phone', 'Checklist', 'Done'] },
-  { title: 'Labels that print themselves', desc: 'When a job is won, the office and field labels are made and queued for one batch print.', flow: ['Job won', 'Labels made', 'Print queue'] },
-  { title: 'Customer choices, signed', desc: 'Customers pick their options on a private link. It turns into a PDF the office and crew can work from.', flow: ['Emailed link', 'Customer picks', 'PDF', 'Office notified'] },
-  { title: 'Proposals and contracts', desc: 'Scope, price and e-signature in one place, plus multi-year maintenance contracts with a signature pad and PDF.', flow: ['Scope', 'Proposal', 'Signed', 'PDF'] },
-  { title: 'Email you can track', desc: 'Which emails went out, which are planned and which got opened, with templates grouped by stage of the job.', flow: ['Stage', 'Template', 'Sent', 'Opened'] },
-  { title: 'A map of the business', desc: 'A live page showing how jobs move from first call to finished, built from the system itself so it never goes stale.', flow: ['Database', 'Registry', 'Live map'] },
-];
-
-// What a client can ask for. Keep in sync with api/design-brief.js
-// (AUTOMATION_SERVICES) and the brief chips below.
-const TOOL_KINDS = [
-  ['Inquiries and leads', 'Every inquiry in one place, answered right away.'],
-  ['Quotes', 'From job details to a priced quote in minutes.'],
-  ['Invoices and payments', 'Send, take a card, nudge when late.'],
-  ['Job board or dashboard', 'Leads, jobs and money on one screen.'],
-  ['Review requests', 'Ask happy customers at the right moment.'],
-  ['Weekly numbers', 'One Monday email with what matters.'],
-  ['Content on a schedule', 'On-brand posts drafted, waiting for your OK.'],
-  ['AI assistant', 'Knows your prices, policies and tone.'],
-];
-
+// Six of each, so the two halves of the page weigh the same. Broad on
+// purpose: things almost any small business needs, no one company's tools.
 const DESIGN_SERVICES = [
-  { n: '01', title: 'Social graphics', desc: 'One post or a series with one look.', need: 'Social graphics', from: '$75', turn: '2 business days' },
-  { n: '02', title: 'Cards and print', desc: 'Print-ready, correct bleed.', need: 'Business card or print', from: '$150', turn: '3 business days' },
-  { n: '03', title: 'Flyers and one-pagers', desc: 'For print or screen.', need: 'Flyer or one-pager', from: '$175', turn: '3 business days' },
-  { n: '04', title: 'Documents and reports', desc: 'Proposals, menus, multi-page layouts.', need: 'Document or report', from: '$400', turn: '5–7 business days' },
-  { n: '05', title: 'Presentations', desc: 'Designed slides, not a template.', need: 'Presentation or deck', from: '$400', turn: '5–7 business days' },
-  { n: '06', title: 'Monthly content', desc: 'A steady run of posts, one look.', need: 'Social graphics', from: '$600/mo', turn: 'Rolling' },
+  { title: 'Social graphics', desc: 'One post or a series with one look.', need: 'Social graphics', from: '$75', turn: '2 business days' },
+  { title: 'Cards and print', desc: 'Print-ready, correct bleed.', need: 'Business card or print', from: '$150', turn: '3 business days' },
+  { title: 'Flyers and one-pagers', desc: 'For print or screen.', need: 'Flyer or one-pager', from: '$175', turn: '3 business days' },
+  { title: 'Documents and reports', desc: 'Proposals, menus, multi-page layouts.', need: 'Document or report', from: '$400', turn: '5–7 business days' },
+  { title: 'Presentations', desc: 'Designed slides, not a template.', need: 'Presentation or deck', from: '$400', turn: '5–7 business days' },
+  { title: 'Brand basics', desc: 'Logo refinement, colors, type.', need: 'Brand basics', from: '$400', turn: 'Quoted' },
+];
+// Keep in sync with api/design-brief.js (AUTOMATION_SERVICES) and the Hub.
+const TOOL_SERVICES = [
+  { title: 'Inquiries and leads', desc: 'Every inquiry in one place, answered fast.', need: 'Inquiries and leads' },
+  { title: 'Quotes and invoices', desc: 'From job details to a priced quote and a payment link.', need: 'Quotes and invoices' },
+  { title: 'Scheduling and bookings', desc: 'Fewer back-and-forth messages.', need: 'Scheduling and bookings' },
+  { title: 'Dashboards and reports', desc: 'The numbers that matter, on one screen.', need: 'Dashboards and reports' },
+  { title: 'Reminders and follow-ups', desc: 'The right message at the right time.', need: 'Reminders and follow-ups' },
+  { title: 'AI assistants', desc: 'Drafts replies using your prices and tone.', need: 'AI assistants' },
 ];
 const DESIGN_CHIPS = ['Social graphics', 'Business card or print', 'Flyer or one-pager', 'Document or report', 'Presentation or deck', 'Brand basics', 'Video', 'Something else'];
-const AUTOMATION_CHIPS = [...TOOL_KINDS.map(([k]) => k), 'Something else'];
+const AUTOMATION_CHIPS = [...TOOL_SERVICES.map((t) => t.need), 'Something else'];
 const BUDGETS = ['Under $150', '$150–$500', '$500–$1,500', '$1,500–$5,000', '$5,000+', 'Not sure yet'];
 
 // Real work only. Each item: { title, kind, src, alt }. Empty = hidden.
@@ -57,11 +40,11 @@ const WORK = [];
 const TESTIMONIALS = [];
 
 const FAQ = [
-  ['Do you use AI?', 'Yes. AI does the drafting and the first pass of code. I make the decisions, check every line and finish every file.'],
+  ['Do you use AI?', 'Yes. AI does the drafting and the first pass of the build. I make the decisions, check everything and finish it.'],
+  ['What does it cost?', 'Design is priced per piece. Tools are quoted after a short brief. Either way, you see the price before anything starts.'],
   ['Will I need new software?', 'Not usually. Where I can, I build on what you already use.'],
-  ['What does a tool cost?', 'It depends on the job, so tools are quoted after a short brief. You see the price before anything starts.'],
-  ['What if it breaks?', 'I fix it. Ongoing care is available as a monthly plan if you want it.'],
-  ['How fast is design work?', 'Most single pieces: three directions within two business days of a complete brief.'],
+  ['How fast is it?', 'Most design pieces: three directions within two business days of a complete brief. Tools: a plan within a few days, then a first working version.'],
+  ['What if something breaks?', 'I fix it. Ongoing care is available as a monthly plan.'],
   ['Who owns the work?', 'You do, once it’s paid.'],
   ['Do we need a call?', 'No. The brief covers it. If a call would help, I’ll say so.'],
 ];
@@ -83,14 +66,6 @@ function Rings() {
   );
 }
 
-function Flow({ steps }) {
-  return (
-    <div className="dflow" aria-label={steps.join(', then ')}>
-      {steps.map((s, i) => <React.Fragment key={s}>{i > 0 && <i aria-hidden="true">→</i>}<span>{s}</span></React.Fragment>)}
-    </div>
-  );
-}
-
 function Nav() {
   return (
     <nav className="dnav">
@@ -100,7 +75,7 @@ function Nav() {
           <span><b>The <i>Scaffold</i></b><span className="dsub">by Carter Groff</span></span>
         </a>
         <div className="dnavlinks">
-          <a href="#tools">Tools</a><a href="#design">Design</a><a href="#how">How it works</a><a href="#faq">FAQ</a>
+          <a href="#make">What I make</a><a href="#how">How it works</a><a href="#faq">FAQ</a>
           <a href="/">Portfolio ↗</a>
         </div>
         <a className="p-btn" href="#brief">Start a brief</a>
@@ -109,22 +84,47 @@ function Nav() {
   );
 }
 
-function Hero() {
+// Two equal halves: what a design job looks like, what a tool job looks
+// like. Both illustrative and generic.
+function HeroVisual() {
+  return (
+    <div className="dduo dhero-duo up">
+      <figure className="dhalf">
+        <span className="dhalf-k">Design</span>
+        <div className="dhv-drafts">
+          <div className="dhv-d d1"><span>Spring<br />menu.</span><i>From March 4th</i></div>
+          <div className="dhv-d d2"><span>SPRING MENU</span><i>from march 4th</i></div>
+          <div className="dhv-d d3"><span>spring<br /><b>menu</b></span><i>Mar 4 →</i></div>
+        </div>
+        <figcaption>One brief, three real directions. You pick one.</figcaption>
+      </figure>
+      <figure className="dhalf">
+        <span className="dhalf-k">Tools</span>
+        <div className="dpipe" aria-label="Example: an inquiry comes in, gets an auto-reply, becomes a quote, then a follow-up">
+          {['Inquiry in', 'Auto-reply', 'Quote', 'Follow-up'].map((s, i) => (
+            <span className="dpipe-step" key={s}><b>{String(i + 1).padStart(2, '0')}</b>{s}</span>
+          ))}
+        </div>
+        <figcaption>One brief, a working tool. A person approves what customers see.</figcaption>
+      </figure>
+    </div>
+  );
+}
+
+function Hero({ onAddNeed }) {
   return (
     <header className="dhero" id="top">
       <Rings />
       <div className="dwrap">
         <div className="dcrest"><img src="assets/antler.png" alt="The Scaffold, by Carter Groff" /></div>
-        <span className="p-eyebrow">Tools and design for small businesses</span>
-        <h1 className="ddisplay">I build the tools<br /><em>that run the busywork.</em></h1>
-        <p className="ddeck">Scheduling, calls, quotes, follow-ups, dashboards. And the design your customers see.</p>
-        <div className="dacts"><a className="p-btn" href="#brief">Start a brief →</a><a className="p-btn ghost" href="#tools">See what I've built</a></div>
-        <div className="dpipe up" aria-label="Example: a job is won, labels print, the crew gets a checklist, the customer gets a follow-up">
-          {['Job won', 'Labels printed', 'Crew checklist', 'Follow-up sent'].map((s, i) => (
-            <React.Fragment key={s}>{i > 0 && <span className="dpipe-arrow" aria-hidden="true">→</span>}<span className="dpipe-step"><b>{String(i + 1).padStart(2, '0')}</b>{s}</span></React.Fragment>
-          ))}
+        <span className="p-eyebrow">Design and tools for small businesses</span>
+        <h1 className="ddisplay">Design that looks right.<br /><em>Tools that work right.</em></h1>
+        <p className="ddeck">Graphics, print and documents. And the small tools that take busywork off your plate.</p>
+        <div className="dacts">
+          <a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('design'); }}>Start a design brief →</a>
+          <a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('automation'); }}>Start a tools brief →</a>
         </div>
-        <p className="dpipe-cap">A real chain from tools I've built. People step in where they should.</p>
+        <HeroVisual />
       </div>
     </header>
   );
@@ -133,117 +133,54 @@ function Hero() {
 function Proofline() {
   return (
     <div className="dproofline">
-      <span>Built for a working company first</span><span>A person approves what customers see</span><span>Replies within a day</span><span>No call needed</span>
+      <span>AI drafts, I finish</span><span>A person approves what customers see</span><span>Replies within a day</span><span>No call needed</span>
     </div>
   );
 }
 
-function Tools({ onAddNeed }) {
-  return (
-    <section id="tools" className="dsection dauto">
-      <div className="dwrap">
-        <div className="dshead up">
-          <div className="didxrow"><span className="didx">01 / 05</span><span className="dln" /></div>
-          <span className="p-eyebrow">Tools I've built</span>
-          <h2 className="ddisplay">Running every day at a log-home restoration company.</h2>
-          <p className="dp">I build the operations platform the office and crews work from. Here's some of what's in it.</p>
-        </div>
-        <div className="dcards four dbuilt">
-          {BUILT.map((t) => (
-            <div className="dcard up" key={t.title}>
-              <h3>{t.title}</h3><p>{t.desc}</p>
-              <Flow steps={t.flow} />
-            </div>
-          ))}
-        </div>
-
-        <div className="dkinds up">
-          <div>
-            <h3 className="ddisplay">What I can build for you</h3>
-            <p className="dp">Small, specific tools for businesses without a developer. Proven by hand first, then automated.</p>
-            <p style={{ marginTop: 22 }}><a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('automation'); }}>Start a tools brief →</a></p>
-          </div>
-          <ul>
-            {TOOL_KINDS.map(([k, d]) => (
-              <li key={k}>
-                <a href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('automation', k); }}><b>{k}</b><span>{d}</span></a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function How() {
-  const steps = [
-    ['1', 'Tell me the busywork', 'A short brief: what eats your time, and what you use today.'],
-    ['2', 'I map it', 'One page: what happens, in what order, who approves. You get a fixed quote.'],
-    ['3', 'I build it', 'Small first, tested on real work. AI speeds up the build; I check all of it.'],
-    ['4', 'You run it', 'Handed over and explained. I stay on call if you want a care plan.'],
-  ];
-  return (
-    <section id="how" className="dsection dwood">
-      <div className="dwrap">
-        <div className="dshead up">
-          <div className="didxrow"><span className="didx">02 / 05</span><span className="dln" /></div>
-          <span className="p-eyebrow">How a tool gets built</span>
-          <h2 className="ddisplay">Four steps. No surprises.</h2>
-        </div>
-        <div className="dsteps">
-          {steps.map(([n, title, body]) => (
-            <div className="dstp up" key={n}><span className="dcardn">{n}</span><h3>{title}</h3><p>{body}</p></div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function Price({ s }) {
-  if (!SHOW_PRICES) return null;
+  if (!SHOW_PRICES || !s.from) return null;
   return <span className="dprice">From {s.from} · {s.turn}</span>;
 }
 
-// One brief beside the three different drafts it produced.
-function Drafts() {
+function Half({ lane, eyebrow, title, blurb, items, cta, onAddNeed }) {
   return (
-    <figure className="dhv up" aria-label="Illustration: one brief, three different first drafts">
-      <div className="dhv-brief">
-        <span className="dhv-k">The brief</span>
-        <p>“Five posts for our spring menu. Warm, a bit playful.”</p>
-      </div>
-      <span className="dhv-arrow" aria-hidden="true">→</span>
-      <div className="dhv-drafts">
-        <div className="dhv-d d1"><span>Spring<br />menu.</span><i>From March 4th</i></div>
-        <div className="dhv-d d2"><span>SPRING MENU</span><i>from march 4th</i></div>
-        <div className="dhv-d d3"><span>spring<br /><b>menu</b></span><i>Mar 4 →</i></div>
-      </div>
-      <figcaption>Three real directions. You pick one; I finish it.</figcaption>
-    </figure>
+    <section className={'dhalf-sec up' + (lane === 'automation' ? ' dauto' : '')}>
+      <span className="p-eyebrow">{eyebrow}</span>
+      <h3 className="ddisplay">{title}</h3>
+      <p className="dp">{blurb}</p>
+      <ul className="dlist">
+        {items.map((s) => (
+          <li key={s.title}>
+            <a href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed(lane, s.need); }}>
+              <b>{s.title}</b><span>{s.desc}</span><Price s={s} />
+            </a>
+          </li>
+        ))}
+      </ul>
+      <p style={{ marginTop: 24 }}>
+        <a className={'p-btn' + (lane === 'design' ? ' ghost' : ' ghost')} href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed(lane); }}>{cta}</a>
+      </p>
+    </section>
   );
 }
 
-function Design({ onAddNeed }) {
+function Make({ onAddNeed }) {
   return (
-    <section id="design" className="dsection">
+    <section id="make" className="dsection">
       <div className="dwrap">
         <div className="dshead up">
-          <div className="didxrow"><span className="didx">03 / 05</span><span className="dln" /></div>
-          <span className="p-eyebrow">Design</span>
-          <h2 className="ddisplay">And the design that goes with it.</h2>
-          <p className="dp">AI drafts three directions. I finish the one you pick. Two revision rounds included.</p>
+          <div className="didxrow"><span className="didx">01 / 04</span><span className="dln" /></div>
+          <span className="p-eyebrow">What I make</span>
+          <h2 className="ddisplay">Two kinds of work, one person.</h2>
         </div>
-        <Drafts />
-        <div className="dcards">
-          {DESIGN_SERVICES.map((s) => (
-            <div className="dcard up" key={s.n}>
-              <span className="dcardn">{s.n}</span><h3>{s.title}</h3><p>{s.desc}</p>
-              <Price s={s} />
-              <a href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('design', s.need); }}>Add to brief →</a>
-            </div>
-          ))}
+        <div className="dduo dmake">
+          <Half lane="design" eyebrow="Design" title="What your customers see"
+            blurb="AI drafts three directions. I finish the one you pick. Two revision rounds included."
+            items={DESIGN_SERVICES} cta="Start a design brief →" onAddNeed={onAddNeed} />
+          <Half lane="automation" eyebrow="Tools" title="What runs behind the scenes"
+            blurb="Small, specific tools for businesses without a developer. Proven by hand first, then automated."
+            items={TOOL_SERVICES} cta="Start a tools brief →" onAddNeed={onAddNeed} />
         </div>
         {WORK.length > 0 && (
           <React.Fragment>
@@ -263,6 +200,31 @@ function Design({ onAddNeed }) {
   );
 }
 
+function How() {
+  const steps = [
+    ['1', 'Send a brief', 'A short form: what you need, and what it has to do.'],
+    ['2', 'Get options', 'Design: three directions. Tools: a one-page plan and a fixed quote.'],
+    ['3', 'I finish it', 'Design: refined by hand. Tools: built small, tested on real work.'],
+    ['4', 'You get it', 'Design: print-ready files. Tools: a working build, handed over and explained.'],
+  ];
+  return (
+    <section id="how" className="dsection dwood">
+      <div className="dwrap">
+        <div className="dshead up">
+          <div className="didxrow"><span className="didx">02 / 04</span><span className="dln" /></div>
+          <span className="p-eyebrow">How it works</span>
+          <h2 className="ddisplay">Four steps. No surprises.</h2>
+        </div>
+        <div className="dsteps">
+          {steps.map(([n, title, body]) => (
+            <div className="dstp up" key={n}><span className="dcardn">{n}</span><h3>{title}</h3><p>{body}</p></div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function Why() {
   return (
     <section id="why" className="dsection">
@@ -270,10 +232,10 @@ function Why() {
         <div className="dwhyhead up">
           <img className="dportrait" src="assets/portrait.jpg" alt="Carter Groff" loading="lazy" />
           <div>
-            <div className="didxrow"><span className="didx">04 / 05</span><span className="dln" /></div>
+            <div className="didxrow"><span className="didx">03 / 04</span><span className="dln" /></div>
             <span className="p-eyebrow">Who you're working with</span>
             <h2 className="ddisplay">I’m Carter.</h2>
-            <p className="dp">I’m the Marketing and Automation Lead at a log-home restoration company in Harrisonburg, Virginia. I run their marketing and build the systems they run on. The Scaffold is me doing the same for other businesses.</p>
+            <p className="dp">A marketer, designer and builder in Harrisonburg, Virginia. By day I lead marketing and automation at a local company, so I know what small teams actually need.</p>
             <p className="dp">My rules: prove it by hand before automating it. Automate the bottleneck, not everything. A person approves anything that reaches a customer.</p>
           </div>
         </div>
@@ -294,7 +256,7 @@ function Faq() {
     <section id="faq" className="dsection">
       <div className="dwrap">
         <div className="dshead up">
-          <div className="didxrow"><span className="didx">05 / 05</span><span className="dln" /></div>
+          <div className="didxrow"><span className="didx">04 / 04</span><span className="dln" /></div>
           <span className="p-eyebrow">Questions</span>
           <h2 className="ddisplay">Short answers.</h2>
         </div>
@@ -329,7 +291,7 @@ const Brief = React.forwardRef(function Brief(props, ref) {
   const [error, setError] = React.useState('');
   const [files, setFiles] = React.useState([]);
   const [f, setF] = React.useState({
-    lane: 'automation', name: '', email: '', business: '', need: [], about: '', where: '', when: '', flexible: false,
+    lane: 'design', name: '', email: '', business: '', need: [], about: '', where: '', when: '', flexible: false,
     assets: '', copy: '', refs: '', notes: '', budget: '', auto_slow: '', auto_tools: '', auto_who: '', website: '',
   });
   const auto = f.lane === 'automation';
@@ -419,7 +381,7 @@ const Brief = React.forwardRef(function Brief(props, ref) {
         </div>
 
         <div className="dlanes" role="radiogroup" aria-label="What kind of project">
-          {[['automation', 'A tool'], ['design', 'Design']].map(([v, label]) => (
+          {[['design', 'Design'], ['automation', 'Tools']].map(([v, label]) => (
             <button key={v} type="button" role="radio" aria-checked={f.lane === v}
               className={'dlane' + (f.lane === v ? ' on' : '') + (v === 'automation' ? ' auto' : '')} onClick={() => setLane(v)}>{label}</button>
           ))}
@@ -605,11 +567,10 @@ function TheScaffold() {
   return (
     <div className="cgd p-grain">
       <Nav />
-      <Hero />
+      <Hero onAddNeed={onAddNeed} />
       <Proofline />
-      <Tools onAddNeed={onAddNeed} />
+      <Make onAddNeed={onAddNeed} />
       <How />
-      <Design onAddNeed={onAddNeed} />
       <Why />
       <Faq />
       <Brief ref={briefRef} />
