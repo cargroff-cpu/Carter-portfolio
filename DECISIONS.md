@@ -40,7 +40,15 @@ through a tool schema, and shows a card (summary, lane, size, missing info,
 flags, scope, price from the rate card only, draft reply). It never sends
 anything: "Reply by email" opens Carter's own mail client. It runs from the
 gated Back Room, not the public endpoint, so the public can't run up model
-costs. Off until `ANTHROPIC_API_KEY` is set. Wick still isn't wired to a
+costs. Off until `ANTHROPIC_API_KEY` is set.
+
+Vercel Hobby allows 12 serverless functions per deployment and the repo was
+already at 12, so the new endpoints live in `lib/` and are served through
+existing functions via `vercel.json` rewrites: `/api/back-room-read` (GET)
+and `/api/brief-triage` → `api/scaffold-write.js`, `/api/logout` →
+`api/login.js`, `/api/health` (GET) → `api/design-brief.js`. Middleware
+matches the original paths, so gating is unchanged. Add new endpoints the
+same way, or move to Pro. Wick still isn't wired to a
 model; that's intended for now.
 
 ## Second audit pass: the design moved (lampposts out, rings need to be visible), Design page rings and reveal were never ported

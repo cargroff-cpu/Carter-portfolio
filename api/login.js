@@ -2,11 +2,14 @@
 // if correct, sets a signed, expiring Back Room session cookie (see
 // lib/session.js). The cookie no longer contains the password. Failed
 // attempts are slowed down to blunt password guessing.
+import logoutHandler from '../lib/logout.js';
 import { createSessionToken, safeEqual, SESSION_COOKIE, SESSION_HOURS } from '../lib/session.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export default async function handler(req, res) {
+  // Also serves /api/logout (rewritten to ?op=logout).
+  if (req.query && req.query.op === 'logout') return logoutHandler(req, res);
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;

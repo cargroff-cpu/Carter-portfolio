@@ -11,6 +11,7 @@
 //
 // AI triage does not run here: the Back Room triggers it (api/brief-triage.js)
 // so the public endpoint can't be used to run up model costs.
+import healthHandler from '../lib/health.js';
 import crypto from 'node:crypto';
 
 const SUPABASE_URL = 'https://rodxrkzwpsgeeatmbwku.supabase.co';
@@ -36,6 +37,8 @@ async function sendEmail(resendKey, payload) {
 }
 
 export default async function handler(req, res) {
+  // GET serves /api/health (the daily keep-alive cron) via a vercel.json rewrite.
+  if (req.method === 'GET') return healthHandler(req, res);
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;

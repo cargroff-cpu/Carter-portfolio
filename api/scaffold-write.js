@@ -5,6 +5,8 @@
 // Reached only after middleware.js's cookie check has already passed. Uses
 // the service-role key (server-side env var, never sent to the browser).
 // Whitelisted tables only.
+import readHandler from '../lib/back-room-read.js';
+import triageHandler from '../lib/brief-triage.js';
 const SCAFFOLD_SUPABASE_URL = 'https://rodxrkzwpsgeeatmbwku.supabase.co';
 const ALLOWED_TABLES = new Set([
   'campaigns', 'links', 'wick_memory', 'wick_sessions', 'wick_messages', 'wick_actions', 'docket_tasks', 'generated_content',
@@ -12,6 +14,10 @@ const ALLOWED_TABLES = new Set([
 ]);
 
 export default async function handler(req, res) {
+  // Also serves /api/back-room-read (GET) and /api/brief-triage (?op=triage)
+  // via vercel.json rewrites, to stay under Vercel Hobby's 12-function cap.
+  if (req.method === 'GET') return readHandler(req, res);
+  if (req.query && req.query.op === 'triage') return triageHandler(req, res);
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;
