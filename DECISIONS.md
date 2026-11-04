@@ -362,3 +362,22 @@ earlier session. That's already shipped and working — not revisited here.
 `STRIPE_WEBHOOK_SECRET`, and `RESEND_API_KEY` env vars that aren't set yet —
 same pattern as `ADMIN_PASSWORD`/`SUPABASE_SERVICE_ROLE_KEY`: never committed,
 set in Vercel. See `TODO(carter):` comments at each call site.
+
+## /design: the Dial with Two doors (Hallmark pass, November 2026)
+
+Carter picked the "Dial" direction from five Hallmark options that keep the
+Parlor look, combined with the "Two doors" section. Page order is now: hero
+over the rings, the two halves (Design: three drafts you can pick; Tools: a
+short brass session that types once), How it works on a dial (all four step
+names stay visible; choosing one moves the needle and opens its detail), the
+services shelf with turnarounds, I'm Carter, the brief beside a large "2 days"
+(or "1 day" on the Tools lane), then the FAQ.
+
+Kept: Parlor tokens and faces, the antler crest, the rings, square buttons,
+amber for Design and brass for Tools, all the brief's fields and its post to
+`api/design-brief.js`. Dropped: the tracked-capital labels (now sentence
+case), the italic amber second line and italic brand word, arrows in button
+text, the "01 / 04" counters, the proof strip under the hero and the hero's
+small two-card visual (it became the two-halves section). Hidden-until-reveal
+states are now scoped under `html.js`, set by an inline script in the page
+head, so content shows if scripts fail.

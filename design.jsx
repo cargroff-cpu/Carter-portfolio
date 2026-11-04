@@ -50,13 +50,13 @@ const FAQ = [
 ];
 
 const STEPS = [
-  ['I', "Who's asking"],
+  ['I', 'Who’s asking'],
   ['II', 'What you need'],
   ['III', 'Details that save time'],
 ];
 
-// Decorative concentric-ring instrument, reused behind the hero and the
-// brief — pure CSS (see cargroff-design.css's .rings rules), no JS.
+// The ring instrument behind the hero: pure CSS (see cargroff-design.css's
+// .rings rules), no JS. The dial in How it works reuses its look.
 function Rings() {
   return (
     <div className="rings" aria-hidden="true">
@@ -72,42 +72,15 @@ function Nav() {
       <div className="dnavin">
         <a className="dbrand" href="#top">
           <img src="assets/antler.png" alt="" />
-          <span><b>The <i>Scaffold</i></b><span className="dsub">by Carter Groff</span></span>
+          <span><b>The Scaffold</b><span className="dsub">by Carter Groff</span></span>
         </a>
         <div className="dnavlinks">
-          <a href="#make">What I make</a><a href="#how">How it works</a><a href="#faq">FAQ</a>
-          <a href="/">Portfolio ↗</a>
+          <a href="#make">What I make</a><a href="#how">How it works</a><a href="#faq">Questions</a>
+          <a href="/">Portfolio</a>
         </div>
         <a className="p-btn" href="#brief">Start a brief</a>
       </div>
     </nav>
-  );
-}
-
-// Two equal halves: what a design job looks like, what a tool job looks
-// like. Both illustrative and generic.
-function HeroVisual() {
-  return (
-    <div className="dduo dhero-duo up">
-      <figure className="dhalf">
-        <span className="dhalf-k">Design</span>
-        <div className="dhv-drafts">
-          <div className="dhv-d d1"><span>Spring<br />menu.</span><i>From March 4th</i></div>
-          <div className="dhv-d d2"><span>SPRING MENU</span><i>from march 4th</i></div>
-          <div className="dhv-d d3"><span>spring<br /><b>menu</b></span><i>Mar 4 →</i></div>
-        </div>
-        <figcaption>One brief, three real directions. You pick one.</figcaption>
-      </figure>
-      <figure className="dhalf">
-        <span className="dhalf-k">Tools</span>
-        <div className="dpipe" aria-label="Example: an inquiry comes in, gets an auto-reply, becomes a quote, then a follow-up">
-          {['Inquiry in', 'Auto-reply', 'Quote', 'Follow-up'].map((s, i) => (
-            <span className="dpipe-step" key={s}><b>{String(i + 1).padStart(2, '0')}</b>{s}</span>
-          ))}
-        </div>
-        <figcaption>One brief, a working tool. A person approves what customers see.</figcaption>
-      </figure>
-    </div>
   );
 }
 
@@ -117,51 +90,158 @@ function Hero({ onAddNeed }) {
       <Rings />
       <div className="dwrap">
         <div className="dcrest"><img src="assets/antler.png" alt="The Scaffold, by Carter Groff" /></div>
-        <span className="p-eyebrow">Design and tools for small businesses</span>
-        <h1 className="ddisplay">Design that looks right.<br /><em>Tools that work right.</em></h1>
-        <p className="ddeck">Graphics, print and documents. And the small tools that take busywork off your plate.</p>
+        <h1 className="ddisplay">Design that looks right. Tools that work right.</h1>
+        <p className="ddeck">Graphics, print and documents, and the small tools that take busywork off your plate.</p>
         <div className="dacts">
-          <a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('design'); }}>Start a design brief →</a>
-          <a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('automation'); }}>Start a tools brief →</a>
+          <a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('design'); }}>Start a brief</a>
+          <a className="p-btn ghost" href="#doors">See the work</a>
         </div>
-        <HeroVisual />
       </div>
     </header>
   );
 }
 
-function Proofline() {
+// ── Two doors: what a design job and a tools job look like, side by side
+// and the same size. Both illustrative and generic. ──
+const DRAFTS = [
+  { cls: 'd1', body: <React.Fragment><span>Spring<br />menu.</span><i>From March 4th</i></React.Fragment> },
+  { cls: 'd2', body: <React.Fragment><span>Spring menu</span><i>from March 4th</i></React.Fragment> },
+  { cls: 'd3', body: <React.Fragment><span>spring<br /><b>menu</b></span><i>March 4</i></React.Fragment> },
+];
+const SESSION = [
+  ['$', 'inquiry in', '# kitchen remodel, website form'],
+  ['+', 'auto-reply sent', ''],
+  ['+', 'quote drafted from your prices', ''],
+  ['?', 'send it?', '# you approve'],
+  ['+', 'follow-up set for three days out', ''],
+];
+
+function Doors({ onAddNeed }) {
+  const [pick, setPick] = React.useState(1);
+  const [typed, setTyped] = React.useState(false);
+  const sessionRef = React.useRef(null);
+  React.useEffect(() => {
+    const el = sessionRef.current;
+    if (!el || !('IntersectionObserver' in window)) { setTyped(true); return; }
+    const io = new IntersectionObserver((es) => { if (es[0].isIntersecting) { setTyped(true); io.disconnect(); } }, { threshold: 0.35 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   return (
-    <div className="dproofline">
-      <span>AI drafts, I finish</span><span>A person approves what customers see</span><span>Replies within a day</span><span>No call needed</span>
-    </div>
+    <section id="doors" className="dsection ddoors">
+      <div className="dwrap">
+        <div className="dshead up">
+          <h2 className="ddisplay">What each half looks like.</h2>
+        </div>
+        <div className="dduo">
+          <div className="ddoor up">
+            <span className="dk">Design</span>
+            <h3 className="ddisplay">Three drafts. You pick one.</h3>
+            <div className="dsheet">
+              <div className="dhv-drafts" role="group" aria-label="Three drafts of a spring menu flyer">
+                {DRAFTS.map((d, i) => (
+                  <button key={d.cls} type="button" className="dprint" aria-pressed={pick === i} aria-label={'Draft ' + (i + 1)} onClick={() => setPick(i)}>
+                    <span className={'dhv-d ' + d.cls}>{d.body}</span>
+                    <span className="dprint-n">{i + 1}<small>Your pick</small></span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p className="dcap">Example: a spring menu flyer, as the drafts arrive. Choose one; I finish it.</p>
+            <p><a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('design'); }}>Start a design brief</a></p>
+          </div>
+          <div className="ddoor dauto up">
+            <span className="dk">Tools</span>
+            <h3 className="ddisplay">An inquiry, handled.</h3>
+            <div className={'dsession' + (typed ? ' on' : '')} ref={sessionRef} aria-label="Example: an inquiry gets an auto-reply, a drafted quote you approve, then a follow-up">
+              <ol>
+                {SESSION.map(([p, t, c], i) => (
+                  <li key={i} style={{ transitionDelay: (i * 0.4) + 's' }}><span className="dsp">{p}</span><span>{t}{c && <span className="dsc"> {c}</span>}</span></li>
+                ))}
+                <li style={{ transitionDelay: (SESSION.length * 0.4) + 's' }}><span className="dsp">$</span><span><span className="dcursor" aria-hidden="true" /></span></li>
+              </ol>
+            </div>
+            <p className="dcap">Example: a small tool for one job. A person approves anything customers see.</p>
+            <p><a className="p-btn brass" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('automation'); }}>Start a tools brief</a></p>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
-function Price({ s }) {
-  if (!SHOW_PRICES || !s.from) return null;
-  return <span className="dprice">From {s.from} · {s.turn}</span>;
+// ── How it works: the four steps on a dial. Every step name stays visible
+// in the list; choosing one moves the needle and opens its detail. ──
+const HOW_STEPS = [
+  ['Send a brief', 'A short form: what you need, and what it has to do. About three minutes, no account, no call.'],
+  ['Get options', 'Design: three directions within two business days. Tools: a one-page plan and a fixed quote.'],
+  ['I finish it', 'Design: refined by hand, two revision rounds included. Tools: built small, tested on real work.'],
+  ['You get it', 'Design: print-ready files. Tools: a working build, handed over and explained. Yours once it’s paid.'],
+];
+
+function Dial() {
+  const [at, setAt] = React.useState(0);
+  return (
+    <section id="how" className="dsection dwood">
+      <div className="dwrap ddialwrap">
+        <div className="ddial up" aria-hidden="true">
+          <span className="ddial-face" /><span className="ddial-ticks" /><span className="ddial-heat" />
+          <span className="ddial-needle" style={{ transform: 'rotate(' + (180 + at * 90) + 'deg)' }} />
+          <span className="ddial-hub" />
+          {HOW_STEPS.map((s, i) => (
+            <button key={i} type="button" tabIndex={-1} className={'ddial-stn s' + (i + 1) + (at === i ? ' on' : '')} onClick={() => setAt(i)}>{i + 1}</button>
+          ))}
+        </div>
+        <div>
+          <div className="dshead up">
+            <h2 className="ddisplay">Four steps. No surprises.</h2>
+          </div>
+          <ol className="dsteplist">
+            {HOW_STEPS.map(([title, body], i) => (
+              <li key={title} className={at === i ? 'on' : ''}>
+                <button type="button" aria-expanded={at === i} aria-controls={'dstep-' + i} onClick={() => setAt(i)}>
+                  <span className="dstep-n">{i + 1}</span><span className="dstep-t">{title}</span>
+                </button>
+                <p id={'dstep-' + i} hidden={at !== i}>{body}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
+    </section>
+  );
 }
 
-function Half({ lane, eyebrow, title, blurb, items, cta, onAddNeed }) {
+function Turn({ s, lane }) {
+  const turn = lane === 'design' ? (s.turn || 'Quoted') : 'Quoted';
   return (
-    <section className={'dhalf-sec up' + (lane === 'automation' ? ' dauto' : '')}>
-      <span className="p-eyebrow">{eyebrow}</span>
+    <em className="dturn">
+      {SHOW_PRICES && s.from && <span className="dprice">From {s.from}</span>}
+      <span>{turn}</span>
+    </em>
+  );
+}
+
+function Shelf({ lane, label, title, blurb, items, cta, onAddNeed }) {
+  return (
+    <div className={'dhalf-sec up' + (lane === 'automation' ? ' dauto' : '')}>
+      <span className="dk">{label}</span>
       <h3 className="ddisplay">{title}</h3>
       <p className="dp">{blurb}</p>
       <ul className="dlist">
         {items.map((s) => (
           <li key={s.title}>
             <a href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed(lane, s.need); }}>
-              <b>{s.title}</b><span>{s.desc}</span><Price s={s} />
+              <span className="dlist-main"><b>{s.title}</b><span>{s.desc}</span></span>
+              <Turn s={s} lane={lane} />
             </a>
           </li>
         ))}
       </ul>
       <p style={{ marginTop: 24 }}>
-        <a className={'p-btn' + (lane === 'design' ? ' ghost' : ' ghost')} href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed(lane); }}>{cta}</a>
+        <a className="p-btn ghost" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed(lane); }}>{cta}</a>
       </p>
-    </section>
+    </div>
   );
 }
 
@@ -170,17 +250,15 @@ function Make({ onAddNeed }) {
     <section id="make" className="dsection">
       <div className="dwrap">
         <div className="dshead up">
-          <div className="didxrow"><span className="didx">01 / 04</span><span className="dln" /></div>
-          <span className="p-eyebrow">What I make</span>
           <h2 className="ddisplay">Two kinds of work, one person.</h2>
         </div>
         <div className="dduo dmake">
-          <Half lane="design" eyebrow="Design" title="What your customers see"
+          <Shelf lane="design" label="Design" title="What your customers see"
             blurb="AI drafts three directions. I finish the one you pick. Two revision rounds included."
-            items={DESIGN_SERVICES} cta="Start a design brief →" onAddNeed={onAddNeed} />
-          <Half lane="automation" eyebrow="Tools" title="What runs behind the scenes"
+            items={DESIGN_SERVICES} cta="Start a design brief" onAddNeed={onAddNeed} />
+          <Shelf lane="automation" label="Tools" title="What runs behind the scenes"
             blurb="Small, specific tools for businesses without a developer. Proven by hand first, then automated."
-            items={TOOL_SERVICES} cta="Start a tools brief →" onAddNeed={onAddNeed} />
+            items={TOOL_SERVICES} cta="Start a tools brief" onAddNeed={onAddNeed} />
         </div>
         {WORK.length > 0 && (
           <React.Fragment>
@@ -189,37 +267,12 @@ function Make({ onAddNeed }) {
               {WORK.map((w) => (
                 <figure className="dslot" key={w.title}>
                   <img src={w.src} alt={w.alt} loading="lazy" />
-                  <figcaption><b>{w.title}</b> · {w.kind}</figcaption>
+                  <figcaption><b>{w.title}</b>, {w.kind}</figcaption>
                 </figure>
               ))}
             </div>
           </React.Fragment>
         )}
-      </div>
-    </section>
-  );
-}
-
-function How() {
-  const steps = [
-    ['1', 'Send a brief', 'A short form: what you need, and what it has to do.'],
-    ['2', 'Get options', 'Design: three directions. Tools: a one-page plan and a fixed quote.'],
-    ['3', 'I finish it', 'Design: refined by hand. Tools: built small, tested on real work.'],
-    ['4', 'You get it', 'Design: print-ready files. Tools: a working build, handed over and explained.'],
-  ];
-  return (
-    <section id="how" className="dsection dwood">
-      <div className="dwrap">
-        <div className="dshead up">
-          <div className="didxrow"><span className="didx">02 / 04</span><span className="dln" /></div>
-          <span className="p-eyebrow">How it works</span>
-          <h2 className="ddisplay">Four steps. No surprises.</h2>
-        </div>
-        <div className="dsteps">
-          {steps.map(([n, title, body]) => (
-            <div className="dstp up" key={n}><span className="dcardn">{n}</span><h3>{title}</h3><p>{body}</p></div>
-          ))}
-        </div>
       </div>
     </section>
   );
@@ -232,8 +285,6 @@ function Why() {
         <div className="dwhyhead up">
           <img className="dportrait" src="assets/portrait.jpg" alt="Carter Groff" loading="lazy" />
           <div>
-            <div className="didxrow"><span className="didx">03 / 04</span><span className="dln" /></div>
-            <span className="p-eyebrow">Who you're working with</span>
             <h2 className="ddisplay">I’m Carter.</h2>
             <p className="dp">A marketer, designer and builder in Harrisonburg, Virginia. By day I lead marketing and automation at a local company, so I know what small teams actually need.</p>
             <p className="dp">My rules: prove it by hand before automating it. Automate the bottleneck, not everything. A person approves anything that reaches a customer.</p>
@@ -256,8 +307,6 @@ function Faq() {
     <section id="faq" className="dsection">
       <div className="dwrap">
         <div className="dshead up">
-          <div className="didxrow"><span className="didx">04 / 04</span><span className="dln" /></div>
-          <span className="p-eyebrow">Questions</span>
           <h2 className="ddisplay">Short answers.</h2>
         </div>
         <div className="dfaq">
@@ -351,14 +400,13 @@ const Brief = React.forwardRef(function Brief(props, ref) {
   if (sent) {
     return (
       <section id="brief" className="dsection ddeep">
-        <Rings />
         <div className="dwrap">
           <div className="dsent">
             <h3 className="ddisplay">Brief received.</h3>
             {sent.reference && <p className="dref">Reference {sent.reference}</p>}
             <p className="dp">
               {sent.confirmation ? 'A copy is on its way to your inbox. ' : ''}
-              I'll read it properly and come back with a price and a delivery date, usually within one business day. If anything's missing I'll ask for exactly that.
+              I’ll read it properly and come back with a price and a delivery date, usually within one business day. If anything’s missing I’ll ask for exactly that.
             </p>
           </div>
         </div>
@@ -369,15 +417,17 @@ const Brief = React.forwardRef(function Brief(props, ref) {
   const chips = auto ? AUTOMATION_CHIPS : DESIGN_CHIPS;
 
   return (
-    <section id="brief" className="dsection ddeep">
-      <Rings />
-      <div className="dwrap">
+    <section id="brief" className={'dsection ddeep' + (auto ? ' dauto' : '')}>
+      <div className="dwrap dbriefgrid">
+        <div className="dbriefside up">
+          <p className="dbig">{auto ? '1 day' : '2 days'}</p>
+          <p className="dbig-k">{auto ? 'A price and a timeline, back on your brief.' : 'Three design directions from a complete brief.'}</p>
+        </div>
+        <div className="dbriefmain">
         <div className="dbriefhead up">
-          <div className="didxrow" style={{ justifyContent: 'center' }}><span className="dln" /><span className="didx">Start here</span><span className="dln" /></div>
-          <span className="p-eyebrow">The brief</span>
-          <h2 className="ddisplay">Write me a <em>brief</em>.</h2>
+          <h2 className="ddisplay">Write me a brief.</h2>
           <p className="ddeck">Three short steps. The more you tell me, the sooner you get a price.</p>
-          <div className="dbriefmeta"><span>About three minutes</span><span>No account</span><span>No call</span></div>
+          <p className="dbriefmeta">About three minutes. No account, and no call.</p>
         </div>
 
         <div className="dlanes" role="radiogroup" aria-label="What kind of project">
@@ -388,7 +438,7 @@ const Brief = React.forwardRef(function Brief(props, ref) {
         </div>
 
         <div className="dprog">
-          <div className="dprogrow"><span>Step {step + 1} of 3 · {STEPS[step][1]}</span><span>{step === 2 ? 'Last step' : step === 1 ? 'One left' : 'Two left'}</span></div>
+          <div className="dprogrow"><span>Step {step + 1} of 3: {STEPS[step][1].toLowerCase()}</span><span>{step === 2 ? 'Last step' : step === 1 ? 'One left' : 'Two left'}</span></div>
           <div className="dprogbars">{[0, 1, 2].map((i) => <i key={i} className={i <= step ? 'done' : ''} />)}</div>
         </div>
 
@@ -425,12 +475,12 @@ const Brief = React.forwardRef(function Brief(props, ref) {
                   </div>
                 </div>
                 <label className="dfl"><span className="dlb">Tell me about it <i>required</i></span>
-                  <span className="dhint">{auto ? 'What you want to stop doing by hand.' : "Who it's for and what it has to do."}</span>
+                  <span className="dhint">{auto ? 'What you want to stop doing by hand.' : 'Who it’s for and what it has to do.'}</span>
                   <textarea rows={3} value={f.about} onChange={set('about')} placeholder={auto ? 'Every website inquiry gets copied into a spreadsheet by hand…' : 'A five-post series announcing our spring menu…'} /></label>
               </div>
               {auto ? (
                 <div className="dfields two">
-                  <label className="dfl"><span className="dlb">What's slow today</span><span className="dhint">The step that eats the most time.</span>
+                  <label className="dfl"><span className="dlb">What’s slow today</span><span className="dhint">The step that eats the most time.</span>
                     <textarea rows={2} value={f.auto_slow} onChange={set('auto_slow')} placeholder="Replying to quote requests" /></label>
                   <label className="dfl"><span className="dlb">Tools you already use</span><span className="dhint">Email, a CRM, spreadsheets, booking software.</span>
                     <textarea rows={2} value={f.auto_tools} onChange={set('auto_tools')} placeholder="Gmail, Google Sheets, Square" /></label>
@@ -459,7 +509,7 @@ const Brief = React.forwardRef(function Brief(props, ref) {
                   <div>
                     <span className="dqlb">Do you have brand assets?</span>
                     <div className="dchoices">
-                      {['Yes — logo, colors, fonts', 'Some of them', 'No — help me figure it out'].map((label, i) => {
+                      {['Yes: logo, colors, fonts', 'Some of them', 'No, help me figure it out'].map((label, i) => {
                         const value = ['Yes', 'Some', 'No'][i];
                         return (
                           <label key={value} className={'dchoice' + (f.assets === value ? ' on' : '')}>
@@ -507,17 +557,18 @@ const Brief = React.forwardRef(function Brief(props, ref) {
           {error && <p className="derr" role="alert">{error}</p>}
 
           <div className="dwalk">
-            {step > 0 && <button className="dback" type="button" onClick={back}>← Back</button>}
+            {step > 0 && <button className="dback" type="button" onClick={back}>Back</button>}
             <p className="dfine">
               {step === 2 ? "Price and timeline back within a day."
                 : step === 1 ? 'One more step. All optional.'
                 : 'Three short steps.'}
             </p>
             <button className="p-btn" type="submit" disabled={busy || !stepValid(step)}>
-              {busy ? 'Sending…' : step === 2 ? 'Send brief →' : 'Continue →'}
+              {busy ? 'Sending…' : step === 2 ? 'Send brief' : 'Continue'}
             </button>
           </div>
         </form>
+        </div>
       </div>
     </section>
   );
@@ -529,11 +580,11 @@ function Footer() {
       <div className="dwrap dfootin">
         <div className="dcrest"><img src="assets/antler.png" alt="" /></div>
         <div>
-          <p className="ddisplay" style={{ fontSize: 22 }}>The <i>Scaffold</i></p>
+          <p className="ddisplay" style={{ fontSize: 22 }}>The Scaffold</p>
           <p className="dfootsub">Tools and design by Carter Groff. Harrisonburg, Virginia.</p>
         </div>
         <div className="dfootlinks">
-          <a href="/">← Portfolio</a>
+          <a href="/">Portfolio</a>
           <a href="mailto:car.groff@gmail.com">car.groff@gmail.com</a>
           <span>© {new Date().getFullYear()} Carter Groff</span>
         </div>
@@ -568,12 +619,12 @@ function TheScaffold() {
     <div className="cgd p-grain">
       <Nav />
       <Hero onAddNeed={onAddNeed} />
-      <Proofline />
+      <Doors onAddNeed={onAddNeed} />
+      <Dial />
       <Make onAddNeed={onAddNeed} />
-      <How />
       <Why />
-      <Faq />
       <Brief ref={briefRef} />
+      <Faq />
       <Footer />
     </div>
   );
