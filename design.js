@@ -1,80 +1,89 @@
 // design.js — GENERATED from design.jsx by scripts/build-design.mjs. Do not edit; edit design.jsx and run `npm run build:design`.
 const SHOW_PRICES = false;
+const BUILT = [{
+  title: 'Scheduling that suggests itself',
+  desc: 'Looks at open jobs, crews and timing, and recommends the next schedule. A person still decides.',
+  flow: ['Open jobs', 'Rules', 'Suggested schedule', 'You approve']
+}, {
+  title: 'Calls and texts from the job',
+  desc: 'One button to call or text the customer. Every call is logged, recorded, transcribed and summarised on their record.',
+  flow: ['Tap call', 'Recorded', 'AI summary', 'On the record']
+}, {
+  title: 'A field app for crews',
+  desc: 'One screen per job on a phone: customer, scope, videos and a checklist that changes with the phase of the work.',
+  flow: ['Job', 'Phone', 'Checklist', 'Done']
+}, {
+  title: 'Labels that print themselves',
+  desc: 'When a job is won, the office and field labels are made and queued for one batch print.',
+  flow: ['Job won', 'Labels made', 'Print queue']
+}, {
+  title: 'Customer choices, signed',
+  desc: 'Customers pick their options on a private link. It turns into a PDF the office and crew can work from.',
+  flow: ['Emailed link', 'Customer picks', 'PDF', 'Office notified']
+}, {
+  title: 'Proposals and contracts',
+  desc: 'Scope, price and e-signature in one place, plus multi-year maintenance contracts with a signature pad and PDF.',
+  flow: ['Scope', 'Proposal', 'Signed', 'PDF']
+}, {
+  title: 'Email you can track',
+  desc: 'Which emails went out, which are planned and which got opened, with templates grouped by stage of the job.',
+  flow: ['Stage', 'Template', 'Sent', 'Opened']
+}, {
+  title: 'A map of the business',
+  desc: 'A live page showing how jobs move from first call to finished, built from the system itself so it never goes stale.',
+  flow: ['Database', 'Registry', 'Live map']
+}];
+const TOOL_KINDS = [['Inquiries and leads', 'Every inquiry in one place, answered right away.'], ['Quotes', 'From job details to a priced quote in minutes.'], ['Invoices and payments', 'Send, take a card, nudge when late.'], ['Job board or dashboard', 'Leads, jobs and money on one screen.'], ['Review requests', 'Ask happy customers at the right moment.'], ['Weekly numbers', 'One Monday email with what matters.'], ['Content on a schedule', 'On-brand posts drafted, waiting for your OK.'], ['AI assistant', 'Knows your prices, policies and tone.']];
 const DESIGN_SERVICES = [{
   n: '01',
   title: 'Social graphics',
-  desc: 'A single post or a full series that shares one look.',
+  desc: 'One post or a series with one look.',
   need: 'Social graphics',
   from: '$75',
   turn: '2 business days'
 }, {
   n: '02',
-  title: 'Business cards and print',
-  desc: 'Double-sided, print-ready, correct bleed.',
+  title: 'Cards and print',
+  desc: 'Print-ready, correct bleed.',
   need: 'Business card or print',
   from: '$150',
   turn: '3 business days'
 }, {
   n: '03',
   title: 'Flyers and one-pagers',
-  desc: 'For print or digital.',
+  desc: 'For print or screen.',
   need: 'Flyer or one-pager',
   from: '$175',
   turn: '3 business days'
 }, {
   n: '04',
   title: 'Documents and reports',
-  desc: 'Proposals, menus, lookbooks, multi-page layouts.',
+  desc: 'Proposals, menus, multi-page layouts.',
   need: 'Document or report',
   from: '$400',
   turn: '5–7 business days'
 }, {
   n: '05',
-  title: 'Presentations and decks',
+  title: 'Presentations',
   desc: 'Designed slides, not a template.',
   need: 'Presentation or deck',
   from: '$400',
   turn: '5–7 business days'
 }, {
   n: '06',
-  title: 'Monthly content plan',
-  desc: 'A steady run of on-brand posts every month, one look throughout.',
+  title: 'Monthly content',
+  desc: 'A steady run of posts, one look.',
   need: 'Social graphics',
   from: '$600/mo',
   turn: 'Rolling'
 }];
-const AUTOMATION_SERVICES = [{
-  n: 'A',
-  title: 'Stop losing inquiries',
-  desc: 'A form that lands in a simple CRM, answers the customer right away, and pings you.',
-  need: 'Inquiries and leads',
-  proof: 'This page runs on one: every brief is saved, logged and emailed to me.'
-}, {
-  n: 'B',
-  title: 'Content on a schedule',
-  desc: 'Brand-locked social posts or emails drafted on a schedule, ready for you to approve.',
-  need: 'Content on a schedule',
-  proof: 'Built and used for the local brands I market.'
-}, {
-  n: 'C',
-  title: 'See the business at a glance',
-  desc: 'A dashboard or tracker for leads, jobs, invoices and to-dos, instead of five spreadsheets.',
-  need: 'Job board or dashboard',
-  proof: 'I run my own studio on one I built.'
-}, {
-  n: 'D',
-  title: 'An assistant that knows your business',
-  desc: 'An AI helper that reads your own docs and drafts in your tone, with you approving what goes out.',
-  need: 'AI assistant',
-  proof: 'Every brief here gets an AI read before I reply.'
-}];
 const DESIGN_CHIPS = ['Social graphics', 'Business card or print', 'Flyer or one-pager', 'Document or report', 'Presentation or deck', 'Brand basics', 'Video', 'Something else'];
-const AUTOMATION_CHIPS = ['Inquiries and leads', 'Quotes', 'Invoices and payments', 'Job board or dashboard', 'Review requests', 'Weekly numbers', 'Content on a schedule', 'AI assistant', 'Something else'];
+const AUTOMATION_CHIPS = [...TOOL_KINDS.map(([k]) => k), 'Something else'];
 const BUDGETS = ['Under $150', '$150–$500', '$500–$1,500', '$1,500–$5,000', '$5,000+', 'Not sure yet'];
 const WORK = [];
 const TESTIMONIALS = [];
-const FAQ = [['Do you use AI?', 'Yes, openly. AI drafts the first set of directions, which is how you get three real options in a couple of days instead of one. I choose what goes forward, fix what the AI gets wrong, and finish every file by hand. Nothing reaches you that I haven’t looked at.'], ['How fast is it?', 'Most single pieces come back as three directions within two business days of a complete brief. Bigger jobs get a date in the quote, before you commit to anything.'], ['How many revisions do I get?', 'Two rounds are included on design work. Most extra rounds come from copy that changes late, which is why the brief asks for exact wording up front.'], ['Who owns the files?', 'You do. Once the job is paid, the final files are yours to use, print and edit.'], ['How do I pay?', 'By card, through a secure Stripe link sent with the invoice. You see the price before any work starts.'], ['Do we need a call?', 'No. The brief covers what a discovery call usually would. If a call would genuinely help, I’ll suggest one.'], ['What kinds of businesses do you work with?', 'Any business without an in-house designer or developer that needs marketing material regularly, from a one-person shop to a team of about fifty.'], ['What if my project isn’t listed?', 'Describe it in the brief. Video, motion and marketing strategy are all possible and quoted individually. The answer is usually yes.']];
-const STEPS = [['I', "Who's asking"], ['II', 'What you need'], ['III', 'Details that save rounds']];
+const FAQ = [['Do you use AI?', 'Yes. AI does the drafting and the first pass of code. I make the decisions, check every line and finish every file.'], ['Will I need new software?', 'Not usually. Where I can, I build on what you already use.'], ['What does a tool cost?', 'It depends on the job, so tools are quoted after a short brief. You see the price before anything starts.'], ['What if it breaks?', 'I fix it. Ongoing care is available as a monthly plan if you want it.'], ['How fast is design work?', 'Most single pieces: three directions within two business days of a complete brief.'], ['Who owns the work?', 'You do, once it’s paid.'], ['Do we need a call?', 'No. The brief covers it. If a call would help, I’ll say so.']];
+const STEPS = [['I', "Who's asking"], ['II', 'What you need'], ['III', 'Details that save time']];
 function Rings() {
   return React.createElement("div", {
     className: "rings",
@@ -93,6 +102,18 @@ function Rings() {
     className: "t3"
   }));
 }
+function Flow({
+  steps
+}) {
+  return React.createElement("div", {
+    className: "dflow",
+    "aria-label": steps.join(', then ')
+  }, steps.map((s, i) => React.createElement(React.Fragment, {
+    key: s
+  }, i > 0 && React.createElement("i", {
+    "aria-hidden": "true"
+  }, "\u2192"), React.createElement("span", null, s))));
+}
 function Nav() {
   return React.createElement("nav", {
     className: "dnav"
@@ -109,10 +130,10 @@ function Nav() {
   }, "by Carter Groff"))), React.createElement("div", {
     className: "dnavlinks"
   }, React.createElement("a", {
-    href: "#make"
+    href: "#tools"
+  }, "Tools"), React.createElement("a", {
+    href: "#design"
   }, "Design"), React.createElement("a", {
-    href: "#automation"
-  }, "Automation"), React.createElement("a", {
     href: "#how"
   }, "How it works"), React.createElement("a", {
     href: "#faq"
@@ -122,27 +143,6 @@ function Nav() {
     className: "p-btn",
     href: "#brief"
   }, "Start a brief")));
-}
-function HeroVisual() {
-  return React.createElement("figure", {
-    className: "dhv up",
-    "aria-label": "Illustration: one brief, three different first drafts"
-  }, React.createElement("div", {
-    className: "dhv-brief"
-  }, React.createElement("span", {
-    className: "dhv-k"
-  }, "The brief"), React.createElement("p", null, "\u201CFive posts announcing our spring menu. Warm, a bit playful. Copy: ", React.createElement("em", null, "Spring menu. From March 4th."), "\u201D")), React.createElement("span", {
-    className: "dhv-arrow",
-    "aria-hidden": "true"
-  }, "\u2192"), React.createElement("div", {
-    className: "dhv-drafts"
-  }, React.createElement("div", {
-    className: "dhv-d d1"
-  }, React.createElement("span", null, "Spring", React.createElement("br", null), "menu."), React.createElement("i", null, "From March 4th")), React.createElement("div", {
-    className: "dhv-d d2"
-  }, React.createElement("span", null, "SPRING MENU"), React.createElement("i", null, "from march 4th")), React.createElement("div", {
-    className: "dhv-d d3"
-  }, React.createElement("span", null, "spring", React.createElement("br", null), React.createElement("b", null, "menu")), React.createElement("i", null, "Mar 4 \u2192"))), React.createElement("figcaption", null, "Three real directions, not one layout in three colorways. AI drafts them; I finish the one you pick."));
 }
 function Hero() {
   return React.createElement("header", {
@@ -157,24 +157,120 @@ function Hero() {
     alt: "The Scaffold, by Carter Groff"
   })), React.createElement("span", {
     className: "p-eyebrow"
-  }, "Design and automation studio"), React.createElement("h1", {
+  }, "Tools and design for small businesses"), React.createElement("h1", {
     className: "ddisplay"
-  }, "Design work,", React.createElement("br", null), React.createElement("em", null, "drafted fast.")), React.createElement("p", {
+  }, "I build the tools", React.createElement("br", null), React.createElement("em", null, "that run the busywork.")), React.createElement("p", {
     className: "ddeck"
-  }, "Social graphics, print and documents, plus the small automations that take busywork off your plate. AI drafts the options. I make the calls and finish every file by hand."), React.createElement("div", {
+  }, "Scheduling, calls, quotes, follow-ups, dashboards. And the design your customers see."), React.createElement("div", {
     className: "dacts"
   }, React.createElement("a", {
     className: "p-btn",
     href: "#brief"
   }, "Start a brief \u2192"), React.createElement("a", {
     className: "p-btn ghost",
-    href: "#how"
-  }, "See how it works")), React.createElement(HeroVisual, null)));
+    href: "#tools"
+  }, "See what I've built")), React.createElement("div", {
+    className: "dpipe up",
+    "aria-label": "Example: a job is won, labels print, the crew gets a checklist, the customer gets a follow-up"
+  }, ['Job won', 'Labels printed', 'Crew checklist', 'Follow-up sent'].map((s, i) => React.createElement(React.Fragment, {
+    key: s
+  }, i > 0 && React.createElement("span", {
+    className: "dpipe-arrow",
+    "aria-hidden": "true"
+  }, "\u2192"), React.createElement("span", {
+    className: "dpipe-step"
+  }, React.createElement("b", null, String(i + 1).padStart(2, '0')), s)))), React.createElement("p", {
+    className: "dpipe-cap"
+  }, "A real chain from tools I've built. People step in where they should.")));
 }
 function Proofline() {
   return React.createElement("div", {
     className: "dproofline"
-  }, React.createElement("span", null, "AI drafts the options, I finish every file"), React.createElement("span", null, "Replies within a day"), React.createElement("span", null, "Two revision rounds included"), React.createElement("span", null, "No call required"));
+  }, React.createElement("span", null, "Built for a working company first"), React.createElement("span", null, "A person approves what customers see"), React.createElement("span", null, "Replies within a day"), React.createElement("span", null, "No call needed"));
+}
+function Tools({
+  onAddNeed
+}) {
+  return React.createElement("section", {
+    id: "tools",
+    className: "dsection dauto"
+  }, React.createElement("div", {
+    className: "dwrap"
+  }, React.createElement("div", {
+    className: "dshead up"
+  }, React.createElement("div", {
+    className: "didxrow"
+  }, React.createElement("span", {
+    className: "didx"
+  }, "01 / 05"), React.createElement("span", {
+    className: "dln"
+  })), React.createElement("span", {
+    className: "p-eyebrow"
+  }, "Tools I've built"), React.createElement("h2", {
+    className: "ddisplay"
+  }, "Running every day at a log-home restoration company."), React.createElement("p", {
+    className: "dp"
+  }, "I build the operations platform the office and crews work from. Here's some of what's in it.")), React.createElement("div", {
+    className: "dcards four dbuilt"
+  }, BUILT.map(t => React.createElement("div", {
+    className: "dcard up",
+    key: t.title
+  }, React.createElement("h3", null, t.title), React.createElement("p", null, t.desc), React.createElement(Flow, {
+    steps: t.flow
+  })))), React.createElement("div", {
+    className: "dkinds up"
+  }, React.createElement("div", null, React.createElement("h3", {
+    className: "ddisplay"
+  }, "What I can build for you"), React.createElement("p", {
+    className: "dp"
+  }, "Small, specific tools for businesses without a developer. Proven by hand first, then automated."), React.createElement("p", {
+    style: {
+      marginTop: 22
+    }
+  }, React.createElement("a", {
+    className: "p-btn",
+    href: "#brief",
+    onClick: e => {
+      e.preventDefault();
+      onAddNeed('automation');
+    }
+  }, "Start a tools brief \u2192"))), React.createElement("ul", null, TOOL_KINDS.map(([k, d]) => React.createElement("li", {
+    key: k
+  }, React.createElement("a", {
+    href: "#brief",
+    onClick: e => {
+      e.preventDefault();
+      onAddNeed('automation', k);
+    }
+  }, React.createElement("b", null, k), React.createElement("span", null, d))))))));
+}
+function How() {
+  const steps = [['1', 'Tell me the busywork', 'A short brief: what eats your time, and what you use today.'], ['2', 'I map it', 'One page: what happens, in what order, who approves. You get a fixed quote.'], ['3', 'I build it', 'Small first, tested on real work. AI speeds up the build; I check all of it.'], ['4', 'You run it', 'Handed over and explained. I stay on call if you want a care plan.']];
+  return React.createElement("section", {
+    id: "how",
+    className: "dsection dwood"
+  }, React.createElement("div", {
+    className: "dwrap"
+  }, React.createElement("div", {
+    className: "dshead up"
+  }, React.createElement("div", {
+    className: "didxrow"
+  }, React.createElement("span", {
+    className: "didx"
+  }, "02 / 05"), React.createElement("span", {
+    className: "dln"
+  })), React.createElement("span", {
+    className: "p-eyebrow"
+  }, "How a tool gets built"), React.createElement("h2", {
+    className: "ddisplay"
+  }, "Four steps. No surprises.")), React.createElement("div", {
+    className: "dsteps"
+  }, steps.map(([n, title, body]) => React.createElement("div", {
+    className: "dstp up",
+    key: n
+  }, React.createElement("span", {
+    className: "dcardn"
+  }, n), React.createElement("h3", null, title), React.createElement("p", null, body))))));
 }
 function Price({
   s
@@ -184,11 +280,32 @@ function Price({
     className: "dprice"
   }, "From ", s.from, " \xB7 ", s.turn);
 }
-function Make({
+function Drafts() {
+  return React.createElement("figure", {
+    className: "dhv up",
+    "aria-label": "Illustration: one brief, three different first drafts"
+  }, React.createElement("div", {
+    className: "dhv-brief"
+  }, React.createElement("span", {
+    className: "dhv-k"
+  }, "The brief"), React.createElement("p", null, "\u201CFive posts for our spring menu. Warm, a bit playful.\u201D")), React.createElement("span", {
+    className: "dhv-arrow",
+    "aria-hidden": "true"
+  }, "\u2192"), React.createElement("div", {
+    className: "dhv-drafts"
+  }, React.createElement("div", {
+    className: "dhv-d d1"
+  }, React.createElement("span", null, "Spring", React.createElement("br", null), "menu."), React.createElement("i", null, "From March 4th")), React.createElement("div", {
+    className: "dhv-d d2"
+  }, React.createElement("span", null, "SPRING MENU"), React.createElement("i", null, "from march 4th")), React.createElement("div", {
+    className: "dhv-d d3"
+  }, React.createElement("span", null, "spring", React.createElement("br", null), React.createElement("b", null, "menu")), React.createElement("i", null, "Mar 4 \u2192"))), React.createElement("figcaption", null, "Three real directions. You pick one; I finish it."));
+}
+function Design({
   onAddNeed
 }) {
   return React.createElement("section", {
-    id: "make",
+    id: "design",
     className: "dsection"
   }, React.createElement("div", {
     className: "dwrap"
@@ -198,15 +315,15 @@ function Make({
     className: "didxrow"
   }, React.createElement("span", {
     className: "didx"
-  }, "01 / 06"), React.createElement("span", {
+  }, "03 / 05"), React.createElement("span", {
     className: "dln"
   })), React.createElement("span", {
     className: "p-eyebrow"
   }, "Design"), React.createElement("h2", {
     className: "ddisplay"
-  }, "Marketing graphics, in days, not weeks."), React.createElement("p", {
+  }, "And the design that goes with it."), React.createElement("p", {
     className: "dp"
-  }, "Close to one of these? It's in scope. Describe it in the brief and I'll tell you straight.")), React.createElement("div", {
+  }, "AI drafts three directions. I finish the one you pick. Two revision rounds included.")), React.createElement(Drafts, null), React.createElement("div", {
     className: "dcards"
   }, DESIGN_SERVICES.map(s => React.createElement("div", {
     className: "dcard up",
@@ -234,90 +351,7 @@ function Make({
     loading: "lazy"
   }), React.createElement("figcaption", null, React.createElement("b", null, w.title), " \xB7 ", w.kind)))))));
 }
-function Automation({
-  onAddNeed
-}) {
-  return React.createElement("section", {
-    id: "automation",
-    className: "dsection dauto"
-  }, React.createElement("div", {
-    className: "dwrap"
-  }, React.createElement("div", {
-    className: "dshead up"
-  }, React.createElement("div", {
-    className: "didxrow"
-  }, React.createElement("span", {
-    className: "didx"
-  }, "02 / 06"), React.createElement("span", {
-    className: "dln"
-  })), React.createElement("span", {
-    className: "p-eyebrow"
-  }, "Automation and tools"), React.createElement("h2", {
-    className: "ddisplay"
-  }, "Stop doing busywork by hand."), React.createElement("p", {
-    className: "dp"
-  }, "Small, scoped builds for businesses without a developer. I've built each of these for myself first, so you're not paying for an experiment.")), React.createElement("div", {
-    className: "dcards four"
-  }, AUTOMATION_SERVICES.map(s => React.createElement("div", {
-    className: "dcard up",
-    key: s.n
-  }, React.createElement("span", {
-    className: "dcardn"
-  }, s.n), React.createElement("h3", null, s.title), React.createElement("p", null, s.desc), React.createElement("span", {
-    className: "dproof"
-  }, s.proof), React.createElement("a", {
-    href: "#brief",
-    onClick: e => {
-      e.preventDefault();
-      onAddNeed('automation', s.need);
-    }
-  }, "Add to brief \u2192")))), React.createElement("p", {
-    className: "dquiet"
-  }, "Automation work is scoped and quoted individually, after a short brief."), React.createElement("p", {
-    style: {
-      marginTop: 22
-    }
-  }, React.createElement("a", {
-    className: "p-btn",
-    href: "#brief",
-    onClick: e => {
-      e.preventDefault();
-      onAddNeed('automation');
-    }
-  }, "Start an automation brief \u2192"))));
-}
-function How() {
-  const steps = [['1', 'You send a brief', "A short form that covers what a designer needs: exact copy, sizes, where it's going. Nothing stalls later."], ['2', 'AI drafts three directions', 'Three genuinely different looks, drafted with AI from your brief and brand. Usually within two business days.'], ['3', 'I finish the one you pick', 'You choose a direction; I refine it by hand. Two revision rounds are included, stated in the quote up front.'], ['4', 'Files and invoice', 'Print-ready, correctly sized files you can hand straight to a printer, with a card-payment link.']];
-  return React.createElement("section", {
-    id: "how",
-    className: "dsection dwood"
-  }, React.createElement("div", {
-    className: "dwrap"
-  }, React.createElement("div", {
-    className: "dshead up"
-  }, React.createElement("div", {
-    className: "didxrow"
-  }, React.createElement("span", {
-    className: "didx"
-  }, "03 / 06"), React.createElement("span", {
-    className: "dln"
-  })), React.createElement("span", {
-    className: "p-eyebrow"
-  }, "How it works"), React.createElement("h2", {
-    className: "ddisplay"
-  }, "Four steps. You always know where the job stands."), React.createElement("p", {
-    className: "dp"
-  }, "No meeting required. The brief covers what a discovery call usually would, so the first drafts come back in days, not weeks.")), React.createElement("div", {
-    className: "dsteps"
-  }, steps.map(([n, title, body]) => React.createElement("div", {
-    className: "dstp up",
-    key: n
-  }, React.createElement("span", {
-    className: "dcardn"
-  }, n), React.createElement("h3", null, title), React.createElement("p", null, body))))));
-}
 function Why() {
-  const items = [['One person, both jobs', 'A marketer who also ships the design, so the work fits the message it carries.'], ['Real alternatives', 'You see three real directions, not one attempt you have to accept or reject.'], ['Fast, and not anonymous', 'Quick turnaround, from someone you can actually reach, in Harrisonburg.']];
   return React.createElement("section", {
     id: "why",
     className: "dsection"
@@ -334,20 +368,17 @@ function Why() {
     className: "didxrow"
   }, React.createElement("span", {
     className: "didx"
-  }, "04 / 06"), React.createElement("span", {
+  }, "04 / 05"), React.createElement("span", {
     className: "dln"
   })), React.createElement("span", {
     className: "p-eyebrow"
-  }, "Why work with me"), React.createElement("h2", {
+  }, "Who you're working with"), React.createElement("h2", {
     className: "ddisplay"
-  }, "I\u2019m Carter. I do marketing for a living."), React.createElement("p", {
+  }, "I\u2019m Carter."), React.createElement("p", {
     className: "dp"
-  }, "By day I run social, email and local marketing for a log-home restoration company in Harrisonburg, Virginia, and I studied media arts and design at James Madison University. The Scaffold is how I do the same work for other small businesses: AI for the drafting and the admin, my own eye and hands for every decision you see."))), React.createElement("div", {
-    className: "dwhy"
-  }, items.map(([title, body]) => React.createElement("div", {
-    className: "up",
-    key: title
-  }, React.createElement("b", null, title), React.createElement("p", null, body)))), TESTIMONIALS.length > 0 && React.createElement("div", {
+  }, "I\u2019m the Marketing and Automation Lead at a log-home restoration company in Harrisonburg, Virginia. I run their marketing and build the systems they run on. The Scaffold is me doing the same for other businesses."), React.createElement("p", {
+    className: "dp"
+  }, "My rules: prove it by hand before automating it. Automate the bottleneck, not everything. A person approves anything that reaches a customer."))), TESTIMONIALS.length > 0 && React.createElement("div", {
     className: "dquotes"
   }, TESTIMONIALS.map(t => React.createElement("blockquote", {
     className: "up",
@@ -366,13 +397,13 @@ function Faq() {
     className: "didxrow"
   }, React.createElement("span", {
     className: "didx"
-  }, "05 / 06"), React.createElement("span", {
+  }, "05 / 05"), React.createElement("span", {
     className: "dln"
   })), React.createElement("span", {
     className: "p-eyebrow"
   }, "Questions"), React.createElement("h2", {
     className: "ddisplay"
-  }, "Before you ask.")), React.createElement("div", {
+  }, "Short answers.")), React.createElement("div", {
     className: "dfaq"
   }, FAQ.map(([q, a]) => React.createElement("details", {
     className: "up",
@@ -400,7 +431,7 @@ const Brief = React.forwardRef(function Brief(props, ref) {
   const [error, setError] = React.useState('');
   const [files, setFiles] = React.useState([]);
   const [f, setF] = React.useState({
-    lane: 'design',
+    lane: 'automation',
     name: '',
     email: '',
     business: '',
@@ -528,7 +559,7 @@ const Brief = React.forwardRef(function Brief(props, ref) {
     className: "dln"
   }), React.createElement("span", {
     className: "didx"
-  }, "06 / 06"), React.createElement("span", {
+  }, "Start here"), React.createElement("span", {
     className: "dln"
   })), React.createElement("span", {
     className: "p-eyebrow"
@@ -536,13 +567,13 @@ const Brief = React.forwardRef(function Brief(props, ref) {
     className: "ddisplay"
   }, "Write me a ", React.createElement("em", null, "brief"), "."), React.createElement("p", {
     className: "ddeck"
-  }, "Three short movements. The more you fill in, the closer the first drafts land, and the sooner you get a price back."), React.createElement("div", {
+  }, "Three short steps. The more you tell me, the sooner you get a price."), React.createElement("div", {
     className: "dbriefmeta"
   }, React.createElement("span", null, "About three minutes"), React.createElement("span", null, "No account"), React.createElement("span", null, "No call"))), React.createElement("div", {
     className: "dlanes",
     role: "radiogroup",
     "aria-label": "What kind of project"
-  }, [['design', 'Design'], ['automation', 'Automation or a tool']].map(([v, label]) => React.createElement("button", {
+  }, [['automation', 'A tool'], ['design', 'Design']].map(([v, label]) => React.createElement("button", {
     key: v,
     type: "button",
     role: "radio",
@@ -553,7 +584,7 @@ const Brief = React.forwardRef(function Brief(props, ref) {
     className: "dprog"
   }, React.createElement("div", {
     className: "dprogrow"
-  }, React.createElement("span", null, "Movement ", STEPS[step][0], " of III \xB7 ", STEPS[step][1]), React.createElement("span", null, step === 2 ? 'Last movement' : step === 1 ? 'One movement left' : 'Two movements left')), React.createElement("div", {
+  }, React.createElement("span", null, "Step ", step + 1, " of 3 \xB7 ", STEPS[step][1]), React.createElement("span", null, step === 2 ? 'Last step' : step === 1 ? 'One left' : 'Two left')), React.createElement("div", {
     className: "dprogbars"
   }, [0, 1, 2].map(i => React.createElement("i", {
     key: i,
@@ -612,7 +643,7 @@ const Brief = React.forwardRef(function Brief(props, ref) {
     className: "dfields"
   }, React.createElement("div", null, React.createElement("span", {
     className: "dqlb"
-  }, auto ? 'What should it handle?' : 'What are we making?'), React.createElement("div", {
+  }, auto ? 'What should it do?' : 'What are we making?'), React.createElement("div", {
     className: "dchips"
   }, chips.map(c => React.createElement("label", {
     key: c,
@@ -627,7 +658,7 @@ const Brief = React.forwardRef(function Brief(props, ref) {
     className: "dlb"
   }, "Tell me about it ", React.createElement("i", null, "required")), React.createElement("span", {
     className: "dhint"
-  }, auto ? 'What you want to stop doing by hand, and what "done" would look like.' : "Who it's for, what it has to do, anything that shapes it."), React.createElement("textarea", {
+  }, auto ? 'What you want to stop doing by hand.' : "Who it's for and what it has to do."), React.createElement("textarea", {
     rows: 3,
     value: f.about,
     onChange: set('about'),
@@ -793,7 +824,7 @@ const Brief = React.forwardRef(function Brief(props, ref) {
     onClick: back
   }, "\u2190 Back"), React.createElement("p", {
     className: "dfine"
-  }, step === 2 ? "I'll reply with a price and a timeline, usually within a day. No call required." : step === 1 ? 'One more movement after this, the optional details.' : 'Three short movements. Nothing here is asked twice.'), React.createElement("button", {
+  }, step === 2 ? "Price and timeline back within a day." : step === 1 ? 'One more step. All optional.' : 'Three short steps.'), React.createElement("button", {
     className: "p-btn",
     type: "submit",
     disabled: busy || !stepValid(step)
@@ -816,7 +847,7 @@ function Footer() {
     }
   }, "The ", React.createElement("i", null, "Scaffold")), React.createElement("p", {
     className: "dfootsub"
-  }, "Design and automation, by Carter Groff. Harrisonburg, Virginia.")), React.createElement("div", {
+  }, "Tools and design by Carter Groff. Harrisonburg, Virginia.")), React.createElement("div", {
     className: "dfootlinks"
   }, React.createElement("a", {
     href: "/"
@@ -858,11 +889,11 @@ function TheScaffold() {
   };
   return React.createElement("div", {
     className: "cgd p-grain"
-  }, React.createElement(Nav, null), React.createElement(Hero, null), React.createElement(Proofline, null), React.createElement(Make, {
+  }, React.createElement(Nav, null), React.createElement(Hero, null), React.createElement(Proofline, null), React.createElement(Tools, {
     onAddNeed: onAddNeed
-  }), React.createElement(Automation, {
+  }), React.createElement(How, null), React.createElement(Design, {
     onAddNeed: onAddNeed
-  }), React.createElement(How, null), React.createElement(Why, null), React.createElement(Faq, null), React.createElement(Brief, {
+  }), React.createElement(Why, null), React.createElement(Faq, null), React.createElement(Brief, {
     ref: briefRef
   }), React.createElement(Footer, null));
 }
