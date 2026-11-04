@@ -57,7 +57,10 @@ const SEED = {
     { id: 'd9', title: 'Personal Mark', kind: 'Identity', size: 'small', desc: 'My personal monogram and identity system, the mark behind this site.' },
   ],
   resume: [
-    { id: 'r1', role: 'Marketing Assistant', company: 'Log & Timber Worx', dates: 'Oct 2025 to Present', city: 'Harrisonburg, VA',
+    { id: 'r0', role: 'Marketing and Automation Lead', company: 'Log & Timber Worx', dates: 'Sep 2026 to Present', city: 'Harrisonburg, VA',
+      promoted: 'Promoted from Marketing Assistant',
+      bullets: ['Lead marketing for a log-home restoration company across social, email, paid search, and direct mail.', 'Build the operations tools the office and field crews run on, from scheduling to customer calls to job checklists.'] },
+    { id: 'r1', role: 'Marketing Assistant', company: 'Log & Timber Worx', dates: 'Oct 2025 to Sep 2026', city: 'Harrisonburg, VA',
       bullets: ['Run social, email, and local marketing for a log-home restoration company.', 'Capture and shape before/after stories that drive leads and referrals.'] },
     { id: 'r2', role: 'Digital Content Creator', company: 'FirstDay Learning', dates: 'Aug 2025 to Jan 2026', city: 'Remote',
       bullets: ['Freelance video work, produced "get-to-know-me" employee videos for client outreach.'] },

@@ -1429,9 +1429,17 @@ function Resume() {
                     fontSize: 32, lineHeight: 1.15, letterSpacing: '-0.015em',
                     margin: '0 0 6px', color: 'var(--ink)' }}>{r.role}</h3>
                   <div style={{ fontFamily: 'var(--display-font)', fontSize: 17,
-                    color: 'var(--ink-soft)', fontStyle: 'italic', marginBottom: 18 }}>
+                    color: 'var(--ink-soft)', fontStyle: 'italic', marginBottom: r.promoted ? 10 : 18 }}>
                     {r.company}
                   </div>
+                  {r.promoted && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 18,
+                      padding: '5px 11px', border: '1px solid var(--amber)', borderRadius: 2,
+                      fontFamily: 'var(--ui-font)', fontSize: 11, letterSpacing: '0.16em',
+                      textTransform: 'uppercase', color: 'var(--amber)' }}>
+                      <span aria-hidden="true">↑</span>{r.promoted}
+                    </div>
+                  )}
                   <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
                     {r.bullets.map((b, j) => (
                       <li key={j} style={{ fontFamily: 'var(--body-font)', fontSize: 15,

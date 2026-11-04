@@ -87,5 +87,30 @@
     });
   }
 
-  window.CGStore = { putAsset, getAsset, delAsset, saveSite, loadSite, listAssetKeys };
+  // ── Content fixes applied on load ───────────────────────────────
+  // Sept 2026 promotion at Log & Timber Worx. A résumé saved from the admin
+  // before then still says "Marketing Assistant, Oct 2025 to Present" and
+  // would override data.jsx. If so, close out that role and add the new one
+  // above it. Idempotent: does nothing once the Lead role is present, and
+  // leaves every other entry (and any later admin edit) alone.
+  const LTW_LEAD = {
+    role: 'Marketing and Automation Lead', company: 'Log & Timber Worx', dates: 'Sep 2026 to Present',
+    city: 'Harrisonburg, VA', promoted: 'Promoted from Marketing Assistant',
+    bullets: [
+      'Lead marketing for a log-home restoration company across social, email, paid search, and direct mail.',
+      'Build the operations tools the office and field crews run on, from scheduling to customer calls to job checklists.',
+    ],
+  };
+  function migrateResume(resume) {
+    if (!Array.isArray(resume)) return resume;
+    if (resume.some((r) => r && /marketing and automation lead/i.test(r.role || ''))) return resume;
+    const i = resume.findIndex((r) => r && /log\s*&\s*timber/i.test(r.company || '') && /marketing assistant/i.test(r.role || ''));
+    if (i === -1) return resume;
+    const out = resume.slice();
+    out[i] = { ...out[i], dates: String(out[i].dates || '').replace(/present/i, 'Sep 2026') };
+    out.splice(i, 0, { ...LTW_LEAD, bullets: LTW_LEAD.bullets.slice() });
+    return out;
+  }
+
+  window.CGStore = { putAsset, getAsset, delAsset, saveSite, loadSite, listAssetKeys, migrateResume };
 })();
