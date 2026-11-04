@@ -21,13 +21,13 @@ const DESIGN_SERVICES = [
   { n: '06', title: 'Monthly content plan', desc: 'A steady run of on-brand posts every month, one look throughout.', need: 'Social graphics', from: '$600/mo', turn: 'Rolling' },
 ];
 const AUTOMATION_SERVICES = [
-  { n: 'A', title: 'Stop losing inquiries', desc: 'A form that lands in a simple CRM, answers the customer right away, and pings you.', need: 'Lead and inquiry handling', proof: 'This page runs on one: every brief is saved, logged and emailed to me.' },
-  { n: 'B', title: 'Content on a schedule', desc: 'Brand-locked social posts or emails drafted on a schedule, ready for you to approve.', need: 'Content pipeline', proof: 'Built and used for the local brands I market.' },
-  { n: 'C', title: 'See the business at a glance', desc: 'A dashboard or tracker for leads, jobs, invoices and to-dos, instead of five spreadsheets.', need: 'Dashboard or tracker', proof: 'I run my own studio on one I built.' },
-  { n: 'D', title: 'An assistant that knows your business', desc: 'An AI helper that reads your own docs and drafts in your tone, with you approving what goes out.', need: 'Custom AI assistant', proof: 'Every brief here gets an AI read before I reply.' },
+  { n: 'A', title: 'Stop losing inquiries', desc: 'A form that lands in a simple CRM, answers the customer right away, and pings you.', need: 'Inquiries and leads', proof: 'This page runs on one: every brief is saved, logged and emailed to me.' },
+  { n: 'B', title: 'Content on a schedule', desc: 'Brand-locked social posts or emails drafted on a schedule, ready for you to approve.', need: 'Content on a schedule', proof: 'Built and used for the local brands I market.' },
+  { n: 'C', title: 'See the business at a glance', desc: 'A dashboard or tracker for leads, jobs, invoices and to-dos, instead of five spreadsheets.', need: 'Job board or dashboard', proof: 'I run my own studio on one I built.' },
+  { n: 'D', title: 'An assistant that knows your business', desc: 'An AI helper that reads your own docs and drafts in your tone, with you approving what goes out.', need: 'AI assistant', proof: 'Every brief here gets an AI read before I reply.' },
 ];
 const DESIGN_CHIPS = ['Social graphics', 'Business card or print', 'Flyer or one-pager', 'Document or report', 'Presentation or deck', 'Brand basics', 'Video', 'Something else'];
-const AUTOMATION_CHIPS = ['Lead and inquiry handling', 'Content pipeline', 'Dashboard or tracker', 'Custom AI assistant', 'Something else'];
+const AUTOMATION_CHIPS = ['Inquiries and leads', 'Quotes', 'Invoices and payments', 'Job board or dashboard', 'Review requests', 'Weekly numbers', 'Content on a schedule', 'AI assistant', 'Something else'];
 const BUDGETS = ['Under $150', '$150–$500', '$500–$1,500', '$1,500–$5,000', '$5,000+', 'Not sure yet'];
 
 // Real work only. Each item: { title, kind, src, alt }. Empty = the section
