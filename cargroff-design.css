@@ -19,9 +19,6 @@
   --d1-bg: #f3e6c8; --d1-ink: #3a2414; --d1-acc: #8a4b2a;
   --d2-bg: #2f4a3a; --d2-ink: #f5e9cf;
   --d3-bg: #d9773f; --d3-ink: #1b120b;
-  --heat-0: #5a3a1e; --heat-1: #8a5226; --heat-2: #d99a3d; --heat-3: #f5cd6a; --heat-track: rgba(236,217,178,.07);
-  --tick-minor: rgba(236,217,178,.26); --bezel-hi: #2e2114; --bezel-lo: #1c130b;
-  --face-hi: #2a1d11; --face-lo: #120c07; --dial-shadow: rgba(0,0,0,.6);
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
@@ -132,39 +129,27 @@ html, body { overflow-x: clip; }
 /* ── How it works: the dial ── */
 .ddialwrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: 56px; align-items: center; }
 @media (min-width: 900px) { .ddialwrap { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: 80px; } }
-@property --p { syntax: '<angle>'; inherits: true; initial-value: 10deg; }
-.ddial { position: relative; width: min(100%, 520px); aspect-ratio: 1; margin: 0 auto; --p: 10deg; transition: --p .7s cubic-bezier(.3,.7,.2,1); }
-.ddial > span, .ddial > button { position: absolute; border-radius: 50%; }
-/* bezel: a double ring, recessed like a gauge set into the wood */
-.ddial-bezel { inset: 2%; border: 1px solid var(--rule-strong); background: radial-gradient(circle at 50% 30%, var(--bezel-hi), var(--bezel-lo) 70%); box-shadow: inset 0 0 0 8px var(--bg-warm), inset 0 0 0 9px var(--rule); }
-/* fine minute ticks and four amber quarter marks */
-.ddial-minor { inset: 6%; background: repeating-conic-gradient(from -.25deg, var(--tick-minor) 0 .5deg, transparent .5deg 6deg);
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 10px), var(--mask) calc(100% - 9px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - 10px), var(--mask) calc(100% - 9px)); }
-.ddial-major { inset: 6%; background: repeating-conic-gradient(from -.8deg, var(--amber) 0 1.6deg, transparent 1.6deg 30deg);
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 22px), var(--mask) calc(100% - 21px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - 22px), var(--mask) calc(100% - 21px)); opacity: .7; }
-/* the heat ramp: a dim track, filled from the top to the chosen step */
-.ddial-track { inset: 22%; background: var(--heat-track);
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 12px), var(--mask) calc(100% - 11px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - 12px), var(--mask) calc(100% - 11px)); }
-.ddial-heat { inset: 22%; background: conic-gradient(from 0deg, var(--heat-0) 0deg, var(--heat-1) 90deg, var(--heat-2) 180deg, var(--heat-3) 270deg, var(--heat-3) 360deg);
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 12px), var(--mask) calc(100% - 11px)), conic-gradient(var(--mask) var(--p), transparent var(--p));
-  -webkit-mask-composite: source-in;
-  mask: radial-gradient(farthest-side, transparent calc(100% - 12px), var(--mask) calc(100% - 11px)) intersect, conic-gradient(var(--mask) var(--p), transparent var(--p)); }
-/* the face: smoked and set back */
-.ddial-face { inset: 27%; background: radial-gradient(circle at 50% 32%, var(--face-hi), var(--face-lo) 75%); border: 1px solid var(--rule); box-shadow: inset 0 6px 18px var(--dial-shadow); }
-/* needle: a tapered pointer and a counterweight, turning about the centre */
-.ddial-needle { inset: 0; border-radius: 0; transition: transform .7s cubic-bezier(.3,.7,.2,1); }
-.ddial-needle::before { content: ""; position: absolute; left: 50%; top: 13%; width: 8px; height: 37%; margin-left: -4px; background: linear-gradient(var(--amber-lit), var(--amber)); clip-path: polygon(50% 0, 100% 100%, 0 100%); }
-.ddial-needle::after { content: ""; position: absolute; left: 50%; top: 50%; width: 4px; height: 10%; margin-left: -2px; background: var(--amber); border-radius: 0 0 4px 4px; }
-.ddial-hub { left: 50%; top: 50%; width: 32px; height: 32px; margin: -16px 0 0 -16px; background: radial-gradient(circle, var(--bg-deep) 0 4px, var(--amber-lit) 5px 10px, var(--amber) 11px); box-shadow: 0 2px 8px var(--dial-shadow); }
-/* the four stations: engraved numerals between the quarter marks and the ramp */
-.ddial-stn { transform: translate(-50%, -50%); display: grid; place-items: center; width: clamp(40px, 9.6%, 52px); aspect-ratio: 1; padding: 0; background: var(--bg-warm); border: 1px solid var(--rule-strong); font-family: var(--display); font-size: clamp(20px, 2.2vw, 26px); font-weight: 500; line-height: 1; color: var(--ink-mute); cursor: pointer; transition: background-color .25s, border-color .25s, color .25s, transform .2s; }
-.ddial-stn:hover { color: var(--ink); border-color: var(--ink-soft); }
-.ddial-stn:active { transform: translate(-50%, -50%) scale(.96); }
-.ddial-stn.on { background: var(--amber); border-color: var(--amber-lit); color: var(--on-ink); box-shadow: 0 0 0 4px var(--bg-warm), 0 0 0 5px var(--amber); }
-.ddial-stn.s1 { left: 50%; top: 16%; } .ddial-stn.s2 { left: 84%; top: 50%; } .ddial-stn.s3 { left: 50%; top: 84%; } .ddial-stn.s4 { left: 16%; top: 50%; }
+/* the seal: flat hairlines in Parlor ink, the step names engraved round the
+   ring, the crest at the centre, one amber lozenge that travels to the step */
+.ddial { width: min(100%, 500px); margin: 0 auto; }
+.ddial svg { display: block; width: 100%; height: auto; overflow: visible; }
+.dseal-rule { fill: none; stroke: var(--rule-strong); stroke-width: 1; }
+.dseal-dot { fill: var(--ink-dim); }
+.dseal-name { cursor: pointer; }
+.dseal-name text { font-family: var(--display); font-size: 21px; font-weight: 500; letter-spacing: 0; fill: var(--ink-mute); transition: fill .3s; }
+.dseal-name:hover text { fill: var(--ink); }
+.dseal-name.on text { fill: var(--amber-lit); }
+.dseal-track { fill: none; stroke: var(--rule-strong); stroke-width: 1; stroke-dasharray: 2 6; }
+.dseal-done { fill: none; stroke: var(--amber); stroke-width: 2; transition: stroke-dashoffset .8s cubic-bezier(.3,.7,.2,1); }
+.dseal-stop { cursor: pointer; }
+.dseal-stop rect { fill: var(--bg-warm); stroke: var(--ink-mute); stroke-width: 1; transition: fill .3s, stroke .3s; }
+.dseal-stop.done rect { fill: var(--amber); stroke: var(--amber); }
+.dseal-stop text { font-family: var(--display); font-size: 22px; font-weight: 500; fill: var(--ink-mute); transition: fill .3s; }
+.dseal-stop.done text { fill: var(--ink-soft); }
+.dseal-stop:hover text { fill: var(--ink); }
+.dseal-mark { transform-origin: 200px 200px; transition: transform .8s cubic-bezier(.3,.7,.2,1); pointer-events: none; }
+.dseal-mark rect { fill: none; stroke: var(--amber-lit); stroke-width: 1.5; }
+.dseal-crest { opacity: .55; }
 .dsteplist { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
 .dsteplist li { border-bottom: 1px solid var(--rule); }
 .dsteplist button { display: flex; align-items: baseline; gap: 20px; width: 100%; padding: 16px 0; background: none; border: 0; cursor: pointer; text-align: left; color: var(--ink-soft); transition: color .2s; }
@@ -302,5 +287,5 @@ html, body { overflow-x: clip; }
 @media (prefers-reduced-motion: reduce) {
   .rings .r1, .rings .r3, .rings .t1, .rings .t2, .rings .t3, .dcursor, .dmv { animation: none; }
   .up, .dsession li, .js .up, .js .dsession li { opacity: 1; transform: none; transition: none; }
-  .ddial, .ddial-needle, .ddial-stn, .dprint, .dlane, .dchip { transition: none; }
+  .dseal-done, .dseal-mark, .dprint, .dlane, .dchip { transition: none; }
 }

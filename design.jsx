@@ -179,19 +179,62 @@ const HOW_STEPS = [
   ['You get it', 'Design: print-ready files. Tools: a working build, handed over and explained. Yours once it’s paid.'],
 ];
 
+// Geometry for the seal: angles run clockwise from the top, in degrees.
+const SEAL = 200;
+function sealPt(r, a) {
+  const t = (a * Math.PI) / 180;
+  return [+(SEAL + r * Math.sin(t)).toFixed(2), +(SEAL - r * Math.cos(t)).toFixed(2)];
+}
+// An arc centred on angle a, wide enough for a step name. The bottom one runs
+// the other way so its lettering stays upright.
+function sealArc(a, r) {
+  const flip = a === 180;
+  const [x1, y1] = sealPt(r, flip ? a + 58 : a - 58);
+  const [x2, y2] = sealPt(r, flip ? a - 58 : a + 58);
+  return 'M' + x1 + ' ' + y1 + ' A' + r + ' ' + r + ' 0 0 ' + (flip ? 0 : 1) + ' ' + x2 + ' ' + y2;
+}
+const SEAL_TRACK = 2 * Math.PI * 128;
+
 function Dial() {
   const [at, setAt] = React.useState(0);
   return (
     <section id="how" className="dsection dwood">
       <div className="dwrap ddialwrap">
-        <div className="ddial up" aria-hidden="true" style={{ '--p': Math.max(at * 90, 10) + 'deg' }}>
-          <span className="ddial-bezel" /><span className="ddial-minor" /><span className="ddial-major" />
-          <span className="ddial-track" /><span className="ddial-heat" /><span className="ddial-face" />
-          <span className="ddial-needle" style={{ transform: 'rotate(' + at * 90 + 'deg)' }} />
-          <span className="ddial-hub" />
-          {HOW_STEPS.map((s, i) => (
-            <button key={i} type="button" tabIndex={-1} className={'ddial-stn s' + (i + 1) + (at === i ? ' on' : '')} onClick={() => setAt(i)}>{i + 1}</button>
-          ))}
+        <div className="ddial up" aria-hidden="true">
+          <svg viewBox="0 0 400 400" role="presentation">
+            <defs>
+              {HOW_STEPS.map((s, i) => <path key={i} id={'dseal-' + i} d={sealArc(i * 90, i === 2 ? 170 : 158)} />)}
+            </defs>
+            <circle className="dseal-rule" cx="200" cy="200" r="190" />
+            <circle className="dseal-rule" cx="200" cy="200" r="184" />
+            <circle className="dseal-rule" cx="200" cy="200" r="142" />
+            {HOW_STEPS.map(([title], i) => (
+              <g key={title} className={'dseal-name' + (at === i ? ' on' : '')} onClick={() => setAt(i)}>
+                <text><textPath href={'#dseal-' + i} startOffset="50%" textAnchor="middle">{title}</textPath></text>
+              </g>
+            ))}
+            {[45, 135, 225, 315].map((a) => {
+              const [x, y] = sealPt(163, a);
+              return <circle key={a} className="dseal-dot" cx={x} cy={y} r="2" />;
+            })}
+            <circle className="dseal-track" cx="200" cy="200" r="128" />
+            <circle className="dseal-done" cx="200" cy="200" r="128" transform="rotate(-90 200 200)"
+              strokeDasharray={SEAL_TRACK} strokeDashoffset={SEAL_TRACK * (1 - at / 4)} />
+            {HOW_STEPS.map((s, i) => {
+              const [x, y] = sealPt(128, i * 90);
+              const [nx, ny] = sealPt(98, i * 90);
+              return (
+                <g key={i} className={'dseal-stop' + (i <= at ? ' done' : '')} onClick={() => setAt(i)}>
+                  <rect x={x - 5} y={y - 5} width="10" height="10" transform={'rotate(45 ' + x + ' ' + y + ')'} />
+                  <text x={nx} y={ny} dy="0.35em" textAnchor="middle">{i + 1}</text>
+                </g>
+              );
+            })}
+            <g className="dseal-mark" style={{ transform: 'rotate(' + at * 90 + 'deg)' }}>
+              <rect x="191" y="63" width="18" height="18" transform="rotate(45 200 72)" />
+            </g>
+            <image href="assets/antler.png" x="152" y="164" width="96" height="73" className="dseal-crest" />
+          </svg>
         </div>
         <div>
           <div className="dshead up">

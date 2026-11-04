@@ -263,6 +263,18 @@ function Doors({
   }, "Start a tools brief"))))));
 }
 const HOW_STEPS = [['Send a brief', 'A short form: what you need, and what it has to do. About three minutes, no account, no call.'], ['Get options', 'Design: three directions within two business days. Tools: a one-page plan and a fixed quote.'], ['I finish it', 'Design: refined by hand, two revision rounds included. Tools: built small, tested on real work.'], ['You get it', 'Design: print-ready files. Tools: a working build, handed over and explained. Yours once it’s paid.']];
+const SEAL = 200;
+function sealPt(r, a) {
+  const t = a * Math.PI / 180;
+  return [+(SEAL + r * Math.sin(t)).toFixed(2), +(SEAL - r * Math.cos(t)).toFixed(2)];
+}
+function sealArc(a, r) {
+  const flip = a === 180;
+  const [x1, y1] = sealPt(r, flip ? a + 58 : a - 58);
+  const [x2, y2] = sealPt(r, flip ? a - 58 : a + 58);
+  return 'M' + x1 + ' ' + y1 + ' A' + r + ' ' + r + ' 0 0 ' + (flip ? 0 : 1) + ' ' + x2 + ' ' + y2;
+}
+const SEAL_TRACK = 2 * Math.PI * 128;
 function Dial() {
   const [at, setAt] = React.useState(0);
   return React.createElement("section", {
@@ -272,36 +284,97 @@ function Dial() {
     className: "dwrap ddialwrap"
   }, React.createElement("div", {
     className: "ddial up",
-    "aria-hidden": "true",
-    style: {
-      '--p': Math.max(at * 90, 10) + 'deg'
-    }
-  }, React.createElement("span", {
-    className: "ddial-bezel"
-  }), React.createElement("span", {
-    className: "ddial-minor"
-  }), React.createElement("span", {
-    className: "ddial-major"
-  }), React.createElement("span", {
-    className: "ddial-track"
-  }), React.createElement("span", {
-    className: "ddial-heat"
-  }), React.createElement("span", {
-    className: "ddial-face"
-  }), React.createElement("span", {
-    className: "ddial-needle",
+    "aria-hidden": "true"
+  }, React.createElement("svg", {
+    viewBox: "0 0 400 400",
+    role: "presentation"
+  }, React.createElement("defs", null, HOW_STEPS.map((s, i) => React.createElement("path", {
+    key: i,
+    id: 'dseal-' + i,
+    d: sealArc(i * 90, i === 2 ? 170 : 158)
+  }))), React.createElement("circle", {
+    className: "dseal-rule",
+    cx: "200",
+    cy: "200",
+    r: "190"
+  }), React.createElement("circle", {
+    className: "dseal-rule",
+    cx: "200",
+    cy: "200",
+    r: "184"
+  }), React.createElement("circle", {
+    className: "dseal-rule",
+    cx: "200",
+    cy: "200",
+    r: "142"
+  }), HOW_STEPS.map(([title], i) => React.createElement("g", {
+    key: title,
+    className: 'dseal-name' + (at === i ? ' on' : ''),
+    onClick: () => setAt(i)
+  }, React.createElement("text", null, React.createElement("textPath", {
+    href: '#dseal-' + i,
+    startOffset: "50%",
+    textAnchor: "middle"
+  }, title)))), [45, 135, 225, 315].map(a => {
+    const [x, y] = sealPt(163, a);
+    return React.createElement("circle", {
+      key: a,
+      className: "dseal-dot",
+      cx: x,
+      cy: y,
+      r: "2"
+    });
+  }), React.createElement("circle", {
+    className: "dseal-track",
+    cx: "200",
+    cy: "200",
+    r: "128"
+  }), React.createElement("circle", {
+    className: "dseal-done",
+    cx: "200",
+    cy: "200",
+    r: "128",
+    transform: "rotate(-90 200 200)",
+    strokeDasharray: SEAL_TRACK,
+    strokeDashoffset: SEAL_TRACK * (1 - at / 4)
+  }), HOW_STEPS.map((s, i) => {
+    const [x, y] = sealPt(128, i * 90);
+    const [nx, ny] = sealPt(98, i * 90);
+    return React.createElement("g", {
+      key: i,
+      className: 'dseal-stop' + (i <= at ? ' done' : ''),
+      onClick: () => setAt(i)
+    }, React.createElement("rect", {
+      x: x - 5,
+      y: y - 5,
+      width: "10",
+      height: "10",
+      transform: 'rotate(45 ' + x + ' ' + y + ')'
+    }), React.createElement("text", {
+      x: nx,
+      y: ny,
+      dy: "0.35em",
+      textAnchor: "middle"
+    }, i + 1));
+  }), React.createElement("g", {
+    className: "dseal-mark",
     style: {
       transform: 'rotate(' + at * 90 + 'deg)'
     }
-  }), React.createElement("span", {
-    className: "ddial-hub"
-  }), HOW_STEPS.map((s, i) => React.createElement("button", {
-    key: i,
-    type: "button",
-    tabIndex: -1,
-    className: 'ddial-stn s' + (i + 1) + (at === i ? ' on' : ''),
-    onClick: () => setAt(i)
-  }, i + 1))), React.createElement("div", null, React.createElement("div", {
+  }, React.createElement("rect", {
+    x: "191",
+    y: "63",
+    width: "18",
+    height: "18",
+    transform: "rotate(45 200 72)"
+  })), React.createElement("image", {
+    href: "assets/antler.png",
+    x: "152",
+    y: "164",
+    width: "96",
+    height: "73",
+    className: "dseal-crest"
+  }))), React.createElement("div", null, React.createElement("div", {
     className: "dshead up"
   }, React.createElement("h2", {
     className: "ddisplay"
