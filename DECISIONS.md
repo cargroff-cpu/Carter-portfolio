@@ -1,5 +1,56 @@
 # Decisions
 
+## Relaunch: /design becomes The Scaffold; the admin becomes The Back Room
+
+From the business assessment (Nov 2026). The public studio is now **The
+Scaffold, by Carter Groff**; the private admin, previously also called The
+Scaffold, is renamed **The Back Room** (`/back-room`; `/scaffold` redirects
+there for now so it can later become a public URL if wanted).
+
+Security and reliability:
+- The Supabase project had paused from inactivity, so every brief failed and,
+  because the notification email only sent after a successful save, nobody
+  found out. `api/design-brief.js` now always emails Carter (flagging
+  `[NOT SAVED]` when the save fails), and a daily Vercel cron hits
+  `api/health.js` so the free project never pauses again.
+- Every CRM table (leads, clients, invoices, notes, briefs…) had a
+  public-read RLS policy with the anon key committed in a public repo. Those
+  policies are dropped; only `site_content` stays public. The Back Room reads
+  through the new session-gated `api/back-room-read.js`.
+- The login cookie used to be the admin password itself. It's now a signed,
+  expiring token (`lib/session.js`, Web Crypto so it runs in both the Edge
+  middleware and Node functions). Failed logins are slowed by ~1s.
+- The brief endpoint has a honeypot field and a 3-per-10-minutes IP limit.
+
+The page (`design.jsx` → precompiled `design.js`, `scaffold.css`): two lanes
+(Design, Automation), "Drafted by AI. Finished by hand." positioning, an
+illustrated brief-to-three-drafts hero, ruled service lists instead of a
+6-in-4 card grid, a numbered five-step process, portrait + first-person
+About, FAQ (AI use first), and a lane-aware brief with budget ranges. Text
+colors are limited to tokens that pass 4.5:1. The eyebrows, 01/05 section
+indices and the scroll-reveal were removed. "Recent work" renders only
+portfolio Design Work items that have an image, so it never shows
+placeholders; none have images yet. Production React, no in-browser Babel,
+og tags + JSON-LD, Vercel Analytics script (turn Web Analytics on in the
+dashboard). No prices are published yet, by choice.
+
+AI triage (`api/brief-triage.js`, rules in `lib/triage-rules.js`): the Back
+Room's brief inbox sends each new, untriaged brief to Claude once, forced
+through a tool schema, and shows a card (summary, lane, size, missing info,
+flags, scope, price from the rate card only, draft reply). It never sends
+anything: "Reply by email" opens Carter's own mail client. It runs from the
+gated Back Room, not the public endpoint, so the public can't run up model
+costs. Off until `ANTHROPIC_API_KEY` is set.
+
+Vercel Hobby allows 12 serverless functions per deployment and the repo was
+already at 12, so the new endpoints live in `lib/` and are served through
+existing functions via `vercel.json` rewrites: `/api/back-room-read` (GET)
+and `/api/brief-triage` → `api/scaffold-write.js`, `/api/logout` →
+`api/login.js`, `/api/health` (GET) → `api/design-brief.js`. Middleware
+matches the original paths, so gating is unchanged. Add new endpoints the
+same way, or move to Pro. Wick still isn't wired to a
+model; that's intended for now.
+
 ## Second audit pass: the design moved (lampposts out, rings need to be visible), Design page rings and reveal were never ported
 
 Carter sent a `FIXES.md` written against the live site plus an updated design

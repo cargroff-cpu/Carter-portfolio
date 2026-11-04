@@ -46,11 +46,20 @@ export default async function handler(req, res) {
       return;
     }
 
+    // Name the line item after the project so the client's checkout page and
+    // receipt say what they're paying for, under the studio's name.
+    let label = 'The Scaffold, by Carter Groff';
+    if (invoice.project_id) {
+      try {
+        const [project] = await (await fetch(`${SCAFFOLD_SUPABASE_URL}/rest/v1/projects?id=eq.${encodeURIComponent(invoice.project_id)}&select=name`, { headers: sbHeaders })).json();
+        if (project && project.name) label = `${project.name} · The Scaffold`;
+      } catch (e) { /* keep the default label */ }
+    }
     const cents = Math.round(Number(invoice.amount) * 100);
     const priceParams = new URLSearchParams({
       'currency': 'usd',
       'unit_amount': String(cents),
-      'product_data[name]': `Invoice — Carter Groff`,
+      'product_data[name]': label.slice(0, 250),
     });
     const priceRes = await fetch('https://api.stripe.com/v1/prices', {
       method: 'POST',
