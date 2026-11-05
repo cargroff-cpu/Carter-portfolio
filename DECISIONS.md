@@ -546,3 +546,35 @@ dust. motifs.jsx is untouched, so the portfolio's lamp is unchanged.
 
 The brass plate on two of the lamps read as a stray orange box on the post, so
 it is gone; those lamps take a collar or a lamplighter's bar instead.
+
+## The Back Room gets a Scaffold Backend
+
+scaffold.cargroff.com's copy and lists are now edited from the Back Room, like
+the portfolio: /backroom/scaffold (Scaffold Admin.html + scaffold-admin.jsx),
+behind the same login (middleware.js) and logout-on-close.
+
+- Editable: hero headline and line, the Design and Tools lists (name, small
+  side note, turnaround, price, and which brief option the row opens), the
+  show-prices switch, the four How it works steps, About you (heading, intro,
+  rules), Questions, and Kind words (real client quotes; hidden while empty).
+- Storage: Supabase site_content row 2 (row 1 stays the portfolio). The table
+  is public-read; writes go only through /api/save-content, which now takes
+  ?page=scaffold for row 2. No new function, so the Vercel function count is
+  unchanged.
+- The page reads row 2 at load (applyScaffoldContent in design.jsx, waiting
+  at most 1.5s) and merges it over its defaults; missing or malformed fields
+  keep the default. Brief options are a fixed list (they must match
+  api/design-brief.js), so the editor picks from them rather than typing new
+  ones. How it works only takes a full set of four (the dial has four stops).
+- The editor's defaults come from design.jsx itself: npm run build:design
+  now also writes scaffold-defaults.js, so they cannot drift.
+- Drafts autosave in the browser; Publish pushes them live; Discard returns to
+  what is live.
+- Not covered: the page's no-script fallback text and search description in
+  Carter Groff Design.html, which stay as written in the file.
+- The Back Room's doors are now Portfolio Backend, Scaffold Backend and
+  Business Hub, on one row on desktop and stacked on phones.
+- The sconce (the tall light bar on the right, a horizontal bar on phones)
+  is back as the room's light. Wick is retired, so it is decoration only: no
+  link, no label, it ignores the pointer, embers drift up gently, and it
+  holds still under reduced motion.

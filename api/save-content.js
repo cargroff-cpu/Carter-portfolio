@@ -2,7 +2,9 @@
 // Reached only after middleware.js's Basic Auth check has already passed,
 // so no separate password check is needed here. Uses the service-role key
 // (server-side env var, never sent to the browser) to upsert the admin's
-// published payload into the single-row site_content table.
+// published payload into the site_content table: row 1 is the portfolio
+// (Admin.html), row 2 is the Scaffold page (?page=scaffold, from the Back
+// Room's Scaffold editor). Both rows are public-read; only this writes.
 const SUPABASE_URL = 'https://rodxrkzwpsgeeatmbwku.supabase.co';
 
 export default async function handler(req, res) {
@@ -16,6 +18,13 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'Server is not configured (missing SUPABASE_SERVICE_ROLE_KEY).' });
     return;
   }
+
+  const page = (req.query && req.query.page) || '';
+  if (page && page !== 'scaffold') {
+    res.status(400).json({ error: 'Unknown page.' });
+    return;
+  }
+  const rowId = page === 'scaffold' ? 2 : 1;
 
   let body = req.body;
   if (typeof body === 'string') {
@@ -38,7 +47,7 @@ export default async function handler(req, res) {
         Authorization: `Bearer ${serviceKey}`,
         Prefer: 'resolution=merge-duplicates,return=minimal',
       },
-      body: JSON.stringify({ id: 1, data: body, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ id: rowId, data: body, updated_at: new Date().toISOString() }),
     });
 
     if (!r.ok) {

@@ -593,7 +593,14 @@ function GasLamp({
     }
   }));
 }
-const SHOW_PRICES = false;
+const SITE = {
+  showPrices: false,
+  headline: 'Design that looks right. Tools that work right.',
+  deck: 'Websites, graphics and print, and the tools that take busywork off your plate.',
+  whyHead: 'I’m Carter.',
+  whyIntro: 'A marketer, designer and builder in Harrisonburg, Virginia. By day I lead marketing and automation at a local company, so I know what small teams actually need.',
+  rules: ['Prove it by hand before automating it.', 'Automate the bottleneck, not everything.', 'A person approves anything that reaches a customer.']
+};
 const DESIGN_SERVICES = [{
   title: 'Social graphics',
   desc: 'One post or a series with one look.',
@@ -1120,9 +1127,9 @@ function Hero({
     className: "dhero-medal"
   }, React.createElement(Medallion, null)), React.createElement("h1", {
     className: "ddisplay"
-  }, "Design that looks right. Tools that work right."), React.createElement("p", {
+  }, SITE.headline), React.createElement("p", {
     className: "ddeck"
-  }, "Websites, graphics and print, and the tools that take busywork off your plate."), React.createElement("div", {
+  }, SITE.deck), React.createElement("div", {
     className: "dacts"
   }, React.createElement("a", {
     className: "p-btn",
@@ -1395,7 +1402,7 @@ function Turn({
   lane
 }) {
   const turn = lane === 'design' ? s.turn || 'Quoted' : null;
-  const price = SHOW_PRICES && s.from;
+  const price = SITE.showPrices && s.from;
   if (!turn && !price) return null;
   return React.createElement("em", {
     className: "dturn"
@@ -1523,13 +1530,15 @@ function Why() {
     loading: "lazy"
   }), React.createElement("div", null, React.createElement("h2", {
     className: "ddisplay"
-  }, "I\u2019m Carter."), React.createElement("p", {
+  }, SITE.whyHead), React.createElement("p", {
     className: "dp"
-  }, "A marketer, designer and builder in Harrisonburg, Virginia. By day I lead marketing and automation at a local company, so I know what small teams actually need."), React.createElement("span", {
+  }, SITE.whyIntro), SITE.rules.length > 0 && React.createElement("span", {
     className: "dk drules-k"
-  }, "My rules"), React.createElement("ol", {
+  }, "My rules"), SITE.rules.length > 0 && React.createElement("ol", {
     className: "drules"
-  }, React.createElement("li", null, React.createElement("b", null, "1"), React.createElement("span", null, "Prove it by hand before automating it.")), React.createElement("li", null, React.createElement("b", null, "2"), React.createElement("span", null, "Automate the bottleneck, not everything.")), React.createElement("li", null, React.createElement("b", null, "3"), React.createElement("span", null, "A person approves anything that reaches a customer."))))), TESTIMONIALS.length > 0 && React.createElement("div", {
+  }, SITE.rules.map((r, i) => React.createElement("li", {
+    key: i
+  }, React.createElement("b", null, i + 1), React.createElement("span", null, r)))))), TESTIMONIALS.length > 0 && React.createElement("div", {
     className: "dquotes"
   }, TESTIMONIALS.map(t => React.createElement("blockquote", {
     className: "up",
@@ -2044,4 +2053,55 @@ function TheScaffold() {
     ref: briefRef
   }), React.createElement(Faq, null), React.createElement(Footer, null));
 }
-ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(TheScaffold, null));
+const SC_SUPABASE_URL = 'https://rodxrkzwpsgeeatmbwku.supabase.co';
+const SC_SUPABASE_KEY = 'sb_publishable_fWE-gd3uSKDe0BpUK5WSxQ_f3Uzgd0x';
+const DESIGN_NEEDS = DESIGN_CHIPS.slice();
+const TOOL_NEEDS = AUTOMATION_CHIPS.slice();
+const scStr = v => typeof v === 'string' && v.trim() ? v.trim() : '';
+const scFill = (arr, next) => {
+  if (next.length) arr.splice(0, arr.length, ...next);
+};
+function applyScaffoldContent(o) {
+  if (!o || typeof o !== 'object') return;
+  ['headline', 'deck', 'whyHead', 'whyIntro'].forEach(k => {
+    if (scStr(o[k])) SITE[k] = scStr(o[k]);
+  });
+  if (typeof o.showPrices === 'boolean') SITE.showPrices = o.showPrices;
+  if (Array.isArray(o.rules)) SITE.rules = o.rules.map(scStr).filter(Boolean).slice(0, 6);
+  if (Array.isArray(o.design)) scFill(DESIGN_SERVICES, o.design.filter(d => d && scStr(d.title)).map(d => ({
+    title: scStr(d.title),
+    sub: scStr(d.sub),
+    need: DESIGN_NEEDS.includes(d.need) ? d.need : 'Something else',
+    from: scStr(d.from),
+    turn: scStr(d.turn) || 'Quoted'
+  })));
+  if (Array.isArray(o.tools)) scFill(TOOL_SERVICES, o.tools.filter(t => t && scStr(t.title)).map(t => ({
+    title: scStr(t.title),
+    need: TOOL_NEEDS.includes(t.need) ? t.need : 'Something else'
+  })));
+  if (Array.isArray(o.how) && o.how.length === 4 && o.how.every(h => h && scStr(h.title) && scStr(h.text))) {
+    scFill(HOW_STEPS, o.how.map(h => [scStr(h.title), scStr(h.text)]));
+  }
+  if (Array.isArray(o.faq)) scFill(FAQ, o.faq.filter(f => f && scStr(f.q) && scStr(f.a)).map(f => [scStr(f.q), scStr(f.a)]));
+  if (Array.isArray(o.testimonials)) {
+    TESTIMONIALS.splice(0, TESTIMONIALS.length, ...o.testimonials.filter(t => t && scStr(t.quote) && scStr(t.name)).map(t => ({
+      quote: scStr(t.quote),
+      name: scStr(t.name),
+      business: scStr(t.business)
+    })));
+  }
+}
+function loadScaffoldContent() {
+  const get = fetch(SC_SUPABASE_URL + '/rest/v1/site_content?select=data&id=eq.2', {
+    headers: {
+      apikey: SC_SUPABASE_KEY
+    }
+  }).then(r => r.ok ? r.json() : null).then(rows => rows && rows[0] ? rows[0].data : null);
+  const wait = new Promise(resolve => setTimeout(() => resolve(null), 1500));
+  return Promise.race([get, wait]).catch(() => null);
+}
+loadScaffoldContent().then(o => {
+  try {
+    applyScaffoldContent(o);
+  } catch (e) {}
+}).finally(() => ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(TheScaffold, null)));

@@ -20,7 +20,7 @@ body { min-height: 100vh; background: #100b06; }
 .greet { position: relative; margin-top: 14px; font-family: var(--display); font-weight: 500; font-size: clamp(44px,7.4vw,88px); line-height: .92; letter-spacing: -.035em; animation: rise 1.5s cubic-bezier(.2,.7,.3,1) 1.1s both; }
 .greet em { font-style: italic; color: var(--amber); text-shadow: 0 0 46px rgba(217,154,61,.45); }
 .pair { position: relative; display: flex; gap: clamp(30px,5vw,72px); margin-top: clamp(42px,6vh,72px); flex-wrap: wrap; animation: rise 1.4s cubic-bezier(.2,.7,.3,1) 2.15s both; }
-.door { position: relative; max-width: 290px; display: block; }
+.door { position: relative; flex: 1 1 0; min-width: 0; max-width: 290px; display: block; }
 .door .no { font-family: var(--ui); font-size: 9.5px; letter-spacing: .3em; color: var(--ink-dim); transition: color .35s; }
 .door h2 { font-family: var(--display); font-weight: 500; font-size: clamp(27px,3vw,36px); line-height: 1.06; letter-spacing: -.02em; margin: 14px 0 0; transition: color .35s; }
 .door p { font-family: var(--body); font-size: 14px; line-height: 1.6; color: var(--ink-mute); margin: 11px 0 0; transition: color .35s; }
@@ -52,6 +52,11 @@ body { min-height: 100vh; background: #100b06; }
 .sconce:hover .core, .sconce:focus-visible .core { width: 15px; animation: surge 2.6s ease-in-out infinite; box-shadow: 0 0 26px #fff8e2, 0 0 90px rgba(245,205,106,1), 0 0 220px rgba(217,154,61,.85); }
 .sconce:hover .wall, .sconce:focus-visible .wall { animation: flare 2.6s ease-in-out infinite; }
 .sconce:focus-visible { outline: none; }
+/* Wick is retired: the sconce stays as the room's light, not a link. It keeps
+   its idle flicker and glow, embers drift up gently, and it ignores the
+   pointer, so the hover surge never fires. */
+div.sconce { cursor: default; pointer-events: none; }
+div.sconce .embers { opacity: .55; }
 .embers { position: absolute; left: 50%; bottom: 8%; width: 120px; height: 76%; margin-left: -60px; pointer-events: none; opacity: 0; transition: opacity .5s ease; }
 .sconce:hover .embers, .sconce:focus-visible .embers { opacity: 1; }
 .embers i { position: absolute; bottom: 0; width: 3px; height: 3px; border-radius: 50%; background: #f5cd6a; box-shadow: 0 0 8px rgba(245,205,106,.9); opacity: 0; animation: ember 4.2s ease-out infinite; }
@@ -80,8 +85,9 @@ body.wick-near .stage, .stage.wick-near { filter: brightness(1.07) saturate(1.04
   .sconce .wall { width: 150%; height: 320px; }
   .sconce .tag { writing-mode: horizontal-tb; transform: none; }
   .pair { gap: 34px; margin-top: 44px; }
-  .door { max-width: none; }
+  .door { max-width: none; flex: 1 1 100%; }
 }
+@media (prefers-reduced-motion: reduce) { .sconce .core, .sconce .wall, .embers i { animation: none; } div.sconce .embers { opacity: 0; } }
 </style>
 </head>
 <body class="p-grain">

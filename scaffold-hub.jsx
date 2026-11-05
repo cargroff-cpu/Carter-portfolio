@@ -1,7 +1,7 @@
 // scaffold-hub.jsx — The Scaffold's entry point, recreated in React from
-// design-reference/Scaffold Hub.html. Establishes Wick's presence (the
-// sconce) and routes to the existing Website Backend (Admin.html) and the
-// Docket.
+// design-reference/Scaffold Hub.html. The sconce stays as the room's light
+// (Wick itself is retired, so it is decoration only) and the page routes to the Portfolio Backend (Admin.html), the Scaffold
+// Backend (/backroom/scaffold), the Business Hub and the Docket.
 const { fetchDocketTasks } = window.CC;
 
 function hail() {
@@ -76,18 +76,40 @@ function ScaffoldHub() {
         <div className="fog" />
         <div className="antler"><img src="assets/antler.png" alt="Carter Groff" /></div>
 
+        {/* The sconce: the room's light. Wick is retired, so it is decoration
+            only (no link, no label, no hover). */}
+        <div className="sconce" aria-hidden="true">
+          <span className="tube">
+            <span className="core" />
+            <span className="wall" />
+            <span className="embers">
+              <i style={{ left: '14%', '--dx': '-16px', animationDelay: '0s' }} />
+              <i style={{ left: '38%', '--dx': '12px', animationDelay: '.7s' }} />
+              <i style={{ left: '56%', '--dx': '-9px', animationDelay: '1.5s' }} />
+              <i style={{ left: '76%', '--dx': '18px', animationDelay: '2.3s' }} />
+              <i style={{ left: '48%', '--dx': '4px', animationDelay: '3.1s' }} />
+            </span>
+          </span>
+        </div>
+
         <div className="plaque">The Back Room</div>
         <h1 className="greet">{hail()}, <em>Carter</em>.</h1>
 
         <div className="pair">
           <a className="door" href="Admin.html">
             <span className="no">01</span>
-            <h2>Website<br />Backend</h2>
-            <p>Copy, work, resume, travel pins, everything the public side reads from.</p>
+            <h2>Portfolio<br />Backend</h2>
+            <p>Copy, work, resume, travel pins, everything cargroff.com reads from.</p>
+            <span className="arrow">→</span>
+          </a>
+          <a className="door" href="/backroom/scaffold">
+            <span className="no">02</span>
+            <h2>Scaffold<br />Backend</h2>
+            <p>Services, prices, How it works, questions and copy for scaffold.cargroff.com.</p>
             <span className="arrow">→</span>
           </a>
           <a className="door" href="/business">
-            <span className="no">02</span>
+            <span className="no">03</span>
             <h2>Business<br />Hub</h2>
             <p>Clients, leads, projects, invoices, notes, and the Design-briefs inbox.</p>
             <span className="arrow">→</span>
