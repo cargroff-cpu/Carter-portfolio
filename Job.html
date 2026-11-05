@@ -115,6 +115,7 @@ details.more > div { padding-top: 14px; display: flex; flex-direction: column; g
 }
 @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
 </style>
+<link rel="stylesheet" href="motion.css" />
 </head>
 <body>
 <div class="frame">
@@ -318,7 +319,7 @@ details.more > div { padding-top: 14px; display: flex; flex-direction: column; g
       if (i < STEPS.length - 1) stepsEl.appendChild(el('span', { class: 'bar' }));
     });
     app.textContent = '';
-    app.classList.remove('center');
+    app.classList.remove('center', 'enter'); void app.offsetWidth; app.classList.add('enter');
     if (new URLSearchParams(location.search).get('paid') === '1') app.appendChild(el('div', { class: 'flash', role: 'status', text: 'Thank you, your payment went through. It can take a minute to show here.' }));
     if (flash) app.appendChild(el('div', { class: 'flash', role: 'status', text: flash }));
     screen(d).forEach(function (n) { if (n) app.appendChild(n); });
