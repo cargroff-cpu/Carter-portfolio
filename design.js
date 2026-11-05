@@ -730,6 +730,12 @@ const HOURS = Array.from({
     y2: 300 - r2 * Math.cos(t)
   };
 });
+const RAYS = Array.from({
+  length: 24
+}, (_, i) => ({
+  a: i * 15 + 7.5,
+  len: i % 2 ? 150 : 230
+}));
 function Medallion() {
   return React.createElement("svg", {
     className: "dmedal",
@@ -787,6 +793,44 @@ function Medallion() {
     y: "186",
     width: "310",
     height: "237"
+  })), React.createElement("linearGradient", {
+    id: "dm-ray",
+    x1: "0",
+    y1: "1",
+    x2: "0",
+    y2: "0"
+  }, React.createElement("stop", {
+    offset: "0%",
+    className: "dm-ray-0"
+  }), React.createElement("stop", {
+    offset: "100%",
+    className: "dm-ray-1"
+  })), React.createElement("linearGradient", {
+    id: "dm-fadeg",
+    gradientUnits: "userSpaceOnUse",
+    x1: "0",
+    y1: "430",
+    x2: "0",
+    y2: "620"
+  }, React.createElement("stop", {
+    offset: "0%",
+    className: "dm-fade-0"
+  }), React.createElement("stop", {
+    offset: "100%",
+    className: "dm-fade-1"
+  })), React.createElement("mask", {
+    id: "dm-fade",
+    maskUnits: "userSpaceOnUse",
+    x: "-600",
+    y: "-600",
+    width: "1800",
+    height: "1800"
+  }, React.createElement("rect", {
+    x: "-600",
+    y: "-600",
+    width: "1800",
+    height: "1800",
+    fill: "url(#dm-fadeg)"
   }))), React.createElement("circle", {
     className: "dm-wash",
     cx: "300",
@@ -794,6 +838,19 @@ function Medallion() {
     r: "250",
     fill: "url(#dm-wash)"
   }), React.createElement("g", {
+    mask: "url(#dm-fade)"
+  }, React.createElement("g", {
+    className: "dm-rays"
+  }, RAYS.map((r, i) => React.createElement("rect", {
+    key: i,
+    className: "dm-ray",
+    x: "299",
+    y: 20 - r.len,
+    width: "2",
+    height: r.len,
+    fill: "url(#dm-ray)",
+    transform: 'rotate(' + r.a + ' 300 300)'
+  })))), React.createElement("g", {
     className: "dm-spin-in"
   }, React.createElement("g", {
     className: "dm-spin"
