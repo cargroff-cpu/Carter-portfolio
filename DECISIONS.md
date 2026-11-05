@@ -705,3 +705,9 @@ behind the same login (middleware.js) and logout-on-close.
 
 - `lib/mail.js` now renders a dark card (warm near-black, cream type, amber accents): an amber band on top, a crest header with "The Scaffold, by Carter Groff", a large heading with an amber rule, an amber button, and a darker footer with the sign-off. It declares `color-scheme: dark` and uses `bgcolor` attributes so mail apps keep it dark.
 - All text is cream or soft tan on the dark surface (7:1 or better), links are lit amber and underlined. Still tables and inline styles only; everything typed is escaped. The Backroom's preview matches.
+
+## 2026-11-06 — Email goes out through Carter's Gmail
+
+- `lib/gmail.js` is a small SMTP client (node:tls, no dependency) that sends through Gmail with an app password. With `GMAIL_USER` and `GMAIL_APP_PASSWORD` set, `lib/server.js` sends every email that way (client mail, brief replies, notes to Carter), so it shows in Gmail's Sent folder and replies reach the inbox. Without them it falls back to Resend as before. `FROM_VERIFIED` is the Gmail address when connected, which also turns client email on.
+- The Backroom's email dialog says how mail will go (Gmail, the Scaffold address, or not connected) and never leaves the page. A client with no job can be emailed too (`send-client`: a plain note in the same frame, not logged on a job).
+- Gmail allows roughly 500 messages a day from a normal account; this studio is far below that.

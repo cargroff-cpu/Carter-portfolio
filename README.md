@@ -86,6 +86,7 @@ Variables — set directly there, never committed):
 | `SUPABASE_SERVICE_ROLE_KEY` | every `api/` route that touches the database | Full-access key, server-side only. Rotate it after the lockdown migration |
 | `RESEND_API_KEY` | `api/contact.js`, `api/design-brief.js`, `api/brief-reply.js` | Email |
 | `RESEND_FROM` | same | **New.** e.g. `The Scaffold <studio@cargroff.com>`, on a domain verified in Resend. Until set, mail goes from Resend's test sender and client-facing email (brief confirmations, approved replies) is switched off, because the test sender can only reach the account owner |
+| `GMAIL_USER`, `GMAIL_APP_PASSWORD` | `lib/server.js` (all mail) | **Optional, replaces Resend.** The Gmail address and a Google app password (Google Account > Security > 2-Step Verification > App passwords). Every email then goes out from that Gmail, lands in its Sent folder, and replies reach its inbox. No domain needed |
 | `NOTIFY_EMAIL` | `lib/server.js` | Optional. Where new briefs and failure alerts go (default car.groff@gmail.com) |
 | `ANTHROPIC_API_KEY` | `lib/brief-triage.js` | AI triage on incoming briefs. Without it, briefs still work and the Hub just shows "No AI triage yet" |
 | `TRIAGE_MODEL`, `TRIAGE_DAILY_CAP` | `lib/brief-triage.js` | Optional. Model override, and the daily cap on automatic triage (default 40) |

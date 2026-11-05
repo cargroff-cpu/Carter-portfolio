@@ -17,7 +17,7 @@
 const {
   fetchClients, saveClient, fetchInvoices, saveInvoice,
   fetchJobs, saveJob, fetchProposals, saveProposal, fetchJobFiles, fetchJobEvents, fetchAllEvents, saveJobEvent,
-  jobAction, uploadJobFile,
+  jobAction, uploadJobFile, mailStatus, sendToClient,
   fetchDesignBriefs, fetchDesignBriefAttachments, briefAction,
 } = window.CC;
 
@@ -59,7 +59,7 @@ function fieldsFor(job, proposal, invoices) {
   const total = proposal ? Number(proposal.total) || sumItems(proposal.items) : 0;
   const billing = (proposal ? proposal.billing : job.billing) === 'end' ? 'paid in full when you approve the final' : 'half to start and half when you approve the final';
   const due = (invoices || []).filter((i) => i.job_id === job.id && i.status === 'sent');
-  const left = Math.max(0, job.revisions_included - job.revisions_used);
+  const left = Math.max(0, (job.revisions_included || 0) - (job.revisions_used || 0));
   return {
     first: firstName(job.name), name: job.name, title: job.title, business: job.business || '',
     total: usd(total), billing, left, leftS: left === 1 ? '' : 's',
@@ -683,18 +683,22 @@ function Composer({ job, proposal, invoices, kind, onClose, onSent }) {
   const [res, setRes] = React.useState(null);
   const [view, setView] = React.useState('edit');
   const [done, setDone] = React.useState(false);
+  const [via, setVia] = React.useState(null);
+  React.useEffect(() => { mailStatus().then(setVia).catch(() => setVia({ via: 'unknown' })); }, []);
   const pick = (nk) => { setK(nk); setM(make(nk)); setRes(null); };
-  const canSend = !!job.email && m.subject.trim() && m.body.trim() && !busy && !done;
+  const ready = !via || via.via !== 'test';
+  const canSend = !!job.email && ready && m.subject.trim() && m.body.trim() && !busy && !done;
   const send = (test) => {
     setBusy(test ? 'test' : 'send'); setRes(null);
-    jobAction(job.id, 'send', { kind: k, subject: m.subject, heading: m.heading, body: m.body, button: m.button, button_label: m.button_label, test })
+    (job.id ? jobAction(job.id, 'send', { kind: k, subject: m.subject, heading: m.heading, body: m.body, button: m.button, button_label: m.button_label, test })
+      : sendToClient({ to: job.email, subject: m.subject, heading: m.heading, body: m.body, test }))
       .then(() => { setRes({ ok: true, text: test ? 'A test went to your own inbox.' : 'Sent to ' + job.email + '.' }); if (!test) { setDone(true); setTimeout(onSent, 900); } })
       .catch((e) => setRes({ ok: false, text: e.message })).finally(() => setBusy(''));
   };
   const moves = { proposal: 'proposed', drafts: 'drafts', final: 'final' }[k];
   return (
     <Modal wide title={'Email ' + job.name} onClose={onClose}
-      sub="Sent from The Scaffold's email, with a button to their project page, and logged on the job. Replies come to you. Words in {braces} fill in from the job."
+      sub={(via && via.via === 'gmail' ? 'Sends from your Gmail (' + via.from + ') and shows in its Sent folder. ' : via && via.via === 'resend' ? 'Sends from the Scaffold address. ' : '') + (job.id ? 'A button to their project page is added and the email is logged on the job. ' : '') + 'Replies come to you. Words in {braces} fill in from the job.'}
       foot={<React.Fragment>
         <span className={'cmp-res' + (res && !res.ok ? ' bad' : '')} role="status">{res ? res.text : moves ? 'Sending moves the job to ' + STAGE_LABEL[moves] + '.' : ''}</span>
         <button className="btn ghost sm" onClick={() => send(true)} disabled={!!busy || done || !m.body.trim()}>{busy === 'test' ? 'Sending…' : 'Send a test to me'}</button>
@@ -710,14 +714,15 @@ function Composer({ job, proposal, invoices, kind, onClose, onSent }) {
           <Field label="Subject"><input className="input" value={m.subject} onChange={(e) => setM({ ...m, subject: e.target.value })} disabled={done} /></Field>
           <Field label="Heading"><input className="input" value={m.heading} onChange={(e) => setM({ ...m, heading: e.target.value })} disabled={done} /></Field>
           <Field label="Message"><textarea className="input" rows={9} style={{ resize: 'vertical', lineHeight: 1.5 }} value={m.body} onChange={(e) => setM({ ...m, body: e.target.value })} disabled={done} /></Field>
-          <label className="cmp-btnrow">
+          {job.id && <label className="cmp-btnrow">
             <input type="checkbox" checked={m.button} onChange={(e) => setM({ ...m, button: e.target.checked })} /> <span>Button to their project page</span>
             <input className="input" value={m.button_label} disabled={!m.button} onChange={(e) => setM({ ...m, button_label: e.target.value })} aria-label="Button label" />
-          </label>
+          </label>}
           {!job.email && <p className="sub" style={{ color: 'var(--warn)' }}>Add an email to this job to send. You can still send a test to yourself.</p>}
+          {via && via.via === 'test' && <p className="sub" style={{ color: 'var(--warn)' }}>Gmail is not connected yet, so client email is off. Add GMAIL_USER and GMAIL_APP_PASSWORD in Vercel. "Send a test to me" still works.</p>}
         </div>
         <div className={'cmp-prev' + (view === 'preview' ? ' show' : '')}>
-          <EmailPreview subject={m.subject} heading={m.heading} body={m.body} button={m.button} buttonLabel={m.button_label} />
+          <EmailPreview subject={m.subject} heading={m.heading} body={m.body} button={!!job.id && m.button} buttonLabel={m.button_label} />
         </div>
       </div>
     </Modal>
@@ -992,7 +997,8 @@ function ClientPage({ client, stats, data, open, reload, back, gone }) {
   const [saved, setSaved] = React.useState(false);
   const [confirm, setConfirm] = React.useState(false);
   const [compose, setCompose] = React.useState(false);
-  const latest = stats.jobs[0];
+  // With a job the email is logged there and carries the project button; without one it is a plain note.
+  const latest = stats.jobs[0] || { id: null, name: client.name, email: client.email, title: client.name, token: '' };
   const ids = new Set(stats.jobs.map((j) => j.id));
   const events = data.events.filter((e) => ids.has(e.job_id) && EVENT_TEXT[e.kind]).slice(0, 12);
   const titleOf = (id) => (stats.jobs.find((j) => j.id === id) || {}).title || 'Job';
@@ -1002,13 +1008,13 @@ function ClientPage({ client, stats, data, open, reload, back, gone }) {
   return (
     <div className="stack">
       <button className="btn quiet sm" style={{ alignSelf: 'flex-start' }} onClick={back}>All clients</button>
-      {compose && latest && <Composer job={latest} proposal={data.proposals.find((x) => x.job_id === latest.id)} invoices={data.invoices} kind="reminder" onClose={() => setCompose(false)} onSent={() => { setCompose(false); reload(); }} />}
+      {compose && <Composer job={latest} proposal={latest.id ? data.proposals.find((x) => x.job_id === latest.id) : null} invoices={data.invoices} kind={latest.id ? 'reminder' : 'note'} onClose={() => setCompose(false)} onSent={() => { setCompose(false); reload(); }} />}
       <div className="dash-h">
         <div>
           <h1 className="h1">{client.name}</h1>
           <p className="sub">{client.email || 'No email yet'}{client.since ? ' · client since ' + new Date(client.since + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : ''}</p>
         </div>
-        {stats.jobs.length ? <button className="btn ghost" onClick={() => setCompose(true)}>Email {client.name.split(' ')[0]}</button> : client.email ? <a className="btn ghost" href={'mailto:' + client.email}>Email {client.name.split(' ')[0]}</a> : null}
+        {client.email && <button className="btn ghost" onClick={() => setCompose(true)}>Email {client.name.split(' ')[0]}</button>}
       </div>
       <div className="ctabs" role="tablist">
         {TABS.map(([id, label]) => <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{label}</button>)}

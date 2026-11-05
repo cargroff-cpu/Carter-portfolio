@@ -19,7 +19,7 @@
 // 20261106_workflow.sql. Kept to one function so the site stays well under
 // Vercel's function limit.
 
-import { sb, SUPABASE_URL, sbHeaders, sendEmail, parseBody, NOTIFY_EMAIL, FROM_VERIFIED, FROM_INTERNAL } from '../lib/server.js';
+import { sb, SUPABASE_URL, sbHeaders, sendEmail, parseBody, NOTIFY_EMAIL, FROM_VERIFIED, FROM_INTERNAL, MAIL_VIA, GMAIL_USER } from '../lib/server.js';
 import { verifySessionToken, SESSION_COOKIE } from '../lib/session.js';
 import { renderEmail, jobUrl } from '../lib/mail.js';
 import { paymentLinkFor } from '../lib/stripe.js';
@@ -178,8 +178,23 @@ async function clientAction(req, res, body) {
 const STAGE_FOR = { proposal: 'proposed', drafts: 'drafts', final: 'final' };
 const ORDER = ['new', 'proposed', 'drafts', 'final', 'paid'];
 
+const MAIL_OFF = 'Client email is off until Gmail is connected (GMAIL_USER and GMAIL_APP_PASSWORD), or RESEND_FROM is set. Use "Send a test to me" meanwhile.';
+
 async function adminAction(req, res, body) {
   if (!(await verifySessionToken(cookie(req, SESSION_COOKIE)))) return res.status(401).json({ error: 'Not authenticated' });
+  // Which way mail goes, so the Backroom's email dialog can say so.
+  if (body.action === 'mail-status') return res.status(200).json({ ok: true, via: MAIL_VIA, from: MAIL_VIA === 'gmail' ? GMAIL_USER : null });
+  // A one-off email to a client who has no job yet. Same frame, nothing to log.
+  if (body.action === 'send-client') {
+    const to = str(body.to, 200), subject = str(body.subject, 200), heading = str(body.heading, 200), text = str(body.body, 8000);
+    if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(to)) return res.status(400).json({ error: 'That email address does not look right.' });
+    if (!subject || !text) return res.status(400).json({ error: 'A subject and a message are needed.' });
+    const test = !!body.test;
+    if (!test && !FROM_VERIFIED) return res.status(409).json({ error: MAIL_OFF });
+    const { html, text: plain } = renderEmail({ heading, body: text, preheader: heading });
+    await sendEmail({ from: test ? FROM_INTERNAL : FROM_VERIFIED, to: test ? NOTIFY_EMAIL : to, replyTo: NOTIFY_EMAIL, subject: test ? `[Test] ${subject}` : subject, html, text: plain });
+    return res.status(200).json({ ok: true, test });
+  }
   if (!isId(body.job_id)) return res.status(400).json({ error: 'Missing job.' });
   const job = await loadJob(`id=eq.${body.job_id}`);
   if (!job) return res.status(404).json({ error: 'Job not found.' });
@@ -191,7 +206,7 @@ async function adminAction(req, res, body) {
     if (!subject || !text) return res.status(400).json({ error: 'A subject and a message are needed.' });
     const test = !!body.test;
     if (!test && !job.email) return res.status(400).json({ error: 'This job has no client email.' });
-    if (!test && !FROM_VERIFIED) return res.status(409).json({ error: 'Client email is off until RESEND_FROM is set to an address on your verified domain. Use "Send a test to me" meanwhile.' });
+    if (!test && !FROM_VERIFIED) return res.status(409).json({ error: MAIL_OFF });
     if (kind === 'proposal') {
       const [p] = await sb(`proposals?job_id=eq.${job.id}&select=id,total`);
       if (!p || !(Number(p.total) > 0)) return res.status(409).json({ error: 'Write the proposal (with a price) before sending it.' });

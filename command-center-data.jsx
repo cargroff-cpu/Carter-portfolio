@@ -57,6 +57,9 @@ const fetchJobEvents = (jobId) => ccFetch(`job_events?select=*&job_id=eq.${jobId
 const fetchAllEvents = (limit = 200) => ccFetch(`job_events?select=*&order=created_at.desc&limit=${limit}`);
 const saveJobEvent = (row) => ccWrite('job_events', row);
 const jobAction = (jobId, action, extra = {}) => post('/api/job', { job_id: jobId, action, ...extra });
+// How mail goes out ('gmail', 'resend' or 'test'), and a one-off email to a client with no job.
+const mailStatus = () => post('/api/job', { action: 'mail-status' });
+const sendToClient = (row) => post('/api/job', { action: 'send-client', ...row });
 
 // Upload a draft or final straight to private storage, then record it.
 async function uploadJobFile(jobId, file, { kind, round, label }) {
@@ -78,6 +81,6 @@ window.CC = {
   fetchDocketTasks, saveDocketTask,
   fetchClients, saveClient, deleteClient, fetchInvoices, saveInvoice,
   fetchJobs, saveJob, fetchProposals, saveProposal, fetchJobFiles, fetchJobEvents, fetchAllEvents, saveJobEvent,
-  jobAction, uploadJobFile,
+  jobAction, uploadJobFile, mailStatus, sendToClient,
   fetchDesignBriefs, saveDesignBrief, fetchDesignBriefAttachments, briefAction,
 };
