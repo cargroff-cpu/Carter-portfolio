@@ -55,17 +55,6 @@ const STEPS = [
   ['III', 'Details that save time'],
 ];
 
-// The ring instrument behind the hero: pure CSS (see cargroff-design.css's
-// .rings rules), no JS. The dial in How it works reuses its look.
-function Rings() {
-  return (
-    <div className="rings" aria-hidden="true">
-      <span className="r1" /><span className="r2" /><span className="r3" />
-      <span className="t1" /><span className="t2" /><span className="t3" />
-    </div>
-  );
-}
-
 function Nav() {
   return (
     <nav className="dnav">
@@ -84,17 +73,65 @@ function Nav() {
   );
 }
 
-function Hero({ onAddNeed }) {
+// The seal behind the hero: engraved hairline rings centred on the lamp's
+// globe, a slow ring of lettering and a counter-turning ring of ticks.
+const HERO_SEAL_WORDS = ['Design that looks right', 'Tools that work right', 'Harrisonburg, Virginia'];
+function heroArc(a, r) {
+  const t1 = ((a - 52) * Math.PI) / 180, t2 = ((a + 52) * Math.PI) / 180;
+  const p = (t) => (300 + r * Math.sin(t)).toFixed(2) + ' ' + (300 - r * Math.cos(t)).toFixed(2);
+  return 'M' + p(t1) + ' A' + r + ' ' + r + ' 0 0 1 ' + p(t2);
+}
+function HeroSeal() {
+  const ticks = [];
+  for (let i = 0; i < 120; i++) {
+    const major = i % 10 === 0;
+    const t = (i * 3 * Math.PI) / 180;
+    const r1 = major ? 258 : 266, r2 = 276;
+    ticks.push(<line key={i} className={major ? 'major' : ''}
+      x1={(300 + r1 * Math.sin(t)).toFixed(2)} y1={(300 - r1 * Math.cos(t)).toFixed(2)}
+      x2={(300 + r2 * Math.sin(t)).toFixed(2)} y2={(300 - r2 * Math.cos(t)).toFixed(2)} />);
+  }
   return (
-    <header className="dhero" id="top">
-      <Rings />
-      <div className="dwrap">
-        <div className="dcrest"><img src="assets/antler.png" alt="The Scaffold, by Carter Groff" /></div>
-        <h1 className="ddisplay">Design that looks right. Tools that work right.</h1>
-        <p className="ddeck">Graphics, print and documents, and the small tools that take busywork off your plate.</p>
-        <div className="dacts">
-          <a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('design'); }}>Start a brief</a>
-          <a className="p-btn ghost" href="#doors">See the work</a>
+    <svg className="dheroseal" viewBox="0 0 600 600" aria-hidden="true">
+      <defs>{HERO_SEAL_WORDS.map((w, i) => <path key={w} id={'dhs-' + i} d={heroArc(i * 120, 232)} />)}</defs>
+      <circle className="hs-rule" cx="300" cy="300" r="292" />
+      <circle className="hs-rule" cx="300" cy="300" r="286" />
+      <g className="hs-ticks">{ticks}</g>
+      <circle className="hs-rule" cx="300" cy="300" r="250" />
+      <g className="hs-words">
+        {HERO_SEAL_WORDS.map((w, i) => (
+          <text key={w}><textPath href={'#dhs-' + i} startOffset="50%" textAnchor="middle">{w}</textPath></text>
+        ))}
+        {[60, 180, 300].map((a) => {
+          const t = (a * Math.PI) / 180, x = 300 + 240 * Math.sin(t), y = 300 - 240 * Math.cos(t);
+          return <rect key={a} className="hs-lozenge" x={x - 4} y={y - 4} width="8" height="8" transform={'rotate(' + (a + 45) + ' ' + x + ' ' + y + ')'} />;
+        })}
+      </g>
+      <circle className="hs-rule dashed" cx="300" cy="300" r="214" />
+      <circle className="hs-rule" cx="300" cy="300" r="196" />
+    </svg>
+  );
+}
+
+function Hero({ onAddNeed }) {
+  const [out, setOut] = React.useState(false);
+  return (
+    <header className={'dhero dpanel' + (out ? ' out' : '')} id="top">
+      <div className="dhero-pool" aria-hidden="true" />
+      <div className="dhero-lamp" aria-hidden="true">
+        <HeroSeal />
+        <GasLamp height={680} out={out} onGlobeClick={() => setOut((o) => !o)} />
+      </div>
+      <div className="dhero-dark" aria-hidden="true" />
+      <div className="dwrap dhero-in">
+        <div className="dhero-copy">
+          <div className="dcrest"><img src="assets/antler.png" alt="The Scaffold, by Carter Groff" /></div>
+          <h1 className="ddisplay">Design that looks right. Tools that work right.</h1>
+          <p className="ddeck">Graphics, print and documents, and the small tools that take busywork off your plate.</p>
+          <div className="dacts">
+            <a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('design'); }}>Start a brief</a>
+            <a className="p-btn ghost" href="#doors">See the work</a>
+          </div>
         </div>
       </div>
     </header>
@@ -198,7 +235,7 @@ const SEAL_TRACK = 2 * Math.PI * 128;
 function Dial() {
   const [at, setAt] = React.useState(0);
   return (
-    <section id="how" className="dsection dwood">
+    <section id="how" className="dsection dwood dpanel">
       <div className="dwrap ddialwrap">
         <div className="ddial up" aria-hidden="true">
           <svg viewBox="0 0 400 400" role="presentation">

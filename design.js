@@ -1,4 +1,598 @@
 // design.js — GENERATED from design.jsx by scripts/build-design.mjs. Do not edit; edit design.jsx and run `npm run build:design`.
+function GasLamp({
+  height = 640,
+  style = {},
+  out = false,
+  onGlobeClick
+}) {
+  const halo = {
+    opacity: out ? 0 : 1,
+    transition: `opacity ${out ? 0.3 : 0.5}s ease`
+  };
+  const darkGlobe = {
+    opacity: out ? 1 : 0,
+    transition: `opacity ${out ? 0.3 : 0.5}s ease`
+  };
+  return React.createElement("svg", {
+    viewBox: "0 0 200 900",
+    width: height * 200 / 900,
+    height: height,
+    style: {
+      display: 'block',
+      overflow: 'visible',
+      ...style
+    }
+  }, React.createElement("defs", null, React.createElement("linearGradient", {
+    id: "lamp-iron",
+    x1: "0",
+    y1: "0",
+    x2: "1",
+    y2: "0"
+  }, React.createElement("stop", {
+    offset: "0%",
+    stopColor: "#070403"
+  }), React.createElement("stop", {
+    offset: "50%",
+    stopColor: "#100a06"
+  }), React.createElement("stop", {
+    offset: "100%",
+    stopColor: "#241608"
+  })), React.createElement("linearGradient", {
+    id: "lamp-rust",
+    x1: "0",
+    y1: "0",
+    x2: "0",
+    y2: "1"
+  }, React.createElement("stop", {
+    offset: "0%",
+    stopColor: "#5a2a10"
+  }), React.createElement("stop", {
+    offset: "100%",
+    stopColor: "#2a1408"
+  })), React.createElement("radialGradient", {
+    id: "lamp-glass",
+    cx: "50%",
+    cy: "45%",
+    r: "70%"
+  }, React.createElement("stop", {
+    offset: "0%",
+    stopColor: "#fff5d0"
+  }), React.createElement("stop", {
+    offset: "40%",
+    stopColor: "#f4c478"
+  }), React.createElement("stop", {
+    offset: "80%",
+    stopColor: "#c6862c"
+  }), React.createElement("stop", {
+    offset: "100%",
+    stopColor: "#6e3a10"
+  })), React.createElement("linearGradient", {
+    id: "lamp-glassHi",
+    x1: "0",
+    y1: "0",
+    x2: "1",
+    y2: "0"
+  }, React.createElement("stop", {
+    offset: "78%",
+    stopColor: "#fff5d8",
+    stopOpacity: "0"
+  }), React.createElement("stop", {
+    offset: "94%",
+    stopColor: "#fff5d8",
+    stopOpacity: "0.6"
+  }), React.createElement("stop", {
+    offset: "100%",
+    stopColor: "#fff5d8",
+    stopOpacity: "0"
+  })), React.createElement("radialGradient", {
+    id: "lamp-halo",
+    cx: "50%",
+    cy: "50%",
+    r: "50%"
+  }, React.createElement("stop", {
+    offset: "0%",
+    stopColor: "#f5cd6a",
+    stopOpacity: "0.62"
+  }), React.createElement("stop", {
+    offset: "22%",
+    stopColor: "#e7b357",
+    stopOpacity: "0.34"
+  }), React.createElement("stop", {
+    offset: "48%",
+    stopColor: "#d99a3d",
+    stopOpacity: "0.15"
+  }), React.createElement("stop", {
+    offset: "74%",
+    stopColor: "#c98a34",
+    stopOpacity: "0.05"
+  }), React.createElement("stop", {
+    offset: "100%",
+    stopColor: "#c98a34",
+    stopOpacity: "0"
+  }))), React.createElement("g", {
+    style: halo
+  }, React.createElement("g", null, React.createElement("animate", {
+    attributeName: "opacity",
+    values: "0.95;0.95;0.6;0.95;0.95;0.7;0.95",
+    keyTimes: "0;0.45;0.52;0.6;0.82;0.88;1",
+    dur: "9s",
+    repeatCount: "indefinite"
+  }), React.createElement("ellipse", {
+    cx: "104",
+    cy: "96",
+    rx: "300",
+    ry: "250",
+    fill: "url(#lamp-halo)"
+  }), React.createElement("ellipse", {
+    cx: "70",
+    cy: "150",
+    rx: "190",
+    ry: "230",
+    fill: "url(#lamp-halo)",
+    opacity: "0.7"
+  }), React.createElement("ellipse", {
+    cx: "140",
+    cy: "70",
+    rx: "170",
+    ry: "150",
+    fill: "url(#lamp-halo)",
+    opacity: "0.6"
+  }))), React.createElement("path", {
+    d: "M 100 6 L 100.8 24 L 100 27 L 99.2 24 Z",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("ellipse", {
+    cx: "100",
+    cy: "27",
+    rx: "1.6",
+    ry: "1.0",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("rect", {
+    x: "96",
+    y: "28",
+    width: "8",
+    height: "3",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("rect", {
+    x: "93",
+    y: "31",
+    width: "14",
+    height: "1.5",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("path", {
+    d: "M 93 32.5 L 107 32.5 L 126 56 L 74 56 Z",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("path", {
+    d: "M 93 32.5 L 100 32.5 L 100 33 L 74 56 Z",
+    fill: "#000",
+    opacity: "0.4"
+  }), React.createElement("path", {
+    d: "M 100 32.5 L 107 32.5 L 126 56 L 100 33 Z",
+    fill: "#3a2614",
+    opacity: "0.55"
+  }), React.createElement("line", {
+    x1: "100",
+    y1: "32.5",
+    x2: "100",
+    y2: "56",
+    stroke: "#000",
+    strokeWidth: "0.5",
+    opacity: "0.5"
+  }), React.createElement("rect", {
+    x: "74",
+    y: "56",
+    width: "52",
+    height: "1.5",
+    fill: "#0a0604"
+  }), React.createElement("rect", {
+    x: "74",
+    y: "58",
+    width: "52",
+    height: "4",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("rect", {
+    x: "74",
+    y: "62",
+    width: "52",
+    height: "1",
+    fill: "url(#lamp-rust)",
+    opacity: "0.85"
+  }), React.createElement("path", {
+    d: "M 74 63 L 126 63 L 132 72 L 68 72 Z",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("rect", {
+    x: "68",
+    y: "72",
+    width: "64",
+    height: "3",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("rect", {
+    x: "68",
+    y: "75",
+    width: "64",
+    height: "1.2",
+    fill: "url(#lamp-rust)",
+    opacity: "0.85"
+  }), React.createElement("g", null, React.createElement("path", {
+    d: "M 70 76.5 L 130 76.5 L 122 128 L 78 128 Z",
+    fill: "url(#lamp-glass)"
+  }), React.createElement("path", {
+    d: "M 70 76.5 L 130 76.5 L 122 128 L 78 128 Z",
+    fill: "url(#lamp-glassHi)"
+  }), React.createElement("line", {
+    x1: "71",
+    y1: "76.5",
+    x2: "79",
+    y2: "128",
+    stroke: "#0a0604",
+    strokeWidth: "1.4",
+    strokeLinecap: "round"
+  }), React.createElement("line", {
+    x1: "129",
+    y1: "76.5",
+    x2: "121",
+    y2: "128",
+    stroke: "#0a0604",
+    strokeWidth: "1.4",
+    strokeLinecap: "round"
+  }), React.createElement("line", {
+    x1: "87",
+    y1: "76.5",
+    x2: "91",
+    y2: "128",
+    stroke: "#1a1208",
+    strokeWidth: "0.8"
+  }), React.createElement("line", {
+    x1: "113",
+    y1: "76.5",
+    x2: "109",
+    y2: "128",
+    stroke: "#1a1208",
+    strokeWidth: "0.8"
+  }), React.createElement("line", {
+    x1: "100",
+    y1: "79",
+    x2: "100",
+    y2: "126",
+    stroke: "#fff5db",
+    strokeOpacity: "0.42",
+    strokeWidth: "0.6"
+  }), React.createElement("path", {
+    d: "M 118 84 Q 121 104, 116 124",
+    stroke: "#fff5db",
+    strokeWidth: "1.3",
+    strokeOpacity: "0.6",
+    fill: "none"
+  })), React.createElement("path", {
+    d: "M 70 76.5 L 130 76.5 L 122 128 L 78 128 Z",
+    fill: "#1a1008",
+    style: darkGlobe
+  }), React.createElement("rect", {
+    x: "76",
+    y: "128",
+    width: "48",
+    height: "3",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("rect", {
+    x: "76",
+    y: "131",
+    width: "48",
+    height: "1.2",
+    fill: "url(#lamp-rust)",
+    opacity: "0.85"
+  }), React.createElement("path", {
+    d: "M 80 132.2 L 120 132.2 L 113 139 L 87 139 Z",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("rect", {
+    x: "88",
+    y: "139",
+    width: "24",
+    height: "2",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("path", {
+    d: "M 88 141 L 112 141 L 107 146 L 93 146 Z",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("ellipse", {
+    cx: "100",
+    cy: "148.5",
+    rx: "3.5",
+    ry: "3",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("path", {
+    d: "M 100 151 L 100.6 154 L 100 155 L 99.4 154 Z",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("path", {
+    d: "M 86 151 L 114 151 L 110 164 L 90 164 Z",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("path", {
+    d: "M 90 164 L 110 164 L 106 176 L 94 176 Z",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("rect", {
+    x: "92",
+    y: "176",
+    width: "16",
+    height: "3",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("path", {
+    d: "M 94 179 L 106 179 Q 108 188, 104 198 L 96 198 Q 92 188, 94 179 Z",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("rect", {
+    x: "92",
+    y: "198",
+    width: "16",
+    height: "3",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("rect", {
+    x: "92",
+    y: "201",
+    width: "16",
+    height: "1",
+    fill: "url(#lamp-rust)",
+    opacity: "0.8"
+  }), React.createElement("rect", {
+    x: "97",
+    y: "202",
+    width: "6",
+    height: "200",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("line", {
+    x1: "103",
+    y1: "205",
+    x2: "103",
+    y2: "400",
+    stroke: "#3a2614",
+    strokeWidth: "0.6",
+    opacity: "0.7"
+  }), React.createElement("line", {
+    x1: "98",
+    y1: "205",
+    x2: "98",
+    y2: "400",
+    stroke: "#000",
+    strokeWidth: "0.4",
+    opacity: "0.6"
+  }), React.createElement("rect", {
+    x: "92",
+    y: "402",
+    width: "16",
+    height: "3",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("rect", {
+    x: "94",
+    y: "405",
+    width: "12",
+    height: "4",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("rect", {
+    x: "92",
+    y: "409",
+    width: "16",
+    height: "3",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("rect", {
+    x: "92",
+    y: "412",
+    width: "16",
+    height: "1",
+    fill: "url(#lamp-rust)",
+    opacity: "0.8"
+  }), React.createElement("rect", {
+    x: "97",
+    y: "413",
+    width: "6",
+    height: "200",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("line", {
+    x1: "103",
+    y1: "416",
+    x2: "103",
+    y2: "611",
+    stroke: "#3a2614",
+    strokeWidth: "0.6",
+    opacity: "0.7"
+  }), React.createElement("line", {
+    x1: "98",
+    y1: "416",
+    x2: "98",
+    y2: "611",
+    stroke: "#000",
+    strokeWidth: "0.4",
+    opacity: "0.6"
+  }), React.createElement("rect", {
+    x: "92",
+    y: "613",
+    width: "16",
+    height: "3",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("path", {
+    d: "M 94 616 L 106 616 Q 108 624, 104 632 L 96 632 Q 92 624, 94 616 Z",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("rect", {
+    x: "92",
+    y: "632",
+    width: "16",
+    height: "3",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("rect", {
+    x: "92",
+    y: "635",
+    width: "16",
+    height: "1",
+    fill: "url(#lamp-rust)",
+    opacity: "0.8"
+  }), React.createElement("rect", {
+    x: "97",
+    y: "636",
+    width: "6",
+    height: "48",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("rect", {
+    x: "92",
+    y: "684",
+    width: "16",
+    height: "4",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("rect", {
+    x: "89",
+    y: "688",
+    width: "22",
+    height: "3",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("rect", {
+    x: "89",
+    y: "691",
+    width: "22",
+    height: "1.5",
+    fill: "url(#lamp-rust)",
+    opacity: "0.8"
+  }), React.createElement("path", {
+    d: "M 90 693 C 85 708, 76 715, 73 734 C 70 754, 79 772, 88 786 L 112 786 C 121 772, 130 754, 127 734 C 124 715, 115 708, 110 693 Z",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("path", {
+    d: "M 90 693 C 85 708, 76 715, 73 734 C 70 754, 79 772, 88 786 L 100 786 L 100 693 Z",
+    fill: "#000",
+    opacity: "0.18"
+  }), React.createElement("g", {
+    fill: "none",
+    opacity: "0.6"
+  }, React.createElement("path", {
+    d: "M 84 700 C 79 720, 80 760, 86 784",
+    stroke: "#000",
+    strokeWidth: "0.5"
+  }), React.createElement("path", {
+    d: "M 100 698 L 100 784",
+    stroke: "#2a1810",
+    strokeWidth: "0.5"
+  }), React.createElement("path", {
+    d: "M 116 700 C 121 720, 120 760, 114 784",
+    stroke: "#3a2514",
+    strokeWidth: "0.5"
+  })), React.createElement("rect", {
+    x: "70",
+    y: "786",
+    width: "60",
+    height: "5",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("rect", {
+    x: "68",
+    y: "791",
+    width: "64",
+    height: "3",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("rect", {
+    x: "68",
+    y: "794",
+    width: "64",
+    height: "1.5",
+    fill: "url(#lamp-rust)",
+    opacity: "0.85"
+  }), React.createElement("rect", {
+    x: "66",
+    y: "796",
+    width: "68",
+    height: "26",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("rect", {
+    x: "64",
+    y: "800",
+    width: "72",
+    height: "2",
+    fill: "#000",
+    opacity: "0.22"
+  }), React.createElement("rect", {
+    x: "77",
+    y: "802",
+    width: "46",
+    height: "16",
+    fill: "#3a2514",
+    opacity: "0.14",
+    stroke: "#000",
+    strokeOpacity: "0.4",
+    strokeWidth: "0.6"
+  }), React.createElement("rect", {
+    x: "58",
+    y: "822",
+    width: "84",
+    height: "32",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("rect", {
+    x: "56",
+    y: "826",
+    width: "88",
+    height: "2",
+    fill: "#000",
+    opacity: "0.22"
+  }), React.createElement("rect", {
+    x: "71",
+    y: "828",
+    width: "58",
+    height: "20",
+    fill: "#3a2514",
+    opacity: "0.14",
+    stroke: "#000",
+    strokeOpacity: "0.4",
+    strokeWidth: "0.6"
+  }), React.createElement("path", {
+    d: "M 50 854 L 150 854 L 154 878 L 46 878 Z",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("rect", {
+    x: "42",
+    y: "878",
+    width: "116",
+    height: "21",
+    fill: "url(#lamp-iron)"
+  }), React.createElement("line", {
+    x1: "42",
+    y1: "880",
+    x2: "158",
+    y2: "880",
+    stroke: "#000",
+    strokeWidth: "0.6",
+    opacity: "0.6"
+  }), React.createElement("rect", {
+    x: "42",
+    y: "895",
+    width: "116",
+    height: "4",
+    fill: "url(#lamp-rust)",
+    opacity: "0.7"
+  }), React.createElement("ellipse", {
+    cx: "100",
+    cy: "898",
+    rx: "86",
+    ry: "6",
+    fill: "#000",
+    opacity: "0.55"
+  }), out && onGlobeClick && React.createElement("ellipse", {
+    cx: "100",
+    cy: "102",
+    rx: "60",
+    ry: "78",
+    fill: "rgba(217,154,61,0.16)",
+    style: {
+      filter: 'blur(9px)',
+      pointerEvents: 'none'
+    }
+  }, React.createElement("animate", {
+    attributeName: "opacity",
+    values: "0.5;1;0.5",
+    dur: "3.4s",
+    repeatCount: "indefinite"
+  })), onGlobeClick && React.createElement("rect", {
+    x: "26",
+    y: "18",
+    width: "148",
+    height: "200",
+    rx: "24",
+    fill: "transparent",
+    onClick: onGlobeClick,
+    style: {
+      cursor: 'pointer',
+      pointerEvents: 'auto',
+      outline: 'none',
+      WebkitTapHighlightColor: 'transparent'
+    }
+  }));
+}
 const SHOW_PRICES = false;
 const DESIGN_SERVICES = [{
   title: 'Social graphics',
@@ -69,24 +663,6 @@ const WORK = [];
 const TESTIMONIALS = [];
 const FAQ = [['Do you use AI?', 'Yes. AI does the drafting and the first pass of the build. I make the decisions, check everything and finish it.'], ['What does it cost?', 'Design is priced per piece. Tools are quoted after a short brief. Either way, you see the price before anything starts.'], ['Will I need new software?', 'Not usually. Where I can, I build on what you already use.'], ['How fast is it?', 'Most design pieces: three directions within two business days of a complete brief. Tools: a plan within a few days, then a first working version.'], ['What if something breaks?', 'I fix it. Ongoing care is available as a monthly plan.'], ['Who owns the work?', 'You do, once it’s paid.'], ['Do we need a call?', 'No. The brief covers it. If a call would help, I’ll say so.']];
 const STEPS = [['I', 'Who’s asking'], ['II', 'What you need'], ['III', 'Details that save time']];
-function Rings() {
-  return React.createElement("div", {
-    className: "rings",
-    "aria-hidden": "true"
-  }, React.createElement("span", {
-    className: "r1"
-  }), React.createElement("span", {
-    className: "r2"
-  }), React.createElement("span", {
-    className: "r3"
-  }), React.createElement("span", {
-    className: "t1"
-  }), React.createElement("span", {
-    className: "t2"
-  }), React.createElement("span", {
-    className: "t3"
-  }));
-}
 function Nav() {
   return React.createElement("nav", {
     className: "dnav"
@@ -115,14 +691,111 @@ function Nav() {
     href: "#brief"
   }, "Start a brief")));
 }
+const HERO_SEAL_WORDS = ['Design that looks right', 'Tools that work right', 'Harrisonburg, Virginia'];
+function heroArc(a, r) {
+  const t1 = (a - 52) * Math.PI / 180,
+    t2 = (a + 52) * Math.PI / 180;
+  const p = t => (300 + r * Math.sin(t)).toFixed(2) + ' ' + (300 - r * Math.cos(t)).toFixed(2);
+  return 'M' + p(t1) + ' A' + r + ' ' + r + ' 0 0 1 ' + p(t2);
+}
+function HeroSeal() {
+  const ticks = [];
+  for (let i = 0; i < 120; i++) {
+    const major = i % 10 === 0;
+    const t = i * 3 * Math.PI / 180;
+    const r1 = major ? 258 : 266,
+      r2 = 276;
+    ticks.push(React.createElement("line", {
+      key: i,
+      className: major ? 'major' : '',
+      x1: (300 + r1 * Math.sin(t)).toFixed(2),
+      y1: (300 - r1 * Math.cos(t)).toFixed(2),
+      x2: (300 + r2 * Math.sin(t)).toFixed(2),
+      y2: (300 - r2 * Math.cos(t)).toFixed(2)
+    }));
+  }
+  return React.createElement("svg", {
+    className: "dheroseal",
+    viewBox: "0 0 600 600",
+    "aria-hidden": "true"
+  }, React.createElement("defs", null, HERO_SEAL_WORDS.map((w, i) => React.createElement("path", {
+    key: w,
+    id: 'dhs-' + i,
+    d: heroArc(i * 120, 232)
+  }))), React.createElement("circle", {
+    className: "hs-rule",
+    cx: "300",
+    cy: "300",
+    r: "292"
+  }), React.createElement("circle", {
+    className: "hs-rule",
+    cx: "300",
+    cy: "300",
+    r: "286"
+  }), React.createElement("g", {
+    className: "hs-ticks"
+  }, ticks), React.createElement("circle", {
+    className: "hs-rule",
+    cx: "300",
+    cy: "300",
+    r: "250"
+  }), React.createElement("g", {
+    className: "hs-words"
+  }, HERO_SEAL_WORDS.map((w, i) => React.createElement("text", {
+    key: w
+  }, React.createElement("textPath", {
+    href: '#dhs-' + i,
+    startOffset: "50%",
+    textAnchor: "middle"
+  }, w))), [60, 180, 300].map(a => {
+    const t = a * Math.PI / 180,
+      x = 300 + 240 * Math.sin(t),
+      y = 300 - 240 * Math.cos(t);
+    return React.createElement("rect", {
+      key: a,
+      className: "hs-lozenge",
+      x: x - 4,
+      y: y - 4,
+      width: "8",
+      height: "8",
+      transform: 'rotate(' + (a + 45) + ' ' + x + ' ' + y + ')'
+    });
+  })), React.createElement("circle", {
+    className: "hs-rule dashed",
+    cx: "300",
+    cy: "300",
+    r: "214"
+  }), React.createElement("circle", {
+    className: "hs-rule",
+    cx: "300",
+    cy: "300",
+    r: "196"
+  }));
+}
 function Hero({
   onAddNeed
 }) {
+  const [out, setOut] = React.useState(false);
   return React.createElement("header", {
-    className: "dhero",
+    className: 'dhero dpanel' + (out ? ' out' : ''),
     id: "top"
-  }, React.createElement(Rings, null), React.createElement("div", {
-    className: "dwrap"
+  }, React.createElement("div", {
+    className: "dhero-pool",
+    "aria-hidden": "true"
+  }), React.createElement("div", {
+    className: "dhero-lamp",
+    "aria-hidden": "true"
+  }, React.createElement(HeroSeal, null), React.createElement(GasLamp, {
+    height: 680,
+    out: out,
+    onGlobeClick: () => setOut(o => !o)
+  })), React.createElement("div", {
+    className: "dhero-dark",
+    "aria-hidden": "true"
+  }), React.createElement("div", {
+    className: "dwrap dhero-in"
+  }, React.createElement("div", {
+    className: "dhero-copy"
   }, React.createElement("div", {
     className: "dcrest"
   }, React.createElement("img", {
@@ -144,7 +817,7 @@ function Hero({
   }, "Start a brief"), React.createElement("a", {
     className: "p-btn ghost",
     href: "#doors"
-  }, "See the work"))));
+  }, "See the work")))));
 }
 const DRAFTS = [{
   cls: 'd1',
@@ -279,7 +952,7 @@ function Dial() {
   const [at, setAt] = React.useState(0);
   return React.createElement("section", {
     id: "how",
-    className: "dsection dwood"
+    className: "dsection dwood dpanel"
   }, React.createElement("div", {
     className: "dwrap ddialwrap"
   }, React.createElement("div", {

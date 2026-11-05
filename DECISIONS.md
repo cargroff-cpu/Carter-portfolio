@@ -381,3 +381,16 @@ text, the "01 / 04" counters, the proof strip under the hero and the hero's
 small two-card visual (it became the two-halves section). Hidden-until-reveal
 states are now scoped under `html.js`, set by an inline script in the page
 head, so content shows if scripts fail.
+
+## /design hero: the portfolio's lamp post on wood, inside an engraved seal
+
+The hero now uses the portfolio's own room: the 34px wood panels with sawn
+grain (also on How it works), a deep vignette, and the portfolio's GasLamp
+on the right with its pool of light. The old spinning CSS rings are replaced
+by an engraved seal centred on the lamp's globe, drawn like the How it works
+seal: hairline rings, a slow ring of lettering, counter-turning ticks.
+Clicking the globe snuffs the lamp, as on the portfolio.
+
+GasLamp is not duplicated: `scripts/build-design.mjs` copies the function out
+of `motifs.jsx` into `design.js` at build time, so rebuild /design after
+changing the lamp.
