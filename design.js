@@ -918,22 +918,144 @@ function BriefRing() {
   }));
 }
 const LANE = [['back', 260], ['far', 380], ['mid', 560], ['near', 820]];
+const LAMP_VARY = {
+  near: {
+    l: {
+      lean: -1.6,
+      sc: 1,
+      iron: ['scroll', 'bar']
+    },
+    r: {
+      lean: 1.1,
+      sc: .985,
+      iron: ['scroll', 'plaque']
+    }
+  },
+  mid: {
+    l: {
+      lean: -.8,
+      sc: 1.02,
+      iron: ['bar']
+    },
+    r: {
+      lean: 1.4,
+      sc: .99,
+      iron: ['collar', 'plaque']
+    }
+  },
+  far: {
+    l: {
+      lean: -1.2,
+      sc: 1,
+      iron: ['scroll']
+    },
+    r: {
+      lean: .6,
+      sc: 1.015,
+      iron: ['bar']
+    }
+  },
+  back: {
+    l: {
+      lean: -.5,
+      sc: 1,
+      iron: ['bar']
+    },
+    r: {
+      lean: .9,
+      sc: .99,
+      iron: []
+    }
+  }
+};
+function Ironwork({
+  kind
+}) {
+  if (kind === 'bar') return React.createElement("g", {
+    className: "lw-iron"
+  }, React.createElement("rect", {
+    x: "70",
+    y: "330",
+    width: "60",
+    height: "5",
+    rx: "2.5"
+  }), React.createElement("circle", {
+    cx: "70",
+    cy: "332.5",
+    r: "4.5"
+  }), React.createElement("circle", {
+    cx: "130",
+    cy: "332.5",
+    r: "4.5"
+  }));
+  if (kind === 'scroll') return React.createElement("g", {
+    className: "lw-scroll"
+  }, React.createElement("path", {
+    d: "M96 190 C 78 190, 66 206, 74 220 C 80 228, 90 222, 86 214"
+  }), React.createElement("path", {
+    d: "M104 190 C 122 190, 134 206, 126 220 C 120 228, 110 222, 114 214"
+  }));
+  if (kind === 'plaque') return React.createElement("g", null, React.createElement("rect", {
+    className: "lw-plaque",
+    x: "86",
+    y: "610",
+    width: "28",
+    height: "16",
+    rx: "2"
+  }), React.createElement("line", {
+    className: "lw-brass",
+    x1: "91",
+    y1: "618",
+    x2: "109",
+    y2: "618"
+  }));
+  if (kind === 'collar') return React.createElement("g", {
+    className: "lw-iron"
+  }, React.createElement("rect", {
+    x: "89",
+    y: "470",
+    width: "22",
+    height: "7",
+    rx: "2"
+  }), React.createElement("rect", {
+    x: "91",
+    y: "480",
+    width: "18",
+    height: "3",
+    rx: "1.5"
+  }));
+  return null;
+}
 function HeroLamp({
   side,
   row,
   height
 }) {
   const [out, setOut] = React.useState(false);
+  const v = LAMP_VARY[row][side];
   return React.createElement("div", {
     className: 'dhero-lamp ' + side + ' ' + row + (out ? ' out' : ''),
     "aria-hidden": "true"
+  }, React.createElement("div", {
+    className: "dlamp-vary",
+    style: {
+      '--lean': v.lean + 'deg',
+      '--sc': v.sc
+    }
   }, React.createElement("div", {
     className: "dhero-candle"
   }), React.createElement(GasLamp, {
     height: height,
     out: out,
     onGlobeClick: () => setOut(o => !o)
-  }));
+  }), v.iron.length > 0 && React.createElement("svg", {
+    className: "dlamp-iron",
+    viewBox: "0 0 200 900",
+    "aria-hidden": "true"
+  }, v.iron.map(k => React.createElement(Ironwork, {
+    key: k,
+    kind: k
+  })))));
 }
 function LaneFog({
   row,
