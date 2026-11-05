@@ -682,3 +682,9 @@ behind the same login (middleware.js) and logout-on-close.
   you, Open jobs, Proposals out, Due to you, Paid this month), a Needs you
   list, paid by month for six months, a pipeline by stage and a latest
   activity feed. A greeting and a New job button sit at the top.
+
+## 2026-11-06 — One motion layer for the Backroom
+
+- `motion.css` is linked from every Backroom page and the client page. Things arrive once on mount (a short rise, staggered and capped), charts draw themselves, KPI numbers count up, tabs and pages cross-fade, and buttons and cards respond to a touch or press.
+- Only transform, opacity and colour move, never width or height. Arrivals use `fill-mode: backwards` so hover transforms keep working after they finish. All movement sits behind `prefers-reduced-motion: no-preference`, and the count-up checks it too.
+- Page-to-page fades use `@view-transition` (Chrome, Safari 18+); other browsers just navigate as before. There is still no service worker.

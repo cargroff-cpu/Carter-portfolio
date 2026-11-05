@@ -242,11 +242,34 @@ function paidByMonth(invoices, n = 6) {
 }
 function greeting() { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; }
 
+// A number that counts up to its value when it first appears (a plain number
+// or "$1,200"); anything else, or reduced motion, shows as is.
+function CountUp({ value }) {
+  const text = String(value);
+  const m = /^(\$?)([\d,]+(?:\.\d+)?)$/.exec(text);
+  const motionOk = !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const [shown, setShown] = React.useState(m && motionOk && parseFloat(m[2].replace(/,/g, '')) > 0 ? m[1] + '0' : text);
+  React.useEffect(() => {
+    if (!m || !motionOk) { setShown(text); return; }
+    const to = parseFloat(m[2].replace(/,/g, '')), dec = (m[2].split('.')[1] || '').length;
+    if (!isFinite(to) || to === 0) { setShown(text); return; }
+    let raf, t0;
+    const step = (t) => {
+      t0 = t0 || t;
+      const k = Math.min(1, (t - t0) / 900), e = 1 - Math.pow(1 - k, 4);
+      setShown(m[1] + (to * e).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec }));
+      if (k < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [text]);
+  return shown;
+}
 function Kpi({ label, value, note, tone, onClick }) {
   return (
     <button type="button" className="dkpi" onClick={onClick}>
       <span className="dkpi-l">{label}</span>
-      <span className="dkpi-v mono">{value}</span>
+      <span className="dkpi-v mono"><CountUp value={value} /></span>
       <span className={'dkpi-n' + (tone ? ' ' + tone : '')}>{note}</span>
     </button>
   );
@@ -273,8 +296,8 @@ function MonthBars({ months }) {
         const last = k === months.length - 1;
         return (
           <g key={m.key}>
-            <rect x={x} y={base - h} width={bw} height={h} fill={last ? '#f5cd6a' : '#d99a3d'} opacity={last ? 1 : .62} />
-            {m.total > 0 && <text x={x + bw / 2} y={base - h - 6} textAnchor="middle" fontSize="11" fill="#ecd9b2">{m.total >= 1000 ? '$' + (m.total / 1000).toFixed(m.total % 1000 ? 1 : 0) + 'k' : '$' + Math.round(m.total)}</text>}
+            <rect className="mbar" x={x} y={base - h} width={bw} height={h} fill={last ? '#f5cd6a' : '#d99a3d'} opacity={last ? 1 : .62} />
+            {m.total > 0 && <text className="mlab" x={x + bw / 2} y={base - h - 6} textAnchor="middle" fontSize="11" fill="#ecd9b2">{m.total >= 1000 ? '$' + (m.total / 1000).toFixed(m.total % 1000 ? 1 : 0) + 'k' : '$' + Math.round(m.total)}</text>}
             <text x={x + bw / 2} y={base + 17} textAnchor="middle" fontSize="12" fill="#ad9a74">{m.label}</text>
           </g>
         );
@@ -914,7 +937,7 @@ function BusinessHub() {
       </header>
       <div className="shell">
         {data && tab !== 'ring' && <ToolSidebar tab={tab} go={go} data={data} />}
-        <main id="app" className={tab === 'ring' ? 'ringmain' : undefined}>
+        <main id="app" key={tab + (jobId || '')} className={tab === 'ring' ? 'ringmain' : undefined}>
           {error && <p className="sub" style={{ padding: '20px 2px', color: 'var(--warn)' }}>{error} If this is the first run, the workflow tables may not be set up yet.</p>}
           {!error && loading && <p className="sub" style={{ padding: '20px 2px' }}>Loading…</p>}
           {data && (

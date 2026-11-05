@@ -1,0 +1,85 @@
+/* motion.css — one motion layer for the whole Backroom (desktop, phone, and the
+   home-screen app). Loaded after each page's own styles. Rules:
+   - only transform, opacity and colour ever move (never width/height/top/left);
+   - things arrive once, on mount (fill-mode backwards, so hover transforms still work after);
+   - everything that moves is behind prefers-reduced-motion: no-preference;
+   - quick (150-250ms) for responses to a touch, slower (400-600ms) for arrivals. */
+:root{--ease-out:cubic-bezier(.22,1,.36,1);--ease-io:cubic-bezier(.65,0,.35,1);--ease-back:cubic-bezier(.34,1.4,.5,1)}
+
+/* ── Responses to touch: always on, quiet ─────────────────────────────── */
+a,button,input,select,textarea,summary{transition:color .2s ease,background-color .2s ease,border-color .2s ease,box-shadow .25s ease,opacity .2s ease}
+.btn{transition:background-color .25s,border-color .25s,color .25s,transform .18s var(--ease-out),box-shadow .25s}
+.input,.select,input.input,textarea.input{transition:border-color .2s,box-shadow .3s var(--ease-out),background-color .2s}
+.input:focus,.select:focus,textarea:focus,input:focus{box-shadow:0 0 0 3px rgba(217,154,61,.16)}
+.tools button,.tools.on button{transition:background-color .3s ease,color .2s ease,border-color .3s ease,box-shadow .3s ease}
+main .dkpi,main .widget,main .tile,main .pipe-r,main .minirow{transition:transform .35s var(--ease-out),border-color .25s,background-color .25s,box-shadow .35s var(--ease-out)}
+details>summary{cursor:pointer}
+
+@media (prefers-reduced-motion:no-preference){
+  /* a press you can feel */
+  .btn:active,button:active:not(:disabled):not(.ring-back):not(.tnode):not(.plate){transform:scale(.97)}
+  main .dkpi:active,main .pipe-r:active{transform:scale(.985)}
+  @media (hover:hover){
+    main .dkpi:hover{transform:translateY(-3px);box-shadow:0 14px 28px -18px rgba(0,0,0,.85)}
+    main .tile:hover,main .widget:hover{border-color:var(--line-2)}
+    main .minirow:hover,main .pipe-r:not(.static):hover{background:rgba(236,217,178,.04)}
+  }
+
+  /* ── Arrivals ──────────────────────────────────────────────────────── */
+  @keyframes m-up{from{opacity:0;transform:translate3d(0,14px,0)}to{opacity:1;transform:none}}
+  @keyframes m-down{from{opacity:0;transform:translate3d(0,-10px,0)}to{opacity:1;transform:none}}
+  @keyframes m-fade{from{opacity:0}to{opacity:1}}
+  @keyframes m-pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+  @keyframes m-bar{from{transform:translate3d(0,100%,0)}to{transform:none}}
+  @keyframes m-side{from{opacity:0;transform:translate3d(-12px,0,0)}to{opacity:1;transform:none}}
+  @keyframes m-growY{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+  @keyframes m-growX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+  @keyframes m-lit{from{border-top-color:var(--rule,rgba(236,217,178,.14))}}
+  @keyframes m-sweep{from{opacity:0;transform:translate3d(0,6px,0)}to{opacity:1;transform:none}}
+
+  /* the page: header settles, main rises. Re-keyed per tab, so each tab does it too */
+  header.top,.top{animation:m-down .55s var(--ease-out) backwards}
+  main#app,.shell>main,body>main{animation:m-up .5s var(--ease-out) backwards}
+  main.ringmain{animation:m-fade .6s ease backwards}
+  .tools:not(.on){animation:m-side .5s var(--ease-out) .05s backwards}
+  .tools.on{animation:m-bar .6s var(--ease-out) .1s backwards}
+
+  /* groups arrive one after another, capped so a long list never drags */
+  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts)>*{animation:m-up .55s var(--ease-out) backwards}
+  tbody>tr{animation:m-sweep .45s var(--ease-out) backwards}
+  .tnode{animation:m-fade .7s ease backwards}
+  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(1),.tnode:nth-child(1){animation-delay:.04s}
+  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(2),.tnode:nth-child(2){animation-delay:.09s}
+  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(3),.tnode:nth-child(3){animation-delay:.14s}
+  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(4),.tnode:nth-child(4){animation-delay:.19s}
+  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(5),.tnode:nth-child(5){animation-delay:.24s}
+  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(6),.tnode:nth-child(6){animation-delay:.29s}
+  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(7),.tnode:nth-child(7){animation-delay:.33s}
+  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(n+8),.tnode:nth-child(n+8){animation-delay:.37s}
+
+  /* charts draw themselves */
+  .mbar{transform-box:fill-box;transform-origin:50% 100%;animation:m-growY .8s var(--ease-out) backwards}
+  .mbar:nth-of-type(1){animation-delay:.25s}
+  .mlab{animation:m-fade .6s ease .75s backwards}
+  .pipe-bar>i{display:block;transform-origin:0 50%;animation:m-growX .9s var(--ease-out) .35s backwards}
+
+  /* anything that appears after load (flash notes, errors, opened panels) */
+  .flash,[role=status],[role=alert],details[open]>*:not(summary){animation:m-pop .4s var(--ease-out) backwards}
+
+  /* page-to-page: a short cross-fade instead of a white flash (Chrome, Safari 18+; others ignore it) */
+  @view-transition{navigation:auto}
+  ::view-transition-old(root){animation:.18s ease both m-vt-out}
+  ::view-transition-new(root){animation:.32s ease both m-vt-in}
+  @keyframes m-vt-out{to{opacity:0}}
+  @keyframes m-vt-in{from{opacity:0}}
+
+  /* the client page: each screen rises in; the step line lights up in order */
+  #app.enter>*{animation:m-up .55s var(--ease-out) backwards}
+  #app.enter>:nth-child(2){animation-delay:.07s}
+  #app.enter>:nth-child(3){animation-delay:.14s}
+  #app.enter>:nth-child(4){animation-delay:.21s}
+  #app.enter>:nth-child(n+5){animation-delay:.28s}
+  .steps li.done,.steps li.now{animation:m-lit .8s ease backwards}
+  .steps li:nth-of-type(2){animation-delay:.12s}.steps li:nth-of-type(3){animation-delay:.24s}.steps li:nth-of-type(4){animation-delay:.36s}
+  .mast{animation:m-down .6s var(--ease-out) backwards}
+}
