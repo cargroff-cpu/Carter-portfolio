@@ -4,18 +4,22 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="referrer" content="strict-origin-when-cross-origin" />
-<title>Carter Groff — Portfolio Directions</title>
-<meta name="description" content="Carter Groff — marketing, video, and design. Storytelling through strategy, screen, and design." />
+<title>Carter Groff: marketing, video and design</title>
+<meta name="description" content="Carter Groff: marketing, video and design from Harrisonburg, Virginia. Storytelling through strategy, screen, and design." />
 <meta property="og:type" content="website" />
-<meta property="og:title" content="Carter Groff — Marketing & Media" />
+<meta property="og:title" content="Carter Groff: marketing and media" />
 <meta property="og:description" content="Storytelling through strategy, screen, and design." />
 <meta property="og:image" content="https://cargroff.com/assets/social-preview.jpg" />
-<meta property="og:url" content="https://cargroff.com/" />
+<meta property="og:url" content="https://www.cargroff.com/" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Carter Groff — Marketing & Media" />
+<meta name="twitter:title" content="Carter Groff: marketing and media" />
 <meta name="twitter:description" content="Storytelling through strategy, screen, and design." />
 <meta name="twitter:image" content="https://cargroff.com/assets/social-preview.jpg" />
-<link rel="icon" type="image/png" href="assets/favicon.png" />
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/scaffold-icon-32.png" />
+<link rel="apple-touch-icon" href="/assets/scaffold-icon-180.png" />
+<meta name="theme-color" content="#0d0905" />
+<link rel="canonical" href="https://www.cargroff.com/" />
 <style>
   html, body, #root { height: 100%; margin: 0; }
   body { background: #0d0905; font-family: "Spectral", Georgia, serif; }
@@ -47,27 +51,17 @@
     </p>
   </noscript>
 
-  <!-- React + Babel (pinned, required) -->
-  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <!-- React (production build). The page itself is precompiled into
+       portfolio.js by scripts/build-portfolio.mjs; no in-browser Babel. -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1" crossorigin="anonymous"></script>
   <!-- TopoJSON decoder (for the high-detail travel world map) -->
-  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
-
-  <!-- Theme tokens + global CSS -->
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
     if (window.pdfjsLib) { pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }
   </script>
   <script src="cg-store.js"></script>
-  <script type="text/babel" src="themes.jsx"></script>
-  <!-- Data -->
-  <script type="text/babel" src="data.jsx"></script>
-  <!-- Motifs + placeholder components -->
-  <script type="text/babel" src="motifs.jsx"></script>
-  <!-- Portfolio component (sections + composition) -->
-  <script type="text/babel" src="portfolio.jsx"></script>
-  <!-- App: render Portfolio full-bleed -->
-  <script type="text/babel" src="app.jsx"></script>
+  <script src="portfolio.js"></script>
 </body>
 </html>

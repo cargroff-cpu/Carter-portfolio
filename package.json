@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:design": "node scripts/build-design.mjs"
+    "build:design": "node scripts/build-design.mjs",
+    "build:portfolio": "node scripts/build-portfolio.mjs",
+    "build:pages": "node scripts/build-design.mjs && node scripts/build-portfolio.mjs"
   },
   "devDependencies": {
     "@babel/standalone": "7.29.0"

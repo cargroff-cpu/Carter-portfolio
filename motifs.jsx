@@ -30,8 +30,7 @@ function PhotoPlaceholder({ title, subtitle, hue, ratio = '4/3', icon, tilt = 0,
       {(title || subtitle) && (
         <div style={{ position: 'absolute', left: 18, right: 18, bottom: 16,
           color: 'var(--ink)', textShadow: '0 1px 6px rgba(0,0,0,0.7)' }}>
-          {subtitle && <div style={{ fontFamily: 'var(--ui-font)', fontSize: 10, letterSpacing: '0.22em',
-            textTransform: 'uppercase', color: 'var(--amber)', marginBottom: 6, opacity: 0.9 }}>{subtitle}</div>}
+          {subtitle && <div style={{ fontFamily: 'var(--ui-font)', fontSize: 13, color: 'var(--amber)', marginBottom: 6, opacity: 0.9 }}>{subtitle}</div>}
           {title && <div style={{ fontFamily: 'var(--display-font)', fontSize: 22, lineHeight: 1.1,
             letterSpacing: '-0.01em' }}>{title}</div>}
         </div>

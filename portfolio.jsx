@@ -113,25 +113,22 @@ function Nav() {
           <div style={{ fontFamily: 'var(--display-font)', fontSize: 17,
             fontWeight: 500, letterSpacing: '-0.01em',
             color: 'var(--ink)', lineHeight: 1 }}>Carter Groff</div>
-          <div style={{ fontSize: 10, letterSpacing: '0.28em', textTransform: 'uppercase',
+          <div style={{ fontSize: 13,
             color: 'var(--ink-mute)', marginTop: 4 }}>Marketing &amp; Media</div>
         </div>
       </a>
       <div className="cg-nav-links" style={{ display: 'flex', gap: 38, alignItems: 'center' }}>
         {links.map(({ n, anchor }) => (
           <a key={n} href={anchor}
-            style={{ fontSize: 11, color: 'var(--ink-soft)', textDecoration: 'none',
-              letterSpacing: '0.24em', textTransform: 'uppercase', fontFamily: 'var(--ui-font)',
+            style={{ fontSize: 13, color: 'var(--ink-soft)', textDecoration: 'none', fontFamily: 'var(--ui-font)',
               fontWeight: 500, display: 'inline-flex', alignItems: 'center',
               minHeight: 44, padding: '0 2px' }}>{n}</a>
         ))}
         <a href="#sec-contact" style={{
-          fontSize: 10, color: 'var(--ink)', border: '1px solid var(--ink-dim)',
+          fontSize: 13, color: 'var(--ink)', border: '1px solid var(--ink-dim)',
           padding: '0 18px', minHeight: 44, display: 'inline-flex', alignItems: 'center',
-          textDecoration: 'none', whiteSpace: 'nowrap',
-          letterSpacing: '0.26em', textTransform: 'uppercase', fontFamily: 'var(--ui-font)',
-          fontWeight: 500,
-        }}>Get in touch</a>
+          textDecoration: 'none', whiteSpace: 'nowrap', fontFamily: 'var(--ui-font)',
+          fontWeight: 500 }}>Get in touch</a>
       </div>
 
       {/* Mobile hamburger — hidden on desktop via CSS */}
@@ -290,7 +287,7 @@ function Candle({ pos, lit }) {
           filter: 'blur(11px)', pointerEvents: 'none' }} />
       )}
 
-      <svg viewBox="0 0 26 72" width={W} height={H}
+      <svg aria-hidden="true" viewBox="0 0 26 72" width={W} height={H}
         style={{ display: 'block', overflow: 'visible', position: 'relative' }}>
         <defs>
           {/* aged wax — warm off-white, darker + melted toward the base */}
@@ -514,10 +511,6 @@ function Hero() {
       </div>
 
       <div style={{ position: 'relative', zIndex: 7, marginTop: 60, pointerEvents: 'none', ...contentLit }}>
-        <div className="cg-fadeup cg-hero-eyebrow-row" style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 42 }}>
-          <span style={{ width: 56, height: 1, background: 'var(--amber)', flexShrink: 0 }} />
-          <span className="cg-eyebrow">Portfolio · MMIII · {D.location}</span>
-        </div>
 
         <h1 className="cg-fadeup cg-fadeup-1" style={{
           fontFamily: 'var(--display-font)',
@@ -563,20 +556,17 @@ function Hero() {
       <div className="cg-fadeup cg-fadeup-3 cg-hero-foot" style={{ position: 'relative', zIndex: 7, ...contentLit,
         display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
         paddingTop: 50, borderTop: '1px solid var(--rule)' }}>
-        <a href="#sec-work" style={{
-          display: 'inline-flex', alignItems: 'center', gap: 14,
-          color: 'var(--ink)', textDecoration: 'none',
-          fontFamily: 'var(--ui-font)', fontSize: 11, letterSpacing: '0.3em',
-          textTransform: 'uppercase', minHeight: 44,
-        }}>
-          <span style={{ width: 28, height: 1, background: 'var(--amber)' }} />
+        <a href="#sec-work" className="cg-hero-cta" style={{
+          display: 'inline-flex', alignItems: 'center', gap: 14, padding: '0 26px',
+          color: 'var(--bg-deep)', background: 'var(--amber)', border: '1px solid var(--amber)', textDecoration: 'none',
+          fontFamily: 'var(--ui-font)', fontSize: 15, fontWeight: 600, minHeight: 48, pointerEvents: 'auto' }}>
           See the work
         </a>
-        <div className="cg-hero-meta" style={{ display: 'flex', gap: 56, fontFamily: 'var(--ui-font)', fontSize: 10,
-          color: 'var(--ink-mute)', letterSpacing: '0.26em', textTransform: 'uppercase' }}>
+        <div className="cg-hero-meta" style={{ display: 'flex', gap: 56, fontFamily: 'var(--ui-font)', fontSize: 13,
+          color: 'var(--ink-mute)' }}>
           <div>
             <div style={{ color: 'var(--ink-mute)', marginBottom: 6 }}>Discipline</div>
-            <div style={{ color: 'var(--ink-soft)' }}>Marketing · Video · Design</div>
+            <div style={{ color: 'var(--ink-soft)' }}>Marketing, video and design</div>
           </div>
           <div>
             <div style={{ color: 'var(--ink-mute)', marginBottom: 6 }}>Based</div>
@@ -588,7 +578,7 @@ function Hero() {
           </div>
           <div>
             <div style={{ color: 'var(--ink-mute)', marginBottom: 6 }}>This site</div>
-            <div style={{ color: 'var(--ink-soft)' }}>Designed &amp; developed by me</div>
+            <div style={{ color: 'var(--ink-soft)' }}>Designed and developed by me</div>
           </div>
         </div>
       </div>
@@ -646,8 +636,7 @@ function About() {
                 pointerEvents: 'none' }} />
             </div>
             <div className="cg-plate-caption" style={{ marginTop: 14, display: 'flex', justifyContent: 'space-between',
-              alignItems: 'baseline', padding: '0 4px', fontFamily: 'var(--ui-font)', fontSize: 10,
-              letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--ink-mute)', whiteSpace: 'nowrap' }}>
+              alignItems: 'baseline', padding: '0 4px', fontFamily: 'var(--ui-font)', fontSize: 13, color: 'var(--ink-mute)', whiteSpace: 'nowrap' }}>
               <span>Plate I</span>
               <span style={{ color: 'var(--amber)' }}>Carter Groff</span>
               <span>MMIII</span>
@@ -661,7 +650,6 @@ function About() {
         {/* Letter copy — restrained, no handwriting cosplay */}
         <div style={{ paddingTop: 8 }}>
           <div className="cg-reveal">
-          <span className="cg-eyebrow">About · A Few Words</span>
           <h2 style={{
             fontFamily: 'var(--display-font)', fontWeight: 500,
             fontSize: 80, lineHeight: 1.0, letterSpacing: '-0.02em',
@@ -694,7 +682,7 @@ function About() {
             <div>
               <div className="cg-eyebrow" style={{ marginBottom: 10 }}>Craft</div>
               <div style={{ fontFamily: 'var(--body-font)', fontSize: 15, color: 'var(--ink-soft)',
-                lineHeight: 1.55, fontStyle: 'italic' }}>{D.tools || 'video · copy · design · strategy'}</div>
+                lineHeight: 1.55, fontStyle: 'italic' }}>{(D.tools || 'video, copy, design, strategy').split(' · ').join(', ')}</div>
             </div>
           </div>
         </div>
@@ -713,7 +701,6 @@ function VideoWork({ onOpen }) {
       <header className="cg-sec-head cg-reveal" style={{ position: 'relative', zIndex: 2, maxWidth: 1320, margin: '0 auto 80px',
         display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
-          <span className="cg-eyebrow">Selected Work · Video</span>
           <h2 style={{ fontFamily: 'var(--display-font)', fontWeight: 500,
             fontSize: 88, lineHeight: 0.95, letterSpacing: '-0.02em',
             margin: '20px 0 0', color: 'var(--ink)' }}>
@@ -758,13 +745,13 @@ function VideoWork({ onOpen }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: 'rgba(15, 10, 6, 0.55)', backdropFilter: 'blur(4px)',
                 transition: 'background .3s ease, border-color .3s ease, transform .4s ease' }}>
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="var(--ink)">
+                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="var(--ink)">
                   <path d="M3 1.5 L 12 7 L 3 12.5 Z" /></svg>
               </div>
               {/* runtime */}
               <div style={{ position: 'absolute', top: 16, right: 16,
-                fontFamily: 'var(--ui-font)', fontSize: 10, letterSpacing: '0.2em',
-                color: 'var(--ink-soft)', textTransform: 'uppercase' }}>{v.length}</div>
+                fontFamily: 'var(--ui-font)', fontSize: 13,
+                color: 'var(--ink-soft)' }}>{v.length}</div>
               {/* index — like a film catalog */}
               <div style={{ position: 'absolute', top: 14, left: 16,
                 fontFamily: 'var(--display-font)', fontSize: 12, letterSpacing: '0.1em',
@@ -773,8 +760,7 @@ function VideoWork({ onOpen }) {
             <div style={{ paddingTop: 22, paddingBottom: 4 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
                 marginBottom: 10 }}>
-                <span style={{ fontFamily: 'var(--ui-font)', fontSize: 10,
-                  letterSpacing: '0.24em', textTransform: 'uppercase',
+                <span style={{ fontFamily: 'var(--ui-font)', fontSize: 13,
                   color: 'var(--amber)' }}>{v.kind}</span>
                 <span style={{ fontFamily: 'var(--ui-font)', fontSize: 10,
                   color: 'var(--ink-mute)', letterSpacing: '0.18em' }}>{v.year}</span>
@@ -805,7 +791,6 @@ function DesignWork({ onOpen }) {
       <header className="cg-sec-head cg-reveal" style={{ position: 'relative', zIndex: 2, maxWidth: 1320, margin: '0 auto 80px',
         display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
-          <span className="cg-eyebrow">Pixels &amp; Print</span>
           <h2 style={{ fontFamily: 'var(--display-font)', fontWeight: 500,
             fontSize: 88, lineHeight: 0.95, letterSpacing: '-0.02em',
             margin: '20px 0 0', color: 'var(--ink)' }}>
@@ -841,7 +826,7 @@ function DesignWork({ onOpen }) {
                   width: '100%', height: '100%', objectFit: 'cover' }} />}
                 {pdfOnly && <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
                   alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--ink)' }}>
-                    <svg width={cspan >= 2 ? 54 : 40} height={cspan >= 2 ? 54 : 40} viewBox="0 0 24 24"
+                    <svg aria-hidden="true" width={cspan >= 2 ? 54 : 40} height={cspan >= 2 ? 54 : 40} viewBox="0 0 24 24"
                       fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round">
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" />
                     </svg>
@@ -858,8 +843,7 @@ function DesignWork({ onOpen }) {
                   border: '1px solid rgba(236,217,178,0.08)', pointerEvents: 'none' }} />
                 <div style={{ position: 'absolute', left: 22, right: 22, bottom: 22,
                   color: 'var(--ink)', textShadow: '0 1px 6px rgba(0,0,0,0.7)' }}>
-                  <div style={{ fontFamily: 'var(--ui-font)', fontSize: 9,
-                    letterSpacing: '0.28em', textTransform: 'uppercase',
+                  <div style={{ fontFamily: 'var(--ui-font)', fontSize: 13,
                     color: 'var(--amber)', marginBottom: 8 }}>{d.kind}</div>
                   <div className="cg-design-tile-title" style={{ fontFamily: 'var(--display-font)', fontSize: cspan >= 2 ? 36 : 24,
                     fontWeight: 500, lineHeight: 1.05, letterSpacing: '-0.015em' }}>{d.title}</div>
@@ -869,7 +853,7 @@ function DesignWork({ onOpen }) {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: 'rgba(15, 10, 6, 0.4)',
                   opacity: 0, transition: 'opacity .3s ease' }}>
-                  <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="var(--ink)" strokeWidth="1.2">
+                  <svg aria-hidden="true" width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="var(--ink)" strokeWidth="1.2">
                     <path d="M2 9 L 9 2 M 4 2 H 9 V 7" /></svg>
                 </div>
                 <div style={{ position: 'absolute', top: 18, left: 18,
@@ -1161,8 +1145,7 @@ function TravelDrawer() {
         .cg-tv-drawer > * { min-height: 0; }
         .cg-tv-trigger { cursor: pointer; background: none; border: 0;
           display: inline-flex; align-items: flex-end; gap: 12px;
-          font-family: var(--ui-font); font-size: 12px; letter-spacing: 0.32em;
-          text-transform: uppercase; color: var(--amber); font-weight: 500;
+          font-family: var(--ui-font); font-size: 12px; color: var(--amber); font-weight: 500;
           padding: 16px 0 6px; min-height: 44px;
           border-bottom: 1px solid var(--amber);
           transition: color .3s ease, border-color .3s ease; }
@@ -1193,7 +1176,7 @@ function TravelDrawer() {
         /* View-all button (top-left of the map, split view only) */
         .cg-tv-viewall { position: absolute; top: 12px; left: 12px; z-index: 6; display: inline-flex; align-items: center; gap: 7px;
           background: rgba(13,9,5,0.78); border: 1px solid rgba(217,154,61,0.45); color: var(--amber); cursor: pointer;
-          font-family: var(--ui-font); font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase;
+          font-family: var(--ui-font); font-size: 13px;
           padding: 8px 12px; border-radius: 2px; backdrop-filter: blur(2px);
           transition: background .2s ease, border-color .2s ease; }
         .cg-tv-viewall:hover { background: rgba(13,9,5,0.95); border-color: var(--amber); }
@@ -1202,13 +1185,11 @@ function TravelDrawer() {
         .cg-tv-caption + .cg-tv-tabs { margin-top: 8px; }
         .cg-tv-tab { background: none; border: 1px solid var(--card-edge); cursor: pointer;
           padding: 11px 16px; min-height: 44px;
-          border-radius: 2px; font-family: var(--ui-font); font-size: 10px; letter-spacing: 0.2em;
-          text-transform: uppercase; color: var(--ink-mute);
+          border-radius: 2px; font-family: var(--ui-font); font-size: 13px; color: var(--ink-mute);
           transition: color .2s ease, border-color .2s ease, background .2s ease; }
         .cg-tv-tab:hover { color: var(--ink-soft); border-color: var(--rule-strong); }
         .cg-tv-tab.is-on { color: #1a120b; background: var(--amber); border-color: var(--amber); font-weight: 600; }
-        .cg-tv-caption { margin-top: 12px; text-align: left; font-family: var(--ui-font); font-size: 11px;
-          letter-spacing: 0.3em; text-transform: uppercase; color: var(--amber); opacity: 0.82; }
+        .cg-tv-caption { margin-top: 12px; text-align: left; font-family: var(--ui-font); font-size: 13px; color: var(--amber); opacity: 0.82; }
         /* Info panel */
         .cg-tv-info { min-width: 0; overflow: hidden; display: flex; height: 520px;
           background: #160e07; border: 1px solid rgba(217,154,61,0.22); box-shadow: var(--shadow); }
@@ -1220,12 +1201,12 @@ function TravelDrawer() {
         .cg-tv-desc { font-family: var(--body-font); font-size: 15px; line-height: 1.72; color: var(--ink-soft); margin: 0; }
         .cg-tv-viewphoto { margin-top: 24px; align-self: flex-start; background: none; border: 0; padding: 0 0 3px;
           cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-family: var(--ui-font);
-          font-size: 11px; letter-spacing: 0.26em; text-transform: uppercase; color: var(--amber);
+          font-size: 13px; color: var(--amber);
           border-bottom: 1px solid transparent; transition: border-color .25s ease, color .25s ease; }
         .cg-tv-viewphoto:hover { border-bottom-color: var(--amber); color: var(--amber-lit); }
         .cg-tv-tip { position: absolute; z-index: 6; pointer-events: none; transform: translateY(-50%);
           background: rgba(13,9,5,0.82); border: 1px solid rgba(217,154,61,0.4); color: var(--amber);
-          font-family: var(--ui-font); font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+          font-family: var(--ui-font); font-size: 13px;
           padding: 5px 9px; white-space: nowrap; }
         .cg-tv-lb { position: absolute; inset: 0; z-index: 20; background: transparent; }
         .cg-tv-lb-card { position: absolute; cursor: default; transform: rotate(2.5deg);
@@ -1246,7 +1227,7 @@ function TravelDrawer() {
       <div style={{ textAlign: 'center' }}>
         <button className={'cg-tv-trigger' + (open ? ' is-open' : '')}
           aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-          Explore My Travels
+          Explore my travels
           <svg className="cg-tv-chev" width="14" height="9" viewBox="0 0 14 9" fill="none"
             aria-hidden="true">
             <path d="M1 1.5L7 7.5L13 1.5" stroke="currentColor" strokeWidth="1.5"
@@ -1262,7 +1243,7 @@ function TravelDrawer() {
           {/* LEFT — map + tabs (+ caption in overview) */}
           <div className="cg-tv-left">
             <div className="cg-tv-mapframe" ref={frameRef}>
-              <svg ref={svgRef} viewBox={`0 0 ${TV_W} ${TV_H}`} preserveAspectRatio={detail ? 'xMidYMid slice' : 'xMidYMid meet'}
+              <svg ref={svgRef} role="img" aria-label="World map of the places I have travelled" viewBox={`0 0 ${TV_W} ${TV_H}`} preserveAspectRatio={detail ? 'xMidYMid slice' : 'xMidYMid meet'}
                 style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}>
                 <defs>
                   <radialGradient id="cgTvLand" cx="50%" cy="46%" r="72%">
@@ -1321,7 +1302,7 @@ function TravelDrawer() {
                   <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5"
                     stroke="currentColor" strokeWidth="1.2" /><path d="M1 6h10M6 1c1.6 1.4 1.6 8.6 0 10M6 1c-1.6 1.4-1.6 8.6 0 10"
                     stroke="currentColor" strokeWidth="0.9" /></svg>
-                  View All
+                  View all
                 </button>
               )}
               {detail && hover && (
@@ -1390,7 +1371,6 @@ function Resume() {
 
       <div style={{ position: 'relative', zIndex: 2, maxWidth: 1100, margin: '0 auto' }}>
         <header className="cg-reveal" style={{ textAlign: 'center', marginBottom: 90 }}>
-          <span className="cg-eyebrow">Field Journal · A short history</span>
           <h2 style={{ fontFamily: 'var(--display-font)', fontWeight: 500,
             fontSize: 88, lineHeight: 1, letterSpacing: '-0.02em',
             margin: '20px 0 24px', color: 'var(--ink)' }}>
@@ -1409,8 +1389,7 @@ function Resume() {
               <div className="cg-resume-row" style={{ display: 'grid', gridTemplateColumns: '128px 1fr', gap: 60, alignItems: 'baseline' }}>
                 {/* dates column */}
                 <div style={{ paddingTop: 8, textAlign: 'right' }}>
-                  <div style={{ fontFamily: 'var(--ui-font)', fontSize: 11,
-                    letterSpacing: '0.22em', textTransform: 'uppercase',
+                  <div style={{ fontFamily: 'var(--ui-font)', fontSize: 13,
                     color: 'var(--amber)', fontWeight: 500, marginBottom: 8 }}>{r.dates}</div>
                   <div style={{ fontFamily: 'var(--body-font)', fontSize: 13,
                     color: 'var(--ink-mute)', fontStyle: 'italic' }}>{r.city}</div>
@@ -1435,9 +1414,8 @@ function Resume() {
                   {r.promoted && (
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 18,
                       padding: '5px 11px', border: '1px solid var(--amber)', borderRadius: 2,
-                      fontFamily: 'var(--ui-font)', fontSize: 11, letterSpacing: '0.16em',
-                      textTransform: 'uppercase', color: 'var(--amber)' }}>
-                      <span aria-hidden="true">↑</span>{r.promoted}
+                      fontFamily: 'var(--ui-font)', fontSize: 13, color: 'var(--amber)' }}>
+                      {r.promoted}
                     </div>
                   )}
                   <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
@@ -1498,8 +1476,7 @@ function Contact() {
   const AUTOCOMPLETE = { name: 'name', email: 'email', message: 'off' };
   const field = (label, key, type = 'text', rows = 0) => (
     <label style={{ display: 'block', marginBottom: 32 }}>
-      <div style={{ fontFamily: 'var(--ui-font)', fontSize: 10,
-        letterSpacing: '0.3em', textTransform: 'uppercase',
+      <div style={{ fontFamily: 'var(--ui-font)', fontSize: 13,
         color: 'var(--ink-mute)', marginBottom: 12 }}>{label}</div>
       {rows ? (
         <textarea value={state[key]} rows={rows}
@@ -1561,7 +1538,6 @@ function Contact() {
         ) : (
           <React.Fragment>
           <header className="cg-reveal" style={{ textAlign: 'center', marginBottom: 70 }}>
-            <span className="cg-eyebrow">Get in touch</span>
             <h2 style={{ fontFamily: 'var(--display-font)', fontWeight: 500,
               fontSize: 96, lineHeight: 0.95, letterSpacing: '-0.02em',
               margin: '20px 0 28px', color: 'var(--ink)' }}>
@@ -1581,7 +1557,7 @@ function Contact() {
             </div>
             {field('Your message', 'message', 'text', 4)}
             {sendErr && <div style={{ fontFamily: 'var(--body-font)', fontStyle: 'italic',
-              fontSize: 13.5, color: 'var(--terracotta-lit)', marginTop: -8, marginBottom: 24 }}>{sendErr}</div>}
+              fontSize: 13, color: 'var(--terracotta-lit)', marginTop: -8, marginBottom: 24 }}>{sendErr}</div>}
             <div className="cg-contact-foot" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               marginTop: 44, paddingTop: 32, borderTop: '1px solid var(--rule)' }}>
               <p style={{ fontFamily: 'var(--body-font)', fontStyle: 'italic', fontSize: 14,
@@ -1593,10 +1569,8 @@ function Contact() {
                 background: 'transparent', color: 'var(--ink)',
                 border: '1px solid var(--amber)', padding: '18px 36px', cursor: sending ? 'wait' : 'pointer',
                 opacity: sending ? 0.6 : 1,
-                fontFamily: 'var(--ui-font)', fontSize: 11,
-                letterSpacing: '0.3em', textTransform: 'uppercase',
-                fontWeight: 500, transition: 'background .3s ease, color .3s ease',
-              }}>{sending ? 'Sending…' : <React.Fragment>Send it off &rarr;</React.Fragment>}</button>
+                fontFamily: 'var(--ui-font)', fontSize: 13,
+                fontWeight: 500, transition: 'background .3s ease, color .3s ease' }}>{sending ? 'Sending…' : 'Send it off'}</button>
             </div>
           </form>
           </React.Fragment>
@@ -1617,13 +1591,13 @@ function SocialGlyph({ kind }) {
   const p = { width: 26, height: 26, viewBox: '0 0 24 24', fill: 'none',
     stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round' };
   if (kind === 'tiktok') return (
-    <svg {...p}><path d="M9 8.5a4 4 0 1 0 4 4V3c.8 1.9 2.4 3.2 4.5 3.4" /></svg>
+    <svg aria-hidden="true" {...p}><path d="M9 8.5a4 4 0 1 0 4 4V3c.8 1.9 2.4 3.2 4.5 3.4" /></svg>
   );
   if (kind === 'instagram') return (
-    <svg {...p}><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17" cy="7" r="0.6" fill="currentColor" stroke="none" /></svg>
+    <svg aria-hidden="true" {...p}><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17" cy="7" r="0.6" fill="currentColor" stroke="none" /></svg>
   );
   return ( // youtube
-    <svg {...p}><rect x="2.5" y="5.5" width="19" height="13" rx="3.5" /><path d="M10 9.5l5 2.5-5 2.5z" fill="currentColor" stroke="none" /></svg>
+    <svg aria-hidden="true" {...p}><rect x="2.5" y="5.5" width="19" height="13" rx="3.5" /><path d="M10 9.5l5 2.5-5 2.5z" fill="currentColor" stroke="none" /></svg>
   );
 }
 
@@ -1663,8 +1637,7 @@ function SocialWindow({ s, index, total, onClose }) {
           <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--terracotta)' }} />
           <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--amber)' }} />
           <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--sage)' }} />
-          <span style={{ marginLeft: 'auto', fontFamily: 'var(--ui-font)', fontSize: 9.5,
-            letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--ink-mute)' }}>{s.label}</span>
+          <span style={{ marginLeft: 'auto', fontFamily: 'var(--ui-font)', fontSize: 13, color: 'var(--ink-mute)' }}>{s.label}</span>
         </div>
         {/* body */}
         <div style={{ padding: '20px 18px 18px', textAlign: 'center' }}>
@@ -1676,7 +1649,7 @@ function SocialWindow({ s, index, total, onClose }) {
           <div style={{ fontFamily: 'var(--display-font)', fontSize: 22, color: 'var(--ink)',
             letterSpacing: '-0.01em' }}>@cargli</div>
           <div style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6,
-            fontFamily: 'var(--ui-font)', fontSize: 10.5, letterSpacing: '0.2em', textTransform: 'uppercase',
+            fontFamily: 'var(--ui-font)', fontSize: 13,
             color: hover ? 'var(--amber)' : 'var(--ink-soft)', transition: 'color .2s' }}>
             Open {s.label} <span style={{ fontSize: 13 }}>&#8599;</span>
           </div>
@@ -1710,6 +1683,7 @@ function StatBand() {
     let started = false, animRaf = 0;
     const animate = () => {
       const target = 400000, dur = 2000, t0 = performance.now();
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setVal(target); return; }
       const easeOut = (t) => 1 - Math.pow(1 - t, 3);
       const step = (now) => {
         const p = Math.min(1, (now - t0) / dur);
@@ -1731,7 +1705,6 @@ function StatBand() {
       <div className="cg-candlelight" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
         width: 460, height: 460, opacity: 0.25 }} />
       <div style={{ position: 'relative', zIndex: 2, maxWidth: 720, margin: '0 auto' }}>
-        <div className="cg-eyebrow" style={{ marginBottom: 18 }}>Proven Social Media Growth</div>
         <div style={{ fontFamily: 'var(--display-font)', fontWeight: 500,
           fontSize: 'clamp(44px, 7vw, 84px)', lineHeight: 0.95, letterSpacing: '-0.03em',
           color: 'var(--ink)' }}>
@@ -1741,8 +1714,7 @@ function StatBand() {
           fontSize: 'clamp(15px, 1.6vw, 19px)', color: 'var(--ink-soft)' }}>
           followers across personal platforms.
         </div>
-        <div style={{ marginTop: 16, fontFamily: 'var(--ui-font)', fontSize: 11,
-          letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--ink-mute)' }}>
+        <div style={{ marginTop: 16, fontFamily: 'var(--ui-font)', fontSize: 13, color: 'var(--ink-mute)' }}>
           <button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog"
             className="cg-handle" style={{ font: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit',
               color: 'var(--amber)', background: 'none', border: 'none', padding: 0, cursor: 'pointer',
@@ -1764,7 +1736,7 @@ function StatBand() {
           <div onClick={(e) => e.stopPropagation()} style={{ textAlign: 'center' }}>
             <div style={{ marginBottom: 26, fontFamily: 'var(--display-font)', fontStyle: 'italic',
               fontSize: 'clamp(20px, 3vw, 28px)', color: 'var(--ink)' }}>
-              Find me at <span style={{ color: 'var(--amber)' }}>@cargli</span> &mdash;
+              Find me at <span style={{ color: 'var(--amber)' }}>@cargli</span>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 22, justifyContent: 'center', alignItems: 'flex-start' }}>
               {windows.map((s, i) => (
@@ -1784,17 +1756,17 @@ function Footer() {
     <footer style={{ position: 'relative', padding: '50px 80px',
       background: 'var(--bg-deep)', borderTop: '1px solid var(--rule)' }}>
       <div className="cg-footer-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        fontFamily: 'var(--ui-font)', fontSize: 10,
-        color: 'var(--ink-mute)', letterSpacing: '0.26em', textTransform: 'uppercase' }}>
-        <span>&copy; MMIII · Carter Groff</span>
+        fontFamily: 'var(--ui-font)', fontSize: 13,
+        color: 'var(--ink-mute)' }}>
+        <span>&copy; MMIII, Carter Groff</span>
         <span style={{ fontFamily: 'var(--display-font)', fontStyle: 'italic', fontSize: 15,
           letterSpacing: '0.04em', textTransform: 'none', color: 'var(--ink-soft)' }}>
           made to weather well
         </span>
-        <a href="/design"
+        <a href="https://scaffold.cargroff.com/"
           style={{ color: 'var(--ink-soft)', textDecoration: 'none',
             display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>
-          Design services →
+          Design services at The Scaffold
         </a>
         <a href={`mailto:${D.email}`}
           style={{ color: 'var(--ink-soft)', textDecoration: 'none',
@@ -1802,9 +1774,8 @@ function Footer() {
           {D.email}
         </a>
       </div>
-      <div style={{ marginTop: 26, textAlign: 'center', fontFamily: 'var(--ui-font)', fontSize: 10,
-        letterSpacing: '0.26em', textTransform: 'uppercase', color: 'var(--ink-mute)' }}>
-        Website designed &amp; developed by Carter Groff
+      <div style={{ marginTop: 26, textAlign: 'center', fontFamily: 'var(--ui-font)', fontSize: 13, color: 'var(--ink-mute)' }}>
+        Website designed and developed by Carter Groff
       </div>
     </footer>
   );
@@ -1855,7 +1826,7 @@ function PdfDoc({ dataUrl }) {
       <div ref={ref} />
       {status !== 'done' && (
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontFamily: 'var(--ui-font)', fontSize: 11, letterSpacing: '0.24em', textTransform: 'uppercase',
+          fontFamily: 'var(--ui-font)', fontSize: 13,
           color: 'var(--ink-soft)', pointerEvents: 'none' }}>
           {status === 'error' ? 'Could not load document' : 'Loading document…'}
         </div>
@@ -1936,7 +1907,7 @@ function Lightbox({ open, item, onClose }) {
               borderRadius: '50%', border: '1px solid var(--ink-soft)',
               background: 'rgba(15, 10, 6, 0.55)', backdropFilter: 'blur(4px)',
               display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="20" height="20" viewBox="0 0 14 14" fill="var(--ink)">
+              <svg aria-hidden="true" width="20" height="20" viewBox="0 0 14 14" fill="var(--ink)">
                 <path d="M3 1.5 L 12 7 L 3 12.5 Z" /></svg>
             </div>
           )}
@@ -1946,9 +1917,8 @@ function Lightbox({ open, item, onClose }) {
         <div style={{ padding: '40px 48px 44px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
             marginBottom: 16 }}>
-            <span style={{ fontFamily: 'var(--ui-font)', fontSize: 10,
-              letterSpacing: '0.3em', textTransform: 'uppercase',
-              color: 'var(--amber)' }}>{data.kind}{data.year ? ` · ${data.year}` : ''}</span>
+            <span style={{ fontFamily: 'var(--ui-font)', fontSize: 13,
+              color: 'var(--amber)' }}>{data.kind}{data.year ? `, ${data.year}` : ''}</span>
             <span style={{ fontFamily: 'var(--display-font)', fontStyle: 'italic',
               fontSize: 13, color: 'var(--ink-mute)' }}>No. {String(item.index + 1).padStart(2, '0')}</span>
           </div>
@@ -1961,8 +1931,7 @@ function Lightbox({ open, item, onClose }) {
           {item.kind === 'video' && data.url && (
             <a href={data.url} target="_blank" rel="noopener noreferrer"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 24,
-                fontFamily: 'var(--ui-font)', fontSize: 11, letterSpacing: '0.24em',
-                textTransform: 'uppercase', color: 'var(--amber)', textDecoration: 'none' }}>
+                fontFamily: 'var(--ui-font)', fontSize: 13, color: 'var(--amber)', textDecoration: 'none' }}>
               Watch on YouTube <span style={{ fontSize: 13 }}>&#8599;</span>
             </a>
           )}
@@ -2021,13 +1990,16 @@ function Portfolio() {
       <style>{`
         html { scroll-behavior: smooth; }
 
+        /* Hero action: the one filled button on the page */
+        .cg-root .cg-hero-cta { transition: background-color .2s ease, border-color .2s ease, transform .2s ease; }
+        .cg-root .cg-hero-cta:hover { background: var(--amber-lit); border-color: var(--amber-lit); }
+        .cg-root .cg-hero-cta:active { transform: translateY(1px); }
         /* Skip link — invisible until keyboard focus, then a lit brass plate. */
         .cg-root .cg-skip { position: fixed; top: 14px; left: 14px; z-index: 300;
           transform: translateY(-160%); transition: transform .28s cubic-bezier(.2,.7,.3,1);
           background: var(--ink); color: #15100a; padding: 0 20px;
           min-height: 44px; display: inline-flex; align-items: center;
-          font-family: var(--ui-font); font-size: 11px; font-weight: 600;
-          letter-spacing: 0.22em; text-transform: uppercase; text-decoration: none;
+          font-family: var(--ui-font); font-size: 13px; font-weight: 600; text-decoration: none;
           box-shadow: 0 18px 40px -18px rgba(0,0,0,.9); }
         .cg-root .cg-skip:focus-visible { transform: none; }
         .cg-video-card:hover .cg-photo { transform: translateY(-6px); box-shadow: 0 40px 80px -28px rgba(0,0,0,0.95), 0 0 0 1px var(--card-edge); }
@@ -2083,8 +2055,7 @@ function Portfolio() {
         .cg-nav-drawer.is-open { opacity: 1; pointer-events: auto; }
         .cg-nav-drawer.is-open .cg-nav-drawer-panel { transform: none; }
         .cg-nav-drawer-panel a { display: flex; align-items: center; min-height: 52px;
-          font-family: var(--ui-font); font-size: 14px; letter-spacing: 0.28em;
-          text-transform: uppercase; color: var(--ink-soft); text-decoration: none;
+          font-family: var(--ui-font); font-size: 14px; color: var(--ink-soft); text-decoration: none;
           font-weight: 500; border-bottom: 1px solid var(--rule); }
         .cg-nav-drawer-panel a:last-of-type { border-bottom: 0; }
         .cg-nav-drawer-cta { margin-top: 18px; justify-content: center !important;
@@ -2121,9 +2092,6 @@ function Portfolio() {
           #sec-top h1 { font-size: clamp(58px, 17vw, 96px) !important; }
           /* Keep clear of the lamp graphic (its scaled-down left edge sits
              around 88% across on a phone width) — was overlapping/touching it */
-          .cg-hero-eyebrow-row { max-width: 76%; gap: 12px !important; }
-          .cg-hero-eyebrow-row .cg-eyebrow { font-size: 9.5px !important; letter-spacing: 0.18em !important;
-            white-space: normal !important; line-height: 1.5; }
           .cg-fog-band { display: none !important; }
           .cg-candlelight { opacity: 0.5 !important; }
           .cg-hero-tagrow { grid-template-columns: 1fr !important; gap: 30px !important; margin-top: 40px !important; }
