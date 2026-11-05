@@ -7,7 +7,7 @@
 // The brief posts to api/design-brief.js.
 
 // ── Offer config ─────────────────────────────────────────────────────
-// Everything in this block is the page's default copy. The Back Room's
+// Everything in this block is the page's default copy. The Backroom's
 // Scaffold editor (/backroom/scaffold) publishes overrides to Supabase
 // (site_content row 2); applyScaffoldContent() below merges them over these
 // defaults before the page mounts. Prices stay hidden until showPrices is on.
@@ -881,7 +881,7 @@ function TheScaffold() {
   );
 }
 
-// ── Published content from the Back Room ────────────────────────────
+// ── Published content from the Backroom ────────────────────────────
 // The Scaffold editor publishes to Supabase (site_content row 2, readable by
 // anyone; written only through the password-gated /api/save-content). Read it
 // at load and merge it over the defaults above. If Supabase is slow or down,

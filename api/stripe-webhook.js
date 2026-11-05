@@ -94,7 +94,7 @@ export default async function handler(req, res) {
           await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { last_activity_at: new Date().toISOString(), ...(done ? { stage: 'paid' } : {}) } });
           const lines = [`${job.name} paid ${inv.label || 'an invoice'}: ${amount}.`];
           if (done) lines.push('Nothing is left to pay; the job is marked paid.');
-          lines.push('', `Open it in the Back Room: https://scaffold.cargroff.com/business#job=${job.id}`);
+          lines.push('', `Open it in the Backroom: https://scaffold.cargroff.com/business#job=${job.id}`);
           const { html, text } = renderEmail({ heading: done ? 'Job paid in full' : 'Payment received', body: lines.join('\n') });
           await sendEmail({ to: NOTIFY_EMAIL, subject: `${done ? 'Paid in full' : 'Payment received'}: ${job.title}`, html, text });
         } catch (e) {

@@ -1,5 +1,5 @@
 // api/brief-reply.js — the approve step for AI triage. Gated by
-// middleware.js (Back Room session required). Nothing reaches a client
+// middleware.js (Backroom session required). Nothing reaches a client
 // without going through here, and only Carter can call it.
 //
 // POST { id, action }:

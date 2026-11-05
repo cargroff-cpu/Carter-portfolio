@@ -1,6 +1,6 @@
 {
-  "name": "The Back Room",
-  "short_name": "Back Room",
+  "name": "The Backroom",
+  "short_name": "Backroom",
   "description": "Carter Groff's private workspace: jobs, proposals, money and the Docket.",
   "start_url": "/backroom",
   "scope": "/",

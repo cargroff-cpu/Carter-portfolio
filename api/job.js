@@ -9,7 +9,7 @@
 //   direction, ask for changes, approve the final, pay an invoice. Each one
 //   is recorded on the job and emailed to Carter.
 //
-//   Carter, from the Back Room (needs the Back Room session cookie): send a
+//   Carter, from the Backroom (needs the Backroom session cookie): send a
 //   branded email to the client (which also moves the job to its next stage),
 //   get an upload URL for a draft or final file, and record a file or link.
 //
@@ -60,7 +60,7 @@ async function event(job, kind, who, body, meta) {
 async function tellCarter(job, subject, lines) {
   const { html, text } = renderEmail({
     heading: subject,
-    body: [...lines, '', `Job: ${job.title} (${job.name}${job.business ? ', ' + job.business : ''})`, `Open it in the Back Room: https://scaffold.cargroff.com/business#job=${job.id}`].join('\n'),
+    body: [...lines, '', `Job: ${job.title} (${job.name}${job.business ? ', ' + job.business : ''})`, `Open it in the Backroom: https://scaffold.cargroff.com/business#job=${job.id}`].join('\n'),
   });
   await sendEmail({ to: NOTIFY_EMAIL, from: FROM_INTERNAL, replyTo: job.email || undefined, subject: `${subject}: ${job.title}`, text, html }).catch(() => {});
 }

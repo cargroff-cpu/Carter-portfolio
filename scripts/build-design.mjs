@@ -4,7 +4,7 @@
 // design.jsx:
 //   npm install        (first time only)
 //   npm run build:design
-// Commit design.js alongside design.jsx. The Back Room pages still compile
+// Commit design.js alongside design.jsx. The Backroom pages still compile
 // in the browser; only the public page needs to be fast.
 import { readFileSync, writeFileSync } from 'node:fs';
 import Babel from '@babel/standalone';
@@ -23,7 +23,7 @@ const header = '// design.js — GENERATED from design.jsx by scripts/build-desi
 writeFileSync(new URL('../design.js', import.meta.url), header + code + '\n');
 console.log('design.js written');
 
-// The Back Room's Scaffold editor starts from the page's own defaults, so
+// The Backroom's Scaffold editor starts from the page's own defaults, so
 // read them out of design.jsx here (one source) and write them to
 // scaffold-defaults.js, which the editor loads.
 const dj = readFileSync(new URL('../design.jsx', import.meta.url), 'utf8');

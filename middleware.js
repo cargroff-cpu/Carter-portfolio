@@ -1,4 +1,4 @@
-// middleware.js — gates The Back Room (the private admin tools) and their
+// middleware.js — gates The Backroom (the private admin tools) and their
 // APIs behind a signed session cookie set by api/login.js, redirecting
 // anyone without a valid one to the themed login.html page. The cookie is a
 // signed, expiring token (lib/session.js), not the password.

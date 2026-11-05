@@ -1,4 +1,4 @@
-// business-hub.jsx — The Business Hub, door 03 of The Back Room: the job
+// business-hub.jsx — The Business Hub, door 03 of The Backroom: the job
 // workflow, brief to paid (2026-11-06).
 //
 //   new -> proposed -> drafts -> final -> paid
@@ -790,11 +790,11 @@ function BusinessHub() {
       </div>
       <header className="top">
         <div className="topin">
-          <a className="mark" href="/backroom"><img src="assets/antler.png" alt="" /><div><b>Business Hub</b><span>The Back Room</span></div></a>
+          <a className="mark" href="/backroom"><img src="assets/antler.png" alt="" /><div><b>Business Hub</b><span>The Backroom</span></div></a>
           <nav className="topnav">
             <a href="#ring" onClick={(e) => { e.preventDefault(); go('ring'); }} style={tab === 'ring' ? { color: 'var(--text)' } : undefined}>Home</a>
             <a href="/docket">Docket</a>
-            <a href="/backroom">Back Room</a>
+            <a href="/backroom">Backroom</a>
           </nav>
         </div>
       </header>
