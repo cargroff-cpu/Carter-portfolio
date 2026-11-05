@@ -13,7 +13,7 @@ const {
   fetchDesignBriefs, saveDesignBrief, briefAction,
 } = window.CC;
 
-const SERVICES = ['Social graphics', 'Business card or print', 'Flyer or one-pager',
+const SERVICES = ['Website', 'Social graphics', 'Business card or print', 'Flyer or one-pager',
   'Document or report', 'Presentation or deck', 'Brand basics', 'Video',
   'Inquiries and leads', 'Quotes and invoices', 'Scheduling and bookings', 'Dashboards and reports', 'Reminders and follow-ups', 'AI assistants', 'Something else'];
 

@@ -494,3 +494,14 @@ The lamp posts fade up out of the fog when the page loads, pair by pair from
 the back of the lane to the front (0.3s, 0.8s, 1.3s, 1.8s, each over 2.4s):
 each rises a little, settles, and flickers once like gas catching. On phones
 the two lamps come in at 0.4s. Reduced motion shows them at once.
+
+## The Scaffold offers websites
+
+Website design and production joins the Design half: "Websites: designed,
+built and launched, then kept running", quoted after a brief (no from-price).
+To keep six items a side, "Cards and print" and "Flyers and one-pagers" merge
+into one "Cards, flyers and print" line; both brief options stay. "Website"
+is added to the brief's design options, the server's allowed list
+(api/design-brief.js) and the Back Room hub's service list. The hero line,
+search description, JSON-LD and no-script copy now name websites, and the FAQ
+says websites are quoted like tools.

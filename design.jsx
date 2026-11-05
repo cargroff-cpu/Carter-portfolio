@@ -15,8 +15,8 @@ const SHOW_PRICES = false;
 // purpose: things almost any small business needs, no one company's tools.
 const DESIGN_SERVICES = [
   { title: 'Social graphics', desc: 'One post or a series with one look.', need: 'Social graphics', from: '$75', turn: '2 business days' },
-  { title: 'Cards and print', desc: 'Print-ready, correct bleed.', need: 'Business card or print', from: '$150', turn: '3 business days' },
-  { title: 'Flyers and one-pagers', desc: 'For print or screen.', need: 'Flyer or one-pager', from: '$175', turn: '3 business days' },
+  { title: 'Websites', desc: 'Designed, built and launched, then kept running.', need: 'Website', from: '', turn: 'Quoted' },
+  { title: 'Cards, flyers and print', desc: 'Print-ready with correct bleed, or sized for screen.', need: 'Business card or print', from: '$150', turn: '3 business days' },
   { title: 'Documents and reports', desc: 'Proposals, menus, multi-page layouts.', need: 'Document or report', from: '$400', turn: '5–7 business days' },
   { title: 'Presentations', desc: 'Designed slides, not a template.', need: 'Presentation or deck', from: '$400', turn: '5–7 business days' },
   { title: 'Brand basics', desc: 'Logo refinement, colors, type.', need: 'Brand basics', from: '$400', turn: 'Quoted' },
@@ -30,7 +30,7 @@ const TOOL_SERVICES = [
   { title: 'Reminders and follow-ups', desc: 'The right message at the right time.', need: 'Reminders and follow-ups' },
   { title: 'AI assistants', desc: 'Drafts replies using your prices and tone.', need: 'AI assistants' },
 ];
-const DESIGN_CHIPS = ['Social graphics', 'Business card or print', 'Flyer or one-pager', 'Document or report', 'Presentation or deck', 'Brand basics', 'Video', 'Something else'];
+const DESIGN_CHIPS = ['Website', 'Social graphics', 'Business card or print', 'Flyer or one-pager', 'Document or report', 'Presentation or deck', 'Brand basics', 'Video', 'Something else'];
 const AUTOMATION_CHIPS = [...TOOL_SERVICES.map((t) => t.need), 'Something else'];
 const BUDGETS = ['Under $150', '$150–$500', '$500–$1,500', '$1,500–$5,000', '$5,000+', 'Not sure yet'];
 
@@ -41,7 +41,7 @@ const TESTIMONIALS = [];
 
 const FAQ = [
   ['Do you use AI?', 'Yes. AI does the drafting and the first pass of the build. I make the decisions, check everything and finish it.'],
-  ['What does it cost?', 'Design is priced per piece. Tools are quoted after a short brief. Either way, you see the price before anything starts.'],
+  ['What does it cost?', 'Graphics and print are priced per piece. Websites and tools are quoted after a short brief. Either way, you see the price before anything starts.'],
   ['Will I need new software?', 'Not usually. Where I can, I build on what you already use.'],
   ['How fast is it?', 'Most design pieces: three directions within two business days of a complete brief. Tools: a plan within a few days, then a first working version.'],
   ['What if something breaks?', 'I fix it. Ongoing care is available as a monthly plan.'],
@@ -201,7 +201,7 @@ function Hero({ onAddNeed }) {
       <div className="dwrap dhero-in">
         <div className="dhero-medal"><Medallion /></div>
         <h1 className="ddisplay">Design that looks right. Tools that work right.</h1>
-        <p className="ddeck">Graphics, print and documents, and the small tools that take busywork off your plate.</p>
+        <p className="ddeck">Websites, graphics and print, and the small tools that take busywork off your plate.</p>
         <div className="dacts">
           <a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('design'); }}>Start a brief</a>
           <a className="p-btn ghost" href="#doors">See the work</a>
