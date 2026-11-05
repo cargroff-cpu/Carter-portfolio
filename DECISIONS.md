@@ -573,5 +573,8 @@ behind the same login (middleware.js) and logout-on-close.
 - Not covered: the page's no-script fallback text and search description in
   Carter Groff Design.html, which stay as written in the file.
 - The Back Room's doors are now Portfolio Backend, Scaffold Backend and
-  Business Hub, on one row (the right padding kept for the old sconce is
-  narrower).
+  Business Hub, on one row on desktop and stacked on phones.
+- The sconce (the tall light bar on the right, a horizontal bar on phones)
+  is back as the room's light. Wick is retired, so it is decoration only: no
+  link, no label, it ignores the pointer, embers drift up gently, and it
+  holds still under reduced motion.

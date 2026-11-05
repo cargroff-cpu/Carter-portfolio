@@ -1,6 +1,6 @@
 // scaffold-hub.jsx — The Scaffold's entry point, recreated in React from
-// design-reference/Scaffold Hub.html. Establishes Wick's presence (the
-// sconce) and routes to the Portfolio Backend (Admin.html), the Scaffold
+// design-reference/Scaffold Hub.html. The sconce stays as the room's light
+// (Wick itself is retired, so it is decoration only) and the page routes to the Portfolio Backend (Admin.html), the Scaffold
 // Backend (/backroom/scaffold), the Business Hub and the Docket.
 const { fetchDocketTasks } = window.CC;
 
@@ -75,6 +75,22 @@ function ScaffoldHub() {
       <div className="stage" style={locked ? { filter: 'blur(9px) brightness(.4)' } : undefined}>
         <div className="fog" />
         <div className="antler"><img src="assets/antler.png" alt="Carter Groff" /></div>
+
+        {/* The sconce: the room's light. Wick is retired, so it is decoration
+            only (no link, no label, no hover). */}
+        <div className="sconce" aria-hidden="true">
+          <span className="tube">
+            <span className="core" />
+            <span className="wall" />
+            <span className="embers">
+              <i style={{ left: '14%', '--dx': '-16px', animationDelay: '0s' }} />
+              <i style={{ left: '38%', '--dx': '12px', animationDelay: '.7s' }} />
+              <i style={{ left: '56%', '--dx': '-9px', animationDelay: '1.5s' }} />
+              <i style={{ left: '76%', '--dx': '18px', animationDelay: '2.3s' }} />
+              <i style={{ left: '48%', '--dx': '4px', animationDelay: '3.1s' }} />
+            </span>
+          </span>
+        </div>
 
         <div className="plaque">The Back Room</div>
         <h1 className="greet">{hail()}, <em>Carter</em>.</h1>
