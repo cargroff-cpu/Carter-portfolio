@@ -1,8 +1,10 @@
 {
   "redirects": [
-    { "source": "/scaffold", "destination": "/backroom", "permanent": false }
+    { "source": "/scaffold", "destination": "/backroom", "permanent": false },
+    { "source": "/design", "has": [{ "type": "host", "value": "www.cargroff.com" }], "destination": "https://scaffold.cargroff.com/", "permanent": false }
   ],
   "rewrites": [
+    { "source": "/", "has": [{ "type": "host", "value": "scaffold.cargroff.com" }], "destination": "/Carter%20Groff%20Design.html" },
     { "source": "/", "destination": "/Carter%20Portfolio.html" },
     { "source": "/backroom", "destination": "/Scaffold%20Hub.html" },
     { "source": "/docket", "destination": "/The%20Docket.html" },

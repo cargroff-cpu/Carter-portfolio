@@ -405,3 +405,21 @@ The hero's background is the portfolio hero's own, copied value for value
 from themes.jsx and portfolio.jsx: the `.cg-wood` 34px panels and sawn grain,
 a `.cg-candlelight` pool at each lamp, three fog banks rolling across, and
 the same deep vignette. A brighter custom wood was tried and dropped.
+
+## /design: Hallmark audit fixes, and its own address (scaffold.cargroff.com)
+
+A Hallmark audit of the live page found these, all now fixed:
+
+- **Floor findings**
+  - Too many words per screen: the service rows lost their one-line descriptions, and tool rows say "quoted after a short brief" once instead of on every row.
+  - Low-contrast greys: `--ink-mute` is now the portfolio's AA value `#9a8462`, and the session comments and form placeholders use it.
+  - A dash in the title: it is now a colon.
+  - Old tracked-caps and literal-colour rules from the shared `parlor.css`: /design no longer loads `parlor.css`. The tokens and base rules it used are copied, tokenized, into `cargroff-design.css`, so the Back Room pages are untouched.
+- **Reflex findings**
+  - Sections now vary their surface and spacing: soft ground, wood, plain, wood, deep, soft. Lamplight continues onto How it works and I'm Carter.
+  - I'm Carter has a large portrait, with the three rules set large.
+  - The FAQ sits beside its heading.
+  - There is one primary button style: no brass button, and no hover glow.
+  - The lamp drawing (80) and the centred hero (6b) are waived on the record in the stamp.
+
+The page also gets its own address. `scaffold.cargroff.com` is added to the Vercel project, a host-matched rewrite serves the page at its root, and `www.cargroff.com/design` redirects there (302 for now; switch it to permanent once the subdomain is settled). Canonical, OG and JSON-LD URLs point at the subdomain, and the page's Portfolio links go to www.cargroff.com. DNS for cargroff.com is on Cloudflare, which needs a CNAME `scaffold` pointing to the target Vercel gives, set to DNS only.

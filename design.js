@@ -685,7 +685,7 @@ function Nav() {
   }, "How it works"), React.createElement("a", {
     href: "#faq"
   }, "Questions"), React.createElement("a", {
-    href: "/"
+    href: "https://www.cargroff.com/"
   }, "Portfolio")), React.createElement("a", {
     className: "p-btn",
     href: "#brief"
@@ -898,7 +898,7 @@ function Doors({
   }, []);
   return React.createElement("section", {
     id: "doors",
-    className: "dsection ddoors"
+    className: "dsection ddoors dsoft"
   }, React.createElement("div", {
     className: "dwrap"
   }, React.createElement("div", {
@@ -932,7 +932,7 @@ function Doors({
     className: "dprint-n"
   }, i + 1, React.createElement("small", null, "Your pick")))))), React.createElement("p", {
     className: "dcap"
-  }, "Example: a spring menu flyer, as the drafts arrive. Choose one; I finish it."), React.createElement("p", null, React.createElement("a", {
+  }, "Example: a spring menu flyer. Pick a draft."), React.createElement("p", null, React.createElement("a", {
     className: "p-btn",
     href: "#brief",
     onClick: e => {
@@ -969,8 +969,8 @@ function Doors({
     "aria-hidden": "true"
   }))))), React.createElement("p", {
     className: "dcap"
-  }, "Example: a small tool for one job. A person approves anything customers see."), React.createElement("p", null, React.createElement("a", {
-    className: "p-btn brass",
+  }, "Example: one small tool. You approve what customers see."), React.createElement("p", null, React.createElement("a", {
+    className: "p-btn",
     href: "#brief",
     onClick: e => {
       e.preventDefault();
@@ -997,6 +997,9 @@ function Dial() {
     id: "how",
     className: "dsection dwood dpanel"
   }, React.createElement("div", {
+    className: "dsec-candle",
+    "aria-hidden": "true"
+  }), React.createElement("div", {
     className: "dwrap ddialwrap"
   }, React.createElement("div", {
     className: "ddial up",
@@ -1117,12 +1120,14 @@ function Turn({
   s,
   lane
 }) {
-  const turn = lane === 'design' ? s.turn || 'Quoted' : 'Quoted';
+  const turn = lane === 'design' ? s.turn || 'Quoted' : null;
+  const price = SHOW_PRICES && s.from;
+  if (!turn && !price) return null;
   return React.createElement("em", {
     className: "dturn"
-  }, SHOW_PRICES && s.from && React.createElement("span", {
+  }, price && React.createElement("span", {
     className: "dprice"
-  }, "From ", s.from), React.createElement("span", null, turn));
+  }, "From ", s.from), turn && React.createElement("span", null, turn));
 }
 function Shelf({
   lane,
@@ -1153,7 +1158,7 @@ function Shelf({
     }
   }, React.createElement("span", {
     className: "dlist-main"
-  }, React.createElement("b", null, s.title), React.createElement("span", null, s.desc)), React.createElement(Turn, {
+  }, React.createElement("b", null, s.title)), React.createElement(Turn, {
     s: s,
     lane: lane
   }))))), React.createElement("p", {
@@ -1174,7 +1179,7 @@ function Make({
 }) {
   return React.createElement("section", {
     id: "make",
-    className: "dsection"
+    className: "dsection dplain"
   }, React.createElement("div", {
     className: "dwrap"
   }, React.createElement("div", {
@@ -1187,7 +1192,7 @@ function Make({
     lane: "design",
     label: "Design",
     title: "What your customers see",
-    blurb: "AI drafts three directions. I finish the one you pick. Two revision rounds included.",
+    blurb: "Three directions, you pick one, I finish it.",
     items: DESIGN_SERVICES,
     cta: "Start a design brief",
     onAddNeed: onAddNeed
@@ -1195,7 +1200,7 @@ function Make({
     lane: "automation",
     label: "Tools",
     title: "What runs behind the scenes",
-    blurb: "Small, specific tools for businesses without a developer. Proven by hand first, then automated.",
+    blurb: "Small tools, proven by hand first. Quoted after a short brief.",
     items: TOOL_SERVICES,
     cta: "Start a tools brief",
     onAddNeed: onAddNeed
@@ -1215,8 +1220,11 @@ function Make({
 function Why() {
   return React.createElement("section", {
     id: "why",
-    className: "dsection"
+    className: "dsection dpanel"
   }, React.createElement("div", {
+    className: "dsec-candle left",
+    "aria-hidden": "true"
+  }), React.createElement("div", {
     className: "dwrap"
   }, React.createElement("div", {
     className: "dwhyhead up"
@@ -1229,9 +1237,11 @@ function Why() {
     className: "ddisplay"
   }, "I\u2019m Carter."), React.createElement("p", {
     className: "dp"
-  }, "A marketer, designer and builder in Harrisonburg, Virginia. By day I lead marketing and automation at a local company, so I know what small teams actually need."), React.createElement("p", {
-    className: "dp"
-  }, "My rules: prove it by hand before automating it. Automate the bottleneck, not everything. A person approves anything that reaches a customer."))), TESTIMONIALS.length > 0 && React.createElement("div", {
+  }, "A marketer, designer and builder in Harrisonburg, Virginia. By day I lead marketing and automation at a local company, so I know what small teams actually need."), React.createElement("span", {
+    className: "dk drules-k"
+  }, "My rules"), React.createElement("ol", {
+    className: "drules"
+  }, React.createElement("li", null, React.createElement("b", null, "1"), React.createElement("span", null, "Prove it by hand before automating it.")), React.createElement("li", null, React.createElement("b", null, "2"), React.createElement("span", null, "Automate the bottleneck, not everything.")), React.createElement("li", null, React.createElement("b", null, "3"), React.createElement("span", null, "A person approves anything that reaches a customer."))))), TESTIMONIALS.length > 0 && React.createElement("div", {
     className: "dquotes"
   }, TESTIMONIALS.map(t => React.createElement("blockquote", {
     className: "up",
@@ -1241,9 +1251,9 @@ function Why() {
 function Faq() {
   return React.createElement("section", {
     id: "faq",
-    className: "dsection"
+    className: "dsection dsoft"
   }, React.createElement("div", {
-    className: "dwrap"
+    className: "dwrap dfaqgrid"
   }, React.createElement("div", {
     className: "dshead up"
   }, React.createElement("h2", {
@@ -1690,7 +1700,7 @@ function Footer() {
   }, "Tools and design by Carter Groff. Harrisonburg, Virginia.")), React.createElement("div", {
     className: "dfootlinks"
   }, React.createElement("a", {
-    href: "/"
+    href: "https://www.cargroff.com/"
   }, "Portfolio"), React.createElement("a", {
     href: "mailto:car.groff@gmail.com"
   }, "car.groff@gmail.com"), React.createElement("span", null, "\xA9 ", new Date().getFullYear(), " Carter Groff"))));
