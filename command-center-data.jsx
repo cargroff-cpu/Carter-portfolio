@@ -1,8 +1,8 @@
-// command-center-data.jsx — the Back Room's data layer: reads through
+// command-center-data.jsx — the Backroom's data layer: reads through
 // /api/scaffold-read and plain writes through /api/scaffold-write (both
 // server-side, behind the session; the browser holds no Supabase key), plus
 // the workflow actions in /api/job.js and the brief triage in
-// /api/brief-reply.js. Used by the Back Room hub, the Docket and the
+// /api/brief-reply.js. Used by the Backroom hub, the Docket and the
 // Business Hub. (The old marketing board's brand kits, campaigns, links and
 // Pipedrive goals were removed with the 2026-11-06 workflow.)
 

@@ -1,7 +1,6 @@
-// docket.jsx — The Docket, recreated in React from design-reference/The
-// Docket.html. Priority is placement: which of the four quadrant columns a
-// task sits in IS its priority, no separate priority field. Real Supabase
-// table (docket_tasks) instead of the prototype's localStorage.
+// docket.jsx — The Docket. Priority is placement: which of the four quadrant
+// columns a task sits in IS its priority, no separate priority field. Tasks
+// live in the Supabase table docket_tasks.
 const { fetchDocketTasks, saveDocketTask } = window.CC;
 
 const QUADS = [
@@ -10,7 +9,8 @@ const QUADS = [
   ['q3', 'Plan it', 'Important, not urgent'],
   ['q4', 'Someday', 'Neither'],
 ];
-const BR = { ltw: 'LTW', sq: 'Squeeky', me: 'Personal' };
+// docket_tasks still has a brand column from the old design; every task is 'me'.
+const BRAND = 'me';
 
 const ymd = (s) => { const [y, m, d] = String(s).split('-'); return new Date(+y, +m - 1, +d); };
 const days = (a, b) => Math.round(((b instanceof Date ? b : ymd(b)) - (a instanceof Date ? a : ymd(a))) / 864e5);
@@ -36,14 +36,13 @@ function Task({ t, onDragStart, onDragEnd, onClear, dragging }) {
       onDragEnd={onDragEnd}
       onClick={onClear}
       title="Click to clear, drag to reorder or move column">
-      <span className={'dot ' + t.brand} title={BR[t.brand]} />
       <span className="t">{t.t}</span>
       <span className={'when ' + w.cls}>{w.txt}</span>
     </div>
   );
 }
 
-function Column({ q, label, axis, tasks, addBrand, setAddBrand, onAdd, onDragStart, onDragEnd, onDrop, draggingId }) {
+function Column({ q, label, axis, tasks, onAdd, onDragStart, onDragEnd, onDrop, draggingId }) {
   const [over, setOver] = React.useState(false);
   const [gapIndex, setGapIndex] = React.useState(null);
   const listRef = React.useRef(null);
@@ -98,13 +97,6 @@ function Column({ q, label, axis, tasks, addBrand, setAddBrand, onAdd, onDragSta
         ))}
         {gapIndex === tasks.length && <div className="gap" />}
         <div className="add">
-          <span className="pick">
-            {Object.keys(BR).map((k) => (
-              <button key={k} type="button" aria-pressed={addBrand === k} title={BR[k]} onClick={() => setAddBrand(k)}>
-                <span className={'dot ' + k} />
-              </button>
-            ))}
-          </span>
           <input value={val} onChange={(e) => setVal(e.target.value)} onKeyDown={submit}
             placeholder={'Add' + (q === 'q1' ? ' something urgent' : q === 'q4' ? ' for later' : '') + '…'}
             aria-label={'New task in ' + label} />
@@ -117,17 +109,14 @@ function Column({ q, label, axis, tasks, addBrand, setAddBrand, onAdd, onDragSta
 function Docket() {
   const [tasks, setTasks] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
-  const [show, setShow] = React.useState({ ltw: true, sq: true, me: true });
-  const [addBrand, setAddBrand] = React.useState('ltw');
   const [draggingId, setDraggingId] = React.useState(null);
 
   React.useEffect(() => {
     fetchDocketTasks().then((rows) => setTasks(rows)).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  const vis = tasks.filter((t) => show[t.brand]);
-  const open = vis.filter((t) => !t.done);
-  const done = vis.filter((t) => t.done);
+  const open = tasks.filter((t) => !t.done);
+  const done = tasks.filter((t) => t.done);
 
   const patch = (id, changes) => setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...changes } : t)));
 
@@ -145,11 +134,11 @@ function Docket() {
 
   const addTask = (q, text) => {
     const newTask = {
-      id: 'local-' + Math.random().toString(36).slice(2), brand: addBrand, q, t: text,
+      id: 'local-' + Math.random().toString(36).slice(2), brand: BRAND, q, t: text,
       due: null, made: todayStr(), rank: -1, done: false,
     };
     setTasks((prev) => reindex(q, [newTask, ...prev]));
-    saveDocketTask({ brand: addBrand, q, t: text, due: null, made: todayStr(), rank: -1, done: false })
+    saveDocketTask({ brand: BRAND, q, t: text, due: null, made: todayStr(), rank: -1, done: false })
       .then((res) => {
         // swap the optimistic local id for the real one from Supabase
         if (res && res.row && res.row.id) {
@@ -186,23 +175,15 @@ function Docket() {
         <div className="topin">
           <a className="mark" href="/backroom">
             <img src="assets/antler.png" alt="" />
-            <div><b>The Docket</b><span>The Back Room</span></div>
+            <div><b>The Docket</b><span>The Backroom</span></div>
           </a>
           <nav className="topnav">
-            <a href="/backroom">Hub</a>
+            <a href="/backroom">Backroom</a>
           </nav>
         </div>
       </header>
       <main>
         <div className="filterbar">
-          <span className="lbl">Showing</span>
-          <div className="seg">
-            {Object.keys(BR).map((b) => (
-              <button key={b} type="button" aria-pressed={show[b]} onClick={() => setShow((s) => ({ ...s, [b]: !s[b] }))}>
-                <span className={'dot ' + b} />{BR[b]}
-              </button>
-            ))}
-          </div>
           <div className="tally">
             <span>Now<b className="hot">{open.filter((t) => t.q === 'q1').length}</b></span>
             <span>Open<b>{open.length}</b></span>
@@ -217,7 +198,6 @@ function Docket() {
               {QUADS.map(([q, label, axis]) => (
                 <Column key={q} q={q} label={label} axis={axis}
                   tasks={open.filter((t) => t.q === q).sort((a, b) => (a.rank || 0) - (b.rank || 0))}
-                  addBrand={addBrand} setAddBrand={setAddBrand}
                   onAdd={Object.assign((qq, text) => addTask(qq, text), { clear: addTask.clear })}
                   onDragStart={setDraggingId} onDragEnd={() => setDraggingId(null)}
                   onDrop={onDrop} draggingId={draggingId} />
@@ -229,7 +209,7 @@ function Docket() {
                 {done.length === 0 && <p className="empty">Nothing cleared yet.</p>}
                 {done.map((t) => (
                   <button key={t.id} title="Put it back" onClick={() => clearTask(t.id, false)}>
-                    <span className={'dot ' + t.brand} /><span className="t">{t.t}</span>
+                    <span className="t">{t.t}</span>
                   </button>
                 ))}
               </div>

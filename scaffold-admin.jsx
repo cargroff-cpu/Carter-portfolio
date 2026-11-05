@@ -1,4 +1,4 @@
-// scaffold-admin.jsx — the Back Room's editor for scaffold.cargroff.com.
+// scaffold-admin.jsx — the Backroom's editor for scaffold.cargroff.com.
 // Edits the page's copy and lists (hero, services, prices, How it works,
 // About you, Questions, Kind words), keeps a draft in this browser as you
 // type, and publishes to Supabase (site_content row 2) through the
@@ -124,7 +124,7 @@ function App() {
   return (
     <div style={{ minHeight: '100vh' }}>
       <header style={{ position: 'sticky', top: 0, zIndex: 10, background: 'rgba(13,9,5,.94)', borderBottom: '1px solid var(--rule)', padding: '14px clamp(16px,4vw,40px)', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-        <a href="/backroom" style={{ color: 'var(--ink-soft)', textDecoration: 'none', fontSize: 14 }}>The Back Room</a>
+        <a href="/backroom" style={{ color: 'var(--ink-soft)', textDecoration: 'none', fontSize: 14 }}>The Backroom</a>
         <span style={{ fontFamily: 'var(--display-font)', fontSize: 24, color: 'var(--ink)' }}>Scaffold Backend</span>
         <span role="status" style={{ fontSize: 14, color: dirty ? 'var(--amber)' : 'var(--ink-mute)' }}>{status}</span>
         <span style={{ flex: 1 }} />

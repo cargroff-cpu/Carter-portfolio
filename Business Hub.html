@@ -8,10 +8,10 @@
 <meta name="theme-color" content="#100b06" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-title" content="Back Room" />
+<meta name="apple-mobile-web-app-title" content="Backroom" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black" />
 <link rel="apple-touch-icon" href="/assets/scaffold-icon-180.png" />
-<title>Business Hub · The Back Room</title>
+<title>Business Hub · The Backroom</title>
 <link rel="icon" type="image/png" href="assets/favicon.png" />
 <link rel="stylesheet" href="parlor.css" />
 <link rel="stylesheet" href="mcc.css" />
@@ -35,11 +35,21 @@ body { min-height: 100vh; background: linear-gradient(180deg, #1e1509, var(--bg)
 .jcards .reclist { text-align: left; }
 @media (max-width: 1100px) { .jboard { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 700px) { .jboard { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 760px) {
+  .top .topin { padding: 10px 16px; gap: 2px 8px; flex-wrap: nowrap; }
+  .top .topnav { margin-left: auto; flex-wrap: nowrap; }
+  .top .topnav a { font-size: 13px; letter-spacing: .03em; text-transform: none; padding: 12px 8px; }
+  .mark b { font-size: 18px; }
+  .jcol .pad { padding: 12px 0; }
+  .jcards { padding: 0 0 12px; gap: 8px; }
+  .jcards .reclist { border: 1px solid var(--line-2); padding: 14px; background: rgba(236,217,178,.03); }
+  .jcards > .sub { padding: 0 0 4px !important; }
+}
 </style>
 </head>
 <body>
   <div id="root"></div>
-  <!-- The Back Room no longer logs you out whenever a page is left (Back,
+  <!-- The Backroom no longer logs you out whenever a page is left (Back,
        refresh, a tab switch on a phone); that made the sign-in pop up on
        random screens. The session cookie now ends when the browser closes, or
        after 8 hours, or when you use Sign out. -->

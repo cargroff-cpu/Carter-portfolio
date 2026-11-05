@@ -18,7 +18,7 @@ portfolio.jsx            Page sections + composition (Hero, About, Video, Design
 cg-store.js              Shared storage helper used by the site and the admin CMS
 assets/                  Images (portrait, etc.)
 
-Admin.html               Content editor (CMS), part of "The Back Room" (private tools) — served under /backroom, not linked from the public site
+Admin.html               Content editor (CMS), part of "The Backroom" (private tools) — served under /backroom, not linked from the public site
 admin.jsx                Admin app shell (editor + live preview split view)
 admin-ui.jsx             Admin form primitives (fields, buttons, image/PDF upload)
 admin-sections.jsx       Admin form sections (Identity, About, Videos, Designs, Résumé, Travels)
@@ -28,13 +28,13 @@ design.jsx                Studio page source: sections + the three-movement brie
 design.js                 GENERATED from design.jsx (precompiled, so the public page ships no in-browser Babel). Commit it with design.jsx
 cargroff-design.css       Studio page styles, built on parlor.css's tokens
 
-Scaffold Hub.html         The Back Room's entry (served at /backroom; /scaffold redirects there)
-Business Hub.html         The Business Hub CRM, door 02 of The Back Room — served at /business
+Scaffold Hub.html         The Backroom's entry (served at /backroom; /scaffold redirects there)
+Business Hub.html         The Business Hub CRM, door 02 of The Backroom — served at /business
 business-hub.jsx          Clients, leads (+ thread), projects (+ deliverables), invoices, notes, briefs inbox with AI triage
-command-center-data.jsx   Back Room data layer: reads via /api/scaffold-read, writes via /api/scaffold-write (no Supabase key in the browser)
+command-center-data.jsx   Backroom data layer: reads via /api/scaffold-read, writes via /api/scaffold-write (no Supabase key in the browser)
 
 api/design-brief.js       Public brief endpoint (email first, then DB, uploads, AI triage, client confirmation, event log). GET = health check / keep-alive
-api/brief-reply.js        Back Room only: re-run triage, approve & send a reply, or reject
+api/brief-reply.js        Backroom only: re-run triage, approve & send a reply, or reject
 lib/                      Server helpers: session tokens, rate limiting, Supabase/Resend helpers, AI triage
 supabase-schema.sql       Record of the live schema
 supabase/migrations/      Changes still to apply, in order (see the top of each file)
@@ -67,7 +67,7 @@ local storage as a draft safety net. Click **Save / Publish** to push that
 draft live: it's written to Supabase, and the public site picks it up on
 its next page load — no redeploy needed.
 
-The Back Room (`/backroom`, `/business`, `/docket`, the admin) is
+The Backroom (`/backroom`, `/business`, `/docket`, the admin) is
 password-protected: `api/login.js` checks `ADMIN_PASSWORD` and sets a
 signed, 8-hour session token (`lib/session.js`) that `middleware.js`
 verifies. Login is rate-limited.
@@ -81,7 +81,7 @@ Variables — set directly there, never committed):
 
 | Variable | Used by | Notes |
 |---|---|---|
-| `ADMIN_PASSWORD` | `api/login.js` | The Back Room password. Rotate it after deploying the 2026-11-04 changes |
+| `ADMIN_PASSWORD` | `api/login.js` | The Backroom password. Rotate it after deploying the 2026-11-04 changes |
 | `SESSION_SECRET` | `lib/session.js` | **New.** Long random string that signs session cookies. Until set, sessions are signed with `ADMIN_PASSWORD` |
 | `SUPABASE_SERVICE_ROLE_KEY` | every `api/` route that touches the database | Full-access key, server-side only. Rotate it after the lockdown migration |
 | `RESEND_API_KEY` | `api/contact.js`, `api/design-brief.js`, `api/brief-reply.js` | Email |

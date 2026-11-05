@@ -1,5 +1,5 @@
 // scaffold-hub.jsx — The Scaffold's entry point, recreated in React from
-// design-reference/Scaffold Hub.html. The sconce stays as the room's light
+// the Scaffold Hub mock. The sconce stays as the room's light
 // (Wick itself is retired, so it is decoration only) and the page routes to the Portfolio Backend (Admin.html), the Scaffold
 // Backend (/backroom/scaffold), the Business Hub and the Docket.
 const { fetchDocketTasks } = window.CC;
@@ -97,7 +97,7 @@ function ScaffoldHub() {
           </span>
         </div>
 
-        <div className="plaque">The Back Room</div>
+        <div className="plaque">The Backroom</div>
         <h1 className="greet">{hail()}, <em>Carter</em>.</h1>
 
         <div className="pair">

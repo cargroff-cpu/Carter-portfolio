@@ -1,4 +1,4 @@
-// api/scaffold-read.js — the Back Room's read path. Before this, the Business
+// api/scaffold-read.js — the Backroom's read path. Before this, the Business
 // Hub and the Docket read their tables straight from the browser with the
 // public anon key, which meant those tables needed a "public read" RLS
 // policy — so anyone holding the (committed) anon key could read every lead,

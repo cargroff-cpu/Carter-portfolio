@@ -1,6 +1,6 @@
 // api/design-brief.js — receives a submission from the /design brief form
 // (design.jsx). Public, unauthenticated endpoint (not gated by middleware.js:
-// a prospective client has no Back Room session).
+// a prospective client has no Backroom session).
 //
 // Order matters, and is built so a database outage can never silently eat a
 // lead:
@@ -211,7 +211,7 @@ export default async function handler(req, res) {
   };
   const lines = briefLines(brief);
   if (files.length) lines.push(`Files: ${files.map((f) => f.filename).join(', ')}`);
-  if (plan) lines.push(`Plan uploaded: ${plan.filename} (in the Back Room)`);
+  if (plan) lines.push(`Plan uploaded: ${plan.filename} (in the Backroom)`);
 
   // 1. Email Carter first — the email alone is enough to act on the lead.
   let emailed = false;
@@ -235,7 +235,7 @@ export default async function handler(req, res) {
       method: 'POST', prefer: 'return=representation',
       body: { ...brief, attachment_count: files.length + (plan ? 1 : 0) },
     });
-    // Every brief starts a job at "new"; the Back Room's Jobs board takes it
+    // Every brief starts a job at "new"; the Backroom's Jobs board takes it
     // from there (see api/job.js).
     try {
       const [job] = await sb('jobs', {

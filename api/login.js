@@ -1,7 +1,7 @@
 // api/login.js — checks the submitted password against ADMIN_PASSWORD and,
 // if correct, sets an HttpOnly cookie holding a signed, expiring session
 // token (lib/session.js). The cookie never contains the password itself.
-// middleware.js verifies the token on every Back Room page and API request.
+// middleware.js verifies the token on every Backroom page and API request.
 //
 // Rate limited: 5 failed attempts per IP per 15 minutes (best effort, per
 // serverless instance — see lib/rate-limit.js).

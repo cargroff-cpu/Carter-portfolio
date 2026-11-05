@@ -1,7 +1,7 @@
 -- 20261106_workflow.sql — the Scaffold's job workflow (brief to paid).
 --
 -- NOT APPLIED YET. Apply it right before the code on this branch goes live
--- (the new Back Room reads these tables). Every table it drops was empty on
+-- (the new Backroom reads these tables). Every table it drops was empty on
 -- 2026-11-06 (checked row counts), so nothing is lost. Safe to re-run.
 --
 -- One job carries a piece of work from brief to paid:

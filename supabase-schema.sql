@@ -26,37 +26,10 @@
 -- service-role key only, zero anon access, matching api/wick-memory.js's
 -- documented intent.
 
-create table if not exists campaigns (
-  id text primary key,
-  brand text not null check (brand in ('ltw','sq')),
-  date date not null,
-  channel text,
-  type text,
-  name text not null,
-  audience text,
-  qty integer,
-  cost numeric,
-  attribution text,
-  utm text,
-  leads integer default 0,
-  status text not null default 'draft' check (status in ('draft','sent','flagged')),
-  checklist jsonb default '{}'::jsonb,
-  created_at timestamptz not null default now()
-);
-
-create table if not exists links (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  brand text not null check (brand in ('ltw','sq')),
-  channel text,
-  date date,
-  url text not null,
-  created_at timestamptz not null default now()
-);
 
 create table if not exists docket_tasks (
   id uuid primary key default gen_random_uuid(),
-  brand text not null check (brand in ('ltw','sq','me')),
+  brand text not null default 'me' check (brand = 'me'),
   q text not null check (q in ('q1','q2','q3','q4')),
   t text not null,
   due date,
@@ -64,67 +37,6 @@ create table if not exists docket_tasks (
   rank integer default 0,
   done boolean not null default false,
   created_at timestamptz not null default now()
-);
-
-create table if not exists generated_content (
-  id uuid primary key default gen_random_uuid(),
-  brand text not null check (brand in ('ltw', 'sq')),
-  kind text not null,
-  title text,
-  eyebrow text,
-  subject text,
-  hi text,
-  preheader text,
-  greeting text,
-  body jsonb not null default '[]'::jsonb,
-  cta text,
-  cta2 text,
-  campaign_id text,
-  by text not null default 'Builder',
-  date date not null default current_date,
-  created_at timestamptz not null default now()
-);
-
-create table if not exists wick_sessions (
-  id uuid primary key default gen_random_uuid(),
-  started_at timestamptz not null default now(),
-  ended_at timestamptz,
-  turns integer default 0,
-  headline text
-);
-
-create table if not exists wick_memory (
-  id uuid primary key default gen_random_uuid(),
-  created_at timestamptz not null default now(),
-  date date not null default current_date,
-  topic text not null,
-  summary text not null,
-  related_brand text check (related_brand in ('ltw','sq')),
-  kind text default 'decision' check (kind in ('decision','preference','result','pattern','disagreement')),
-  source text default 'conversation',
-  weight integer default 1,
-  session_id uuid references wick_sessions(id) on delete set null
-);
-create index if not exists wick_memory_brand_date on wick_memory (related_brand, date desc);
-
-create table if not exists wick_messages (
-  id uuid primary key default gen_random_uuid(),
-  session_id uuid not null references wick_sessions(id) on delete cascade,
-  created_at timestamptz not null default now(),
-  role text not null check (role in ('user','assistant')),
-  content text not null,
-  tool_calls jsonb
-);
-
-create table if not exists wick_actions (
-  id uuid primary key default gen_random_uuid(),
-  created_at timestamptz not null default now(),
-  session_id uuid references wick_sessions(id) on delete set null,
-  tool text not null,
-  input jsonb not null,
-  result text,
-  entity text,
-  ok boolean default true
 );
 
 create table if not exists clients (
@@ -140,63 +52,8 @@ create table if not exists clients (
   updated_at timestamptz not null default now()
 );
 
-create table if not exists leads (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  contact text,
-  email text,
-  source text,
-  ask text,
-  value numeric,
-  status text not null default 'New' check (status in ('New','Awaiting Response','Replied','Converted','Dead')),
-  converted_project_id uuid,
-  created_at timestamptz not null default now(),
-  last_activity_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists lead_messages (
-  id uuid primary key default gen_random_uuid(),
-  lead_id uuid not null references leads(id) on delete cascade,
-  "from" text not null check ("from" in ('them','me')),
-  body text not null,
-  sent_at timestamptz not null default now(),
-  created_at timestamptz not null default now()
-);
-create index if not exists lead_messages_lead_id_idx on lead_messages(lead_id);
-
-create table if not exists projects (
-  id uuid primary key default gen_random_uuid(),
-  client_id uuid references clients(id) on delete set null,
-  name text not null,
-  kind text,
-  status text not null default 'Scheduled',
-  started date,
-  due date,
-  fee numeric,
-  scope text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-create index if not exists projects_client_id_idx on projects(client_id);
-
-alter table leads add constraint leads_converted_project_id_fkey
-  foreign key (converted_project_id) references projects(id) on delete set null;
-
-create table if not exists project_deliverables (
-  id uuid primary key default gen_random_uuid(),
-  project_id uuid not null references projects(id) on delete cascade,
-  label text not null,
-  done boolean not null default false,
-  sort_order integer not null default 0,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-create index if not exists project_deliverables_project_id_idx on project_deliverables(project_id);
-
 create table if not exists invoices (
   id uuid primary key default gen_random_uuid(),
-  project_id uuid references projects(id) on delete set null,
   client_id uuid references clients(id) on delete set null,
   amount numeric not null,
   status text not null default 'draft' check (status in ('draft','sent','paid','overdue')),
@@ -209,20 +66,6 @@ create table if not exists invoices (
   updated_at timestamptz not null default now()
 );
 create index if not exists invoices_client_id_idx on invoices(client_id);
-create index if not exists invoices_project_id_idx on invoices(project_id);
-
-create table if not exists notes (
-  id uuid primary key default gen_random_uuid(),
-  body text not null,
-  client_id uuid references clients(id) on delete set null,
-  project_id uuid references projects(id) on delete set null,
-  lead_id uuid references leads(id) on delete set null,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-create index if not exists notes_client_id_idx on notes(client_id);
-create index if not exists notes_project_id_idx on notes(project_id);
-create index if not exists notes_lead_id_idx on notes(lead_id);
 
 create table if not exists design_briefs (
   id uuid primary key default gen_random_uuid(),
@@ -240,7 +83,6 @@ create table if not exists design_briefs (
   notes text,
   budget text,
   status text not null default 'new' check (status in ('new','answered')),
-  converted_lead_id uuid references leads(id) on delete set null,
   created_at timestamptz not null default now(),
   answered_at timestamptz
 );
@@ -254,35 +96,23 @@ create table if not exists design_brief_attachments (
   created_at timestamptz not null default now()
 );
 create index if not exists design_brief_attachments_brief_id_idx on design_brief_attachments(design_brief_id);
-
-alter table campaigns enable row level security;
-alter table links enable row level security;
 alter table docket_tasks enable row level security;
-alter table generated_content enable row level security;
 alter table clients enable row level security;
-alter table leads enable row level security;
-alter table lead_messages enable row level security;
-alter table projects enable row level security;
-alter table project_deliverables enable row level security;
 alter table invoices enable row level security;
-alter table notes enable row level security;
 alter table design_briefs enable row level security;
 alter table design_brief_attachments enable row level security;
-alter table wick_sessions enable row level security;
-alter table wick_memory enable row level security;
-alter table wick_messages enable row level security;
-alter table wick_actions enable row level security;
 
 -- No public-read policies on any of the tables above (dropped 2026-11-04,
 -- supabase/migrations/20261104_lockdown.sql). RLS is on with no policies, so
--- the anon key reads nothing; the Back Room reads via /api/scaffold-read and
+-- the anon key reads nothing; the Backroom reads via /api/scaffold-read and
 -- writes via /api/scaffold-write, both with the service-role key behind the
 -- session check. The only anon-readable table is site_content (the public
 -- portfolio's content), which is managed outside this file.
 --
--- wick_* and generated_content belonged to Wick and the Content Builder,
--- both removed 2026-11-04. The tables are left in place (holding whatever
--- rows they have) but nothing reads or writes them any more.
+-- The old leads, projects, campaigns, links, notes, Wick and Content Builder
+-- tables were dropped 2026-11-06 and are no longer described here. Jobs,
+-- proposals, job files and job events are in
+-- supabase/migrations/20261106_workflow.sql.
 
 -- Added 2026-11-04 (same migration): brief columns for the new brief route
 -- and AI triage, the brief_events log, and the private brief-uploads bucket.

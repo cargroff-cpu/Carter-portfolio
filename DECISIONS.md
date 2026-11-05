@@ -67,7 +67,7 @@ and why, in the order the assessment ranked them:
   off-format is discarded. `RATE_CARD` is empty, so it never suggests a
   price (enforced in code, not just the prompt) until real prices exist.
 - **Name:** public brand is **The Scaffold, by Carter Groff**; the private
-  admin tools are renamed **The Back Room** (`/backroom`; `/scaffold`
+  admin tools are renamed **The Backroom** (`/backroom`; `/scaffold`
   redirects). File names (`Scaffold Hub.html`, `api/scaffold-*`) were left
   alone to keep the diff to what visitors and Carter see.
 - **The /design page:** Design and Automation lanes (automation in a brass
@@ -84,7 +84,7 @@ and why, in the order the assessment ranked them:
 - **Page build:** `/design` now loads production React and a precompiled
   `design.js` (`npm run build:design`) instead of React's dev build plus
   in-browser Babel, and ships real HTML in `#root`, OG/Twitter tags and
-  `ProfessionalService` structured data. The Back Room pages keep in-browser
+  `ProfessionalService` structured data. The Backroom pages keep in-browser
   Babel; they're private and not worth a build step.
 - **Wick and the Content Builder were removed** at Carter's request (pages,
   API routes, `lib/wick-brain-server.js`, the Hub/Docket dock). Their tables
@@ -414,7 +414,7 @@ A Hallmark audit of the live page found these, all now fixed:
   - Too many words per screen: the service rows lost their one-line descriptions, and tool rows say "quoted after a short brief" once instead of on every row.
   - Low-contrast greys: `--ink-mute` is now the portfolio's AA value `#9a8462`, and the session comments and form placeholders use it.
   - A dash in the title: it is now a colon.
-  - Old tracked-caps and literal-colour rules from the shared `parlor.css`: /design no longer loads `parlor.css`. The tokens and base rules it used are copied, tokenized, into `cargroff-design.css`, so the Back Room pages are untouched.
+  - Old tracked-caps and literal-colour rules from the shared `parlor.css`: /design no longer loads `parlor.css`. The tokens and base rules it used are copied, tokenized, into `cargroff-design.css`, so the Backroom pages are untouched.
 - **Reflex findings**
   - Sections now vary their surface and spacing: soft ground, wood, plain, wood, deep, soft. Lamplight continues onto How it works and I'm Carter.
   - I'm Carter has a large portrait, with the three rules set large.
@@ -502,7 +502,7 @@ built and launched, then kept running", quoted after a brief (no from-price).
 To keep six items a side, "Cards and print" and "Flyers and one-pagers" merge
 into one "Cards, flyers and print" line; both brief options stay. "Website"
 is added to the brief's design options, the server's allowed list
-(api/design-brief.js) and the Back Room hub's service list. The hero line,
+(api/design-brief.js) and the Backroom hub's service list. The hero line,
 search description, JSON-LD and no-script copy now name websites, and the FAQ
 says websites are quoted like tools.
 
@@ -547,9 +547,9 @@ dust. motifs.jsx is untouched, so the portfolio's lamp is unchanged.
 The brass plate on two of the lamps read as a stray orange box on the post, so
 it is gone; those lamps take a collar or a lamplighter's bar instead.
 
-## The Back Room gets a Scaffold Backend
+## The Backroom gets a Scaffold Backend
 
-scaffold.cargroff.com's copy and lists are now edited from the Back Room, like
+scaffold.cargroff.com's copy and lists are now edited from the Backroom, like
 the portfolio: /backroom/scaffold (Scaffold Admin.html + scaffold-admin.jsx),
 behind the same login (middleware.js) and logout-on-close.
 
@@ -572,27 +572,27 @@ behind the same login (middleware.js) and logout-on-close.
   what is live.
 - Not covered: the page's no-script fallback text and search description in
   Carter Groff Design.html, which stay as written in the file.
-- The Back Room's doors are now Portfolio Backend, Scaffold Backend and
+- The Backroom's doors are now Portfolio Backend, Scaffold Backend and
   Business Hub, on one row on desktop and stacked on phones.
 - The sconce (the tall light bar on the right, a horizontal bar on phones)
   is back as the room's light. Wick is retired, so it is decoration only: no
   link, no label, it ignores the pointer, embers drift up gently, and it
   holds still under reduced motion.
 
-## Back Room: no more random sign-ins, and the light bars light up again
+## Backroom: no more random sign-ins, and the light bars light up again
 
-- Cause of the random sign-in: every Back Room page sent a logout beacon
+- Cause of the random sign-in: every Backroom page sent a logout beacon
   whenever it was left in any way except clicking a same-origin link (Back,
   refresh, closing a tab, switching apps on a phone), so the next page found
   no session and showed the sign-in. The beacon is gone from all five pages.
 - The session cookie is now a browser-session cookie (no Max-Age): it ends
   when the browser closes, the signed token still expires after 8 hours, and
-  the Back Room footer has a Sign out button that clears it at once.
-  Trade-off: a Back Room tab left open stays signed in until the browser
+  the Backroom footer has a Sign out button that clears it at once.
+  Trade-off: a Backroom tab left open stays signed in until the browser
   closes or 8 hours pass, instead of ending the moment the tab closes.
 - Wick stays retired, but the light bar in the Business Hub's tool wheel is
   back (a non-link div at the centre) and brightens on hover, like the sconce
-  on the Back Room page, which surges again when you rest on it. Neither does
+  on the Backroom page, which surges again when you rest on it. Neither does
   anything when clicked.
 
 ## One simple workflow: brief to paid
@@ -628,10 +628,10 @@ behind the same login (middleware.js) and logout-on-close.
   link, pay-on-click Stripe links, a single email frame) were rewritten from
   scratch. No code, names or data were copied.
 
-## Back Room as a phone app
+## Backroom as a phone app
 
-- The five Back Room pages link a web app manifest (backroom.webmanifest):
-  name "Back Room", opens at /backroom full-screen with the Scaffold crest
+- The five Backroom pages link a web app manifest (backroom.webmanifest):
+  name "Backroom", opens at /backroom full-screen with the Scaffold crest
   icon and the room's dark colour. On a phone, use Add to Home Screen
   (iPhone: Share, then Add to Home Screen; Android: the browser menu, then
   Install app).
@@ -640,3 +640,29 @@ behind the same login (middleware.js) and logout-on-close.
   cached on the device.
 - The sign-in cookie lasts for the browser session. An installed app may
   ask for the password again more often than a browser tab does.
+
+## Backroom on phones
+
+- Phone-only styles (760px and under) in mcc.css and Business Hub.html;
+  desktop is unchanged. Labels are 12px with tighter spacing instead of 9-10px
+  spaced capitals, muted text is brighter, fields are 16px so iOS does not
+  zoom in on focus, buttons are 44-48px, and file pickers are styled.
+- The Business Hub's tools sit in a bar at the bottom of the screen (Today,
+  Jobs, Proposals, Mail, Money, Clients), so you can switch without going back
+  to the wheel. The wheel becomes a list with the count beside each name and
+  the blurb under it, and the centre light bar lies flat across the top.
+- Jobs are tiles inside each stage. The header is one row.
+
+## The Backroom: one name, no client brands
+
+- The name is "The Backroom" (one word) everywhere it shows: page titles,
+  the home-screen app name, headings and emails.
+- Nothing in the Backroom or the repo mentions Log & Timber Worx or Squeeky
+  Clean as clients any more. The Docket has no brand filter or dots (every task
+  is just a task), and the old brand guides, the design-reference mocks
+  (campaigns, Wick) and the two client logos are deleted. They stay in git
+  history if ever needed. supabase/migrations/20261107_docket_brand.sql
+  removes the old brand values from the database.
+- Left alone on purpose: the public portfolio's own work history and résumé
+  (cg-store.js, data.jsx, admin-ui.jsx) still name Log & Timber Worx, since
+  that is Carter's real employment, not Backroom data.

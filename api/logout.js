@@ -1,4 +1,4 @@
-// api/logout.js — clears the admin session cookie. Called by the Back Room's
+// api/logout.js — clears the admin session cookie. Called by the Backroom's
 // Sign out button. (It used to be called on every page-leave, which signed
 // you out on Back and refresh; the session cookie now ends with the browser.)
 export default async function handler(req, res) {
