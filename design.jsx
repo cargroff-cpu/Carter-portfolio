@@ -129,6 +129,7 @@ function Hero({ onAddNeed }) {
       <div className="dhero-vignette" aria-hidden="true" />
       <HeroLamp side="l" />
       <HeroLamp side="r" />
+      <div className="dhero-ledge" aria-hidden="true" />
       <div className="dwrap dhero-in">
         <div className="dhero-medal"><Medallion /></div>
         <h1 className="ddisplay">Design that looks right. Tools that work right.</h1>
