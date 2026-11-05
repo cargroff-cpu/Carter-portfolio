@@ -518,3 +518,12 @@ says websites are quoted like tools.
 - Websites read "Websites, front and back end", with an FAQ answer listing
   the back end (logins, databases, payments, forms, admin pages); meta,
   JSON-LD and no-script copy say front and back end too.
+
+## Scaffold hero on phones: the lamps light, they don't slide
+
+On phones the lamp-in animation (rise and fade of the whole cropped lamp top)
+read as a picture sliding into place. Now the posts stand still and dark from
+the start, and the gas catches: the glass's dark overlay and the halo
+sputter to full light over about two seconds, the left lamp at 0.5s and the
+right at 0.95s, then the usual slow candle flicker takes over. Desktop keeps
+the lane coming in out of the fog. Reduced motion shows them lit at once.

@@ -127,6 +127,8 @@ a:hover { color: var(--amber-lit); }
 .dhero-lamp.far { animation-delay: .8s; }
 .dhero-lamp.mid { animation-delay: 1.3s; }
 .dhero-lamp.near { animation-delay: 1.8s; }
+@keyframes dlamp-glass { 0% { opacity: 1; } 14% { opacity: .55; } 20% { opacity: .9; } 34% { opacity: .3; } 42% { opacity: .6; } 60% { opacity: .12; } 100% { opacity: 0; } }
+@keyframes dlamp-halo { 0% { opacity: 0; } 14% { opacity: .45; } 20% { opacity: .1; } 34% { opacity: .7; } 42% { opacity: .4; } 60% { opacity: .88; } 100% { opacity: 1; } }
 @keyframes dlamp-in { 0% { opacity: 0; transform: translateY(28px) scale(.97); } 62% { opacity: .9; } 70% { opacity: .7; } 78% { opacity: 1; } 100% { opacity: 1; transform: none; } }
 .dhero .dhero-vignette { z-index: 8; }
 .dhero .dhero-in { z-index: 9; }
@@ -194,7 +196,14 @@ a:hover { color: var(--amber-lit); }
      copy earlier in the page breaks the lit ones */
   .dhero-lamp.mid, .dhero-lamp.far, .dhero-lamp.back { visibility: hidden; }
   .dhero-veil, .dhero-wisp, .dhero-path { display: none; }
-  .dhero-lamp.near { animation-delay: .4s; }
+  /* phones: the posts don't move. They stand dark, then the gas catches: the
+     glass and its glow sputter up to full light, left lamp first */
+  .dhero-lamp { animation: none; }
+  .dhero-lamp path[fill="#1a1008"] { animation: dlamp-glass 2.2s ease-out .5s both; }
+  .dhero-lamp svg > g:first-of-type { animation: dlamp-halo 2.2s ease-out .5s both; }
+  .dhero-lamp .dhero-candle { animation: dlamp-halo 2.6s ease-out .6s both, dcandle 7s ease-in-out 3.2s infinite; }
+  .dhero-lamp.r path[fill="#1a1008"], .dhero-lamp.r svg > g:first-of-type { animation-delay: .95s; }
+  .dhero-lamp.r .dhero-candle { animation-delay: 1.05s, 3.65s; }
   .dhero-lamp.l.near { left: max(-142px, calc(50% - 320px)); } .dhero-lamp.r.near { right: max(-142px, calc(50% - 320px)); }
   .dhero-candle { width: 300px; top: 77px; }
   .dhero-in { padding: 0 24px; }
@@ -454,7 +463,7 @@ a:hover { color: var(--amber-lit); }
 @media (max-width: 899px) { .ddial { order: 2; width: min(100%, 360px); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .dcursor, .dmv, .dhero-fog, .dhero-candle, .dhero-wisp, .dhero-lamp { animation: none; }
+  .dcursor, .dmv, .dhero-fog, .dhero-candle, .dhero-wisp, .dhero-lamp, .dhero-lamp path[fill="#1a1008"], .dhero-lamp svg > g:first-of-type, .dhero-lamp .dhero-candle { animation: none; }
   .dsession li, .js .dsession li, .js .dsheet.up .dprint { opacity: 1; transform: none; transition: none; }
   .js .dsheet.up .dprint:not([aria-pressed="true"]) { opacity: .66; }
   .dm-spin-in, .dm-spin, .dm-spin-back, .dm-ripple, .dm-sheen, .dm-rule.gold, .dm-ticks line.major, .dseal-mark rect, .dhalf-sec { animation: none; }
