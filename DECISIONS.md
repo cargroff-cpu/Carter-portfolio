@@ -423,3 +423,15 @@ A Hallmark audit of the live page found these, all now fixed:
   - The lamp drawing (80) and the centred hero (6b) are waived on the record in the stamp.
 
 The page also gets its own address. `scaffold.cargroff.com` is added to the Vercel project, a host-matched rewrite serves the page at its root, and `www.cargroff.com/design` redirects there (302 for now; switch it to permanent once the subdomain is settled). Canonical, OG and JSON-LD URLs point at the subdomain, and the page's Portfolio links go to www.cargroff.com. DNS for cargroff.com is on Cloudflare, which needs a CNAME `scaffold` pointing to the target Vercel gives, set to DNS only.
+
+## /design: motion and character (Impeccable pass)
+
+- **Focal moment:** the hero medallion. On load its tick ring spins up and settles into a slow turn. The gold rim and amber ticks breathe on a six-second beat, two rings ripple out from it in turn, and light passes over the gold crest.
+- **The brief:** it returns to the original page's centred composition. The crest, a large heading and the meta line sit with the engraved ring turning behind them and a lamplight glow above, and the ring fades out before the form. The large "2 days" figure is folded into the meta line.
+- **Two kinds of work on phones:** a Design | Tools switch shows one list at a time.
+- **Supporting motion:**
+  - The drafts are dealt onto the sheet the first time it comes into view.
+  - The How it works lozenge pulses.
+  - Nav links draw an amber underline on hover.
+  - The identical fade-up on every section is gone.
+- **Looping and reduced motion:** looping motion pauses when its section is off screen. Reduced motion turns off every loop and spatial movement.
