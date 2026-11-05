@@ -160,6 +160,8 @@ a:hover { color: var(--amber-lit); }
 .dm-fade-0 { stop-color: var(--mask-on); } .dm-fade-1 { stop-color: var(--mask); }
 /* when a lamp is snuffed, the shared lamp drawing shows a blurred "relight" oval; hide it here */
 .dhero-lamp ellipse[style*="blur"] { display: none; }
+/* and drop the shared drawing's curved glint on the right of the glass */
+.dhero-lamp path[d^="M 118 84"] { display: none; }
 .dm-spin { animation: dm-turn 140s linear infinite; }
 .dm-spin.slow { animation-duration: 220s; }
 .dm-spin-back { animation: dm-turnback 110s linear infinite; }
@@ -297,6 +299,14 @@ a:hover { color: var(--amber-lit); }
 
 /* ── the shelf ── */
 .dmake { align-items: start; }
+/* the two halves line up row for row: label, heading, blurb, list and button
+   share rows, so a blurb that wraps on one side doesn't push its list down */
+@media (min-width: 900px) {
+  .dmake { grid-template-rows: repeat(5, auto); row-gap: 0; }
+  .dmake .dhalf-sec { display: grid; grid-row: span 5; grid-template-rows: subgrid; align-content: start; }
+  .dmake .dhalf-sec .dlist { align-self: start; }
+}
+.dlist li a { min-height: 68px; }
 /* on a phone the two lists sit behind a Design | Tools switch */
 .dmaketabs { display: none; }
 @media (max-width: 899px) {

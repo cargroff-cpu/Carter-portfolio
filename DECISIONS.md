@@ -505,3 +505,16 @@ is added to the brief's design options, the server's allowed list
 (api/design-brief.js) and the Back Room hub's service list. The hero line,
 search description, JSON-LD and no-script copy now name websites, and the FAQ
 says websites are quoted like tools.
+
+## Scaffold: even halves, "tools" not "small tools", back end said plainly
+
+- The Design and Tools columns in What I make share rows (CSS subgrid at
+  desktop widths), and every list row has the same minimum height, so a
+  blurb that wraps on one side no longer pushes that list and its button down.
+- The hero lamps hide the shared drawing's curved white glint on the right of
+  the glass (scaffold only; motifs.jsx and the portfolio are unchanged).
+- Carter's call: say "tools", never "small tools". Hero line, tools blurb,
+  the example caption, How it works, meta and no-script copy updated.
+- Websites read "Websites, front and back end", with an FAQ answer listing
+  the back end (logins, databases, payments, forms, admin pages); meta,
+  JSON-LD and no-script copy say front and back end too.

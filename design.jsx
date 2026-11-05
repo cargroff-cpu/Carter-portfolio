@@ -15,7 +15,7 @@ const SHOW_PRICES = false;
 // purpose: things almost any small business needs, no one company's tools.
 const DESIGN_SERVICES = [
   { title: 'Social graphics', desc: 'One post or a series with one look.', need: 'Social graphics', from: '$75', turn: '2 business days' },
-  { title: 'Websites', desc: 'Designed, built and launched, then kept running.', need: 'Website', from: '', turn: 'Quoted' },
+  { title: 'Websites, front and back end', desc: 'Designed, built and launched, then kept running: the pages people see and the logins, databases, payments and forms behind them.', need: 'Website', from: '', turn: 'Quoted' },
   { title: 'Cards, flyers and print', desc: 'Print-ready with correct bleed, or sized for screen.', need: 'Business card or print', from: '$150', turn: '3 business days' },
   { title: 'Documents and reports', desc: 'Proposals, menus, multi-page layouts.', need: 'Document or report', from: '$400', turn: '5–7 business days' },
   { title: 'Presentations', desc: 'Designed slides, not a template.', need: 'Presentation or deck', from: '$400', turn: '5–7 business days' },
@@ -42,6 +42,7 @@ const TESTIMONIALS = [];
 const FAQ = [
   ['Do you use AI?', 'Yes. AI does the drafting and the first pass of the build. I make the decisions, check everything and finish it.'],
   ['What does it cost?', 'Graphics and print are priced per piece. Websites and tools are quoted after a short brief. Either way, you see the price before anything starts.'],
+  ['Can you build the back end of a website too?', 'Yes. Besides the pages people see, I build what runs behind them: logins, databases, payments, booking and contact forms that land somewhere useful, and the admin pages you run it from.'],
   ['Will I need new software?', 'Not usually. Where I can, I build on what you already use.'],
   ['How fast is it?', 'Most design pieces: three directions within two business days of a complete brief. Tools: a plan within a few days, then a first working version.'],
   ['What if something breaks?', 'I fix it. Ongoing care is available as a monthly plan.'],
@@ -201,7 +202,7 @@ function Hero({ onAddNeed }) {
       <div className="dwrap dhero-in">
         <div className="dhero-medal"><Medallion /></div>
         <h1 className="ddisplay">Design that looks right. Tools that work right.</h1>
-        <p className="ddeck">Websites, graphics and print, and the small tools that take busywork off your plate.</p>
+        <p className="ddeck">Websites, graphics and print, and the tools that take busywork off your plate.</p>
         <div className="dacts">
           <a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('design'); }}>Start a brief</a>
           <a className="p-btn ghost" href="#doors">See the work</a>
@@ -271,7 +272,7 @@ function Doors({ onAddNeed }) {
                 <li style={{ transitionDelay: (SESSION.length * 0.4) + 's' }}><span className="dsp">$</span><span><span className="dcursor" aria-hidden="true" /></span></li>
               </ol>
             </div>
-            <p className="dcap">Example: one small tool. You approve what customers see.</p>
+            <p className="dcap">Example: one tool. You approve what customers see.</p>
             <p><a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('automation'); }}>Start a tools brief</a></p>
           </div>
         </div>
@@ -285,7 +286,7 @@ function Doors({ onAddNeed }) {
 const HOW_STEPS = [
   ['Send a brief', 'A short form: what you need, and what it has to do. About three minutes, no account, no call.'],
   ['Get options', 'Design: three directions within two business days. Tools: a one-page plan and a fixed quote.'],
-  ['I finish it', 'Design: refined by hand, two revision rounds included. Tools: built small, tested on real work.'],
+  ['I finish it', 'Design: refined by hand, two revision rounds included. Tools: built and tested on real work.'],
   ['You get it', 'Design: print-ready files. Tools: a working build, handed over and explained. Yours once it’s paid.'],
 ];
 
@@ -424,7 +425,7 @@ function Make({ onAddNeed }) {
             blurb="Three directions, you pick one, I finish it."
             items={DESIGN_SERVICES} cta="Start a design brief" onAddNeed={onAddNeed} />
           <Shelf lane="automation" label="Tools" title="What runs behind the scenes"
-            blurb="Small tools, proven by hand first. Quoted after a short brief."
+            blurb="Proven by hand first. Quoted after a short brief."
             items={TOOL_SERVICES} cta="Start a tools brief" onAddNeed={onAddNeed} />
         </div>
         {WORK.length > 0 && (

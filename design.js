@@ -601,8 +601,8 @@ const DESIGN_SERVICES = [{
   from: '$75',
   turn: '2 business days'
 }, {
-  title: 'Websites',
-  desc: 'Designed, built and launched, then kept running.',
+  title: 'Websites, front and back end',
+  desc: 'Designed, built and launched, then kept running: the pages people see and the logins, databases, payments and forms behind them.',
   need: 'Website',
   from: '',
   turn: 'Quoted'
@@ -661,7 +661,7 @@ const AUTOMATION_CHIPS = [...TOOL_SERVICES.map(t => t.need), 'Something else'];
 const BUDGETS = ['Under $150', '$150–$500', '$500–$1,500', '$1,500–$5,000', '$5,000+', 'Not sure yet'];
 const WORK = [];
 const TESTIMONIALS = [];
-const FAQ = [['Do you use AI?', 'Yes. AI does the drafting and the first pass of the build. I make the decisions, check everything and finish it.'], ['What does it cost?', 'Graphics and print are priced per piece. Websites and tools are quoted after a short brief. Either way, you see the price before anything starts.'], ['Will I need new software?', 'Not usually. Where I can, I build on what you already use.'], ['How fast is it?', 'Most design pieces: three directions within two business days of a complete brief. Tools: a plan within a few days, then a first working version.'], ['What if something breaks?', 'I fix it. Ongoing care is available as a monthly plan.'], ['Who owns the work?', 'You do, once it’s paid.'], ['Do we need a call?', 'No. The brief covers it. If a call would help, I’ll say so.']];
+const FAQ = [['Do you use AI?', 'Yes. AI does the drafting and the first pass of the build. I make the decisions, check everything and finish it.'], ['What does it cost?', 'Graphics and print are priced per piece. Websites and tools are quoted after a short brief. Either way, you see the price before anything starts.'], ['Can you build the back end of a website too?', 'Yes. Besides the pages people see, I build what runs behind them: logins, databases, payments, booking and contact forms that land somewhere useful, and the admin pages you run it from.'], ['Will I need new software?', 'Not usually. Where I can, I build on what you already use.'], ['How fast is it?', 'Most design pieces: three directions within two business days of a complete brief. Tools: a plan within a few days, then a first working version.'], ['What if something breaks?', 'I fix it. Ongoing care is available as a monthly plan.'], ['Who owns the work?', 'You do, once it’s paid.'], ['Do we need a call?', 'No. The brief covers it. If a call would help, I’ll say so.']];
 const STEPS = [['I', 'Who’s asking'], ['II', 'What you need'], ['III', 'Details that save time']];
 function Nav() {
   return React.createElement("nav", {
@@ -1013,7 +1013,7 @@ function Hero({
     className: "ddisplay"
   }, "Design that looks right. Tools that work right."), React.createElement("p", {
     className: "ddeck"
-  }, "Websites, graphics and print, and the small tools that take busywork off your plate."), React.createElement("div", {
+  }, "Websites, graphics and print, and the tools that take busywork off your plate."), React.createElement("div", {
     className: "dacts"
   }, React.createElement("a", {
     className: "p-btn",
@@ -1134,7 +1134,7 @@ function Doors({
     "aria-hidden": "true"
   }))))), React.createElement("p", {
     className: "dcap"
-  }, "Example: one small tool. You approve what customers see."), React.createElement("p", null, React.createElement("a", {
+  }, "Example: one tool. You approve what customers see."), React.createElement("p", null, React.createElement("a", {
     className: "p-btn",
     href: "#brief",
     onClick: e => {
@@ -1143,7 +1143,7 @@ function Doors({
     }
   }, "Start a tools brief"))))));
 }
-const HOW_STEPS = [['Send a brief', 'A short form: what you need, and what it has to do. About three minutes, no account, no call.'], ['Get options', 'Design: three directions within two business days. Tools: a one-page plan and a fixed quote.'], ['I finish it', 'Design: refined by hand, two revision rounds included. Tools: built small, tested on real work.'], ['You get it', 'Design: print-ready files. Tools: a working build, handed over and explained. Yours once it’s paid.']];
+const HOW_STEPS = [['Send a brief', 'A short form: what you need, and what it has to do. About three minutes, no account, no call.'], ['Get options', 'Design: three directions within two business days. Tools: a one-page plan and a fixed quote.'], ['I finish it', 'Design: refined by hand, two revision rounds included. Tools: built and tested on real work.'], ['You get it', 'Design: print-ready files. Tools: a working build, handed over and explained. Yours once it’s paid.']];
 const SEAL = 200;
 function sealPt(r, a) {
   const t = a * Math.PI / 180;
@@ -1377,7 +1377,7 @@ function Make({
     lane: "automation",
     label: "Tools",
     title: "What runs behind the scenes",
-    blurb: "Small tools, proven by hand first. Quoted after a short brief.",
+    blurb: "Proven by hand first. Quoted after a short brief.",
     items: TOOL_SERVICES,
     cta: "Start a tools brief",
     onAddNeed: onAddNeed
