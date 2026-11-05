@@ -12,12 +12,11 @@
   --brass: #c2a46a; --brass-lit: #e0c88f;
   --brass-wash: rgba(194,164,106,.12); --brass-edge: rgba(194,164,106,.45);
   --amber-wash: rgba(217,154,61,.12); --amber-tick: rgba(245,205,106,.5);
-  --wood-base: #21150c; --wood-seam: rgba(0,0,0,.6); --wood-hi: rgba(245,215,160,.07);
-  --board-a: rgba(255,214,150,.035); --board-b: rgba(0,0,0,.14); --board-c: rgba(120,70,30,.08);
-  --wood-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='448' height='640'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.55 0.008' numOctaves='3' seed='4'/><feColorMatrix values='0 0 0 0 0.08  0 0 0 0 0.04  0 0 0 0 0.01  0 0 0 1.1 -0.35'/></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>");
-  --wood-figure: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='448' height='900'><filter id='f'><feTurbulence type='turbulence' baseFrequency='0.04 0.004' numOctaves='2' seed='9'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 0.78  0 0 0 0 0.5  0 0 0 0.9 -0.2'/></filter><rect width='100%25' height='100%25' filter='url(%23f)'/></svg>");
+  --wood-seam: rgba(0,0,0,.35); --wood-hi: rgba(236,217,178,.025);
+  --wood-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='12'><filter id='g'><feTurbulence baseFrequency='0.02 0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.5 0'/></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>");
+  --candle-glow: rgba(217,154,61,.32); --candle-edge: rgba(217,154,61,.06);
+  --fog-1: rgba(230,222,205,.30); --fog-2: rgba(205,196,176,.15);
   --vignette-1: rgba(8,5,2,.55); --vignette-2: rgba(8,5,2,.85);
-  --lamp-pool: rgba(245,190,90,.42); --lamp-ember: rgba(200,100,50,.16); --lamp-pool-2: rgba(217,154,61,.06); --lamp-floor: rgba(217,154,61,.22);
   --medal-band: #160f09; --medal-dash: rgba(245,205,106,.28);
   --enamel-hi: #2f5640; --enamel-lo: #12261b; --gold-hi: #f8dc8e;
   --seal-ink: rgba(236,217,178,.22); --seal-word: rgba(236,217,178,.5);
@@ -60,29 +59,26 @@ html, body { overflow-x: clip; }
 @media (min-width: 900px) { .dnavlinks { display: flex; } .dnav .p-btn { margin-left: 0; } }
 
 /* ── wood panels: the portfolio's room, 34px boards and a sawn grain ── */
-.dpanel { position: relative; isolation: isolate; color: var(--ink); background-color: var(--wood-base);
-  background-image:
-    repeating-linear-gradient(to right, var(--wood-seam) 0, var(--wood-seam) 2px, var(--wood-hi) 2px, var(--wood-hi) 3px, transparent 3px, transparent 112px),
-    repeating-linear-gradient(to right, var(--board-a) 0, var(--board-a) 112px, var(--board-b) 112px, var(--board-b) 224px, transparent 224px, transparent 336px, var(--board-c) 336px, var(--board-c) 448px);
-}
-.dpanel::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image: var(--wood-grain); background-size: 448px 640px; opacity: .55; mix-blend-mode: multiply; }
-.dpanel::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image: var(--wood-figure); background-size: 448px 900px; opacity: .35; mix-blend-mode: soft-light; }
+/* ── wood panels: the portfolio's own .cg-wood (themes.jsx), unchanged ── */
+.dpanel { position: relative; isolation: isolate; color: var(--ink); background-color: var(--bg);
+  background-image: repeating-linear-gradient(to right, transparent 0, transparent 33px, var(--wood-seam) 33px, var(--wood-seam) 34px, var(--wood-hi) 34px, var(--wood-hi) 35px, transparent 35px, transparent 68px); }
+.dpanel::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image: var(--wood-grain); opacity: .3; mix-blend-mode: multiply; }
 .dsection.dwood.dpanel { background-color: var(--bg-warm); }
 
 /* ── hero: the medallion between two lamp posts, on the wood ── */
 .dhero { overflow: hidden; display: flex; align-items: center; min-height: min(calc(100svh - 77px), 820px); padding: clamp(40px, 5vw, 64px) 0; text-align: center; }
-.dhero::after { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 45%, transparent 0%, var(--vignette-1) 72%, var(--vignette-2) 100%); }
-/* each lamp throws a warm pool high on the wall and a smaller one on the floor */
-.dhero-pool { position: absolute; z-index: 0; top: -22%; width: 900px; aspect-ratio: 1; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, var(--lamp-pool) 0%, var(--lamp-ember) 34%, var(--lamp-pool-2) 52%, transparent 70%); mix-blend-mode: screen; transition: opacity .5s ease; }
-.dhero-pool::after { content: ""; position: absolute; left: 30%; top: 108%; width: 40%; height: 16%; border-radius: 50%; background: radial-gradient(ellipse, var(--lamp-floor) 0%, transparent 70%); }
-.dhero-pool.l { left: calc(50% - 920px); }
-.dhero-pool.r { right: calc(50% - 920px); }
-.dhero-pool.out { opacity: .1; }
-.dhero-lamp { position: absolute; z-index: 1; bottom: 0; height: min(96%, 860px); aspect-ratio: 200 / 900; pointer-events: none; }
+/* the portfolio hero's light: candle pools at the lamps, rolling fog, a deep vignette */
+.dhero-vignette { position: absolute; inset: 0; z-index: 2; pointer-events: none; background: radial-gradient(ellipse at 50% 30%, transparent 0%, var(--vignette-1) 70%, var(--vignette-2) 100%); }
+.dhero-fog { position: absolute; z-index: 1; left: -30%; right: -30%; height: 460px; pointer-events: none; filter: blur(46px); mix-blend-mode: screen; background: radial-gradient(ellipse 50% 100% at 50% 50%, var(--fog-1) 0%, var(--fog-2) 40%, transparent 70%); animation: dfog-roll 30s linear infinite; }
+@keyframes dfog-roll { 0% { transform: translateX(85%); opacity: 0; } 14% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translateX(-95%); opacity: 0; } }
+.dhero-candle { position: absolute; z-index: 0; left: 50%; top: 11.3%; width: 720px; aspect-ratio: 1; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); background: radial-gradient(circle, var(--candle-glow) 0%, var(--candle-edge) 40%, transparent 70%); mix-blend-mode: screen; animation: dcandle 7s ease-in-out infinite; transition: opacity .5s ease; }
+@keyframes dcandle { 0%, 100% { opacity: 1; } 45% { opacity: .95; } 48% { opacity: .78; } 52% { opacity: .92; } 70% { opacity: .88; } }
+.dhero-lamp.out .dhero-candle { opacity: .08; animation: none; }
+.dhero-lamp { position: absolute; z-index: 3; bottom: 0; height: min(96%, 860px); aspect-ratio: 200 / 900; pointer-events: none; }
 .dhero-lamp.l { left: max(8px, calc(50% - 500px)); }
 .dhero-lamp.r { right: max(8px, calc(50% - 500px)); }
-.dhero-lamp svg { display: block; width: 100%; height: 100%; }
-.dhero-in { position: relative; z-index: 3; width: 100%; }
+.dhero-lamp svg { position: relative; z-index: 1; display: block; width: 100%; height: 100%; }
+.dhero-in { position: relative; z-index: 4; width: 100%; }
 .dhero-medal { width: min(340px, 66vw, 36svh); margin: 0 auto 24px; }
 .dmedal { display: block; width: 100%; height: auto; overflow: visible; }
 .dm-band { fill: var(--medal-band); }
@@ -103,8 +99,7 @@ html, body { overflow-x: clip; }
   .dhero { padding: 40px 0 56px; }
   .dhero-lamp { height: 380px; opacity: .55; }
   .dhero-lamp.l { left: -44px; } .dhero-lamp.r { right: -44px; }
-  .dhero-pool { width: 520px; top: -12%; }
-  .dhero-pool.l { left: -330px; right: auto; } .dhero-pool.r { right: -330px; left: auto; }
+  .dhero-candle { width: 420px; }
   .dhero-in { padding: 0 24px; }
 }
 .dcrest { width: 52px; margin: 0 auto 24px; opacity: .85; }
@@ -315,7 +310,7 @@ html, body { overflow-x: clip; }
 @media (max-width: 899px) { .ddial { order: 2; width: min(100%, 360px); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .dcursor, .dmv { animation: none; }
+  .dcursor, .dmv, .dhero-fog, .dhero-candle { animation: none; }
   .up, .dsession li, .js .up, .js .dsession li { opacity: 1; transform: none; transition: none; }
   .dseal-done, .dseal-mark, .dprint, .dlane, .dchip { transition: none; }
 }

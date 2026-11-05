@@ -793,17 +793,16 @@ function HeroLamp({
   side
 }) {
   const [out, setOut] = React.useState(false);
-  return React.createElement(React.Fragment, null, React.createElement("div", {
-    className: 'dhero-pool ' + side + (out ? ' out' : ''),
+  return React.createElement("div", {
+    className: 'dhero-lamp ' + side + (out ? ' out' : ''),
     "aria-hidden": "true"
-  }), React.createElement("div", {
-    className: 'dhero-lamp ' + side,
-    "aria-hidden": "true"
-  }, React.createElement(GasLamp, {
+  }, React.createElement("div", {
+    className: "dhero-candle"
+  }), React.createElement(GasLamp, {
     height: 820,
     out: out,
     onGlobeClick: () => setOut(o => !o)
-  })));
+  }));
 }
 function Hero({
   onAddNeed
@@ -811,7 +810,33 @@ function Hero({
   return React.createElement("header", {
     className: "dhero dpanel",
     id: "top"
-  }, React.createElement(HeroLamp, {
+  }, React.createElement("div", {
+    className: "dhero-fog",
+    "aria-hidden": "true",
+    style: {
+      top: '24%',
+      animationDuration: '26s'
+    }
+  }), React.createElement("div", {
+    className: "dhero-fog",
+    "aria-hidden": "true",
+    style: {
+      top: '50%',
+      animationDuration: '34s',
+      animationDelay: '-12s'
+    }
+  }), React.createElement("div", {
+    className: "dhero-fog",
+    "aria-hidden": "true",
+    style: {
+      top: '72%',
+      animationDuration: '30s',
+      animationDelay: '-20s'
+    }
+  }), React.createElement("div", {
+    className: "dhero-vignette",
+    "aria-hidden": "true"
+  }), React.createElement(HeroLamp, {
     side: "l"
   }), React.createElement(HeroLamp, {
     side: "r"

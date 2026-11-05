@@ -112,18 +112,21 @@ function Medallion() {
 function HeroLamp({ side }) {
   const [out, setOut] = React.useState(false);
   return (
-    <React.Fragment>
-      <div className={'dhero-pool ' + side + (out ? ' out' : '')} aria-hidden="true" />
-      <div className={'dhero-lamp ' + side} aria-hidden="true">
-        <GasLamp height={820} out={out} onGlobeClick={() => setOut((o) => !o)} />
-      </div>
-    </React.Fragment>
+    <div className={'dhero-lamp ' + side + (out ? ' out' : '')} aria-hidden="true">
+      <div className="dhero-candle" />
+      <GasLamp height={820} out={out} onGlobeClick={() => setOut((o) => !o)} />
+    </div>
   );
 }
 
 function Hero({ onAddNeed }) {
   return (
     <header className="dhero dpanel" id="top">
+      {/* The portfolio's room: fog banks rolling across the wood, under a deep vignette */}
+      <div className="dhero-fog" aria-hidden="true" style={{ top: '24%', animationDuration: '26s' }} />
+      <div className="dhero-fog" aria-hidden="true" style={{ top: '50%', animationDuration: '34s', animationDelay: '-12s' }} />
+      <div className="dhero-fog" aria-hidden="true" style={{ top: '72%', animationDuration: '30s', animationDelay: '-20s' }} />
+      <div className="dhero-vignette" aria-hidden="true" />
       <HeroLamp side="l" />
       <HeroLamp side="r" />
       <div className="dwrap dhero-in">

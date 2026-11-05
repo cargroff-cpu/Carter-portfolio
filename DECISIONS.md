@@ -401,3 +401,7 @@ medallion (the crest in gold on a green enamel disc, inside the engraved
 seal) between two of the portfolio's lamp posts at nearly full height, each
 throwing a warm pool on the wall and the floor. Each globe still snuffs its
 own lamp. The single-lamp, text-left hero above is replaced.
+The hero's background is the portfolio hero's own, copied value for value
+from themes.jsx and portfolio.jsx: the `.cg-wood` 34px panels and sawn grain,
+a `.cg-candlelight` pool at each lamp, three fog banks rolling across, and
+the same deep vignette. A brighter custom wood was tried and dropped.
