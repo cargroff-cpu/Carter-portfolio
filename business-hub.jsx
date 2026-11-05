@@ -44,7 +44,7 @@ const RING_NODES = [
   { id: 'projects', label: 'Work', icon: 'assets/tool-work.png', desc: 'Projects in motion, deliverables ticked off.' },
   { id: 'invoices', label: 'Money', icon: 'assets/tool-money.png', desc: 'Invoices out, paid, and what still needs chasing.' },
   { id: 'clients', label: 'Clients', icon: 'assets/tool-acquire.png', desc: 'Who you work for, rates, and how they like to be reached.' },
-  { id: 'design', label: 'Design', icon: 'assets/tool-vault.png', mirror: true, desc: 'The back end for cargroff.com/design — briefs in, AI triage, replies out.' },
+  { id: 'design', label: 'Design', icon: 'assets/tool-vault.png', mirror: true, desc: 'The back end for scaffold.cargroff.com — briefs in, AI triage, replies out.' },
 ];
 
 function ringMetaOf(id, { leads, projects, invoices, clients }) {
@@ -773,7 +773,7 @@ function Design({ briefs, reload }) {
   return (
     <div className="stack">
       <section className="tile brief">
-        <div className="tilehead"><h2 className="h2">The Scaffold</h2><span className="lbl">cargroff.com/design</span></div>
+        <div className="tilehead"><h2 className="h2">The Scaffold</h2><span className="lbl">scaffold.cargroff.com</span></div>
         <p className="briefline">
           {briefs.length ? <React.Fragment><b>{open.length} brief{open.length === 1 ? '' : 's'}</b> waiting on a reply, out of {briefs.length} received.</React.Fragment>
             : 'Live and wired — no briefs submitted yet.'}

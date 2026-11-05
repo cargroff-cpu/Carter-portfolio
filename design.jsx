@@ -1,4 +1,4 @@
-// design.jsx — The Scaffold, by Carter Groff (cargroff.com/design). The
+// design.jsx — The Scaffold, by Carter Groff (scaffold.cargroff.com). The
 // public studio page: design and tools, given equal weight, for small
 // businesses. AI drafts, Carter finishes. See DECISIONS.md.
 //
@@ -65,7 +65,7 @@ function Nav() {
         </a>
         <div className="dnavlinks">
           <a href="#make">What I make</a><a href="#how">How it works</a><a href="#faq">Questions</a>
-          <a href="/">Portfolio</a>
+          <a href="https://www.cargroff.com/">Portfolio</a>
         </div>
         <a className="p-btn" href="#brief">Start a brief</a>
       </div>
@@ -169,7 +169,7 @@ function Doors({ onAddNeed }) {
     return () => io.disconnect();
   }, []);
   return (
-    <section id="doors" className="dsection ddoors">
+    <section id="doors" className="dsection ddoors dsoft">
       <div className="dwrap">
         <div className="dshead up">
           <h2 className="ddisplay">What each half looks like.</h2>
@@ -188,7 +188,7 @@ function Doors({ onAddNeed }) {
                 ))}
               </div>
             </div>
-            <p className="dcap">Example: a spring menu flyer, as the drafts arrive. Choose one; I finish it.</p>
+            <p className="dcap">Example: a spring menu flyer. Pick a draft.</p>
             <p><a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('design'); }}>Start a design brief</a></p>
           </div>
           <div className="ddoor dauto up">
@@ -202,8 +202,8 @@ function Doors({ onAddNeed }) {
                 <li style={{ transitionDelay: (SESSION.length * 0.4) + 's' }}><span className="dsp">$</span><span><span className="dcursor" aria-hidden="true" /></span></li>
               </ol>
             </div>
-            <p className="dcap">Example: a small tool for one job. A person approves anything customers see.</p>
-            <p><a className="p-btn brass" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('automation'); }}>Start a tools brief</a></p>
+            <p className="dcap">Example: one small tool. You approve what customers see.</p>
+            <p><a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('automation'); }}>Start a tools brief</a></p>
           </div>
         </div>
       </div>
@@ -240,6 +240,7 @@ function Dial() {
   const [at, setAt] = React.useState(0);
   return (
     <section id="how" className="dsection dwood dpanel">
+      <div className="dsec-candle" aria-hidden="true" />
       <div className="dwrap ddialwrap">
         <div className="ddial up" aria-hidden="true">
           <svg viewBox="0 0 400 400" role="presentation">
@@ -297,12 +298,16 @@ function Dial() {
   );
 }
 
+// Design rows carry their turnaround; tool rows are all quoted after a brief,
+// which the shelf says once instead of on every row.
 function Turn({ s, lane }) {
-  const turn = lane === 'design' ? (s.turn || 'Quoted') : 'Quoted';
+  const turn = lane === 'design' ? (s.turn || 'Quoted') : null;
+  const price = SHOW_PRICES && s.from;
+  if (!turn && !price) return null;
   return (
     <em className="dturn">
-      {SHOW_PRICES && s.from && <span className="dprice">From {s.from}</span>}
-      <span>{turn}</span>
+      {price && <span className="dprice">From {s.from}</span>}
+      {turn && <span>{turn}</span>}
     </em>
   );
 }
@@ -317,7 +322,7 @@ function Shelf({ lane, label, title, blurb, items, cta, onAddNeed }) {
         {items.map((s) => (
           <li key={s.title}>
             <a href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed(lane, s.need); }}>
-              <span className="dlist-main"><b>{s.title}</b><span>{s.desc}</span></span>
+              <span className="dlist-main"><b>{s.title}</b></span>
               <Turn s={s} lane={lane} />
             </a>
           </li>
@@ -332,17 +337,17 @@ function Shelf({ lane, label, title, blurb, items, cta, onAddNeed }) {
 
 function Make({ onAddNeed }) {
   return (
-    <section id="make" className="dsection">
+    <section id="make" className="dsection dplain">
       <div className="dwrap">
         <div className="dshead up">
           <h2 className="ddisplay">Two kinds of work, one person.</h2>
         </div>
         <div className="dduo dmake">
           <Shelf lane="design" label="Design" title="What your customers see"
-            blurb="AI drafts three directions. I finish the one you pick. Two revision rounds included."
+            blurb="Three directions, you pick one, I finish it."
             items={DESIGN_SERVICES} cta="Start a design brief" onAddNeed={onAddNeed} />
           <Shelf lane="automation" label="Tools" title="What runs behind the scenes"
-            blurb="Small, specific tools for businesses without a developer. Proven by hand first, then automated."
+            blurb="Small tools, proven by hand first. Quoted after a short brief."
             items={TOOL_SERVICES} cta="Start a tools brief" onAddNeed={onAddNeed} />
         </div>
         {WORK.length > 0 && (
@@ -365,14 +370,20 @@ function Make({ onAddNeed }) {
 
 function Why() {
   return (
-    <section id="why" className="dsection">
+    <section id="why" className="dsection dpanel">
+      <div className="dsec-candle left" aria-hidden="true" />
       <div className="dwrap">
         <div className="dwhyhead up">
           <img className="dportrait" src="assets/portrait.jpg" alt="Carter Groff" loading="lazy" />
           <div>
             <h2 className="ddisplay">I’m Carter.</h2>
             <p className="dp">A marketer, designer and builder in Harrisonburg, Virginia. By day I lead marketing and automation at a local company, so I know what small teams actually need.</p>
-            <p className="dp">My rules: prove it by hand before automating it. Automate the bottleneck, not everything. A person approves anything that reaches a customer.</p>
+            <span className="dk drules-k">My rules</span>
+            <ol className="drules">
+              <li><b>1</b><span>Prove it by hand before automating it.</span></li>
+              <li><b>2</b><span>Automate the bottleneck, not everything.</span></li>
+              <li><b>3</b><span>A person approves anything that reaches a customer.</span></li>
+            </ol>
           </div>
         </div>
         {TESTIMONIALS.length > 0 && (
@@ -389,8 +400,8 @@ function Why() {
 
 function Faq() {
   return (
-    <section id="faq" className="dsection">
-      <div className="dwrap">
+    <section id="faq" className="dsection dsoft">
+      <div className="dwrap dfaqgrid">
         <div className="dshead up">
           <h2 className="ddisplay">Short answers.</h2>
         </div>
@@ -669,7 +680,7 @@ function Footer() {
           <p className="dfootsub">Tools and design by Carter Groff. Harrisonburg, Virginia.</p>
         </div>
         <div className="dfootlinks">
-          <a href="/">Portfolio</a>
+          <a href="https://www.cargroff.com/">Portfolio</a>
           <a href="mailto:car.groff@gmail.com">car.groff@gmail.com</a>
           <span>© {new Date().getFullYear()} Carter Groff</span>
         </div>
