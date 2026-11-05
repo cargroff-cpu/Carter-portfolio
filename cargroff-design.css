@@ -179,14 +179,21 @@ a:hover { color: var(--amber-lit); }
   .dhero-lamp.l { left: max(-142px, calc(50% - 320px)); } .dhero-lamp.r { right: max(-142px, calc(50% - 320px)); }
   .dhero-lamp svg { width: 112px; height: 504px; margin: 20px auto 0; }
   .dhero-medal { width: 180px; margin-bottom: 24px; }
-  /* phone lane: the near lamps' tops, and one pair behind them lost in the fog */
+  /* phone lane: three pairs of lamp tops in perspective, each farther pair
+     smaller, lower (toward the medallion's centre, the horizon) and nearer the
+     middle, dimmer and softer, so the lane recedes behind the crest */
   /* visibility, not display: every lamp shares one set of gradient ids, and a display:none copy breaks the lit ones */
-  .dhero-lamp.far, .dhero-lamp.back { visibility: hidden; }
+  .dhero-lamp.back { visibility: hidden; }
   .dhero-veil, .dhero-wisp, .dhero-path { display: none; }
-  .dhero-lamp.mid { bottom: auto; top: 26px; height: 200px; width: 240px; filter: brightness(.5) blur(1.2px); opacity: .85; -webkit-mask-image: linear-gradient(var(--mask) 0, var(--mask) 120px, transparent 200px); mask-image: linear-gradient(var(--mask) 0, var(--mask) 120px, transparent 200px); }
-  .dhero-lamp.l.mid { left: max(-60px, calc(50% - 215px)); } .dhero-lamp.r.mid { right: max(-60px, calc(50% - 215px)); }
-  .dhero-lamp.mid svg { width: 68px; height: 306px; margin-top: 10px; }
-  .dhero-lamp.mid .dhero-candle { width: 180px; top: 50px; }
+  .dhero-lamp.mid, .dhero-lamp.far { bottom: auto; aspect-ratio: auto; }
+  .dhero-lamp.mid { top: 56px; width: 124px; height: 170px; filter: brightness(.6) blur(.6px); -webkit-mask-image: linear-gradient(var(--mask) 0, var(--mask) 90px, transparent 170px); mask-image: linear-gradient(var(--mask) 0, var(--mask) 90px, transparent 170px); }
+  .dhero-lamp.l.mid { left: calc(50% - min(112px, 31vw) - 62px); } .dhero-lamp.r.mid { right: calc(50% - min(112px, 31vw) - 62px); }
+  .dhero-lamp.mid svg { width: 62px; height: 279px; margin: 14px auto 0; }
+  .dhero-lamp.mid .dhero-candle { width: 150px; top: 54px; }
+  .dhero-lamp.far { top: 88px; width: 80px; height: 110px; filter: brightness(.42) blur(1px); opacity: .85; -webkit-mask-image: linear-gradient(var(--mask) 0, var(--mask) 50px, transparent 110px); mask-image: linear-gradient(var(--mask) 0, var(--mask) 50px, transparent 110px); }
+  .dhero-lamp.l.far { left: calc(50% - min(88px, 23.75vw) - 40px); } .dhero-lamp.r.far { right: calc(50% - min(88px, 23.75vw) - 40px); }
+  .dhero-lamp.far svg { width: 34px; height: 153px; margin: 10px auto 0; }
+  .dhero-lamp.far .dhero-candle { width: 90px; top: 30px; opacity: .7; }
   .dhero-lamp.l.near { left: max(-142px, calc(50% - 320px)); } .dhero-lamp.r.near { right: max(-142px, calc(50% - 320px)); }
   .dhero-candle { width: 300px; top: 77px; }
   .dhero-in { padding: 0 24px; }

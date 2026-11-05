@@ -482,7 +482,9 @@ with a bank of fog (a dark veil plus a drifting light wisp) rolling in front
 of it, so the lane drifts away behind the medallion. A faint amber path runs
 down the middle. Every globe still snuffs on click.
 
-On phones the near lamps' tops show as before, with one dim, blurred pair
-behind them; the two back pairs are hidden with `visibility`, not `display`,
+On phones the lane is three pairs of lamp tops in perspective: each farther
+pair smaller, lower (toward the medallion's centre) and nearer the middle,
+dimmer and softer, spaced by screen width so small phones do not crowd. The
+first version put one blurred pair beside the near lamps and read as a glitch; the two back pairs are hidden with `visibility`, not `display`,
 because every GasLamp shares one set of gradient ids and a display:none copy
 earlier in the page breaks the lit ones.
