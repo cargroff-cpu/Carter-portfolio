@@ -89,8 +89,8 @@ Variables — set directly there, never committed):
 | `NOTIFY_EMAIL` | `lib/server.js` | Optional. Where new briefs and failure alerts go (default car.groff@gmail.com) |
 | `ANTHROPIC_API_KEY` | `lib/brief-triage.js` | AI triage on incoming briefs. Without it, briefs still work and the Hub just shows "No AI triage yet" |
 | `TRIAGE_MODEL`, `TRIAGE_DAILY_CAP` | `lib/brief-triage.js` | Optional. Model override, and the daily cap on automatic triage (default 40) |
-| `STRIPE_SECRET_KEY` | `api/create-invoice-link.js` | Turns a draft invoice into a Stripe Payment Link |
-| `STRIPE_WEBHOOK_SECRET` | `api/stripe-webhook.js` | Set. The Stripe dashboard side (endpoint → `/api/stripe-webhook`, event `checkout.session.completed`) is still to do; until then use "Mark paid" |
+| `STRIPE_SECRET_KEY` | `lib/stripe.js` (via `api/job.js`) | Set. Makes a Stripe Payment Link when a client presses Pay on their job page |
+| `STRIPE_WEBHOOK_SECRET` | `api/stripe-webhook.js` | Must be the signing secret (`whsec_…`) of the Stripe endpoint `https://scaffold.cargroff.com/api/stripe-webhook`, event `checkout.session.completed`, in the same mode (test or live) as `STRIPE_SECRET_KEY`. Until that endpoint exists, use "Mark paid" |
 
 The Supabase project URL and the publishable (anon) key in `data.jsx` only
 read `site_content`, the public portfolio's own content. Every other table
