@@ -1,0 +1,14 @@
+{
+  "name": "The Back Room",
+  "short_name": "Back Room",
+  "description": "Carter Groff's private workspace: jobs, proposals, money and the Docket.",
+  "start_url": "/backroom",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#100b06",
+  "theme_color": "#100b06",
+  "icons": [
+    { "src": "/assets/scaffold-icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/assets/scaffold-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

@@ -627,3 +627,16 @@ behind the same login (middleware.js) and logout-on-close.
 - Ideas borrowed from the work platform (a client page opened by a token
   link, pay-on-click Stripe links, a single email frame) were rewritten from
   scratch. No code, names or data were copied.
+
+## Back Room as a phone app
+
+- The five Back Room pages link a web app manifest (backroom.webmanifest):
+  name "Back Room", opens at /backroom full-screen with the Scaffold crest
+  icon and the room's dark colour. On a phone, use Add to Home Screen
+  (iPhone: Share, then Add to Home Screen; Android: the browser menu, then
+  Install app).
+- It is the same site, not a separate app: no store listing and no offline
+  mode. There is deliberately no service worker, so private pages are never
+  cached on the device.
+- The sign-in cookie lasts for the browser session. An installed app may
+  ask for the password again more often than a browser tab does.
