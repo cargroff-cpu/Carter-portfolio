@@ -73,6 +73,13 @@ details>summary{cursor:pointer}
   @keyframes m-vt-out{to{opacity:0}}
   @keyframes m-vt-in{from{opacity:0}}
 
+  .modal-back{animation:m-fade .25s ease backwards}
+  .modal{animation:m-up .4s var(--ease-out) backwards}
+  .tplgrid>*{animation:m-up .5s var(--ease-out) backwards}
+  .tplgrid>:nth-child(2){animation-delay:.05s}.tplgrid>:nth-child(3){animation-delay:.1s}.tplgrid>:nth-child(4){animation-delay:.15s}.tplgrid>:nth-child(5){animation-delay:.2s}.tplgrid>:nth-child(6){animation-delay:.25s}
+  @media (max-width:560px){.modal{animation-name:m-sheet}}
+  @keyframes m-sheet{from{transform:translate3d(0,100%,0)}to{transform:none}}
+
   /* the client page: each screen rises in; the step line lights up in order */
   #app.enter>*{animation:m-up .55s var(--ease-out) backwards}
   #app.enter>:nth-child(2){animation-delay:.07s}

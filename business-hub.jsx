@@ -39,18 +39,21 @@ const sumItems = (items) => (items || []).reduce((s, i) => s + (Number(i.amount)
 // ── Mail templates. {fields} fill from the job; the email goes out in the
 // branded frame (lib/mail.js) with a button to the client's project page.
 const TEMPLATES = {
-  proposal: { label: 'Proposal', subject: 'Your proposal: {title}', heading: 'Your proposal',
+  proposal: { when: 'When the proposal is written. Sending moves the job to Proposed.', label: 'Proposal', subject: 'Your proposal: {title}', heading: 'Your proposal',
     body: 'Hi {first},\n\nThanks for the brief. Your proposal for {title} is ready: {total}, {billing}.\n\nOpen your project page to see what is included and the timeline, and accept it when you are happy. Any questions, just reply.\n\nCarter', button: 'See the proposal' },
-  drafts: { label: 'Directions ready', subject: 'Your directions are ready: {title}', heading: 'Your directions are ready',
+  drafts: { when: 'When the first directions are ready. Moves the job to Directions.', label: 'Directions ready', subject: 'Your directions are ready: {title}', heading: 'Your directions are ready',
     body: 'Hi {first},\n\nThe first directions for {title} are ready. Have a look, pick the one you like best, and tell me anything you would change.\n\nCarter', button: 'Pick a direction' },
-  final: { label: 'Final ready', subject: 'Your final is ready to review: {title}', heading: 'Your final is ready',
+  final: { when: 'When the finished work is ready to review. Moves the job to Final.', label: 'Final ready', subject: 'Your final is ready to review: {title}', heading: 'Your final is ready',
     body: 'Hi {first},\n\nThe finished {title} is ready to review. Approve it, or ask for changes ({left} round{leftS} of changes left).\n\nCarter', button: 'Review the final' },
-  invoice: { label: 'Invoice', subject: 'Your invoice: {title}', heading: 'Your invoice is ready',
+  invoice: { when: 'When money is due and ready to pay on their page.', label: 'Invoice', subject: 'Your invoice: {title}', heading: 'Your invoice is ready',
     body: 'Hi {first},\n\n{due} is ready to pay on your project page, by card or bank. Thank you.\n\nCarter', button: 'Pay now' },
-  reminder: { label: 'Reminder', subject: 'A quick nudge: {title}', heading: 'A quick nudge',
+  reminder: { when: 'A gentle nudge for anything waiting on the client.', label: 'Reminder', subject: 'A quick nudge: {title}', heading: 'A quick nudge',
     body: 'Hi {first},\n\nJust checking in on {title}. Everything is waiting on your project page whenever you are ready.\n\nCarter', button: 'Open your project page' },
-  note: { label: 'Blank', subject: '{title}', heading: '', body: 'Hi {first},\n\n\n\nCarter', button: 'Open your project page' },
+  note: { when: 'A blank message in the same frame.', label: 'Blank', subject: '{title}', heading: '', body: 'Hi {first},\n\n\n\nCarter', button: 'Open your project page' },
 };
+
+// Made-up values so a template can be previewed without picking a job.
+const SAMPLE_FIELDS = { first: 'Dana', name: 'Dana Reyes', title: 'Booking tool', business: 'Reyes Plumbing', total: '$2,000', billing: 'half to start and half when you approve the final', left: 2, leftS: 's', due: 'Deposit (50%) ($1,000)' };
 
 function fieldsFor(job, proposal, invoices) {
   const total = proposal ? Number(proposal.total) || sumItems(proposal.items) : 0;
@@ -628,43 +631,96 @@ function FilesPanel({ job, kind, files, reload, compose }) {
   );
 }
 
-function Composer({ job, proposal, invoices, kind, onClose, onSent }) {
-  const tpl = TEMPLATES[kind] || TEMPLATES.note;
-  const f = fieldsFor(job, proposal, invoices);
-  const [k, setK] = React.useState(kind);
-  const [m, setM] = React.useState({ subject: fill(tpl.subject, f), heading: fill(tpl.heading, f), body: fill(tpl.body, f), button: true, button_label: tpl.button });
-  const [busy, setBusy] = React.useState('');
-  const [msg, setMsg] = React.useState('');
-  const pick = (nk) => { const t = TEMPLATES[nk]; setK(nk); setM({ subject: fill(t.subject, f), heading: fill(t.heading, f), body: fill(t.body, f), button: true, button_label: t.button }); };
-  const send = (test) => {
-    setBusy(test ? 'test' : 'send'); setMsg('');
-    jobAction(job.id, 'send', { kind: k, subject: m.subject, heading: m.heading, body: m.body, button: m.button, button_label: m.button_label, test })
-      .then(() => { setMsg(test ? 'Test sent to you.' : 'Sent.'); if (!test) onSent(); })
-      .catch((e) => setMsg(e.message)).finally(() => setBusy(''));
-  };
-  return (
-    <section className="tile" style={{ outline: '1px solid var(--line)' }}>
-      <div className="tilehead"><h2 className="h2">Email {job.name}</h2><button className="btn quiet sm" onClick={onClose}>Close</button></div>
-      <Field label="Template">
-        <select className="input" value={k} onChange={(e) => pick(e.target.value)}>
-          {Object.entries(TEMPLATES).map(([id, t]) => <option key={id} value={id}>{t.label}</option>)}
-        </select>
-      </Field>
-      <Field label="To"><input className="input" style={{ width: '100%' }} value={job.email || 'No email on this job'} disabled /></Field>
-      <Field label="Subject"><input className="input" style={{ width: '100%' }} value={m.subject} onChange={(e) => setM({ ...m, subject: e.target.value })} /></Field>
-      <Field label="Heading"><input className="input" style={{ width: '100%' }} value={m.heading} onChange={(e) => setM({ ...m, heading: e.target.value })} /></Field>
-      <Field label="Message"><textarea className="input" rows={8} style={{ width: '100%', resize: 'vertical' }} value={m.body} onChange={(e) => setM({ ...m, body: e.target.value })} /></Field>
-      <label className="sub" style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
-        <input type="checkbox" checked={m.button} onChange={(e) => setM({ ...m, button: e.target.checked })} /> Button to their project page:
-        <input className="input" style={{ flex: 1 }} value={m.button_label} disabled={!m.button} onChange={(e) => setM({ ...m, button_label: e.target.value })} />
-      </label>
-      <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
-        <button className="btn sm" disabled={!!busy} onClick={() => send(false)}>{busy === 'send' ? 'Sending…' : 'Send'}</button>
-        <button className="btn ghost sm" disabled={!!busy} onClick={() => send(true)}>{busy === 'test' ? 'Sending…' : 'Send a test to me'}</button>
-        {msg && <span className="sub">{msg}</span>}
+// A dialog: dark backdrop, a framed panel, Esc and a click outside close it.
+function Modal({ title, sub, onClose, children, foot, wide }) {
+  React.useEffect(() => {
+    const k = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', k);
+    const prev = document.body.style.overflow; document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', k); document.body.style.overflow = prev; };
+  }, [onClose]);
+  return ReactDOM.createPortal(
+    <div className="modal-back" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className={'modal' + (wide ? ' wide' : '')} role="dialog" aria-modal="true" aria-label={title}>
+        <div className="modal-h">
+          <div><h2 className="h2">{title}</h2>{sub && <p className="sub">{sub}</p>}</div>
+          <button className="btn quiet sm" onClick={onClose} aria-label="Close">Close</button>
+        </div>
+        <div className="modal-b">{children}</div>
+        {foot && <div className="modal-f">{foot}</div>}
       </div>
-      {['proposal', 'drafts', 'final'].includes(k) && <p className="sub" style={{ marginTop: 8 }}>Sending moves the job to {STAGE_LABEL[{ proposal: 'proposed', drafts: 'drafts', final: 'final' }[k]]}.</p>}
-    </section>
+    </div>,
+    document.body
+  );
+}
+
+// The email as the client will see it: the Scaffold's paper card (same colours
+// as lib/mail.js), so what you read here is what goes out.
+function EmailPreview({ heading, body, button, buttonLabel, subject }) {
+  const paras = String(body || '').trim().split(/\n\s*\n/).filter(Boolean);
+  return (
+    <div className="mail-prev" aria-label="Email preview">
+      {subject != null && <div className="mp-subj"><span>Subject</span>{subject || '(no subject)'}</div>}
+      <div className="mp-card">
+        <div className="mp-top"><img src="/assets/scaffold-icon-180.png" alt="" /><span>The Scaffold by Carter Groff</span></div>
+        <div className="mp-body">
+          {heading ? <h3>{heading}</h3> : null}
+          {paras.map((t, k) => <p key={k}>{t.split('\n').map((l, n) => <React.Fragment key={n}>{n ? <br /> : null}{l}</React.Fragment>)}</p>)}
+          {button && buttonLabel ? <span className="mp-btn">{buttonLabel}</span> : null}
+        </div>
+        <div className="mp-foot">Reply to this email and it reaches Carter directly.</div>
+      </div>
+    </div>
+  );
+}
+
+function Composer({ job, proposal, invoices, kind, onClose, onSent }) {
+  const f = fieldsFor(job, proposal, invoices);
+  const make = (nk) => { const t = TEMPLATES[nk] || TEMPLATES.note; return { subject: fill(t.subject, f), heading: fill(t.heading, f), body: fill(t.body, f), button: true, button_label: t.button }; };
+  const [k, setK] = React.useState(TEMPLATES[kind] ? kind : 'note');
+  const [m, setM] = React.useState(() => make(TEMPLATES[kind] ? kind : 'note'));
+  const [busy, setBusy] = React.useState('');
+  const [res, setRes] = React.useState(null);
+  const [view, setView] = React.useState('edit');
+  const [done, setDone] = React.useState(false);
+  const pick = (nk) => { setK(nk); setM(make(nk)); setRes(null); };
+  const canSend = !!job.email && m.subject.trim() && m.body.trim() && !busy && !done;
+  const send = (test) => {
+    setBusy(test ? 'test' : 'send'); setRes(null);
+    jobAction(job.id, 'send', { kind: k, subject: m.subject, heading: m.heading, body: m.body, button: m.button, button_label: m.button_label, test })
+      .then(() => { setRes({ ok: true, text: test ? 'A test went to your own inbox.' : 'Sent to ' + job.email + '.' }); if (!test) { setDone(true); setTimeout(onSent, 900); } })
+      .catch((e) => setRes({ ok: false, text: e.message })).finally(() => setBusy(''));
+  };
+  const moves = { proposal: 'proposed', drafts: 'drafts', final: 'final' }[k];
+  return (
+    <Modal wide title={'Email ' + job.name} onClose={onClose}
+      sub="Sent from The Scaffold's email, with a button to their project page, and logged on the job. Replies come to you. Words in {braces} fill in from the job."
+      foot={<React.Fragment>
+        <span className={'cmp-res' + (res && !res.ok ? ' bad' : '')} role="status">{res ? res.text : moves ? 'Sending moves the job to ' + STAGE_LABEL[moves] + '.' : ''}</span>
+        <button className="btn ghost sm" onClick={() => send(true)} disabled={!!busy || done || !m.body.trim()}>{busy === 'test' ? 'Sending…' : 'Send a test to me'}</button>
+        <button className="btn sm" onClick={() => send(false)} disabled={!canSend}>{busy === 'send' ? 'Sending…' : done ? 'Sent' : 'Send'}</button>
+      </React.Fragment>}>
+      <div className="cmp-tabs" role="tablist"><button role="tab" aria-selected={view === 'edit'} className={view === 'edit' ? 'on' : ''} onClick={() => setView('edit')}>Write</button><button role="tab" aria-selected={view === 'preview'} className={view === 'preview' ? 'on' : ''} onClick={() => setView('preview')}>Preview</button></div>
+      <div className="cmp">
+        <div className={'cmp-form' + (view === 'edit' ? ' show' : '')}>
+          <div className="chips" role="group" aria-label="Template">
+            {Object.entries(TEMPLATES).map(([id, t]) => <button key={id} type="button" className={'chip' + (k === id ? ' on' : '')} aria-pressed={k === id} onClick={() => pick(id)}>{t.label}</button>)}
+          </div>
+          <Field label="To"><input className="input" value={job.email || 'No email on this job'} disabled /></Field>
+          <Field label="Subject"><input className="input" value={m.subject} onChange={(e) => setM({ ...m, subject: e.target.value })} disabled={done} /></Field>
+          <Field label="Heading"><input className="input" value={m.heading} onChange={(e) => setM({ ...m, heading: e.target.value })} disabled={done} /></Field>
+          <Field label="Message"><textarea className="input" rows={9} style={{ resize: 'vertical', lineHeight: 1.5 }} value={m.body} onChange={(e) => setM({ ...m, body: e.target.value })} disabled={done} /></Field>
+          <label className="cmp-btnrow">
+            <input type="checkbox" checked={m.button} onChange={(e) => setM({ ...m, button: e.target.checked })} /> <span>Button to their project page</span>
+            <input className="input" value={m.button_label} disabled={!m.button} onChange={(e) => setM({ ...m, button_label: e.target.value })} aria-label="Button label" />
+          </label>
+          {!job.email && <p className="sub" style={{ color: 'var(--warn)' }}>Add an email to this job to send. You can still send a test to yourself.</p>}
+        </div>
+        <div className={'cmp-prev' + (view === 'preview' ? ' show' : '')}>
+          <EmailPreview subject={m.subject} heading={m.heading} body={m.body} button={m.button} buttonLabel={m.button_label} />
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -781,6 +837,7 @@ function Proposals({ data, open }) {
 }
 
 function Mail({ data, open }) {
+  const [view, setView] = React.useState(null);
   const sent = data.events.filter((e) => e.kind === 'email');
   const jobOf = (id) => data.jobs.find((j) => j.id === id);
   return (
@@ -797,18 +854,26 @@ function Mail({ data, open }) {
           {!sent.length && <p className="sub">Nothing sent yet. Emails go out from each job's page.</p>}
         </div>
       </section>
-      <section className="card">
-        <div className="pad" style={{ borderBottom: '1px solid var(--line)' }}><h2 className="h2">Templates</h2></div>
-        <div className="pad">
-          <p className="sub" style={{ marginBottom: 12 }}>Each starts the message on a job's page, where you can change anything before sending. Words in braces fill in from the job.</p>
+      <section>
+        <div className="widget-h" style={{ borderBottom: 0, paddingBottom: 4 }}><h2 className="h2">Templates</h2><span className="widget-b">{Object.keys(TEMPLATES).length} ready</span></div>
+        <p className="sub" style={{ marginBottom: 14 }}>Click one to read the whole email as your client will see it. Each starts the message on a job's page, where you can change anything before sending.</p>
+        <div className="tplgrid">
           {Object.entries(TEMPLATES).map(([id, t]) => (
-            <details key={id} style={{ borderTop: '1px solid var(--line)', padding: '10px 0' }}>
-              <summary style={{ cursor: 'pointer' }}>{t.label}: <span className="sub">{t.subject}</span></summary>
-              <p style={{ whiteSpace: 'pre-wrap', margin: '8px 0 0' }}>{t.body}</p>
-            </details>
+            <button key={id} type="button" className="tplcard" onClick={() => setView(id)}>
+              <span className="tpl-name">{t.label}</span>
+              <span className="tpl-subj">{fill(t.subject, SAMPLE_FIELDS)}</span>
+              <span className="tpl-snip">{fill(t.body, SAMPLE_FIELDS).split('\n').filter(Boolean).slice(1, 2).join(' ')}</span>
+              <span className="tpl-when">{t.when}</span>
+            </button>
           ))}
         </div>
       </section>
+      {view && (() => { const t = TEMPLATES[view]; return (
+        <Modal title={t.label} sub={t.when} onClose={() => setView(null)}
+          foot={<span className="cmp-res">Shown with made-up details. On a job, your client's own details fill in.</span>}>
+          <EmailPreview subject={fill(t.subject, SAMPLE_FIELDS)} heading={fill(t.heading, SAMPLE_FIELDS)} body={fill(t.body, SAMPLE_FIELDS)} button buttonLabel={t.button} />
+          <details className="tpl-raw"><summary>The template text</summary><p>Subject: {t.subject}</p>{t.heading ? <p>Heading: {t.heading}</p> : null}<pre>{t.body}</pre></details>
+        </Modal>); })()}
     </div>
   );
 }
@@ -926,6 +991,8 @@ function ClientPage({ client, stats, data, open, reload, back, gone }) {
   const [notes, setNotes] = React.useState(client.notes || '');
   const [saved, setSaved] = React.useState(false);
   const [confirm, setConfirm] = React.useState(false);
+  const [compose, setCompose] = React.useState(false);
+  const latest = stats.jobs[0];
   const ids = new Set(stats.jobs.map((j) => j.id));
   const events = data.events.filter((e) => ids.has(e.job_id) && EVENT_TEXT[e.kind]).slice(0, 12);
   const titleOf = (id) => (stats.jobs.find((j) => j.id === id) || {}).title || 'Job';
@@ -935,12 +1002,13 @@ function ClientPage({ client, stats, data, open, reload, back, gone }) {
   return (
     <div className="stack">
       <button className="btn quiet sm" style={{ alignSelf: 'flex-start' }} onClick={back}>All clients</button>
+      {compose && latest && <Composer job={latest} proposal={data.proposals.find((x) => x.job_id === latest.id)} invoices={data.invoices} kind="reminder" onClose={() => setCompose(false)} onSent={() => { setCompose(false); reload(); }} />}
       <div className="dash-h">
         <div>
           <h1 className="h1">{client.name}</h1>
           <p className="sub">{client.email || 'No email yet'}{client.since ? ' · client since ' + new Date(client.since + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : ''}</p>
         </div>
-        {client.email && <a className="btn ghost" href={'mailto:' + client.email}>Email {client.name.split(' ')[0]}</a>}
+        {stats.jobs.length ? <button className="btn ghost" onClick={() => setCompose(true)}>Email {client.name.split(' ')[0]}</button> : client.email ? <a className="btn ghost" href={'mailto:' + client.email}>Email {client.name.split(' ')[0]}</a> : null}
       </div>
       <div className="ctabs" role="tablist">
         {TABS.map(([id, label]) => <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{label}</button>)}
