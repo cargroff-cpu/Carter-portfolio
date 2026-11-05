@@ -96,10 +96,11 @@ html, body { overflow-x: clip; }
 .dhero .ddeck { margin: 20px auto 0; max-width: 28em; }
 .dhero .dacts { justify-content: center; margin-top: 32px; }
 @media (max-width: 899px) {
-  .dhero { padding: 40px 0 56px; }
-  .dhero-lamp { height: 380px; opacity: .55; }
-  .dhero-lamp.l { left: -44px; } .dhero-lamp.r { right: -44px; }
-  .dhero-candle { width: 420px; }
+  .dhero { padding: 40px 0 48px; }
+  .dhero-lamp { top: 20px; bottom: auto; height: 250px; }
+  .dhero-lamp.l { left: max(4px, calc(50% - 176px)); } .dhero-lamp.r { right: max(4px, calc(50% - 176px)); }
+  .dhero-medal { width: 196px; margin-bottom: 20px; }
+  .dhero-candle { width: 300px; }
   .dhero-in { padding: 0 24px; }
 }
 .dcrest { width: 52px; margin: 0 auto 24px; opacity: .85; }
