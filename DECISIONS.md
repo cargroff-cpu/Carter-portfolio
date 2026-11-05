@@ -527,3 +527,7 @@ the start, and the gas catches: the glass's dark overlay and the halo
 sputter to full light over about two seconds, the left lamp at 0.5s and the
 right at 0.95s, then the usual slow candle flicker takes over. Desktop keeps
 the lane coming in out of the fog. Reduced motion shows them lit at once.
+
+The Websites line is "Websites" with "front and back end" as a side note to
+its right: Karla, 14px, muted, on the same line (`sub` on the service, shown
+as `.dlist-sub`).

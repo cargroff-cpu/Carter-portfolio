@@ -15,7 +15,7 @@ const SHOW_PRICES = false;
 // purpose: things almost any small business needs, no one company's tools.
 const DESIGN_SERVICES = [
   { title: 'Social graphics', desc: 'One post or a series with one look.', need: 'Social graphics', from: '$75', turn: '2 business days' },
-  { title: 'Websites, front and back end', desc: 'Designed, built and launched, then kept running: the pages people see and the logins, databases, payments and forms behind them.', need: 'Website', from: '', turn: 'Quoted' },
+  { title: 'Websites', sub: 'front and back end', desc: 'Designed, built and launched, then kept running: the pages people see and the logins, databases, payments and forms behind them.', need: 'Website', from: '', turn: 'Quoted' },
   { title: 'Cards, flyers and print', desc: 'Print-ready with correct bleed, or sized for screen.', need: 'Business card or print', from: '$150', turn: '3 business days' },
   { title: 'Documents and reports', desc: 'Proposals, menus, multi-page layouts.', need: 'Document or report', from: '$400', turn: '5–7 business days' },
   { title: 'Presentations', desc: 'Designed slides, not a template.', need: 'Presentation or deck', from: '$400', turn: '5–7 business days' },
@@ -392,7 +392,7 @@ function Shelf({ lane, label, title, blurb, items, cta, onAddNeed }) {
         {items.map((s) => (
           <li key={s.title}>
             <a href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed(lane, s.need); }}>
-              <span className="dlist-main"><b>{s.title}</b></span>
+              <span className="dlist-main"><b>{s.title}{s.sub && <small className="dlist-sub">{s.sub}</small>}</b></span>
               <Turn s={s} lane={lane} />
             </a>
           </li>

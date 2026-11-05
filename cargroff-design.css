@@ -333,6 +333,8 @@ a:hover { color: var(--amber-lit); }
 .dlist li a { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 0; border-bottom: 1px solid var(--rule); }
 .dlist-main { min-width: 0; }
 .dlist b { display: block; font-family: var(--display); font-size: 22px; font-weight: 500; color: var(--ink); line-height: 1.2; }
+.dlist-sub { margin-left: 10px; font-family: var(--ui); font-size: 14px; font-weight: 500; color: var(--ink-mute); white-space: nowrap; }
+.dlist li a:hover .dlist-sub { color: var(--ink-soft); }
 .dlist-main > span { display: block; margin-top: 4px; font-size: 15px; color: var(--ink-soft); }
 .dlist li a:hover b { color: var(--amber-lit); }
 .dturn { flex: none; display: grid; justify-items: end; gap: 2px; font-style: normal; font-family: var(--ui); font-size: 14px; font-weight: 500; color: var(--amber); text-align: right; }
