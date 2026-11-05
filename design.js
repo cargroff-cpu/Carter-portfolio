@@ -601,7 +601,8 @@ const DESIGN_SERVICES = [{
   from: '$75',
   turn: '2 business days'
 }, {
-  title: 'Websites, front and back end',
+  title: 'Websites',
+  sub: 'front and back end',
   desc: 'Designed, built and launched, then kept running: the pages people see and the logins, databases, payments and forms behind them.',
   need: 'Website',
   from: '',
@@ -1323,7 +1324,9 @@ function Shelf({
     }
   }, React.createElement("span", {
     className: "dlist-main"
-  }, React.createElement("b", null, s.title)), React.createElement(Turn, {
+  }, React.createElement("b", null, s.title, s.sub && React.createElement("small", {
+    className: "dlist-sub"
+  }, s.sub))), React.createElement(Turn, {
     s: s,
     lane: lane
   }))))), React.createElement("p", {
