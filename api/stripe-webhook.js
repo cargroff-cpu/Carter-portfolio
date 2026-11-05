@@ -3,11 +3,13 @@
 // no build step or node_modules) using STRIPE_WEBHOOK_SECRET, then marks the
 // matching invoice paid. Not gated by middleware.js: Stripe isn't logged
 // into the Scaffold, its signature is the auth. TODO(carter): after setting
-// STRIPE_SECRET_KEY (see api/create-invoice-link.js), add a webhook
+// STRIPE_SECRET_KEY (see lib/stripe.js), add a webhook
 // endpoint in the Stripe dashboard pointed at /api/stripe-webhook for the
 // checkout.session.completed event, and set STRIPE_WEBHOOK_SECRET in Vercel
 // to the signing secret it gives you.
 import crypto from 'node:crypto';
+import { sb, sendEmail, NOTIFY_EMAIL } from '../lib/server.js';
+import { renderEmail } from '../lib/mail.js';
 
 export const config = { api: { bodyParser: false } };
 
@@ -64,15 +66,40 @@ export default async function handler(req, res) {
     const session = event.data.object;
     const paymentLinkId = session.payment_link;
     if (paymentLinkId) {
+      let paid = [];
       try {
-        await fetch(`${SCAFFOLD_SUPABASE_URL}/rest/v1/invoices?stripe_payment_link_id=eq.${encodeURIComponent(paymentLinkId)}`, {
+        const r = await fetch(`${SCAFFOLD_SUPABASE_URL}/rest/v1/invoices?stripe_payment_link_id=eq.${encodeURIComponent(paymentLinkId)}&status=neq.paid`, {
           method: 'PATCH',
-          headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+          headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
           body: JSON.stringify({ status: 'paid', paid_at: new Date().toISOString(), stripe_payment_intent_id: session.payment_intent || null }),
         });
+        if (!r.ok) throw new Error(await r.text());
+        paid = await r.json();
       } catch (e) {
         res.status(500).json({ error: 'Webhook received but the Supabase update failed.' });
         return;
+      }
+      // Workflow: note the payment on the job, tell Carter, and move the job
+      // to "paid" once it is approved and nothing is left unpaid. Best effort:
+      // the invoice is already marked paid above.
+      for (const inv of paid) {
+        if (!inv.job_id) continue;
+        try {
+          const [job] = await sb(`jobs?id=eq.${inv.job_id}&select=*`);
+          if (!job) continue;
+          const amount = '$' + Number(inv.amount).toFixed(2);
+          await sb('job_events', { method: 'POST', body: { job_id: job.id, kind: 'paid', who: 'client', body: `Paid ${inv.label || 'invoice'}: ${amount}` } });
+          const open = await sb(`invoices?job_id=eq.${job.id}&status=neq.paid&select=id`);
+          const done = !!job.approved_at && open.length === 0;
+          await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { last_activity_at: new Date().toISOString(), ...(done ? { stage: 'paid' } : {}) } });
+          const lines = [`${job.name} paid ${inv.label || 'an invoice'}: ${amount}.`];
+          if (done) lines.push('Nothing is left to pay; the job is marked paid.');
+          lines.push('', `Open it in the Back Room: https://scaffold.cargroff.com/business#job=${job.id}`);
+          const { html, text } = renderEmail({ heading: done ? 'Job paid in full' : 'Payment received', body: lines.join('\n') });
+          await sendEmail({ to: NOTIFY_EMAIL, subject: `${done ? 'Paid in full' : 'Payment received'}: ${job.title}`, html, text });
+        } catch (e) {
+          console.error('webhook job update', e.message);
+        }
       }
     }
   }

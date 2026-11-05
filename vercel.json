@@ -12,6 +12,7 @@
     { "source": "/", "destination": "/Carter%20Portfolio.html" },
     { "source": "/backroom", "destination": "/Scaffold%20Hub.html" },
     { "source": "/backroom/scaffold", "destination": "/Scaffold%20Admin.html" },
+    { "source": "/j/:token", "destination": "/Job.html" },
     { "source": "/docket", "destination": "/The%20Docket.html" },
     { "source": "/business", "destination": "/Business%20Hub.html" },
     { "source": "/design", "destination": "/Carter%20Groff%20Design.html" },

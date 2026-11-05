@@ -5,7 +5,7 @@
 //
 // Rate limited: 5 failed attempts per IP per 15 minutes (best effort, per
 // serverless instance — see lib/rate-limit.js).
-import { createSessionToken, safeEqual, sessionSecret, SESSION_COOKIE, SESSION_TTL_MS } from '../lib/session.js';
+import { createSessionToken, safeEqual, sessionSecret, SESSION_COOKIE } from '../lib/session.js';
 import { clientIp, hit, reset } from '../lib/rate-limit.js';
 
 const LIMIT = { limit: 5, windowMs: 15 * 60 * 1000 };
@@ -40,11 +40,11 @@ export default async function handler(req, res) {
 
   reset('login', ip);
   const token = await createSessionToken();
-  // 8-hour Max-Age matches the token's own signed expiry; Admin.html's
-  // pagehide beacon (api/logout.js) still clears it sooner.
+  // No Max-Age: a browser-session cookie, gone when the browser closes. The
+  // token's own signed expiry (8 hours) still applies, and Sign out clears it.
   res.setHeader(
     'Set-Cookie',
-    `${SESSION_COOKIE}=${encodeURIComponent(token)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}`
+    `${SESSION_COOKIE}=${encodeURIComponent(token)}; HttpOnly; Secure; SameSite=Lax; Path=/`
   );
   res.status(200).json({ ok: true });
 }

@@ -6,9 +6,11 @@
 // the service-role key (server-side env var, never sent to the browser).
 // Whitelisted tables only.
 const SCAFFOLD_SUPABASE_URL = 'https://rodxrkzwpsgeeatmbwku.supabase.co';
+// Files, client actions and emails go through api/job.js; plain edits
+// (a job's title, billing or notes, the proposal's lines, a client, an
+// invoice, a Docket task) come through here.
 const ALLOWED_TABLES = new Set([
-  'campaigns', 'links', 'docket_tasks',
-  'clients', 'leads', 'lead_messages', 'projects', 'project_deliverables', 'invoices', 'notes', 'design_briefs',
+  'docket_tasks', 'clients', 'invoices', 'jobs', 'proposals', 'job_events', 'design_briefs',
 ]);
 
 export default async function handler(req, res) {

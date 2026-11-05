@@ -9,8 +9,9 @@
 //                      answered, log the reply on the lead's thread
 //   action 'reject'  — mark the brief answered with triage status
 //                      'rejected'; sends nothing
-import { sb, sendEmail, esc, parseBody, logEvent, NOTIFY_EMAIL, FROM_VERIFIED, BRAND_FULL } from '../lib/server.js';
+import { sb, sendEmail, parseBody, logEvent, NOTIFY_EMAIL, FROM_VERIFIED } from '../lib/server.js';
 import { triageAndSave } from '../lib/brief-triage.js';
+import { renderEmail, jobUrl } from '../lib/mail.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -72,12 +73,17 @@ export default async function handler(req, res) {
     res.status(409).json({ error: 'Client email is off until RESEND_FROM is set to an address on a domain verified in Resend. Copy the reply and send it from your inbox for now.' });
     return;
   }
+  // The brief's job (made at intake) gives the reply its project-page button.
+  let job = null;
+  if (brief.job_id) { try { [job] = await sb(`jobs?id=eq.${brief.job_id}&select=id,token`); } catch (e) { job = null; } }
   try {
+    const { html, text } = renderEmail({
+      heading: 'About your brief', body: reply, preheader: `Re: your brief ${brief.reference || ''}`.trim(),
+      button: job ? { label: 'Open your project page', url: jobUrl(job.token) } : null,
+    });
     await sendEmail({
       from: FROM_VERIFIED, to: brief.email, replyTo: NOTIFY_EMAIL,
-      subject: `Re: your brief ${brief.reference || ''}`.trim(),
-      text: reply,
-      html: `<div style="font-family: Georgia, serif; max-width: 520px; color:#2a1c11">${esc(reply).replace(/\n/g, '<br>')}<p style="color:#666;font-size:13px;margin-top:18px">${esc(BRAND_FULL)}</p></div>`,
+      subject: `Re: your brief ${brief.reference || ''}`.trim(), text, html,
     });
   } catch (e) {
     await logEvent({ kind: 'reply_send', ok: false, reference: brief.reference, detail: e.message.slice(0, 500) });
@@ -89,9 +95,9 @@ export default async function handler(req, res) {
     method: 'PATCH',
     body: { status: 'answered', answered_at: now, triage: { ...triage, status: 'sent', sent_reply: reply, decided_at: now } },
   }).catch(() => {});
-  if (brief.converted_lead_id) {
-    await sb('lead_messages', { method: 'POST', body: { lead_id: brief.converted_lead_id, from: 'me', body: reply, sent_at: now } }).catch(() => {});
-    await sb(`leads?id=eq.${brief.converted_lead_id}`, { method: 'PATCH', body: { status: 'Awaiting Response', last_activity_at: now } }).catch(() => {});
+  if (job) {
+    await sb('job_events', { method: 'POST', body: { job_id: job.id, kind: 'email', who: 'me', body: reply, meta: { kind: 'reply' } } }).catch(() => {});
+    await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { last_activity_at: now } }).catch(() => {});
   }
   await logEvent({ kind: 'reply_sent', ok: true, reference: brief.reference });
   res.status(200).json({ ok: true });

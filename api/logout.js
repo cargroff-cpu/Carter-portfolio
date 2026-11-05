@@ -1,7 +1,6 @@
-// api/logout.js — clears the admin session cookie. Called via
-// navigator.sendBeacon on pagehide (see Admin.html) so leaving or
-// refreshing the admin page logs it out immediately, rather than
-// relying on the cookie surviving until the browser itself closes.
+// api/logout.js — clears the admin session cookie. Called by the Back Room's
+// Sign out button. (It used to be called on every page-leave, which signed
+// you out on Back and refresh; the session cookie now ends with the browser.)
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });

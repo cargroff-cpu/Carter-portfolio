@@ -578,3 +578,65 @@ behind the same login (middleware.js) and logout-on-close.
   is back as the room's light. Wick is retired, so it is decoration only: no
   link, no label, it ignores the pointer, embers drift up gently, and it
   holds still under reduced motion.
+
+## Back Room: no more random sign-ins, and the light bars light up again
+
+- Cause of the random sign-in: every Back Room page sent a logout beacon
+  whenever it was left in any way except clicking a same-origin link (Back,
+  refresh, closing a tab, switching apps on a phone), so the next page found
+  no session and showed the sign-in. The beacon is gone from all five pages.
+- The session cookie is now a browser-session cookie (no Max-Age): it ends
+  when the browser closes, the signed token still expires after 8 hours, and
+  the Back Room footer has a Sign out button that clears it at once.
+  Trade-off: a Back Room tab left open stays signed in until the browser
+  closes or 8 hours pass, instead of ending the moment the tab closes.
+- Wick stays retired, but the light bar in the Business Hub's tool wheel is
+  back (a non-link div at the centre) and brightens on hover, like the sconce
+  on the Back Room page, which surges again when you rest on it. Neither does
+  anything when clicked.
+
+## One simple workflow: brief to paid
+
+- A brief now opens a job. Each job moves through New, Proposed, Directions
+  (drafts), Final and Paid, or is closed if it is dropped. It all lives in
+  four new tables: jobs, proposals, job_files and job_events. The empty
+  lead, project, campaign and link tables are dropped
+  (supabase/migrations/20261106_workflow.sql; apply it when this merges).
+- Each job has a private client page at scaffold.cargroff.com/j/<token>.
+  The long random token is the only key. Opening the page never changes
+  anything; only the buttons on it do: accept the proposal, pick a
+  direction, ask for changes, approve the final, pay.
+- Payment is set per proposal: half up front and half on approval, or all at
+  the end. There is no card fee. Invoices are made automatically when the
+  client accepts and when they approve. Pay opens a Stripe Payment Link,
+  created when first clicked and reused after that. The Stripe webhook marks
+  the invoice paid and moves the job to Paid once nothing is still owed.
+- Directions and finals can be uploaded files (private storage, signed links
+  that expire after 6 hours) or links (Canva, Figma, Drive).
+- Emails go out from the job page. Templates cover the proposal, directions
+  ready, final ready, invoice, a reminder and a note, and each one can be
+  sent as a test to Carter first. Every email uses one branded frame
+  (lib/mail.js) with one button to the client page. Client emails stay off
+  until RESEND_FROM is set on a verified domain.
+- The Business Hub's tool wheel is now Today, Jobs, Proposals, Mail, Money
+  and Clients. Removed with the old marketing board: brand kits, campaigns,
+  links, the Pipedrive goals route and the manual invoice-link route.
+- The tools brief has an optional "Your plan or spec" upload, up to 25 MB.
+  It goes straight to a private bucket and shows with the brief's other
+  attachments.
+- Ideas borrowed from the work platform (a client page opened by a token
+  link, pay-on-click Stripe links, a single email frame) were rewritten from
+  scratch. No code, names or data were copied.
+
+## Back Room as a phone app
+
+- The five Back Room pages link a web app manifest (backroom.webmanifest):
+  name "Back Room", opens at /backroom full-screen with the Scaffold crest
+  icon and the room's dark colour. On a phone, use Add to Home Screen
+  (iPhone: Share, then Add to Home Screen; Android: the browser menu, then
+  Install app).
+- It is the same site, not a separate app: no store listing and no offline
+  mode. There is deliberately no service worker, so private pages are never
+  cached on the device.
+- The sign-in cookie lasts for the browser session. An installed app may
+  ask for the password again more often than a browser tab does.

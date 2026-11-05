@@ -4,6 +4,13 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex, nofollow" />
+<link rel="manifest" href="/backroom.webmanifest" />
+<meta name="theme-color" content="#100b06" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Back Room" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black" />
+<link rel="apple-touch-icon" href="/assets/scaffold-icon-180.png" />
 <title>Scaffold Backend: The Back Room</title>
 <link rel="icon" type="image/png" href="assets/favicon.png" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Karla:wght@400;500;600;700&display=swap" />
@@ -41,17 +48,10 @@
 </head>
 <body>
   <div id="root"></div>
-  <!-- Same session handling as Admin.html: closing or refreshing the page logs
-       the Back Room out; same-origin link clicks skip that. -->
-  <script>
-    window.addEventListener('click', function (e) {
-      var a = e.target.closest && e.target.closest('a[href]');
-      if (a && a.origin === location.origin) window.__skipLogout = true;
-    }, true);
-    window.addEventListener('pagehide', function () {
-      if (!window.__skipLogout && navigator.sendBeacon) navigator.sendBeacon('/api/logout');
-    });
-  </script>
+  <!-- The Back Room no longer logs you out whenever a page is left (Back,
+       refresh, a tab switch on a phone); that made the sign-in pop up on
+       random screens. The session cookie now ends when the browser closes, or
+       after 8 hours, or when you use Sign out. -->
   <script src="scaffold-defaults.js"></script>
   <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>

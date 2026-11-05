@@ -1564,6 +1564,38 @@ function Faq() {
 }
 const FILE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/svg+xml', 'application/pdf'];
 const MAX_FILE_BYTES = 2.5 * 1024 * 1024;
+const PLAN_TYPES = ['application/pdf', 'application/zip', 'text/plain', 'text/csv', 'image/png', 'image/jpeg', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'];
+const PLAN_MAX_BYTES = 25 * 1024 * 1024;
+async function uploadPlan(file) {
+  const r = await fetch('/api/design-brief', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      action: 'plan-upload',
+      filename: file.name,
+      type: file.type,
+      size: file.size
+    })
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.url) throw new Error(j.error || 'The plan could not upload.');
+  const put = await fetch(j.url, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': file.type,
+      'x-upsert': 'false'
+    },
+    body: file
+  });
+  if (!put.ok) throw new Error('The plan could not upload.');
+  return {
+    path: j.path,
+    filename: file.name,
+    type: file.type
+  };
+}
 function readFile(file) {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -1582,6 +1614,8 @@ const Brief = React.forwardRef(function Brief(props, ref) {
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState('');
   const [files, setFiles] = React.useState([]);
+  const [plan, setPlan] = React.useState(null);
+  const [busyNote, setBusyNote] = React.useState('');
   const [f, setF] = React.useState({
     lane: 'design',
     name: '',
@@ -1641,6 +1675,17 @@ const Brief = React.forwardRef(function Brief(props, ref) {
     }
     setFiles(chosen);
   };
+  const onPlan = e => {
+    setError('');
+    const p = (e.target.files || [])[0] || null;
+    if (p && (!PLAN_TYPES.includes(p.type) || p.size > PLAN_MAX_BYTES)) {
+      setError(`${p.name}: a PDF, Word, Excel, PowerPoint, text, image or zip file, up to 25 MB.`);
+      e.target.value = '';
+      setPlan(null);
+      return;
+    }
+    setPlan(p);
+  };
   const stepValid = i => {
     if (i === 0) return f.name.trim().length > 1 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email.trim());
     if (i === 1) return f.about.trim().length > 1;
@@ -1659,6 +1704,16 @@ const Brief = React.forwardRef(function Brief(props, ref) {
         ...f,
         files: await Promise.all(files.map(readFile))
       };
+      if (auto && plan) {
+        setBusyNote('Uploading your plan\u2026');
+        try {
+          payload.plan = await uploadPlan(plan);
+        } catch (e) {
+          setError(e.message + ' Remove it and send the brief without it, or email it to car.groff@gmail.com.');
+          return;
+        }
+        setBusyNote('');
+      }
       const r = await fetch('/api/design-brief', {
         method: 'POST',
         headers: {
@@ -1676,6 +1731,7 @@ const Brief = React.forwardRef(function Brief(props, ref) {
       setError('Something went wrong. Try again, or email car.groff@gmail.com.');
     } finally {
       setBusy(false);
+      setBusyNote('');
     }
   };
   if (sent) {
@@ -1959,7 +2015,23 @@ const Brief = React.forwardRef(function Brief(props, ref) {
     onChange: onFiles
   }), files.length > 0 && React.createElement("span", {
     className: "dhint"
-  }, files.map(x => x.name).join(', '))))), error && React.createElement("p", {
+  }, files.map(x => x.name).join(', '))), auto && React.createElement("label", {
+    className: "dfl"
+  }, React.createElement("span", {
+    className: "dlb"
+  }, "Your plan or spec"), React.createElement("span", {
+    className: "dhint"
+  }, "Optional. If you have a written plan for the tool, attach it: a PDF, Word, Excel, PowerPoint, text, image or zip file, up to 25 MB."), React.createElement("input", {
+    className: "dfile",
+    type: "file",
+    accept: PLAN_TYPES.join(','),
+    onChange: onPlan
+  }), plan && React.createElement("span", {
+    className: "dhint"
+  }, plan.name)))), busyNote && React.createElement("p", {
+    className: "dhint",
+    role: "status"
+  }, busyNote), error && React.createElement("p", {
     className: "derr",
     role: "alert"
   }, error), React.createElement("div", {

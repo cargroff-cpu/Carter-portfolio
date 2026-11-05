@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<meta name="referrer" content="no-referrer" />
+<title>Your project: The Scaffold</title>
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&family=Spectral:ital,wght@0,400;0,500;1,400&family=Karla:wght@400;500;600&display=swap" />
+<style>
+/* Job.html — the client's private project page (/j/<token>). The link is the
+   key; there is no login. Reads and acts through /api/job. Plain JS, no
+   framework, so it opens fast on a phone. Every piece of text is set with
+   textContent, so nothing from the job can inject markup. */
+:root {
+  --bg: #1a120b; --bg-soft: #221710; --bg-deep: #0f0a06; --card: #241810;
+  --ink: #ecd9b2; --ink-soft: #c9b48a; --ink-mute: #9a8462;
+  --amber: #d99a3d; --amber-lit: #f5cd6a; --ok: #8fb07c; --warn: #e0a85a;
+  --rule: rgba(236,217,178,.16); --rule-strong: rgba(236,217,178,.32); --on-ink: #1a120b;
+  --display: "Cormorant Garamond", Georgia, serif; --body: "Spectral", Georgia, serif; --ui: "Karla", system-ui, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; overflow-x: clip; background: var(--bg); color: var(--ink); font: 17px/1.6 var(--body); -webkit-font-smoothing: antialiased; }
+a { color: var(--amber-lit); }
+:focus-visible { outline: 2px solid var(--amber-lit); outline-offset: 3px; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 0 20px 80px; }
+header.top { display: flex; align-items: center; gap: 12px; padding: 22px 0 18px; border-bottom: 1px solid var(--rule); }
+header.top img { width: 30px; height: auto; }
+header.top b { font: 500 20px var(--display); display: block; }
+header.top span { font: 13px var(--ui); color: var(--ink-mute); }
+h1 { font: 500 clamp(34px, 6vw, 48px)/1.05 var(--display); margin: 32px 0 6px; overflow-wrap: break-word; }
+h2 { font: 500 28px/1.15 var(--display); margin: 0 0 12px; }
+.sub { color: var(--ink-soft); font-style: italic; margin: 0; }
+.steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 26px 0 8px; list-style: none; padding: 0; }
+.steps li { font: 500 13px var(--ui); color: var(--ink-mute); padding-top: 8px; border-top: 3px solid var(--rule); }
+.steps li.done { color: var(--ink-soft); border-top-color: var(--amber); }
+.steps li.now { color: var(--amber-lit); border-top-color: var(--amber-lit); }
+section { margin-top: 34px; padding: 24px; background: var(--card); border: 1px solid var(--rule); }
+.note { margin-top: 26px; padding: 14px 18px; border-left: 3px solid var(--amber); background: var(--bg-soft); }
+table { width: 100%; border-collapse: collapse; margin: 6px 0 14px; }
+td { padding: 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+td.amt { text-align: right; font: 500 15px var(--ui); white-space: nowrap; padding-left: 16px; }
+tr.total td { border-bottom: 0; font: 600 16px var(--ui); color: var(--amber-lit); }
+.kv { margin: 6px 0; } .kv b { font: 500 14px var(--ui); color: var(--ink-mute); display: block; }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 22px; font: 600 15px var(--ui); color: var(--on-ink); background: var(--ink); border: 1px solid var(--ink); cursor: pointer; text-decoration: none; transition: background-color .2s, border-color .2s, transform .2s; }
+.btn:hover { background: var(--amber-lit); border-color: var(--amber-lit); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--rule-strong); }
+.btn.ghost:hover { border-color: var(--ink); }
+.acts { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+textarea { width: 100%; min-height: 84px; margin-top: 12px; padding: 12px; background: var(--bg-deep); color: var(--ink); border: 1px solid var(--rule-strong); font: 16px/1.5 var(--body); resize: vertical; }
+textarea:focus-visible { outline-offset: 1px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-top: 10px; }
+.tile { border: 1px solid var(--rule); background: var(--bg-deep); display: flex; flex-direction: column; }
+.tile.picked { border-color: var(--amber-lit); box-shadow: 0 0 0 1px var(--amber-lit); }
+.tile .prev { aspect-ratio: 4 / 3; background: var(--bg-soft) center / contain no-repeat; display: flex; align-items: center; justify-content: center; color: var(--ink-mute); font: 14px var(--ui); text-decoration: none; }
+.tile .meta { padding: 12px; display: grid; gap: 10px; }
+.tile .name { font: 500 15px var(--ui); color: var(--ink); overflow-wrap: anywhere; }
+.files { list-style: none; padding: 0; margin: 6px 0 0; }
+.files li { padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.inv { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 0; border-bottom: 1px solid var(--rule); }
+.inv .what { font: 500 16px var(--ui); } .inv .st { font: 500 14px var(--ui); color: var(--ink-mute); }
+.inv .st.paid { color: var(--ok); }
+.err { color: var(--warn); font: 500 15px var(--ui); margin-top: 10px; }
+footer { margin-top: 44px; color: var(--ink-mute); font: 14px var(--ui); }
+@media (max-width: 560px) { section { padding: 18px; } .steps li { font-size: 11px; } }
+@media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><img src="/assets/antler.png" alt="" /><div><b>The Scaffold</b><span>by Carter Groff</span></div></header>
+  <main id="app"><p class="sub" style="margin-top:40px">Loading your project…</p></main>
+  <footer>Questions about anything here? Reply to Carter’s email and it reaches him directly.</footer>
+</div>
+<noscript><p style="max-width:760px;margin:0 auto;padding:0 20px;color:#c9b48a">This page needs JavaScript. Reply to Carter’s email and he will help.</p></noscript>
+<script>
+(function () {
+  var token = (location.pathname.match(/\/j\/([a-f0-9]{24,64})/) || [])[1] || new URLSearchParams(location.search).get('t');
+  var app = document.getElementById('app');
+  var STEPS = [['new', 'Brief'], ['proposed', 'Proposal'], ['drafts', 'Directions'], ['final', 'Final'], ['paid', 'Paid']];
+  var money = function (n) { return '$' + Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 }); };
+  var safe = function (u) { return /^https?:\/\//i.test(u || '') ? u : null; };
+
+  function el(tag, attrs, kids) {
+    var e = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      if (k === 'text') e.textContent = attrs[k];
+      else if (k === 'class') e.className = attrs[k];
+      else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), attrs[k]);
+      else if (attrs[k] != null && attrs[k] !== false) e.setAttribute(k, attrs[k]);
+    });
+    (kids || []).forEach(function (c) { if (c) e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    return e;
+  }
+  function act(body, btn, errEl) {
+    body.t = token;
+    if (btn) btn.disabled = true;
+    if (errEl) errEl.textContent = '';
+    return fetch('/api/job', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || 'Something went wrong.'); return j; }); })
+      .catch(function (e) { if (errEl) errEl.textContent = e.message; if (btn) btn.disabled = false; throw e; });
+  }
+
+  function proposalSection(d) {
+    var p = d.proposal;
+    var rows = (p.items || []).map(function (i) { return el('tr', null, [el('td', { text: i.label }), el('td', { class: 'amt', text: money(i.amount) })]); });
+    rows.push(el('tr', { class: 'total' }, [el('td', { text: 'Total' }), el('td', { class: 'amt', text: money(p.total) })]));
+    var pay = p.billing === 'end' ? 'Paid in full when you approve the final.' : 'Half to start (' + money(p.total / 2) + '), half when you approve the final.';
+    var s = el('section', null, [
+      el('h2', { text: 'Proposal' }),
+      p.summary ? el('p', { text: p.summary }) : null,
+      el('table', null, [el('tbody', null, rows)]),
+      p.timeline ? el('p', { class: 'kv' }, [el('b', { text: 'Timeline' }), p.timeline]) : null,
+      el('p', { class: 'kv' }, [el('b', { text: 'Payment' }), pay + ' Card or bank, no fee.']),
+      p.terms ? el('p', { class: 'kv' }, [el('b', { text: 'Terms' }), p.terms]) : null,
+    ]);
+    if (p.status === 'sent') {
+      var c = el('textarea', { placeholder: 'Anything to add? (optional)', 'aria-label': 'Comment' });
+      var err = el('p', { class: 'err', role: 'alert' });
+      var b = el('button', { class: 'btn', type: 'button', text: 'Accept the proposal', onclick: function () {
+        act({ action: 'accept', comment: c.value }, b, err).then(load);
+      } });
+      s.appendChild(c); s.appendChild(el('div', { class: 'acts' }, [b])); s.appendChild(err);
+    } else if (p.status === 'accepted') {
+      s.appendChild(el('p', { class: 'sub', text: 'You accepted this proposal. Thank you.' }));
+    }
+    return s;
+  }
+
+  function preview(f) {
+    var href = safe(f.href);
+    var isImg = href && /^image\//.test(f.type) && !f.linked;
+    var a = el('a', { class: 'prev', href: href, target: '_blank', rel: 'noopener', text: isImg ? '' : (f.linked ? 'Open the link' : 'Open the file') });
+    if (isImg) a.style.backgroundImage = 'url("' + href.replace(/"/g, '%22') + '")';
+    return a;
+  }
+
+  function draftsSection(d) {
+    var picking = d.job.stage === 'drafts';
+    var c = el('textarea', { placeholder: 'What do you like? Anything to change? (optional)', 'aria-label': 'Comment' });
+    var err = el('p', { class: 'err', role: 'alert' });
+    var tiles = d.drafts.map(function (f) {
+      var picked = d.job.picked_file_id === f.id;
+      var kids = [el('span', { class: 'name', text: f.label })];
+      if (picking) {
+        var b = el('button', { class: picked ? 'btn ghost' : 'btn', type: 'button', text: picked ? 'Your pick' : 'Pick this one', onclick: function () {
+          act({ action: 'pick', file_id: f.id, comment: c.value }, b, err).then(load);
+        } });
+        kids.push(b);
+      } else if (picked) kids.push(el('span', { class: 'sub', text: 'Your pick' }));
+      return el('div', { class: 'tile' + (picked ? ' picked' : '') }, [preview(f), el('div', { class: 'meta' }, kids)]);
+    });
+    var s = el('section', null, [el('h2', { text: 'Directions' }),
+      el('p', { class: 'sub', text: picking ? (d.job.picked_file_id ? 'Thanks for your pick. Carter is making the final; you can still change your mind.' : 'Pick the direction you like best. Add a note if you want anything changed.') : 'The directions for your project.' }),
+      el('div', { class: 'grid' }, tiles)]);
+    if (picking) { s.appendChild(c); s.appendChild(err); }
+    return s;
+  }
+
+  function finalSection(d) {
+    var j = d.job;
+    var left = Math.max(0, j.revisions_included - j.revisions_used);
+    var s = el('section', null, [el('h2', { text: j.stage === 'paid' ? 'Your files' : 'Final' }),
+      el('ul', { class: 'files' }, d.finals.map(function (f) {
+        return el('li', null, [el('a', { href: safe(f.href), target: '_blank', rel: 'noopener', text: f.label })]);
+      }))]);
+    if (j.stage === 'final' && !j.approved) {
+      s.appendChild(el('p', { class: 'sub', text: left ? 'Happy with it? Approve it. Want changes? Say what, and Carter will revise (' + left + ' round' + (left === 1 ? '' : 's') + ' of changes left).' : 'Happy with it? Approve it. Further changes can be quoted separately.' }));
+      var c = el('textarea', { placeholder: 'What would you like changed? (needed for changes, optional for approval)', 'aria-label': 'Comment' });
+      var err = el('p', { class: 'err', role: 'alert' });
+      var ok = el('button', { class: 'btn', type: 'button', text: 'Approve the final', onclick: function () { act({ action: 'approve', comment: c.value }, ok, err).then(load); } });
+      var ch = el('button', { class: 'btn ghost', type: 'button', text: 'Ask for changes', onclick: function () {
+        if (!c.value.trim()) { err.textContent = 'Say what you would like changed.'; c.focus(); return; }
+        act({ action: 'changes', comment: c.value }, ch, err).then(function () { c.value = ''; load('Thanks. Carter has your changes.'); });
+      } });
+      s.appendChild(c); s.appendChild(el('div', { class: 'acts' }, [ok, ch])); s.appendChild(err);
+    } else if (j.approved && j.stage !== 'paid') {
+      s.appendChild(el('p', { class: 'sub', text: 'You approved the final. Thank you.' }));
+    }
+    return s;
+  }
+
+  function invoicesSection(d) {
+    var err = el('p', { class: 'err', role: 'alert' });
+    var rows = d.invoices.map(function (i) {
+      var right = i.status === 'paid'
+        ? el('span', { class: 'st paid', text: 'Paid' })
+        : (function () {
+            var b = el('button', { class: 'btn', type: 'button', text: 'Pay ' + money(i.amount), onclick: function () {
+              b.textContent = 'Opening payment…';
+              act({ action: 'pay', invoice_id: i.id }, b, err).then(function (j) { if (safe(j.url)) location.href = j.url; }).catch(function () { b.textContent = 'Pay ' + money(i.amount); });
+            } });
+            return b;
+          })();
+      return el('div', { class: 'inv' }, [el('div', null, [el('div', { class: 'what', text: i.label || 'Invoice' }), el('div', { class: 'st', text: money(i.amount) })]), right]);
+    });
+    return el('section', null, [el('h2', { text: 'Payment' }), el('p', { class: 'sub', text: 'Card or bank transfer through Stripe. No fee.' })].concat(rows).concat([err]));
+  }
+
+  function render(d, flash) {
+    app.textContent = '';
+    var j = d.job;
+    document.title = j.title + ': The Scaffold';
+    app.appendChild(el('h1', { text: j.title }));
+    app.appendChild(el('p', { class: 'sub', text: 'For ' + j.name + (j.business ? ', ' + j.business : '') }));
+    var idx = STEPS.map(function (s) { return s[0]; }).indexOf(j.stage);
+    app.appendChild(el('ol', { class: 'steps', 'aria-label': 'Progress' }, STEPS.map(function (s, i) {
+      return el('li', { class: i < idx ? 'done' : i === idx ? 'now' : '', 'aria-current': i === idx ? 'step' : null, text: s[1] });
+    })));
+    if (new URLSearchParams(location.search).get('paid') === '1') app.appendChild(el('div', { class: 'note', text: 'Thank you, your payment went through. It can take a minute to show here.' }));
+    if (flash) app.appendChild(el('div', { class: 'note', role: 'status', text: flash }));
+    if (j.stage === 'new' && !d.proposal) app.appendChild(el('div', { class: 'note', text: 'Your brief is in. Carter will send a proposal here soon, usually within a business day.' }));
+    if (j.stage === 'drafts' && !d.drafts.length) app.appendChild(el('div', { class: 'note', text: 'Thanks for accepting. Carter is working on your directions; you will get an email when they are ready.' }));
+    var unpaid = d.invoices.filter(function (i) { return i.status !== 'paid'; });
+    if (unpaid.length && j.stage !== 'paid') app.appendChild(invoicesSection(d));
+    if (d.finals.length) app.appendChild(finalSection(d));
+    if (d.drafts.length) app.appendChild(draftsSection(d));
+    if (d.proposal) app.appendChild(proposalSection(d));
+    if (j.stage === 'paid' && d.invoices.length) app.appendChild(invoicesSection(d));
+  }
+
+  function load(flash) {
+    if (!token) { app.innerHTML = ''; app.appendChild(el('p', { class: 'sub', style: 'margin-top:40px', text: 'This link is not complete. Use the button in Carter’s email.' })); return; }
+    fetch('/api/job?t=' + encodeURIComponent(token), { cache: 'no-store' })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || 'This link is not valid.'); return j; }); })
+      .then(function (d) { render(d, typeof flash === 'string' ? flash : ''); })
+      .catch(function (e) { app.textContent = ''; app.appendChild(el('p', { class: 'sub', style: 'margin-top:40px', text: e.message })); });
+  }
+  load();
+})();
+</script>
+</body>
+</html>
