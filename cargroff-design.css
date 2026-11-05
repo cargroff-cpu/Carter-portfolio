@@ -179,14 +179,11 @@ a:hover { color: var(--amber-lit); }
   .dhero-lamp.l { left: max(-142px, calc(50% - 320px)); } .dhero-lamp.r { right: max(-142px, calc(50% - 320px)); }
   .dhero-lamp svg { width: 112px; height: 504px; margin: 20px auto 0; }
   .dhero-medal { width: 180px; margin-bottom: 24px; }
-  /* phone lane: the near lamps' tops, and one pair behind them lost in the fog */
-  /* visibility, not display: every lamp shares one set of gradient ids, and a display:none copy breaks the lit ones */
-  .dhero-lamp.far, .dhero-lamp.back { visibility: hidden; }
+  /* phones keep just the two near lamps, as before the lane. Visibility, not
+     display: every lamp shares one set of gradient ids, and a display:none
+     copy earlier in the page breaks the lit ones */
+  .dhero-lamp.mid, .dhero-lamp.far, .dhero-lamp.back { visibility: hidden; }
   .dhero-veil, .dhero-wisp, .dhero-path { display: none; }
-  .dhero-lamp.mid { bottom: auto; top: 26px; height: 200px; width: 240px; filter: brightness(.5) blur(1.2px); opacity: .85; -webkit-mask-image: linear-gradient(var(--mask) 0, var(--mask) 120px, transparent 200px); mask-image: linear-gradient(var(--mask) 0, var(--mask) 120px, transparent 200px); }
-  .dhero-lamp.l.mid { left: max(-60px, calc(50% - 215px)); } .dhero-lamp.r.mid { right: max(-60px, calc(50% - 215px)); }
-  .dhero-lamp.mid svg { width: 68px; height: 306px; margin-top: 10px; }
-  .dhero-lamp.mid .dhero-candle { width: 180px; top: 50px; }
   .dhero-lamp.l.near { left: max(-142px, calc(50% - 320px)); } .dhero-lamp.r.near { right: max(-142px, calc(50% - 320px)); }
   .dhero-candle { width: 300px; top: 77px; }
   .dhero-in { padding: 0 24px; }

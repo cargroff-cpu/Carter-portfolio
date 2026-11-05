@@ -482,7 +482,8 @@ with a bank of fog (a dark veil plus a drifting light wisp) rolling in front
 of it, so the lane drifts away behind the medallion. A faint amber path runs
 down the middle. Every globe still snuffs on click.
 
-On phones the near lamps' tops show as before, with one dim, blurred pair
-behind them; the two back pairs are hidden with `visibility`, not `display`,
-because every GasLamp shares one set of gradient ids and a display:none copy
-earlier in the page breaks the lit ones.
+On phones the hero stays as it was before the lane: just the tops of the two
+near lamps. Carter tried a phone lane (first one blurred pair, then three
+pairs in perspective) and preferred the two lamps. The other pairs are hidden
+with `visibility`, not `display`, because every GasLamp shares one set of
+gradient ids and a display:none copy earlier in the page breaks the lit ones.
