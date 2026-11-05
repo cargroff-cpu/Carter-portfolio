@@ -7,9 +7,18 @@
 // The brief posts to api/design-brief.js.
 
 // ── Offer config ─────────────────────────────────────────────────────
-// Prices are NOT set yet (an open decision). The design figures below are
-// placeholders; set SHOW_PRICES to true once the real numbers are in.
-const SHOW_PRICES = false;
+// Everything in this block is the page's default copy. The Back Room's
+// Scaffold editor (/backroom/scaffold) publishes overrides to Supabase
+// (site_content row 2); applyScaffoldContent() below merges them over these
+// defaults before the page mounts. Prices stay hidden until showPrices is on.
+const SITE = {
+  showPrices: false,
+  headline: 'Design that looks right. Tools that work right.',
+  deck: 'Websites, graphics and print, and the tools that take busywork off your plate.',
+  whyHead: 'I’m Carter.',
+  whyIntro: 'A marketer, designer and builder in Harrisonburg, Virginia. By day I lead marketing and automation at a local company, so I know what small teams actually need.',
+  rules: ['Prove it by hand before automating it.', 'Automate the bottleneck, not everything.', 'A person approves anything that reaches a customer.'],
+};
 
 // Six of each, so the two halves of the page weigh the same. Broad on
 // purpose: things almost any small business needs, no one company's tools.
@@ -220,8 +229,8 @@ function Hero({ onAddNeed }) {
       ))}
       <div className="dwrap dhero-in">
         <div className="dhero-medal"><Medallion /></div>
-        <h1 className="ddisplay">Design that looks right. Tools that work right.</h1>
-        <p className="ddeck">Websites, graphics and print, and the tools that take busywork off your plate.</p>
+        <h1 className="ddisplay">{SITE.headline}</h1>
+        <p className="ddeck">{SITE.deck}</p>
         <div className="dacts">
           <a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('design'); }}>Start a brief</a>
           <a className="p-btn ghost" href="#doors">See the work</a>
@@ -391,7 +400,7 @@ function Dial() {
 // which the shelf says once instead of on every row.
 function Turn({ s, lane }) {
   const turn = lane === 'design' ? (s.turn || 'Quoted') : null;
-  const price = SHOW_PRICES && s.from;
+  const price = SITE.showPrices && s.from;
   if (!turn && !price) return null;
   return (
     <em className="dturn">
@@ -473,14 +482,14 @@ function Why() {
         <div className="dwhyhead up">
           <img className="dportrait" src="assets/portrait.jpg" alt="Carter Groff" loading="lazy" />
           <div>
-            <h2 className="ddisplay">I’m Carter.</h2>
-            <p className="dp">A marketer, designer and builder in Harrisonburg, Virginia. By day I lead marketing and automation at a local company, so I know what small teams actually need.</p>
-            <span className="dk drules-k">My rules</span>
-            <ol className="drules">
-              <li><b>1</b><span>Prove it by hand before automating it.</span></li>
-              <li><b>2</b><span>Automate the bottleneck, not everything.</span></li>
-              <li><b>3</b><span>A person approves anything that reaches a customer.</span></li>
-            </ol>
+            <h2 className="ddisplay">{SITE.whyHead}</h2>
+            <p className="dp">{SITE.whyIntro}</p>
+            {SITE.rules.length > 0 && <span className="dk drules-k">My rules</span>}
+            {SITE.rules.length > 0 && (
+              <ol className="drules">
+                {SITE.rules.map((r, i) => <li key={i}><b>{i + 1}</b><span>{r}</span></li>)}
+              </ol>
+            )}
           </div>
         </div>
         {TESTIMONIALS.length > 0 && (
@@ -826,4 +835,45 @@ function TheScaffold() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<TheScaffold />);
+// ── Published content from the Back Room ────────────────────────────
+// The Scaffold editor publishes to Supabase (site_content row 2, readable by
+// anyone; written only through the password-gated /api/save-content). Read it
+// at load and merge it over the defaults above. If Supabase is slow or down,
+// or a field is missing or malformed, the default stands.
+const SC_SUPABASE_URL = 'https://rodxrkzwpsgeeatmbwku.supabase.co';
+const SC_SUPABASE_KEY = 'sb_publishable_fWE-gd3uSKDe0BpUK5WSxQ_f3Uzgd0x';
+const DESIGN_NEEDS = DESIGN_CHIPS.slice();
+const TOOL_NEEDS = AUTOMATION_CHIPS.slice();
+const scStr = (v) => (typeof v === 'string' && v.trim() ? v.trim() : '');
+const scFill = (arr, next) => { if (next.length) arr.splice(0, arr.length, ...next); };
+function applyScaffoldContent(o) {
+  if (!o || typeof o !== 'object') return;
+  ['headline', 'deck', 'whyHead', 'whyIntro'].forEach((k) => { if (scStr(o[k])) SITE[k] = scStr(o[k]); });
+  if (typeof o.showPrices === 'boolean') SITE.showPrices = o.showPrices;
+  if (Array.isArray(o.rules)) SITE.rules = o.rules.map(scStr).filter(Boolean).slice(0, 6);
+  if (Array.isArray(o.design)) scFill(DESIGN_SERVICES, o.design.filter((d) => d && scStr(d.title)).map((d) => ({
+    title: scStr(d.title), sub: scStr(d.sub), need: DESIGN_NEEDS.includes(d.need) ? d.need : 'Something else',
+    from: scStr(d.from), turn: scStr(d.turn) || 'Quoted',
+  })));
+  if (Array.isArray(o.tools)) scFill(TOOL_SERVICES, o.tools.filter((t) => t && scStr(t.title)).map((t) => ({
+    title: scStr(t.title), need: TOOL_NEEDS.includes(t.need) ? t.need : 'Something else',
+  })));
+  // The dial has exactly four stops, so How it works only takes a set of four.
+  if (Array.isArray(o.how) && o.how.length === 4 && o.how.every((h) => h && scStr(h.title) && scStr(h.text))) {
+    scFill(HOW_STEPS, o.how.map((h) => [scStr(h.title), scStr(h.text)]));
+  }
+  if (Array.isArray(o.faq)) scFill(FAQ, o.faq.filter((f) => f && scStr(f.q) && scStr(f.a)).map((f) => [scStr(f.q), scStr(f.a)]));
+  if (Array.isArray(o.testimonials)) {
+    TESTIMONIALS.splice(0, TESTIMONIALS.length, ...o.testimonials.filter((t) => t && scStr(t.quote) && scStr(t.name))
+      .map((t) => ({ quote: scStr(t.quote), name: scStr(t.name), business: scStr(t.business) })));
+  }
+}
+function loadScaffoldContent() {
+  const get = fetch(SC_SUPABASE_URL + '/rest/v1/site_content?select=data&id=eq.2', { headers: { apikey: SC_SUPABASE_KEY } })
+    .then((r) => (r.ok ? r.json() : null)).then((rows) => (rows && rows[0] ? rows[0].data : null));
+  const wait = new Promise((resolve) => setTimeout(() => resolve(null), 1500));
+  return Promise.race([get, wait]).catch(() => null);
+}
+loadScaffoldContent()
+  .then((o) => { try { applyScaffoldContent(o); } catch (e) { /* defaults stand */ } })
+  .finally(() => ReactDOM.createRoot(document.getElementById('root')).render(<TheScaffold />));

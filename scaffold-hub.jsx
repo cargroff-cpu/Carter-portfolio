@@ -1,7 +1,7 @@
 // scaffold-hub.jsx — The Scaffold's entry point, recreated in React from
 // design-reference/Scaffold Hub.html. Establishes Wick's presence (the
-// sconce) and routes to the existing Website Backend (Admin.html) and the
-// Docket.
+// sconce) and routes to the Portfolio Backend (Admin.html), the Scaffold
+// Backend (/backroom/scaffold), the Business Hub and the Docket.
 const { fetchDocketTasks } = window.CC;
 
 function hail() {
@@ -82,12 +82,18 @@ function ScaffoldHub() {
         <div className="pair">
           <a className="door" href="Admin.html">
             <span className="no">01</span>
-            <h2>Website<br />Backend</h2>
-            <p>Copy, work, resume, travel pins, everything the public side reads from.</p>
+            <h2>Portfolio<br />Backend</h2>
+            <p>Copy, work, resume, travel pins, everything cargroff.com reads from.</p>
+            <span className="arrow">→</span>
+          </a>
+          <a className="door" href="/backroom/scaffold">
+            <span className="no">02</span>
+            <h2>Scaffold<br />Backend</h2>
+            <p>Services, prices, How it works, questions and copy for scaffold.cargroff.com.</p>
             <span className="arrow">→</span>
           </a>
           <a className="door" href="/business">
-            <span className="no">02</span>
+            <span className="no">03</span>
             <h2>Business<br />Hub</h2>
             <p>Clients, leads, projects, invoices, notes, and the Design-briefs inbox.</p>
             <span className="arrow">→</span>
