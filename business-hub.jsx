@@ -124,6 +124,35 @@ function ringNodeTransform(i, hover, radius) {
   return `translate(-50%,-50%) translate(${Math.cos(a) * rad}px,${Math.sin(a) * rad}px)`;
 }
 
+// A cast-iron gas lamppost drawn in SVG (no raster, scales with the room).
+function Lamp({ side }) {
+  return (
+    <div className={'lamp ' + side} aria-hidden="true">
+      <span className="lampglow" />
+      <svg viewBox="0 0 100 420" preserveAspectRatio="xMidYMax meet">
+        <defs>
+          <linearGradient id={'iron' + side} x1="0" x2="1"><stop offset="0" stopColor="#0d0905" /><stop offset=".5" stopColor="#2a1d10" /><stop offset="1" stopColor="#0d0905" /></linearGradient>
+          <linearGradient id={'pane' + side} x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#ffe9b0" /><stop offset=".55" stopColor="#f5b85a" /><stop offset="1" stopColor="#c47a24" /></linearGradient>
+        </defs>
+        <path d="M50 0 L50 14" stroke="#2a1d10" strokeWidth="2" />
+        <path d="M30 40 Q50 8 70 40 Z" fill={`url(#iron${side})`} stroke="#3a2a16" strokeWidth="1" />
+        <path d="M24 44 L76 44 L70 52 L30 52 Z" fill="#1a120a" stroke="#3a2a16" strokeWidth="1" />
+        <path d="M30 52 L70 52 L66 100 L34 100 Z" fill={`url(#pane${side})`} stroke="#2a1d10" strokeWidth="2" />
+        <path d="M50 52 L50 100 M40 52 L38 100 M60 52 L62 100" stroke="#1a120a" strokeWidth="1.5" />
+        <path d="M32 100 L68 100 L62 110 L38 110 Z" fill="#1a120a" stroke="#3a2a16" strokeWidth="1" />
+        <path d="M42 110 L58 110 L55 128 L45 128 Z" fill="#150f08" />
+        <rect x="46" y="128" width="8" height="196" fill={`url(#iron${side})`} />
+        <rect x="42" y="150" width="16" height="5" fill="#1a120a" />
+        <rect x="42" y="256" width="16" height="5" fill="#1a120a" />
+        <path d="M38 324 Q50 300 62 324 Q70 352 62 372 L38 372 Q30 352 38 324 Z" fill={`url(#iron${side})`} />
+        <rect x="30" y="372" width="40" height="10" fill="#150f08" stroke="#2a1d10" />
+        <rect x="22" y="382" width="56" height="14" fill="#120c06" stroke="#2a1d10" />
+        <rect x="12" y="396" width="76" height="24" fill="#0f0a05" stroke="#2a1d10" />
+      </svg>
+    </div>
+  );
+}
+
 function Ring({ go, data }) {
   const [hover, setHover] = React.useState(null);
   const [wickHot, setWickHot] = React.useState(false);
@@ -137,6 +166,7 @@ function Ring({ go, data }) {
   }, []);
   return (
     <div className={'launch' + (hover !== null ? ' hovering' : '') + (wickHot ? ' wickhot' : '')}>
+      <Lamp side="L" /><Lamp side="R" />
       <div className="rings">
         <span className="ring-outer" /><span className="ring-mid" /><span className="ring-inner" />
         <span className="ticks" /><span className="ticks-minor" /><span className="ticks-fine" />
@@ -800,7 +830,7 @@ function BusinessHub() {
       </header>
       <div className="shell">
         {data && tab !== 'ring' && <ToolSidebar tab={tab} go={go} data={data} />}
-        <main id="app">
+        <main id="app" className={tab === 'ring' ? 'ringmain' : undefined}>
           {error && <p className="sub" style={{ padding: '20px 2px', color: 'var(--warn)' }}>{error} If this is the first run, the workflow tables may not be set up yet.</p>}
           {!error && loading && <p className="sub" style={{ padding: '20px 2px' }}>Loading…</p>}
           {data && (
