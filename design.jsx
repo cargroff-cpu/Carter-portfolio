@@ -86,15 +86,21 @@ function TickRing({ r1 = 268, r1Major = 258, r2 = 280 }) {
   return <g className="dm-ticks">{ticks}</g>;
 }
 
-// The medallion: the crest struck in gold on a green enamel disc. On load the
-// tick ring spins up and settles into a slow turn; the gold rim breathes with
-// the lamps, a ring ripples out from it, and light passes over the crest.
+// The hero mark: the gold crest over a soft green glow, inside twelve amber
+// marks hung in a wide circle like the hours. The marks light one after
+// another so the pulse travels round the crest, the circle turns slowly, the
+// glow breathes, and light passes over the gold. No band, no hard disc.
+const HOURS = Array.from({ length: 12 }, (_, i) => {
+  const big = i % 3 === 0, t = (i * 30 * Math.PI) / 180, r1 = 232, r2 = big ? 270 : 256;
+  return { big, delay: i * 0.5, x1: 300 + r1 * Math.sin(t), y1: 300 - r1 * Math.cos(t), x2: 300 + r2 * Math.sin(t), y2: 300 - r2 * Math.cos(t) };
+});
+
 function Medallion() {
   return (
     <svg className="dmedal" viewBox="0 0 600 600" role="img" aria-label="The Scaffold, by Carter Groff">
       <defs>
-        <radialGradient id="dm-enamel" cx="50%" cy="38%" r="65%">
-          <stop offset="0%" className="dm-enamel-hi" /><stop offset="100%" className="dm-enamel-lo" />
+        <radialGradient id="dm-wash">
+          <stop offset="0%" className="dm-wash-0" /><stop offset="65%" className="dm-wash-1" /><stop offset="100%" className="dm-wash-2" />
         </radialGradient>
         <linearGradient id="dm-gold" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" className="dm-gold-hi" /><stop offset="100%" className="dm-gold-lo" />
@@ -103,20 +109,18 @@ function Medallion() {
           <stop offset="0%" className="dm-sheen-0" /><stop offset="50%" className="dm-sheen-1" /><stop offset="100%" className="dm-sheen-0" />
         </linearGradient>
         <mask id="dm-crest" maskUnits="userSpaceOnUse" x="0" y="0" width="600" height="600">
-          <image href="assets/antler.png" x="150" y="186" width="300" height="229" />
+          <image href="assets/antler.png" x="145" y="186" width="310" height="237" />
         </mask>
       </defs>
-      <circle className="dm-ripple" cx="300" cy="300" r="246" />
-      <circle className="dm-ripple two" cx="300" cy="300" r="246" />
-      <circle className="dm-band" cx="300" cy="300" r="292" />
-      <circle className="dm-rule" cx="300" cy="300" r="294" />
-      <circle className="dm-rule" cx="300" cy="300" r="286" />
-      <g className="dm-spin-in"><g className="dm-spin"><TickRing /></g></g>
-      <circle className="dm-enamel" cx="300" cy="300" r="246" />
-      <circle className="dm-rule gold" cx="300" cy="300" r="246" />
-      <circle className="dm-rule dashed dm-spin-back" cx="300" cy="300" r="230" />
-      <rect x="140" y="176" width="320" height="250" fill="url(#dm-gold)" mask="url(#dm-crest)" />
-      <g mask="url(#dm-crest)"><rect className="dm-sheen" x="60" y="176" width="140" height="250" fill="url(#dm-sheen)" /></g>
+      <circle className="dm-wash" cx="300" cy="300" r="250" fill="url(#dm-wash)" />
+      <g className="dm-spin-in"><g className="dm-spin">
+        {HOURS.map((h, i) => (
+          <line key={i} className={'dm-hour' + (h.big ? ' big' : '')} style={{ animationDelay: h.delay + 's' }}
+            x1={h.x1.toFixed(2)} y1={h.y1.toFixed(2)} x2={h.x2.toFixed(2)} y2={h.y2.toFixed(2)} />
+        ))}
+      </g></g>
+      <rect x="135" y="176" width="330" height="257" fill="url(#dm-gold)" mask="url(#dm-crest)" />
+      <g mask="url(#dm-crest)"><rect className="dm-sheen" x="55" y="176" width="140" height="257" fill="url(#dm-sheen)" /></g>
     </svg>
   );
 }

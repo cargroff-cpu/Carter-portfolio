@@ -435,3 +435,13 @@ The page also gets its own address. `scaffold.cargroff.com` is added to the Verc
   - Nav links draw an amber underline on hover.
   - The identical fade-up on every section is gone.
 - **Looping and reduced motion:** looping motion pauses when its section is off screen. Reduced motion turns off every loop and spatial movement.
+
+## /design hero mark: twelve hours over a green glow
+
+The medallion felt boxy (a dark band and a hard-edged enamel disc). After five open options, Carter chose "Twelve marks" with green added:
+
+- The gold crest sits over a soft, edgeless green glow.
+- Twelve amber marks hang in a wide circle round it like the hours, with no outline.
+- The marks light one after another, so the pulse travels round the crest.
+- The circle spins up on load and then turns slowly, the glow breathes, and light passes over the gold.
+- The brief's engraved ring is unchanged.

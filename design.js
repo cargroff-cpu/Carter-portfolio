@@ -714,6 +714,22 @@ function TickRing({
     className: "dm-ticks"
   }, ticks);
 }
+const HOURS = Array.from({
+  length: 12
+}, (_, i) => {
+  const big = i % 3 === 0,
+    t = i * 30 * Math.PI / 180,
+    r1 = 232,
+    r2 = big ? 270 : 256;
+  return {
+    big,
+    delay: i * 0.5,
+    x1: 300 + r1 * Math.sin(t),
+    y1: 300 - r1 * Math.cos(t),
+    x2: 300 + r2 * Math.sin(t),
+    y2: 300 - r2 * Math.cos(t)
+  };
+});
 function Medallion() {
   return React.createElement("svg", {
     className: "dmedal",
@@ -721,16 +737,16 @@ function Medallion() {
     role: "img",
     "aria-label": "The Scaffold, by Carter Groff"
   }, React.createElement("defs", null, React.createElement("radialGradient", {
-    id: "dm-enamel",
-    cx: "50%",
-    cy: "38%",
-    r: "65%"
+    id: "dm-wash"
   }, React.createElement("stop", {
     offset: "0%",
-    className: "dm-enamel-hi"
+    className: "dm-wash-0"
+  }), React.createElement("stop", {
+    offset: "65%",
+    className: "dm-wash-1"
   }), React.createElement("stop", {
     offset: "100%",
-    className: "dm-enamel-lo"
+    className: "dm-wash-2"
   })), React.createElement("linearGradient", {
     id: "dm-gold",
     x1: "0",
@@ -767,69 +783,45 @@ function Medallion() {
     height: "600"
   }, React.createElement("image", {
     href: "assets/antler.png",
-    x: "150",
+    x: "145",
     y: "186",
-    width: "300",
-    height: "229"
+    width: "310",
+    height: "237"
   }))), React.createElement("circle", {
-    className: "dm-ripple",
+    className: "dm-wash",
     cx: "300",
     cy: "300",
-    r: "246"
-  }), React.createElement("circle", {
-    className: "dm-ripple two",
-    cx: "300",
-    cy: "300",
-    r: "246"
-  }), React.createElement("circle", {
-    className: "dm-band",
-    cx: "300",
-    cy: "300",
-    r: "292"
-  }), React.createElement("circle", {
-    className: "dm-rule",
-    cx: "300",
-    cy: "300",
-    r: "294"
-  }), React.createElement("circle", {
-    className: "dm-rule",
-    cx: "300",
-    cy: "300",
-    r: "286"
+    r: "250",
+    fill: "url(#dm-wash)"
   }), React.createElement("g", {
     className: "dm-spin-in"
   }, React.createElement("g", {
     className: "dm-spin"
-  }, React.createElement(TickRing, null))), React.createElement("circle", {
-    className: "dm-enamel",
-    cx: "300",
-    cy: "300",
-    r: "246"
-  }), React.createElement("circle", {
-    className: "dm-rule gold",
-    cx: "300",
-    cy: "300",
-    r: "246"
-  }), React.createElement("circle", {
-    className: "dm-rule dashed dm-spin-back",
-    cx: "300",
-    cy: "300",
-    r: "230"
-  }), React.createElement("rect", {
-    x: "140",
+  }, HOURS.map((h, i) => React.createElement("line", {
+    key: i,
+    className: 'dm-hour' + (h.big ? ' big' : ''),
+    style: {
+      animationDelay: h.delay + 's'
+    },
+    x1: h.x1.toFixed(2),
+    y1: h.y1.toFixed(2),
+    x2: h.x2.toFixed(2),
+    y2: h.y2.toFixed(2)
+  })))), React.createElement("rect", {
+    x: "135",
     y: "176",
-    width: "320",
-    height: "250",
+    width: "330",
+    height: "257",
     fill: "url(#dm-gold)",
     mask: "url(#dm-crest)"
   }), React.createElement("g", {
     mask: "url(#dm-crest)"
   }, React.createElement("rect", {
     className: "dm-sheen",
-    x: "60",
+    x: "55",
     y: "176",
     width: "140",
-    height: "250",
+    height: "257",
     fill: "url(#dm-sheen)"
   })));
 }
