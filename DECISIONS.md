@@ -381,3 +381,27 @@ text, the "01 / 04" counters, the proof strip under the hero and the hero's
 small two-card visual (it became the two-halves section). Hidden-until-reveal
 states are now scoped under `html.js`, set by an inline script in the page
 head, so content shows if scripts fail.
+
+## /design hero: the portfolio's lamp post on wood, inside an engraved seal
+
+The hero now uses the portfolio's own room: the 34px wood panels with sawn
+grain (also on How it works), a deep vignette, and the portfolio's GasLamp
+on the right with its pool of light. The old spinning CSS rings are replaced
+by an engraved seal centred on the lamp's globe, drawn like the How it works
+seal: hairline rings, a slow ring of lettering, counter-turning ticks.
+Clicking the globe snuffs the lamp, as on the portfolio.
+
+GasLamp is not duplicated: `scripts/build-design.mjs` copies the function out
+of `motifs.jsx` into `design.js` at build time, so rebuild /design after
+changing the lamp.
+
+Update, same day: after five hero options, Carter chose "Medallion and
+lamps", with bigger lamps and more colour. The hero is now centred: a
+medallion (the crest in gold on a green enamel disc, inside the engraved
+seal) between two of the portfolio's lamp posts at nearly full height, each
+throwing a warm pool on the wall and the floor. Each globe still snuffs its
+own lamp. The single-lamp, text-left hero above is replaced.
+The hero's background is the portfolio hero's own, copied value for value
+from themes.jsx and portfolio.jsx: the `.cg-wood` 34px panels and sawn grain,
+a `.cg-candlelight` pool at each lamp, three fog banks rolling across, and
+the same deep vignette. A brighter custom wood was tried and dropped.
