@@ -669,12 +669,11 @@ behind the same login (middleware.js) and logout-on-close.
 
 ## Client page and Today dashboard
 
-- The client page (/j/<token>) now follows the layout of the studio's
-  existing client tools: one framed card with an amber stripe, a masthead
-  band, a numbered step bar (Proposal, Directions, Final, Paid), then one
-  screen for where the project is right now, a footer band, and full-width
-  action buttons. Colours and type are the Scaffold's own. Only what the
-  Scaffold needs is kept: no phone number, no tagline, no fee options.
+- The client page (/j/<token>) has one screen per stage and a four-part
+  progress line (Proposal, Directions, Final, Paid), laid out like the
+  studio's existing client tools, but it looks like the Scaffold's public
+  site: lamplit dark wood, Cormorant headings, sentence-case labels, hairline
+  rules and square bone buttons. No cream card, bands or capital labels.
 - One screen per stage: waiting, proposal with Accept, directions with Pick,
   final with Approve or Ask for changes, and an all-done screen with the files
   and payments. Anything owed shows as a Payment block at the top; the
