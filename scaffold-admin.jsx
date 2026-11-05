@@ -128,31 +128,51 @@ function App() {
   };
   const discard = () => { if (published && confirm('Discard your unpublished changes?')) { setDraft(published); clearDraft(); setMsg(''); } };
   const defaults = () => { if (confirm('Load the page’s original copy into the editor? Nothing goes live until you publish.')) setDraft(blank()); };
-  const jump = (id) => { const el = document.getElementById('sc-' + id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  const [active, setActive] = useState('hero');
+  const [frameKey, setFrameKey] = useState(0);
+  const jump = (id) => { setActive(id); const el = document.getElementById('sc-' + id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 
-  const status = state === 'loading' ? 'Loading…' : state === 'publishing' ? 'Publishing…' : dirty ? 'Unpublished changes' : 'Everything is live';
+  const status = state === 'loading' ? 'Loading…' : state === 'publishing' ? 'Publishing…' : dirty ? 'Unpublished changes · draft kept in this browser' : 'Everything is live';
 
   return (
-    <div style={{ minHeight: '100vh' }}>
-      <header style={{ position: 'sticky', top: 0, zIndex: 10, background: 'rgba(13,9,5,.94)', borderBottom: '1px solid var(--rule)', padding: '14px clamp(16px,4vw,40px)', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-        <a href="/backroom" style={{ color: 'var(--ink-soft)', textDecoration: 'none', fontSize: 14 }}>The Backroom</a>
-        <span style={{ fontFamily: 'var(--display-font)', fontSize: 24, color: 'var(--ink)' }}>Scaffold Backend</span>
-        <span role="status" style={{ fontSize: 14, color: dirty ? 'var(--amber)' : 'var(--ink-mute)' }}>{status}</span>
-        <span style={{ flex: 1 }} />
-        <a href={LIVE_URL} target="_blank" rel="noopener" style={{ color: 'var(--ink-soft)', fontSize: 14 }}>View the live page</a>
-        {dirty && <Btn onClick={discard}>Discard changes</Btn>}
-        <Btn variant="solid" onClick={publish} style={!dirty || !howOk || state !== 'ready' ? { opacity: .5, pointerEvents: 'none' } : null}>Publish</Btn>
-      </header>
-      {msg && <p role="alert" style={{ margin: '14px clamp(16px,4vw,40px) 0', fontFamily: 'var(--body-font)', fontStyle: 'italic', color: 'var(--ink-soft)' }}>{msg}</p>}
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <style>{`
+        @media (max-width: 900px) {
+          .admin-topbar { flex-wrap: wrap; padding: 12px 16px !important; gap: 10px 16px; }
+          .admin-split { flex-direction: column !important; }
+          .admin-editor { width: 100% !important; border-right: none !important; border-bottom: 1px solid var(--rule); flex: 1 1 auto !important; }
+          .admin-preview { display: none !important; }
+        }
+      `}</style>
+      <div className="admin-topbar" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 28px', background: 'rgba(13,9,5,0.92)', backdropFilter: 'blur(10px)', borderBottom: '1px solid var(--rule)', zIndex: 20 }}>
+        <a href="/backroom" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
+          <div style={{ width: 32, height: 32, border: '1px solid var(--ink-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src="/assets/logo.png" alt="Carter Groff" style={{ width: '76%', height: '76%', objectFit: 'contain' }} />
+          </div>
+          <div style={{ fontFamily: 'var(--ui-font)', fontSize: 11, letterSpacing: '0.24em', textTransform: 'uppercase', color: 'var(--ink-mute)' }}>The Backroom · Scaffold</div>
+        </a>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span role="status" style={{ fontFamily: 'var(--ui-font)', fontSize: 11, letterSpacing: '0.06em', color: dirty ? 'var(--amber)' : 'var(--ink-mute)' }}>{status}</span>
+          {dirty && <Btn onClick={discard}>Discard</Btn>}
+          <Btn variant="solid" onClick={async () => { await publish(); setFrameKey((k) => k + 1); }} style={{ padding: '11px 26px', ...(!dirty || !howOk || state !== 'ready' ? { opacity: .5, pointerEvents: 'none' } : null) }}>Save / Publish</Btn>
+        </div>
+      </div>
+      {msg && <p role="alert" style={{ flexShrink: 0, margin: 0, padding: '10px 28px', fontFamily: 'var(--body-font)', fontStyle: 'italic', fontSize: 13, color: 'var(--ink-soft)', borderBottom: '1px solid var(--rule)' }}>{msg}</p>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 200px) minmax(0, 760px)', gap: 'clamp(20px,4vw,56px)', padding: '28px clamp(16px,4vw,40px) 80px', justifyContent: 'center' }} className="sc-grid">
-        <nav style={{ position: 'sticky', top: 90, alignSelf: 'start', display: 'grid', gap: 4 }} className="sc-nav">
-          {NAV.map(([id, label]) => (
-            <button key={id} type="button" onClick={() => jump(id)} style={{ textAlign: 'left', background: 'none', border: 0, padding: '8px 0', color: 'var(--ink-soft)', fontFamily: 'var(--ui-font)', fontSize: 15, cursor: 'pointer' }}>{label}</button>
-          ))}
-          <button type="button" onClick={defaults} style={{ textAlign: 'left', background: 'none', border: 0, padding: '18px 0 0', color: 'var(--ink-mute)', fontFamily: 'var(--ui-font)', fontSize: 13, cursor: 'pointer' }}>Start from the page defaults</button>
-        </nav>
-
+      <div className="admin-split" style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+        <div className="admin-editor" style={{ width: 580, flexShrink: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--rule)', minHeight: 0 }}>
+          <div style={{ flexShrink: 0, display: 'flex', gap: 3, padding: '12px 22px', flexWrap: 'wrap', borderBottom: '1px solid var(--rule)', background: 'var(--bg-deep)' }}>
+            {NAV.map(([id, label]) => (
+              <button key={id} onClick={() => jump(id)}
+                style={{ padding: '7px 12px', borderRadius: 4, cursor: 'pointer', fontFamily: 'var(--ui-font)', fontSize: 12, letterSpacing: '0.03em',
+                  background: active === id ? 'rgba(245,205,106,0.12)' : 'transparent',
+                  color: active === id ? 'var(--amber)' : 'var(--ink-soft)',
+                  border: '1px solid ' + (active === id ? 'rgba(245,205,106,0.25)' : 'transparent'),
+                  fontWeight: active === id ? 600 : 500, transition: 'all .15s' }}>{label}</button>
+            ))}
+            <button onClick={defaults} style={{ marginLeft: 'auto', padding: '7px 12px', background: 'none', border: '1px solid transparent', cursor: 'pointer', color: 'var(--ink-mute)', fontFamily: 'var(--ui-font)', fontSize: 12 }}>Reset to defaults</button>
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '30px 26px 80px' }}>
         <main>
           <section id="sc-hero" style={{ marginBottom: 56 }}>
             <SectionHead kicker="First screen" title="Hero" />
@@ -249,8 +269,17 @@ function App() {
               )} />
           </section>
         </main>
+          </div>
+        </div>
+
+        <div className="admin-preview" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: 'var(--bg-deep)' }}>
+          <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 24px', borderBottom: '1px solid var(--rule)' }}>
+            <span style={{ fontFamily: 'var(--ui-font)', fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--ink-mute)' }}>Live page</span>
+            <span style={{ fontFamily: 'var(--body-font)', fontStyle: 'italic', fontSize: 12, color: 'var(--ink-dim)' }}>refreshes when you publish · <a href={LIVE_URL} target="_blank" rel="noopener" style={{ color: 'var(--ink-soft)' }}>open</a></span>
+          </div>
+          <iframe key={frameKey} title="The live Scaffold page" src="/design" style={{ flex: 1, width: '100%', border: 0, background: '#fff' }} />
+        </div>
       </div>
-      <style>{'@media (max-width: 760px) { .sc-grid { grid-template-columns: minmax(0,1fr) !important; } .sc-nav { position: static !important; grid-auto-flow: column; overflow-x: auto; } }'}</style>
     </div>
   );
 }
