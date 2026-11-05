@@ -531,3 +531,15 @@ the lane coming in out of the fog. Reduced motion shows them lit at once.
 The Websites line is "Websites" with "front and back end" as a side note to
 its right: Karla, 14px, muted, on the same line (`sub` on the service, shown
 as `.dlist-sub`).
+
+## Scaffold lamps: variations, not weathering
+
+The lane's lamps were one drawing copied eight times. Each post now leans and
+sizes a little differently, and each pair carries its own ironwork (a scroll
+under the lantern, a lamplighter's bar, a brass plate, extra collars); the
+flames flicker out of step. Desktop only; phones stay upright and plain.
+
+Tried and dropped at Carter's call: verdigris, rust and stains (they read as
+a straight line down the middle), film grain and the edge light. Left out for
+now: a wider glow round each flame, a pool of light on the boards, drifting
+dust. motifs.jsx is untouched, so the portfolio's lamp is unchanged.

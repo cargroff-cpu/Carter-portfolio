@@ -33,6 +33,7 @@
   --medal-band: #160f09; --medal-dash: rgba(245,205,106,.28);
   --enamel-hi: #2f5640; --enamel-lo: #12261b; --gold-hi: #f8dc8e; --sheen: #fff6dc;
   --haze: rgba(30,23,17,.78); --wisp: rgba(222,212,192,.28);
+  --lamp-iron: #0c0805; --lamp-plaque: #3a2716; --lamp-brass: rgba(194,164,106,.7);
   --wash-0: rgba(56,104,76,.85); --wash-1: rgba(36,72,52,.34); --wash-2: rgba(18,38,27,0);
   --seal-ink: rgba(236,217,178,.22); --seal-word: rgba(236,217,178,.5);
   --nav-bg: rgba(15,10,6,.92); --well: rgba(15,10,6,.6); --on-ink: #1a120b; --mask: #000; --mask-on: #fff;
@@ -98,6 +99,17 @@ a:hover { color: var(--amber-lit); }
 .dhero-lamp.l { left: max(8px, calc(50% - 500px)); }
 .dhero-lamp.r { right: max(8px, calc(50% - 500px)); }
 .dhero-lamp svg { position: relative; z-index: 1; display: block; width: 100%; height: 100%; }
+/* each post leans and sizes a little differently, and carries its own ironwork */
+.dlamp-vary { position: relative; width: 100%; height: 100%; transform-origin: 50% 100%; transform: rotate(var(--lean, 0deg)) scale(var(--sc, 1)); }
+.dhero-lamp .dlamp-iron { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.lw-iron rect, .lw-iron circle { fill: var(--lamp-iron); }
+.lw-scroll path { fill: none; stroke: var(--lamp-iron); stroke-width: 3.2; stroke-linecap: round; }
+.lw-plaque { fill: var(--lamp-plaque); stroke: var(--lamp-brass); stroke-width: .8; }
+.lw-brass { stroke: var(--lamp-brass); stroke-width: .8; opacity: .6; }
+/* the flames don't flicker in step */
+.dhero-lamp.near.l .dhero-candle { animation-delay: -1.5s; } .dhero-lamp.near.r .dhero-candle { animation-delay: -4.6s; }
+.dhero-lamp.mid.l .dhero-candle { animation-delay: -3.1s; } .dhero-lamp.mid.r .dhero-candle { animation-delay: -5.8s; }
+.dhero-lamp.far.l .dhero-candle { animation-delay: -.7s; } .dhero-lamp.far.r .dhero-candle { animation-delay: -2.4s; }
 .dhero-in { position: relative; z-index: 4; width: 100%; pointer-events: none; }
 .dhero-in > * { pointer-events: auto; }
 .dhero-medal { width: min(320px, 64vw, 34svh); margin: 0 auto 18px; }
@@ -191,9 +203,12 @@ a:hover { color: var(--amber-lit); }
   .dhero-lamp.l { left: max(-142px, calc(50% - 320px)); } .dhero-lamp.r { right: max(-142px, calc(50% - 320px)); }
   .dhero-lamp svg { width: 112px; height: 504px; margin: 20px auto 0; }
   .dhero-medal { width: 180px; margin-bottom: 24px; }
-  /* phones keep just the two near lamps, as before the lane. Visibility, not
-     display: every lamp shares one set of gradient ids, and a display:none
-     copy earlier in the page breaks the lit ones */
+  /* phones keep just the two near lamps, as before the lane, upright and with no
+     extra ironwork. Visibility, not display, hides the others: every lamp
+     shares one set of gradient ids, and a display:none copy earlier in the
+     page breaks the lit ones */
+  .dlamp-vary { transform: none; }
+  .dhero-lamp .dlamp-iron { display: none; }
   .dhero-lamp.mid, .dhero-lamp.far, .dhero-lamp.back { visibility: hidden; }
   .dhero-veil, .dhero-wisp, .dhero-path { display: none; }
   /* phones: the posts don't move. They stand dark, then the gas catches: the
