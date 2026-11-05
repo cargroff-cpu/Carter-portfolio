@@ -68,14 +68,19 @@ body { min-height: 100vh; background: linear-gradient(180deg, #1e1509, var(--bg)
 .mail-prev { background: #0f0a06; border: 1px solid var(--line); padding: 14px; }
 .mp-subj { font-family: var(--ui); font-size: 13px; color: var(--text-2); margin-bottom: 10px; overflow-wrap: anywhere; }
 .mp-subj span { color: var(--text-4); margin-right: 8px; }
-.mp-card { background: #fffaf1; border: 1px solid #e4d6bb; border-radius: 4px; color: #2a1c11; }
-.mp-top { padding: 18px 22px 12px; border-bottom: 1px solid #e4d6bb; font: 13px Arial, sans-serif; color: #6b5638; }
-.mp-top img { display: block; width: 36px; height: 36px; border-radius: 6px; margin-bottom: 10px; }
-.mp-body { padding: 20px 22px 8px; }
-.mp-body h3 { margin: 0 0 14px; font: 500 24px/1.2 Georgia, serif; color: #2a1c11; }
-.mp-body p { margin: 0 0 14px; font: 15.5px/1.6 Georgia, serif; color: #2a1c11; overflow-wrap: anywhere; }
-.mp-btn { display: inline-block; margin: 4px 0 18px; padding: 12px 20px; background: #2a1c11; color: #f6efe2; border-radius: 3px; font: 600 14px Arial, sans-serif; }
-.mp-foot { padding: 12px 22px 18px; border-top: 1px solid #e4d6bb; font: 12.5px/1.5 Arial, sans-serif; color: #6b5638; }
+.mp-card { background: #1d140c; border: 1px solid #4a3722; border-radius: 6px; color: #ecd9b2; overflow: hidden; }
+.mp-card::before { content: ''; display: block; height: 5px; background: linear-gradient(90deg, #d99a3d, #f5cd6a, #d99a3d); }
+.mp-top { display: flex; align-items: center; gap: 14px; padding: 20px 26px; background: #26190f; border-bottom: 1px solid #4a3722; }
+.mp-top img { width: 44px; height: 44px; border-radius: 8px; border: 1px solid #4a3722; flex: none; }
+.mp-top b { display: block; font: 500 21px/1.1 Georgia, serif; color: #f5cd6a; }
+.mp-top span { display: block; margin-top: 4px; font: 14px Arial, sans-serif; color: #b9a47c; }
+.mp-body { padding: 28px 26px 8px; }
+.mp-body h3 { margin: 0 0 6px; font: 500 28px/1.2 Georgia, serif; color: #f8ecd0; }
+.mp-body h3::after { content: ''; display: block; width: 56px; height: 3px; margin: 8px 0 20px; background: #d99a3d; }
+.mp-body p { margin: 0 0 16px; font: 16.5px/1.65 Georgia, serif; color: #ecd9b2; overflow-wrap: anywhere; }
+.mp-btn { display: inline-block; margin: 6px 0 22px; padding: 14px 26px; background: linear-gradient(180deg, #f8d77f, #d99a3d); border: 1px solid #f5cd6a; color: #1a120b; border-radius: 3px; font: 700 15px Arial, sans-serif; }
+.mp-foot { padding: 16px 26px 22px; background: #150e08; border-top: 1px solid #4a3722; font: 14px/1.55 Arial, sans-serif; color: #b9a47c; }
+.mp-foot i { display: block; margin-top: 8px; font: italic 15px Georgia, serif; color: #d99a3d; }
 @media (max-width: 900px) {
   .tplgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .cmp { grid-template-columns: minmax(0, 1fr); }

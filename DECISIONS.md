@@ -700,3 +700,8 @@ behind the same login (middleware.js) and logout-on-close.
 - Mail > Templates is a grid of boxes (name, subject, opening line, when it is used). Click one to read the whole email as the client sees it, drawn in the same paper frame as `lib/mail.js`, with made-up details.
 - The email sender is now a dialog like the studio tool's: a note on where it sends from and where replies go, To, Subject, Message, a status line, Cancel and Send. Added in the Scaffold's look: template chips, a heading and button option, a live preview beside the form (a Write/Preview switch on phones), and Send a test to me.
 - A client's page can open the same dialog on their latest job. The sending API is unchanged.
+
+## 2026-11-06 — Emails in a darker, lamplit frame
+
+- `lib/mail.js` now renders a dark card (warm near-black, cream type, amber accents): an amber band on top, a crest header with "The Scaffold, by Carter Groff", a large heading with an amber rule, an amber button, and a darker footer with the sign-off. It declares `color-scheme: dark` and uses `bgcolor` attributes so mail apps keep it dark.
+- All text is cream or soft tan on the dark surface (7:1 or better), links are lit amber and underlined. Still tables and inline styles only; everything typed is escaped. The Backroom's preview matches.

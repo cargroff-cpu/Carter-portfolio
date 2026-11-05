@@ -662,13 +662,13 @@ function EmailPreview({ heading, body, button, buttonLabel, subject }) {
     <div className="mail-prev" aria-label="Email preview">
       {subject != null && <div className="mp-subj"><span>Subject</span>{subject || '(no subject)'}</div>}
       <div className="mp-card">
-        <div className="mp-top"><img src="/assets/scaffold-icon-180.png" alt="" /><span>The Scaffold by Carter Groff</span></div>
+        <div className="mp-top"><img src="/assets/scaffold-icon-180.png" alt="" /><div><b>The Scaffold</b><span>by Carter Groff</span></div></div>
         <div className="mp-body">
           {heading ? <h3>{heading}</h3> : null}
           {paras.map((t, k) => <p key={k}>{t.split('\n').map((l, n) => <React.Fragment key={n}>{n ? <br /> : null}{l}</React.Fragment>)}</p>)}
           {button && buttonLabel ? <span className="mp-btn">{buttonLabel}</span> : null}
         </div>
-        <div className="mp-foot">Reply to this email and it reaches Carter directly.</div>
+        <div className="mp-foot">Reply to this email and it reaches Carter directly.<i>The Scaffold, by Carter Groff</i></div>
       </div>
     </div>
   );
