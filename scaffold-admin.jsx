@@ -23,14 +23,25 @@ const blank = () => JSON.parse(JSON.stringify({
   whyHead: DEF.whyHead, whyIntro: DEF.whyIntro, rules: DEF.rules,
   design: DEF.design, tools: DEF.tools, how: DEF.how, faq: DEF.faq, testimonials: DEF.testimonials,
 }));
-// Fill any field a published row lacks from the defaults, so older rows load.
-const normalize = (o) => {
-  const b = blank();
-  if (!o || typeof o !== 'object') return b;
-  const out = { ...b };
-  Object.keys(b).forEach((k) => { if (o[k] !== undefined && typeof o[k] === typeof b[k]) out[k] = o[k]; });
-  return out;
+// Fit saved content (the live row or a draft kept in this browser) to the
+// shape of the defaults, so a missing or wrong-typed field falls back instead
+// of crashing the editor into a blank page.
+const clone = (x) => JSON.parse(JSON.stringify(x));
+const fit = (v, d) => {
+  if (Array.isArray(d)) {
+    if (!Array.isArray(v)) return clone(d);
+    const t = d[0];
+    return v.map((x) => (t !== null && typeof t === 'object' ? fit(x, t) : (typeof x === typeof t ? x : (t === undefined ? x : t))));
+  }
+  if (d !== null && typeof d === 'object') {
+    if (v === null || typeof v !== 'object' || Array.isArray(v)) return clone(d);
+    const out = { ...v };
+    Object.keys(d).forEach((k) => { out[k] = fit(v[k], d[k]); });
+    return out;
+  }
+  return typeof v === typeof d ? v : d;
 };
+const normalize = (o) => fit(o, blank());
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const readDraft = () => { try { const s = localStorage.getItem(DRAFT_KEY); return s ? normalize(JSON.parse(s)) : null; } catch (e) { return null; } };
 const writeDraft = (d) => { try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch (e) {} };
@@ -244,4 +255,21 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+// If anything still throws, say so on the page instead of leaving it blank.
+class Boundary extends React.Component {
+  constructor(p) { super(p); this.state = { err: null }; }
+  static getDerivedStateFromError(err) { return { err }; }
+  render() {
+    if (!this.state.err) return this.props.children;
+    const reset = () => { clearDraft(); location.reload(); };
+    return (
+      <div style={{ maxWidth: 560, margin: '80px auto', padding: '0 20px', color: 'var(--ink)', fontFamily: 'var(--body-font)' }}>
+        <h1 style={{ fontFamily: 'var(--display-font)', fontWeight: 500 }}>The editor hit a snag</h1>
+        <p style={{ color: 'var(--ink-soft)' }}>{String(this.state.err && this.state.err.message || this.state.err)}</p>
+        <Btn variant="solid" onClick={reset}>Clear my draft and reload</Btn>
+      </div>
+    );
+  }
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Boundary><App /></Boundary>);
