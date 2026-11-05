@@ -1,4 +1,4 @@
-/* Hallmark v2.0.0 · theme: parlor (by request, user named: keep the original style) with spore as the base, kiln for the dial, terminal for the tools session, darkroom for the draft pick · shape: Dial with Two doors · hero: Centred, the gold crest in twelve amber hours and fine rays over a green glow, between two of the portfolio's lamp posts · job: send a brief · nav: edge-aligned crest wordmark, four links, one button · footer: crest, wordmark and one row of links · posture: committed · signature: the four steps on a working dial, after the two halves shown side by side · genre: atmospheric */
+/* Hallmark v2.0.0 · theme: parlor (by request, user named: keep the original style) with spore as the base, kiln for the dial, terminal for the tools session, darkroom for the draft pick · shape: Dial with Two doors · hero: Centred, the gold crest in twelve amber hours and fine rays over a green glow, at the end of a lane of the portfolio's lamp posts receding into fog · job: send a brief · nav: edge-aligned crest wordmark, four links, one button · footer: crest, wordmark and one row of links · posture: committed · signature: the four steps on a working dial, after the two halves shown side by side · genre: atmospheric */
 /* critique: Parlor's ground, Cormorant heads, amber for Design and brass for Tools all stay; the page now shows the work before the process, and the rings finally do something */
 /* Hallmark · waive 37 · the mono appears only inside the Tools session and its comments · Cormorant, Spectral and Karla are the Parlor faces already live across the site and stay */
 /* Hallmark · waive 80 · the drawn object is the portfolio's own GasLamp, copied from motifs.jsx at build time, not a new illustration · the lamp post is Carter's mark across both sites and he asked for it here */
@@ -32,6 +32,7 @@
   --vignette-1: rgba(8,5,2,.55); --vignette-2: rgba(8,5,2,.85);
   --medal-band: #160f09; --medal-dash: rgba(245,205,106,.28);
   --enamel-hi: #2f5640; --enamel-lo: #12261b; --gold-hi: #f8dc8e; --sheen: #fff6dc;
+  --haze: rgba(30,23,17,.78); --wisp: rgba(222,212,192,.28);
   --wash-0: rgba(56,104,76,.85); --wash-1: rgba(36,72,52,.34); --wash-2: rgba(18,38,27,0);
   --seal-ink: rgba(236,217,178,.22); --seal-word: rgba(236,217,178,.5);
   --nav-bg: rgba(15,10,6,.92); --well: rgba(15,10,6,.6); --on-ink: #1a120b; --mask: #000; --mask-on: #fff;
@@ -99,7 +100,28 @@ a:hover { color: var(--amber-lit); }
 .dhero-lamp svg { position: relative; z-index: 1; display: block; width: 100%; height: 100%; }
 .dhero-in { position: relative; z-index: 4; width: 100%; pointer-events: none; }
 .dhero-in > * { pointer-events: auto; }
-.dhero-medal { width: min(360px, 70vw, 38svh); margin: 0 auto 20px; }
+.dhero-medal { width: min(320px, 64vw, 34svh); margin: 0 auto 18px; }
+/* the lane: back to front, back lamps, fog, far lamps, fog, mid lamps, fog, near lamps, then the vignette and the words */
+.dhero-lamp.near { z-index: 7; } .dhero-lamp.l.near { left: max(-20px, calc(50% - 640px)); } .dhero-lamp.r.near { right: max(-20px, calc(50% - 640px)); }
+.dhero-lamp.mid { z-index: 5; bottom: 9%; height: min(62%, 540px); filter: brightness(.82) blur(.3px); }
+.dhero-lamp.l.mid { left: calc(50% - 470px); } .dhero-lamp.r.mid { right: calc(50% - 470px); }
+.dhero-lamp.far { z-index: 3; bottom: 21%; height: min(42%, 360px); filter: brightness(.5) blur(1.4px); }
+.dhero-lamp.l.far { left: calc(50% - 345px); } .dhero-lamp.r.far { right: calc(50% - 345px); }
+.dhero-lamp.back { z-index: 1; bottom: 31%; height: min(28%, 240px); filter: brightness(.45) blur(1.5px); }
+.dhero-lamp.l.back { left: calc(50% - 262px); } .dhero-lamp.r.back { right: calc(50% - 262px); }
+.dhero-lamp.mid .dhero-candle, .dhero-lamp.far .dhero-candle { width: 420px; }
+.dhero-lamp.back .dhero-candle { width: 260px; opacity: .6; }
+.dhero-path { position: absolute; z-index: 2; left: 50%; bottom: 0; width: 900px; height: 70%; transform: translateX(-50%); pointer-events: none; background: radial-gradient(ellipse 50% 100% at 50% 100%, var(--amber-wash) 0%, transparent 70%); clip-path: polygon(47% 0, 53% 0, 100% 100%, 0 100%); }
+.dhero-veil, .dhero-wisp { position: absolute; left: -20%; right: -20%; bottom: 0; pointer-events: none; }
+.dhero-veil { background: linear-gradient(to top, var(--haze) 0%, var(--haze) 40%, transparent 100%); -webkit-mask-image: radial-gradient(ellipse 45% 100% at 50% 100%, var(--mask) 40%, transparent 100%); mask-image: radial-gradient(ellipse 45% 100% at 50% 100%, var(--mask) 40%, transparent 100%); }
+.dhero-wisp { filter: blur(30px); mix-blend-mode: screen; background: radial-gradient(ellipse 30% 60% at 30% 70%, var(--wisp), transparent 70%), radial-gradient(ellipse 35% 50% at 72% 80%, var(--wisp), transparent 70%); animation: dwisp 30s ease-in-out infinite alternate; }
+.dhero-veil.back, .dhero-wisp.back { z-index: 2; height: 66%; }
+.dhero-veil.far, .dhero-wisp.far { z-index: 4; height: 58%; }
+.dhero-veil.mid, .dhero-wisp.mid { z-index: 6; height: 46%; }
+.dhero-veil.mid { opacity: .75; }
+@keyframes dwisp { from { transform: translateX(-6%); } to { transform: translateX(6%); } }
+.dhero .dhero-vignette { z-index: 8; }
+.dhero .dhero-in { z-index: 9; }
 .dmedal { display: block; width: 100%; height: auto; overflow: visible; }
 .dm-band { fill: var(--medal-band); }
 .dm-rule { fill: none; stroke: var(--seal-ink); stroke-width: 1.2; }
@@ -146,7 +168,7 @@ a:hover { color: var(--amber-lit); }
 @keyframes dm-ripple { 0% { transform: scale(1); opacity: .75; } 80% { opacity: 0; } 100% { transform: scale(1.45); opacity: 0; } }
 .dm-ticks line.major { animation: dm-breathe 6s ease-in-out infinite; }
 @keyframes dm-sheen { 0% { transform: translateX(-160px); } 30%, 100% { transform: translateX(420px); } }
-.js .dlive.idle .dm-hour, .js .dlive.idle .dm-wash, .js .dlive.idle .dm-rays, .js .dlive.idle .dm-ray, .js .dlive.idle .dm-spin, .js .dlive.idle .dm-spin-back, .js .dlive.idle .dm-ripple, .js .dlive.idle .dm-sheen, .js .dlive.idle .dm-rule.gold, .js .dlive.idle .dm-ticks line.major { animation-play-state: paused; }
+.js .dlive.idle .dm-hour, .js .dlive.idle .dm-wash, .js .dlive.idle .dm-rays, .js .dlive.idle .dm-ray, .js .dlive.idle .dm-spin, .js .dlive.idle .dm-spin-back, .js .dlive.idle .dm-ripple, .js .dlive.idle .dm-sheen, .js .dlive.idle .dm-rule.gold, .js .dlive.idle .dm-ticks line.major, .js .dlive.idle .dhero-wisp, .js .dlive.idle .dhero-fog, .js .dlive.idle .dhero-candle { animation-play-state: paused; }
 .dhero h1.ddisplay { font-size: clamp(40px, 5vw, 70px); line-height: 1; max-width: 10em; margin: 0 auto; text-wrap: balance; }
 .dhero .ddeck { margin: 20px auto 0; max-width: 28em; }
 .dhero .dacts { justify-content: center; margin-top: 32px; }
@@ -157,6 +179,15 @@ a:hover { color: var(--amber-lit); }
   .dhero-lamp.l { left: max(-142px, calc(50% - 320px)); } .dhero-lamp.r { right: max(-142px, calc(50% - 320px)); }
   .dhero-lamp svg { width: 112px; height: 504px; margin: 20px auto 0; }
   .dhero-medal { width: 180px; margin-bottom: 24px; }
+  /* phone lane: the near lamps' tops, and one pair behind them lost in the fog */
+  /* visibility, not display: every lamp shares one set of gradient ids, and a display:none copy breaks the lit ones */
+  .dhero-lamp.far, .dhero-lamp.back { visibility: hidden; }
+  .dhero-veil, .dhero-wisp, .dhero-path { display: none; }
+  .dhero-lamp.mid { bottom: auto; top: 26px; height: 200px; width: 240px; filter: brightness(.5) blur(1.2px); opacity: .85; -webkit-mask-image: linear-gradient(var(--mask) 0, var(--mask) 120px, transparent 200px); mask-image: linear-gradient(var(--mask) 0, var(--mask) 120px, transparent 200px); }
+  .dhero-lamp.l.mid { left: max(-60px, calc(50% - 215px)); } .dhero-lamp.r.mid { right: max(-60px, calc(50% - 215px)); }
+  .dhero-lamp.mid svg { width: 68px; height: 306px; margin-top: 10px; }
+  .dhero-lamp.mid .dhero-candle { width: 180px; top: 50px; }
+  .dhero-lamp.l.near { left: max(-142px, calc(50% - 320px)); } .dhero-lamp.r.near { right: max(-142px, calc(50% - 320px)); }
   .dhero-candle { width: 300px; top: 77px; }
   .dhero-in { padding: 0 24px; }
 }
@@ -407,7 +438,7 @@ a:hover { color: var(--amber-lit); }
 @media (max-width: 899px) { .ddial { order: 2; width: min(100%, 360px); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .dcursor, .dmv, .dhero-fog, .dhero-candle { animation: none; }
+  .dcursor, .dmv, .dhero-fog, .dhero-candle, .dhero-wisp { animation: none; }
   .dsession li, .js .dsession li, .js .dsheet.up .dprint { opacity: 1; transform: none; transition: none; }
   .js .dsheet.up .dprint:not([aria-pressed="true"]) { opacity: .66; }
   .dm-spin-in, .dm-spin, .dm-spin-back, .dm-ripple, .dm-sheen, .dm-rule.gold, .dm-ticks line.major, .dseal-mark rect, .dhalf-sec { animation: none; }

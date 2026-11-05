@@ -471,3 +471,18 @@ italic second lines) and takes the same fixes the Scaffold page got:
 Kept on purpose: the italic accent words in the headings ("Six recent
 *pictures*.") are the portfolio's signature, and the inline overlay colours
 stay as they are.
+
+## Scaffold hero: a lane of lamps receding into fog
+
+Picked from ten hero options, then five combinations that kept the centre
+(crest, twelve hours, rays, green glow). The hero now stands at the end of a
+lane of four pairs of the portfolio's lamp posts. Each farther pair stands
+higher up the lane, smaller and closer to the middle, dimmed and softened,
+with a bank of fog (a dark veil plus a drifting light wisp) rolling in front
+of it, so the lane drifts away behind the medallion. A faint amber path runs
+down the middle. Every globe still snuffs on click.
+
+On phones the near lamps' tops show as before, with one dim, blurred pair
+behind them; the two back pairs are hidden with `visibility`, not `display`,
+because every GasLamp shares one set of gradient ids and a display:none copy
+earlier in the page breaks the lit ones.
