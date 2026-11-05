@@ -33,7 +33,7 @@
   --medal-band: #160f09; --medal-dash: rgba(245,205,106,.28);
   --enamel-hi: #2f5640; --enamel-lo: #12261b; --gold-hi: #f8dc8e; --sheen: #fff6dc;
   --haze: rgba(30,23,17,.78); --wisp: rgba(222,212,192,.28);
-  --lamp-iron: #0c0805; --lamp-plaque: #3a2716; --lamp-brass: rgba(194,164,106,.7);
+  --lamp-iron: #0c0805;
   --wash-0: rgba(56,104,76,.85); --wash-1: rgba(36,72,52,.34); --wash-2: rgba(18,38,27,0);
   --seal-ink: rgba(236,217,178,.22); --seal-word: rgba(236,217,178,.5);
   --nav-bg: rgba(15,10,6,.92); --well: rgba(15,10,6,.6); --on-ink: #1a120b; --mask: #000; --mask-on: #fff;
@@ -104,8 +104,6 @@ a:hover { color: var(--amber-lit); }
 .dhero-lamp .dlamp-iron { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
 .lw-iron rect, .lw-iron circle { fill: var(--lamp-iron); }
 .lw-scroll path { fill: none; stroke: var(--lamp-iron); stroke-width: 3.2; stroke-linecap: round; }
-.lw-plaque { fill: var(--lamp-plaque); stroke: var(--lamp-brass); stroke-width: .8; }
-.lw-brass { stroke: var(--lamp-brass); stroke-width: .8; opacity: .6; }
 /* the flames don't flicker in step */
 .dhero-lamp.near.l .dhero-candle { animation-delay: -1.5s; } .dhero-lamp.near.r .dhero-candle { animation-delay: -4.6s; }
 .dhero-lamp.mid.l .dhero-candle { animation-delay: -3.1s; } .dhero-lamp.mid.r .dhero-candle { animation-delay: -5.8s; }

@@ -543,3 +543,6 @@ Tried and dropped at Carter's call: verdigris, rust and stains (they read as
 a straight line down the middle), film grain and the edge light. Left out for
 now: a wider glow round each flame, a pool of light on the boards, drifting
 dust. motifs.jsx is untouched, so the portfolio's lamp is unchanged.
+
+The brass plate on two of the lamps read as a stray orange box on the post, so
+it is gone; those lamps take a collar or a lamplighter's bar instead.

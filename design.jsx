@@ -166,17 +166,16 @@ function BriefRing() {
 const LANE = [['back', 260], ['far', 380], ['mid', 560], ['near', 820]];
 // No two posts are quite alike: each leans and sizes a little differently, and
 // each pair carries its own ironwork (a scroll under the lantern, a
-// lamplighter's bar, a brass plate, extra collars). Desktop only.
+// lamplighter's bar, extra collars). Desktop only.
 const LAMP_VARY = {
-  near: { l: { lean: -1.6, sc: 1, iron: ['scroll', 'bar'] }, r: { lean: 1.1, sc: .985, iron: ['scroll', 'plaque'] } },
-  mid: { l: { lean: -.8, sc: 1.02, iron: ['bar'] }, r: { lean: 1.4, sc: .99, iron: ['collar', 'plaque'] } },
+  near: { l: { lean: -1.6, sc: 1, iron: ['scroll', 'bar'] }, r: { lean: 1.1, sc: .985, iron: ['scroll', 'collar'] } },
+  mid: { l: { lean: -.8, sc: 1.02, iron: ['bar'] }, r: { lean: 1.4, sc: .99, iron: ['collar', 'bar'] } },
   far: { l: { lean: -1.2, sc: 1, iron: ['scroll'] }, r: { lean: .6, sc: 1.015, iron: ['bar'] } },
   back: { l: { lean: -.5, sc: 1, iron: ['bar'] }, r: { lean: .9, sc: .99, iron: [] } },
 };
 function Ironwork({ kind }) {
   if (kind === 'bar') return <g className="lw-iron"><rect x="70" y="330" width="60" height="5" rx="2.5" /><circle cx="70" cy="332.5" r="4.5" /><circle cx="130" cy="332.5" r="4.5" /></g>;
   if (kind === 'scroll') return <g className="lw-scroll"><path d="M96 190 C 78 190, 66 206, 74 220 C 80 228, 90 222, 86 214" /><path d="M104 190 C 122 190, 134 206, 126 220 C 120 228, 110 222, 114 214" /></g>;
-  if (kind === 'plaque') return <g><rect className="lw-plaque" x="86" y="610" width="28" height="16" rx="2" /><line className="lw-brass" x1="91" y1="618" x2="109" y2="618" /></g>;
   if (kind === 'collar') return <g className="lw-iron"><rect x="89" y="470" width="22" height="7" rx="2" /><rect x="91" y="480" width="18" height="3" rx="1.5" /></g>;
   return null;
 }

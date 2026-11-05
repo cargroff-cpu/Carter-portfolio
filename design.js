@@ -928,7 +928,7 @@ const LAMP_VARY = {
     r: {
       lean: 1.1,
       sc: .985,
-      iron: ['scroll', 'plaque']
+      iron: ['scroll', 'collar']
     }
   },
   mid: {
@@ -940,7 +940,7 @@ const LAMP_VARY = {
     r: {
       lean: 1.4,
       sc: .99,
-      iron: ['collar', 'plaque']
+      iron: ['collar', 'bar']
     }
   },
   far: {
@@ -994,20 +994,6 @@ function Ironwork({
     d: "M96 190 C 78 190, 66 206, 74 220 C 80 228, 90 222, 86 214"
   }), React.createElement("path", {
     d: "M104 190 C 122 190, 134 206, 126 220 C 120 228, 110 222, 114 214"
-  }));
-  if (kind === 'plaque') return React.createElement("g", null, React.createElement("rect", {
-    className: "lw-plaque",
-    x: "86",
-    y: "610",
-    width: "28",
-    height: "16",
-    rx: "2"
-  }), React.createElement("line", {
-    className: "lw-brass",
-    x1: "91",
-    y1: "618",
-    x2: "109",
-    y2: "618"
   }));
   if (kind === 'collar') return React.createElement("g", {
     className: "lw-iron"
