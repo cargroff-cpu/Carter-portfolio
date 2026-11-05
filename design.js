@@ -841,9 +841,6 @@ function Hero({
   }), React.createElement(HeroLamp, {
     side: "r"
   }), React.createElement("div", {
-    className: "dhero-ledge",
-    "aria-hidden": "true"
-  }), React.createElement("div", {
     className: "dwrap dhero-in"
   }, React.createElement("div", {
     className: "dhero-medal"

@@ -14,7 +14,6 @@
   --amber-wash: rgba(217,154,61,.12); --amber-tick: rgba(245,205,106,.5);
   --wood-seam: rgba(0,0,0,.35); --wood-hi: rgba(236,217,178,.025);
   --wood-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='12'><filter id='g'><feTurbulence baseFrequency='0.02 0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.5 0'/></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>");
-  --ledge-hi: #3a2817; --ledge-lo: #1c120a; --ledge-shadow: rgba(0,0,0,.8);
   --candle-glow: rgba(217,154,61,.32); --candle-edge: rgba(217,154,61,.06);
   --fog-1: rgba(230,222,205,.30); --fog-2: rgba(205,196,176,.15);
   --vignette-1: rgba(8,5,2,.55); --vignette-2: rgba(8,5,2,.85);
@@ -80,7 +79,6 @@ html, body { overflow-x: clip; }
 .dhero-lamp.r { right: max(8px, calc(50% - 500px)); }
 .dhero-lamp svg { position: relative; z-index: 1; display: block; width: 100%; height: 100%; }
 .dhero-in { position: relative; z-index: 4; width: 100%; }
-.dhero-ledge { display: none; }
 .dhero-medal { width: min(340px, 66vw, 36svh); margin: 0 auto 24px; }
 .dmedal { display: block; width: 100%; height: auto; overflow: visible; }
 .dm-band { fill: var(--medal-band); }
@@ -98,13 +96,13 @@ html, body { overflow-x: clip; }
 .dhero .ddeck { margin: 20px auto 0; max-width: 28em; }
 .dhero .dacts { justify-content: center; margin-top: 32px; }
 @media (max-width: 899px) {
-  /* on a phone the lamps and the medallion stand on a narrow wooden ledge */
+  /* on a phone only the top of each lamp shows: globe and upper pole, cut off below */
   .dhero { padding: 44px 0 40px; }
-  .dhero-lamp { top: 20px; bottom: auto; height: 228px; }
-  .dhero-lamp.l { left: max(4px, calc(50% - 176px)); } .dhero-lamp.r { right: max(4px, calc(50% - 176px)); }
-  .dhero-ledge { display: block; position: absolute; z-index: 3; top: 248px; left: max(0px, calc(50% - 196px)); right: max(0px, calc(50% - 196px)); height: 12px; background: linear-gradient(var(--ledge-hi), var(--ledge-lo)); border-top: 1px solid var(--rule-strong); box-shadow: 0 12px 20px -8px var(--ledge-shadow); }
-  .dhero-medal { width: 180px; margin-bottom: 52px; }
-  .dhero-candle { width: 300px; }
+  .dhero-lamp { top: 0; bottom: auto; height: 260px; width: 340px; aspect-ratio: auto; overflow: hidden; -webkit-mask-image: linear-gradient(var(--mask) 0, var(--mask) 190px, transparent 260px); mask-image: linear-gradient(var(--mask) 0, var(--mask) 190px, transparent 260px); }
+  .dhero-lamp.l { left: max(-142px, calc(50% - 320px)); } .dhero-lamp.r { right: max(-142px, calc(50% - 320px)); }
+  .dhero-lamp svg { width: 112px; height: 504px; margin: 20px auto 0; }
+  .dhero-medal { width: 180px; margin-bottom: 24px; }
+  .dhero-candle { width: 300px; top: 77px; }
   .dhero-in { padding: 0 24px; }
 }
 .dcrest { width: 52px; margin: 0 auto 24px; opacity: .85; }
