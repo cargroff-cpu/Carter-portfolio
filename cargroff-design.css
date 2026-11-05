@@ -12,8 +12,10 @@
   --brass: #c2a46a; --brass-lit: #e0c88f;
   --brass-wash: rgba(194,164,106,.12); --brass-edge: rgba(194,164,106,.45);
   --amber-wash: rgba(217,154,61,.12); --amber-tick: rgba(245,205,106,.5);
-  --wood-seam: rgba(0,0,0,.35); --wood-hi: rgba(236,217,178,.025);
-  --wood-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='12'><filter id='g'><feTurbulence baseFrequency='0.02 0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.5 0'/></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>");
+  --wood-base: #21150c; --wood-seam: rgba(0,0,0,.6); --wood-hi: rgba(245,215,160,.07);
+  --board-a: rgba(255,214,150,.035); --board-b: rgba(0,0,0,.14); --board-c: rgba(120,70,30,.08);
+  --wood-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='448' height='640'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.55 0.008' numOctaves='3' seed='4'/><feColorMatrix values='0 0 0 0 0.08  0 0 0 0 0.04  0 0 0 0 0.01  0 0 0 1.1 -0.35'/></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>");
+  --wood-figure: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='448' height='900'><filter id='f'><feTurbulence type='turbulence' baseFrequency='0.04 0.004' numOctaves='2' seed='9'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 0.78  0 0 0 0 0.5  0 0 0 0.9 -0.2'/></filter><rect width='100%25' height='100%25' filter='url(%23f)'/></svg>");
   --vignette-1: rgba(8,5,2,.55); --vignette-2: rgba(8,5,2,.85);
   --lamp-pool: rgba(245,190,90,.42); --lamp-ember: rgba(200,100,50,.16); --lamp-pool-2: rgba(217,154,61,.06); --lamp-floor: rgba(217,154,61,.22);
   --medal-band: #160f09; --medal-dash: rgba(245,205,106,.28);
@@ -58,9 +60,13 @@ html, body { overflow-x: clip; }
 @media (min-width: 900px) { .dnavlinks { display: flex; } .dnav .p-btn { margin-left: 0; } }
 
 /* ── wood panels: the portfolio's room, 34px boards and a sawn grain ── */
-.dpanel { position: relative; isolation: isolate; background-color: var(--bg);
-  background-image: repeating-linear-gradient(to right, transparent 0, transparent 33px, var(--wood-seam) 33px, var(--wood-seam) 34px, var(--wood-hi) 34px, var(--wood-hi) 35px, transparent 35px, transparent 68px); }
-.dpanel::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image: var(--wood-grain); opacity: .3; mix-blend-mode: multiply; }
+.dpanel { position: relative; isolation: isolate; color: var(--ink); background-color: var(--wood-base);
+  background-image:
+    repeating-linear-gradient(to right, var(--wood-seam) 0, var(--wood-seam) 2px, var(--wood-hi) 2px, var(--wood-hi) 3px, transparent 3px, transparent 112px),
+    repeating-linear-gradient(to right, var(--board-a) 0, var(--board-a) 112px, var(--board-b) 112px, var(--board-b) 224px, transparent 224px, transparent 336px, var(--board-c) 336px, var(--board-c) 448px);
+}
+.dpanel::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image: var(--wood-grain); background-size: 448px 640px; opacity: .55; mix-blend-mode: multiply; }
+.dpanel::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image: var(--wood-figure); background-size: 448px 900px; opacity: .35; mix-blend-mode: soft-light; }
 .dsection.dwood.dpanel { background-color: var(--bg-warm); }
 
 /* ── hero: the medallion between two lamp posts, on the wood ── */
