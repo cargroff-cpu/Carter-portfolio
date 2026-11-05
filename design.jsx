@@ -159,16 +159,28 @@ function BriefRing() {
   );
 }
 
-// One lamp post either side; each globe can be clicked to snuff its lamp.
-function HeroLamp({ side }) {
+// A lane of lamp posts: four pairs, each farther pair higher up the lane,
+// smaller and dimmer, with a bank of fog rolling in front of it so the lane
+// drifts away behind the medallion. Each globe can be clicked to snuff it.
+const LANE = [['back', 260], ['far', 380], ['mid', 560], ['near', 820]];
+function HeroLamp({ side, row, height }) {
   const [out, setOut] = React.useState(false);
   return (
-    <div className={'dhero-lamp ' + side + (out ? ' out' : '')} aria-hidden="true">
+    <div className={'dhero-lamp ' + side + ' ' + row + (out ? ' out' : '')} aria-hidden="true">
       <div className="dhero-candle" />
-      <GasLamp height={820} out={out} onGlobeClick={() => setOut((o) => !o)} />
+      <GasLamp height={height} out={out} onGlobeClick={() => setOut((o) => !o)} />
     </div>
   );
 }
+function LaneFog({ row, dur, delay }) {
+  return (
+    <React.Fragment>
+      <div className={'dhero-veil ' + row} aria-hidden="true" />
+      <div className={'dhero-wisp ' + row} aria-hidden="true" style={{ animationDuration: dur + 's', animationDelay: delay + 's' }} />
+    </React.Fragment>
+  );
+}
+const LANE_FOG = { back: [40, -8], far: [34, -14], mid: [28, -4] };
 
 function Hero({ onAddNeed }) {
   return (
@@ -178,8 +190,14 @@ function Hero({ onAddNeed }) {
       <div className="dhero-fog" aria-hidden="true" style={{ top: '50%', animationDuration: '34s', animationDelay: '-12s' }} />
       <div className="dhero-fog" aria-hidden="true" style={{ top: '72%', animationDuration: '30s', animationDelay: '-20s' }} />
       <div className="dhero-vignette" aria-hidden="true" />
-      <HeroLamp side="l" />
-      <HeroLamp side="r" />
+      <div className="dhero-path" aria-hidden="true" />
+      {LANE.map(([row, h]) => (
+        <React.Fragment key={row}>
+          <HeroLamp side="l" row={row} height={h} />
+          <HeroLamp side="r" row={row} height={h} />
+          {LANE_FOG[row] && <LaneFog row={row} dur={LANE_FOG[row][0]} delay={LANE_FOG[row][1]} />}
+        </React.Fragment>
+      ))}
       <div className="dwrap dhero-in">
         <div className="dhero-medal"><Medallion /></div>
         <h1 className="ddisplay">Design that looks right. Tools that work right.</h1>

@@ -916,21 +916,46 @@ function BriefRing() {
     r: "214"
   }));
 }
+const LANE = [['back', 260], ['far', 380], ['mid', 560], ['near', 820]];
 function HeroLamp({
-  side
+  side,
+  row,
+  height
 }) {
   const [out, setOut] = React.useState(false);
   return React.createElement("div", {
-    className: 'dhero-lamp ' + side + (out ? ' out' : ''),
+    className: 'dhero-lamp ' + side + ' ' + row + (out ? ' out' : ''),
     "aria-hidden": "true"
   }, React.createElement("div", {
     className: "dhero-candle"
   }), React.createElement(GasLamp, {
-    height: 820,
+    height: height,
     out: out,
     onGlobeClick: () => setOut(o => !o)
   }));
 }
+function LaneFog({
+  row,
+  dur,
+  delay
+}) {
+  return React.createElement(React.Fragment, null, React.createElement("div", {
+    className: 'dhero-veil ' + row,
+    "aria-hidden": "true"
+  }), React.createElement("div", {
+    className: 'dhero-wisp ' + row,
+    "aria-hidden": "true",
+    style: {
+      animationDuration: dur + 's',
+      animationDelay: delay + 's'
+    }
+  }));
+}
+const LANE_FOG = {
+  back: [40, -8],
+  far: [34, -14],
+  mid: [28, -4]
+};
 function Hero({
   onAddNeed
 }) {
@@ -963,11 +988,24 @@ function Hero({
   }), React.createElement("div", {
     className: "dhero-vignette",
     "aria-hidden": "true"
-  }), React.createElement(HeroLamp, {
-    side: "l"
-  }), React.createElement(HeroLamp, {
-    side: "r"
   }), React.createElement("div", {
+    className: "dhero-path",
+    "aria-hidden": "true"
+  }), LANE.map(([row, h]) => React.createElement(React.Fragment, {
+    key: row
+  }, React.createElement(HeroLamp, {
+    side: "l",
+    row: row,
+    height: h
+  }), React.createElement(HeroLamp, {
+    side: "r",
+    row: row,
+    height: h
+  }), LANE_FOG[row] && React.createElement(LaneFog, {
+    row: row,
+    dur: LANE_FOG[row][0],
+    delay: LANE_FOG[row][1]
+  }))), React.createElement("div", {
     className: "dwrap dhero-in"
   }, React.createElement("div", {
     className: "dhero-medal"
