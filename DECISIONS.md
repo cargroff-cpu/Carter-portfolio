@@ -688,3 +688,20 @@ behind the same login (middleware.js) and logout-on-close.
 - `motion.css` is linked from every Backroom page and the client page. Things arrive once on mount (a short rise, staggered and capped), charts draw themselves, KPI numbers count up, tabs and pages cross-fade, and buttons and cards respond to a touch or press.
 - Only transform, opacity and colour move, never width or height. Arrivals use `fill-mode: backwards` so hover transforms keep working after they finish. All movement sits behind `prefers-reduced-motion: no-preference`, and the count-up checks it too.
 - Page-to-page fades use `@view-transition` (Chrome, Safari 18+); other browsers just navigate as before. There is still no service worker.
+
+## 2026-11-06 — Clients tab in the studio's client-tool layout
+
+- List page: a title and Add client button, four summary cards (clients, open jobs, paid all time, owed), search, and a table of clients with jobs, paid, owed and last activity.
+- Client page: back link, name and email, tabs (Overview, Jobs, Money, Activity). Overview holds lifetime figures, editable notes, recent activity and open jobs.
+- Kept to what the Scaffold needs. Ideas and layout only from the studio's tool; no code, names or data copied. Jobs match a client by id or email; money comes from their jobs' invoices.
+
+## 2026-11-06 — Mail templates as boxes, and an email dialog with a live preview
+
+- Mail > Templates is a grid of boxes (name, subject, opening line, when it is used). Click one to read the whole email as the client sees it, drawn in the same paper frame as `lib/mail.js`, with made-up details.
+- The email sender is now a dialog like the studio tool's: a note on where it sends from and where replies go, To, Subject, Message, a status line, Cancel and Send. Added in the Scaffold's look: template chips, a heading and button option, a live preview beside the form (a Write/Preview switch on phones), and Send a test to me.
+- A client's page can open the same dialog on their latest job. The sending API is unchanged.
+
+## 2026-11-06 — Emails in a darker, lamplit frame
+
+- `lib/mail.js` now renders a dark card (warm near-black, cream type, amber accents): an amber band on top, a crest header with "The Scaffold, by Carter Groff", a large heading with an amber rule, an amber button, and a darker footer with the sign-off. It declares `color-scheme: dark` and uses `bgcolor` attributes so mail apps keep it dark.
+- All text is cream or soft tan on the dark surface (7:1 or better), links are lit amber and underlined. Still tables and inline styles only; everything typed is escaped. The Backroom's preview matches.
