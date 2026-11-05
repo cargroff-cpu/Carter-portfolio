@@ -394,3 +394,10 @@ Clicking the globe snuffs the lamp, as on the portfolio.
 GasLamp is not duplicated: `scripts/build-design.mjs` copies the function out
 of `motifs.jsx` into `design.js` at build time, so rebuild /design after
 changing the lamp.
+
+Update, same day: after five hero options, Carter chose "Medallion and
+lamps", with bigger lamps and more colour. The hero is now centred: a
+medallion (the crest in gold on a green enamel disc, inside the engraved
+seal) between two of the portfolio's lamp posts at nearly full height, each
+throwing a warm pool on the wall and the floor. Each globe still snuffs its
+own lamp. The single-lamp, text-left hero above is replaced.

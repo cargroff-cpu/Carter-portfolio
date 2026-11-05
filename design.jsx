@@ -73,65 +73,81 @@ function Nav() {
   );
 }
 
-// The seal behind the hero: engraved hairline rings centred on the lamp's
-// globe, a slow ring of lettering and a counter-turning ring of ticks.
-const HERO_SEAL_WORDS = ['Design that looks right', 'Tools that work right', 'Harrisonburg, Virginia'];
-function heroArc(a, r) {
+// The medallion: the crest struck in gold on a green enamel disc, set inside
+// an engraved seal like the one in How it works. Drawn in a 600 box.
+const MEDAL_WORDS = ['Design that looks right', 'Tools that work right', 'Harrisonburg, Virginia'];
+function medalArc(a, r) {
   const t1 = ((a - 52) * Math.PI) / 180, t2 = ((a + 52) * Math.PI) / 180;
   const p = (t) => (300 + r * Math.sin(t)).toFixed(2) + ' ' + (300 - r * Math.cos(t)).toFixed(2);
   return 'M' + p(t1) + ' A' + r + ' ' + r + ' 0 0 1 ' + p(t2);
 }
-function HeroSeal() {
+function Medallion() {
   const ticks = [];
   for (let i = 0; i < 120; i++) {
-    const major = i % 10 === 0;
-    const t = (i * 3 * Math.PI) / 180;
-    const r1 = major ? 258 : 266, r2 = 276;
+    const major = i % 10 === 0, t = (i * 3 * Math.PI) / 180, r1 = major ? 256 : 265, r2 = 276;
     ticks.push(<line key={i} className={major ? 'major' : ''}
       x1={(300 + r1 * Math.sin(t)).toFixed(2)} y1={(300 - r1 * Math.cos(t)).toFixed(2)}
       x2={(300 + r2 * Math.sin(t)).toFixed(2)} y2={(300 - r2 * Math.cos(t)).toFixed(2)} />);
   }
   return (
-    <svg className="dheroseal" viewBox="0 0 600 600" aria-hidden="true">
-      <defs>{HERO_SEAL_WORDS.map((w, i) => <path key={w} id={'dhs-' + i} d={heroArc(i * 120, 232)} />)}</defs>
-      <circle className="hs-rule" cx="300" cy="300" r="292" />
-      <circle className="hs-rule" cx="300" cy="300" r="286" />
-      <g className="hs-ticks">{ticks}</g>
-      <circle className="hs-rule" cx="300" cy="300" r="250" />
-      <g className="hs-words">
-        {HERO_SEAL_WORDS.map((w, i) => (
-          <text key={w}><textPath href={'#dhs-' + i} startOffset="50%" textAnchor="middle">{w}</textPath></text>
-        ))}
-        {[60, 180, 300].map((a) => {
-          const t = (a * Math.PI) / 180, x = 300 + 240 * Math.sin(t), y = 300 - 240 * Math.cos(t);
-          return <rect key={a} className="hs-lozenge" x={x - 4} y={y - 4} width="8" height="8" transform={'rotate(' + (a + 45) + ' ' + x + ' ' + y + ')'} />;
-        })}
-      </g>
-      <circle className="hs-rule dashed" cx="300" cy="300" r="214" />
-      <circle className="hs-rule" cx="300" cy="300" r="196" />
+    <svg className="dmedal" viewBox="0 0 600 600" role="img" aria-label="The Scaffold, by Carter Groff">
+      <defs>
+        {MEDAL_WORDS.map((w, i) => <path key={w} id={'dmw-' + i} d={medalArc(i * 120, 230)} />)}
+        <radialGradient id="dm-enamel" cx="50%" cy="38%" r="65%">
+          <stop offset="0%" className="dm-enamel-hi" /><stop offset="100%" className="dm-enamel-lo" />
+        </radialGradient>
+        <linearGradient id="dm-gold" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" className="dm-gold-hi" /><stop offset="100%" className="dm-gold-lo" />
+        </linearGradient>
+        <mask id="dm-crest" maskUnits="userSpaceOnUse" x="0" y="0" width="600" height="600">
+          <image href="assets/antler.png" x="180" y="208" width="240" height="183" />
+        </mask>
+      </defs>
+      <circle className="dm-band" cx="300" cy="300" r="290" />
+      <circle className="dm-rule" cx="300" cy="300" r="292" />
+      <circle className="dm-rule" cx="300" cy="300" r="284" />
+      <g className="dm-ticks">{ticks}</g>
+      <circle className="dm-rule" cx="300" cy="300" r="248" />
+      {MEDAL_WORDS.map((w, i) => (
+        <text key={w} className="dm-word"><textPath href={'#dmw-' + i} startOffset="50%" textAnchor="middle">{w}</textPath></text>
+      ))}
+      {[60, 180, 300].map((a) => {
+        const t = (a * Math.PI) / 180, x = 300 + 238 * Math.sin(t), y = 300 - 238 * Math.cos(t);
+        return <rect key={a} className="dm-loz" x={x - 5} y={y - 5} width="10" height="10" transform={'rotate(' + (a + 45) + ' ' + x + ' ' + y + ')'} />;
+      })}
+      <circle className="dm-enamel" cx="300" cy="300" r="200" />
+      <circle className="dm-rule gold" cx="300" cy="300" r="200" />
+      <circle className="dm-rule dashed" cx="300" cy="300" r="186" />
+      <rect x="160" y="190" width="280" height="220" fill="url(#dm-gold)" mask="url(#dm-crest)" />
     </svg>
   );
 }
 
-function Hero({ onAddNeed }) {
+// One lamp post either side; each globe can be clicked to snuff its lamp.
+function HeroLamp({ side }) {
   const [out, setOut] = React.useState(false);
   return (
-    <header className={'dhero dpanel' + (out ? ' out' : '')} id="top">
-      <div className="dhero-pool" aria-hidden="true" />
-      <div className="dhero-lamp" aria-hidden="true">
-        <HeroSeal />
-        <GasLamp height={680} out={out} onGlobeClick={() => setOut((o) => !o)} />
+    <React.Fragment>
+      <div className={'dhero-pool ' + side + (out ? ' out' : '')} aria-hidden="true" />
+      <div className={'dhero-lamp ' + side} aria-hidden="true">
+        <GasLamp height={820} out={out} onGlobeClick={() => setOut((o) => !o)} />
       </div>
-      <div className="dhero-dark" aria-hidden="true" />
+    </React.Fragment>
+  );
+}
+
+function Hero({ onAddNeed }) {
+  return (
+    <header className="dhero dpanel" id="top">
+      <HeroLamp side="l" />
+      <HeroLamp side="r" />
       <div className="dwrap dhero-in">
-        <div className="dhero-copy">
-          <div className="dcrest"><img src="assets/antler.png" alt="The Scaffold, by Carter Groff" /></div>
-          <h1 className="ddisplay">Design that looks right. Tools that work right.</h1>
-          <p className="ddeck">Graphics, print and documents, and the small tools that take busywork off your plate.</p>
-          <div className="dacts">
-            <a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('design'); }}>Start a brief</a>
-            <a className="p-btn ghost" href="#doors">See the work</a>
-          </div>
+        <div className="dhero-medal"><Medallion /></div>
+        <h1 className="ddisplay">Design that looks right. Tools that work right.</h1>
+        <p className="ddeck">Graphics, print and documents, and the small tools that take busywork off your plate.</p>
+        <div className="dacts">
+          <a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('design'); }}>Start a brief</a>
+          <a className="p-btn ghost" href="#doors">See the work</a>
         </div>
       </div>
     </header>

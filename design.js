@@ -691,19 +691,19 @@ function Nav() {
     href: "#brief"
   }, "Start a brief")));
 }
-const HERO_SEAL_WORDS = ['Design that looks right', 'Tools that work right', 'Harrisonburg, Virginia'];
-function heroArc(a, r) {
+const MEDAL_WORDS = ['Design that looks right', 'Tools that work right', 'Harrisonburg, Virginia'];
+function medalArc(a, r) {
   const t1 = (a - 52) * Math.PI / 180,
     t2 = (a + 52) * Math.PI / 180;
   const p = t => (300 + r * Math.sin(t)).toFixed(2) + ' ' + (300 - r * Math.cos(t)).toFixed(2);
   return 'M' + p(t1) + ' A' + r + ' ' + r + ' 0 0 1 ' + p(t2);
 }
-function HeroSeal() {
+function Medallion() {
   const ticks = [];
   for (let i = 0; i < 120; i++) {
-    const major = i % 10 === 0;
-    const t = i * 3 * Math.PI / 180;
-    const r1 = major ? 258 : 266,
+    const major = i % 10 === 0,
+      t = i * 3 * Math.PI / 180,
+      r1 = major ? 256 : 265,
       r2 = 276;
     ticks.push(React.createElement("line", {
       key: i,
@@ -715,93 +715,147 @@ function HeroSeal() {
     }));
   }
   return React.createElement("svg", {
-    className: "dheroseal",
+    className: "dmedal",
     viewBox: "0 0 600 600",
-    "aria-hidden": "true"
-  }, React.createElement("defs", null, HERO_SEAL_WORDS.map((w, i) => React.createElement("path", {
+    role: "img",
+    "aria-label": "The Scaffold, by Carter Groff"
+  }, React.createElement("defs", null, MEDAL_WORDS.map((w, i) => React.createElement("path", {
     key: w,
-    id: 'dhs-' + i,
-    d: heroArc(i * 120, 232)
+    id: 'dmw-' + i,
+    d: medalArc(i * 120, 230)
+  })), React.createElement("radialGradient", {
+    id: "dm-enamel",
+    cx: "50%",
+    cy: "38%",
+    r: "65%"
+  }, React.createElement("stop", {
+    offset: "0%",
+    className: "dm-enamel-hi"
+  }), React.createElement("stop", {
+    offset: "100%",
+    className: "dm-enamel-lo"
+  })), React.createElement("linearGradient", {
+    id: "dm-gold",
+    x1: "0",
+    y1: "0",
+    x2: "0",
+    y2: "1"
+  }, React.createElement("stop", {
+    offset: "0%",
+    className: "dm-gold-hi"
+  }), React.createElement("stop", {
+    offset: "100%",
+    className: "dm-gold-lo"
+  })), React.createElement("mask", {
+    id: "dm-crest",
+    maskUnits: "userSpaceOnUse",
+    x: "0",
+    y: "0",
+    width: "600",
+    height: "600"
+  }, React.createElement("image", {
+    href: "assets/antler.png",
+    x: "180",
+    y: "208",
+    width: "240",
+    height: "183"
   }))), React.createElement("circle", {
-    className: "hs-rule",
+    className: "dm-band",
+    cx: "300",
+    cy: "300",
+    r: "290"
+  }), React.createElement("circle", {
+    className: "dm-rule",
     cx: "300",
     cy: "300",
     r: "292"
   }), React.createElement("circle", {
-    className: "hs-rule",
+    className: "dm-rule",
     cx: "300",
     cy: "300",
-    r: "286"
+    r: "284"
   }), React.createElement("g", {
-    className: "hs-ticks"
+    className: "dm-ticks"
   }, ticks), React.createElement("circle", {
-    className: "hs-rule",
+    className: "dm-rule",
     cx: "300",
     cy: "300",
-    r: "250"
-  }), React.createElement("g", {
-    className: "hs-words"
-  }, HERO_SEAL_WORDS.map((w, i) => React.createElement("text", {
-    key: w
+    r: "248"
+  }), MEDAL_WORDS.map((w, i) => React.createElement("text", {
+    key: w,
+    className: "dm-word"
   }, React.createElement("textPath", {
-    href: '#dhs-' + i,
+    href: '#dmw-' + i,
     startOffset: "50%",
     textAnchor: "middle"
   }, w))), [60, 180, 300].map(a => {
     const t = a * Math.PI / 180,
-      x = 300 + 240 * Math.sin(t),
-      y = 300 - 240 * Math.cos(t);
+      x = 300 + 238 * Math.sin(t),
+      y = 300 - 238 * Math.cos(t);
     return React.createElement("rect", {
       key: a,
-      className: "hs-lozenge",
-      x: x - 4,
-      y: y - 4,
-      width: "8",
-      height: "8",
+      className: "dm-loz",
+      x: x - 5,
+      y: y - 5,
+      width: "10",
+      height: "10",
       transform: 'rotate(' + (a + 45) + ' ' + x + ' ' + y + ')'
     });
-  })), React.createElement("circle", {
-    className: "hs-rule dashed",
-    cx: "300",
-    cy: "300",
-    r: "214"
   }), React.createElement("circle", {
-    className: "hs-rule",
+    className: "dm-enamel",
     cx: "300",
     cy: "300",
-    r: "196"
+    r: "200"
+  }), React.createElement("circle", {
+    className: "dm-rule gold",
+    cx: "300",
+    cy: "300",
+    r: "200"
+  }), React.createElement("circle", {
+    className: "dm-rule dashed",
+    cx: "300",
+    cy: "300",
+    r: "186"
+  }), React.createElement("rect", {
+    x: "160",
+    y: "190",
+    width: "280",
+    height: "220",
+    fill: "url(#dm-gold)",
+    mask: "url(#dm-crest)"
   }));
+}
+function HeroLamp({
+  side
+}) {
+  const [out, setOut] = React.useState(false);
+  return React.createElement(React.Fragment, null, React.createElement("div", {
+    className: 'dhero-pool ' + side + (out ? ' out' : ''),
+    "aria-hidden": "true"
+  }), React.createElement("div", {
+    className: 'dhero-lamp ' + side,
+    "aria-hidden": "true"
+  }, React.createElement(GasLamp, {
+    height: 820,
+    out: out,
+    onGlobeClick: () => setOut(o => !o)
+  })));
 }
 function Hero({
   onAddNeed
 }) {
-  const [out, setOut] = React.useState(false);
   return React.createElement("header", {
-    className: 'dhero dpanel' + (out ? ' out' : ''),
+    className: "dhero dpanel",
     id: "top"
-  }, React.createElement("div", {
-    className: "dhero-pool",
-    "aria-hidden": "true"
-  }), React.createElement("div", {
-    className: "dhero-lamp",
-    "aria-hidden": "true"
-  }, React.createElement(HeroSeal, null), React.createElement(GasLamp, {
-    height: 680,
-    out: out,
-    onGlobeClick: () => setOut(o => !o)
-  })), React.createElement("div", {
-    className: "dhero-dark",
-    "aria-hidden": "true"
+  }, React.createElement(HeroLamp, {
+    side: "l"
+  }), React.createElement(HeroLamp, {
+    side: "r"
   }), React.createElement("div", {
     className: "dwrap dhero-in"
   }, React.createElement("div", {
-    className: "dhero-copy"
-  }, React.createElement("div", {
-    className: "dcrest"
-  }, React.createElement("img", {
-    src: "assets/antler.png",
-    alt: "The Scaffold, by Carter Groff"
-  })), React.createElement("h1", {
+    className: "dhero-medal"
+  }, React.createElement(Medallion, null)), React.createElement("h1", {
     className: "ddisplay"
   }, "Design that looks right. Tools that work right."), React.createElement("p", {
     className: "ddeck"
@@ -817,7 +871,7 @@ function Hero({
   }, "Start a brief"), React.createElement("a", {
     className: "p-btn ghost",
     href: "#doors"
-  }, "See the work")))));
+  }, "See the work"))));
 }
 const DRAFTS = [{
   cls: 'd1',
