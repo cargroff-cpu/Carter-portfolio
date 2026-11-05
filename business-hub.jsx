@@ -81,6 +81,9 @@ function ringNodeTransform(i, hover, radius) {
 
 function Ring({ go, leads, projects, invoices, clients }) {
   const [hover, setHover] = React.useState(null);
+  const [wickHot, setWickHot] = React.useState(false);
+  const warm = () => setWickHot(true);
+  const cool = () => setWickHot(false);
   const orbitRef = React.useRef(null);
   const [radius, setRadius] = React.useState(220);
   const data = { leads, projects, invoices, clients };
@@ -93,7 +96,7 @@ function Ring({ go, leads, projects, invoices, clients }) {
   }, []);
 
   return (
-    <div className={'launch' + (hover !== null ? ' hovering' : '')}>
+    <div className={'launch' + (hover !== null ? ' hovering' : '') + (wickHot ? ' wickhot' : '')}>
       <div className="rings">
         <span className="ring-outer" /><span className="ring-mid" /><span className="ring-inner" />
         <span className="ticks" /><span className="ticks-minor" /><span className="ticks-fine" />
@@ -111,6 +114,11 @@ function Ring({ go, leads, projects, invoices, clients }) {
         <i style={{ left: '52%', '--dx': '-8px', animationDelay: '2.3s' }} />
         <i style={{ left: '68%', '--dx': '16px', animationDelay: '3.4s' }} />
         <i style={{ left: '46%', '--dx': '4px', animationDelay: '4.6s' }} />
+      </div>
+      {/* The light bar at the wheel's centre. Wick is retired, so it is not a
+          link; it is the room's light, and it brightens when you rest on it. */}
+      <div className="lwick" aria-hidden="true" onMouseEnter={warm} onMouseLeave={cool}>
+        <span className="core" />
       </div>
       <div className="orbit" ref={orbitRef}>
         {RING_NODES.map((n, i) => (

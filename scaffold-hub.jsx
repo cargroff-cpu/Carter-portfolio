@@ -51,6 +51,11 @@ function LockScreen({ onUnlock }) {
   );
 }
 
+// Ends the session (clears the cookie) and returns to the sign-in page.
+function signOut() {
+  fetch('/api/logout', { method: 'POST' }).catch(() => {}).finally(() => { location.href = '/login.html'; });
+}
+
 function ScaffoldHub() {
   const [locked, setLocked] = React.useState(() => new URLSearchParams(location.search).get('lock') === '1');
   const [docketLine, setDocketLine] = React.useState('Open the board');
@@ -123,6 +128,7 @@ function ScaffoldHub() {
         <div className="foot">
           <a href="/">← Portfolio</a>
           <button onClick={() => setLocked(true)}>Lock screen</button>
+          <button onClick={signOut}>Sign out</button>
         </div>
       </div>
       {locked && <LockScreen onUnlock={() => setLocked(false)} />}

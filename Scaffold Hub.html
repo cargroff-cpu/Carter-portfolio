@@ -53,9 +53,9 @@ body { min-height: 100vh; background: #100b06; }
 .sconce:hover .wall, .sconce:focus-visible .wall { animation: flare 2.6s ease-in-out infinite; }
 .sconce:focus-visible { outline: none; }
 /* Wick is retired: the sconce stays as the room's light, not a link. It keeps
-   its idle flicker and glow, embers drift up gently, and it ignores the
-   pointer, so the hover surge never fires. */
-div.sconce { cursor: default; pointer-events: none; }
+   its idle flicker and glow, embers drift up gently, and it still surges
+   when you rest on it. It does nothing when clicked. */
+div.sconce { cursor: default; }
 div.sconce .embers { opacity: .55; }
 .embers { position: absolute; left: 50%; bottom: 8%; width: 120px; height: 76%; margin-left: -60px; pointer-events: none; opacity: 0; transition: opacity .5s ease; }
 .sconce:hover .embers, .sconce:focus-visible .embers { opacity: 1; }
@@ -92,19 +92,10 @@ body.wick-near .stage, .stage.wick-near { filter: brightness(1.07) saturate(1.04
 </head>
 <body class="p-grain">
   <div id="root"></div>
-  <script>
-    // Same-origin link clicks (Docket/Wick/Command Center/Hub all share this
-    // login) shouldn't count as "leaving" -- only a real tab-close or
-    // refresh should log out, so those clicks are marked and pagehide skips
-    // the beacon for them.
-    window.addEventListener('click', function (e) {
-      var a = e.target.closest && e.target.closest('a[href]');
-      if (a && a.origin === location.origin) window.__skipLogout = true;
-    }, true);
-    window.addEventListener('pagehide', function () {
-      if (!window.__skipLogout && navigator.sendBeacon) navigator.sendBeacon('/api/logout');
-    });
-  </script>
+  <!-- The Back Room no longer logs you out whenever a page is left (Back,
+       refresh, a tab switch on a phone); that made the sign-in pop up on
+       random screens. The session cookie now ends when the browser closes, or
+       after 8 hours, or when you use Sign out. -->
   <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>

@@ -578,3 +578,19 @@ behind the same login (middleware.js) and logout-on-close.
   is back as the room's light. Wick is retired, so it is decoration only: no
   link, no label, it ignores the pointer, embers drift up gently, and it
   holds still under reduced motion.
+
+## Back Room: no more random sign-ins, and the light bars light up again
+
+- Cause of the random sign-in: every Back Room page sent a logout beacon
+  whenever it was left in any way except clicking a same-origin link (Back,
+  refresh, closing a tab, switching apps on a phone), so the next page found
+  no session and showed the sign-in. The beacon is gone from all five pages.
+- The session cookie is now a browser-session cookie (no Max-Age): it ends
+  when the browser closes, the signed token still expires after 8 hours, and
+  the Back Room footer has a Sign out button that clears it at once.
+  Trade-off: a Back Room tab left open stays signed in until the browser
+  closes or 8 hours pass, instead of ending the moment the tab closes.
+- Wick stays retired, but the light bar in the Business Hub's tool wheel is
+  back (a non-link div at the centre) and brightens on hover, like the sconce
+  on the Back Room page, which surges again when you rest on it. Neither does
+  anything when clicked.
