@@ -87,13 +87,17 @@ function TickRing({ r1 = 268, r1Major = 258, r2 = 280 }) {
 }
 
 // The hero mark: the gold crest over a soft green glow, inside twelve amber
-// marks hung in a wide circle like the hours. The marks light one after
+// marks hung in a wide circle like the hours, with fine rays of light
+// reaching out between them. The marks light one after
 // another so the pulse travels round the crest, the circle turns slowly, the
 // glow breathes, and light passes over the gold. No band, no hard disc.
 const HOURS = Array.from({ length: 12 }, (_, i) => {
   const big = i % 3 === 0, t = (i * 30 * Math.PI) / 180, r1 = 232, r2 = big ? 270 : 256;
   return { big, delay: i * 0.5, x1: 300 + r1 * Math.sin(t), y1: 300 - r1 * Math.cos(t), x2: 300 + r2 * Math.sin(t), y2: 300 - r2 * Math.cos(t) };
 });
+
+// Twenty-four fine rays of light between the hours, long and short in turn.
+const RAYS = Array.from({ length: 24 }, (_, i) => ({ a: i * 15 + 7.5, len: i % 2 ? 150 : 230 }));
 
 function Medallion() {
   return (
@@ -111,8 +115,23 @@ function Medallion() {
         <mask id="dm-crest" maskUnits="userSpaceOnUse" x="0" y="0" width="600" height="600">
           <image href="assets/antler.png" x="145" y="186" width="310" height="237" />
         </mask>
+        <linearGradient id="dm-ray" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" className="dm-ray-0" /><stop offset="100%" className="dm-ray-1" />
+        </linearGradient>
+        {/* the rays fade out below the crest so they never cross the headline */}
+        <linearGradient id="dm-fadeg" gradientUnits="userSpaceOnUse" x1="0" y1="430" x2="0" y2="620">
+          <stop offset="0%" className="dm-fade-0" /><stop offset="100%" className="dm-fade-1" />
+        </linearGradient>
+        <mask id="dm-fade" maskUnits="userSpaceOnUse" x="-600" y="-600" width="1800" height="1800">
+          <rect x="-600" y="-600" width="1800" height="1800" fill="url(#dm-fadeg)" />
+        </mask>
       </defs>
       <circle className="dm-wash" cx="300" cy="300" r="250" fill="url(#dm-wash)" />
+      <g mask="url(#dm-fade)"><g className="dm-rays">
+        {RAYS.map((r, i) => (
+          <rect key={i} className="dm-ray" x="299" y={20 - r.len} width="2" height={r.len} fill="url(#dm-ray)" transform={'rotate(' + r.a + ' 300 300)'} />
+        ))}
+      </g></g>
       <g className="dm-spin-in"><g className="dm-spin">
         {HOURS.map((h, i) => (
           <line key={i} className={'dm-hour' + (h.big ? ' big' : '')} style={{ animationDelay: h.delay + 's' }}
