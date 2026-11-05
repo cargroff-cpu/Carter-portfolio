@@ -200,48 +200,150 @@ function useCollection(fetcher) {
 }
 
 // ── Today ──────────────────────────────────────────────────────────────
-function Today({ data, open }) {
-  const { needs, invoices, events, jobs } = data;
-  const due = invoices.filter((i) => i.status === 'sent');
-  const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
-  const paidMonth = invoices.filter((i) => i.status === 'paid' && i.paid_at && new Date(i.paid_at) >= monthStart);
+// ── Today: the dashboard ───────────────────────────────────────────────
+// A glance at the studio: what needs you, what is open, what is owed, what
+// came in. Scaffold only. Every card opens the place it counts.
+const EVENT_TEXT = {
+  brief: 'Brief came in', accepted: 'Proposal accepted', picked: 'Direction picked', changes: 'Changes asked for',
+  approved: 'Final approved', paid: 'Payment received', email: 'Email sent', file: 'File added', note: 'Note', reply: 'Reply sent',
+};
+function relTime(s) {
+  const m = Math.floor((Date.now() - new Date(s).getTime()) / 6e4);
+  if (m < 1) return 'now';
+  if (m < 60) return m + 'm';
+  const h = Math.floor(m / 60);
+  return h < 24 ? h + 'h' : Math.floor(h / 24) + 'd';
+}
+function paidByMonth(invoices, n = 6) {
+  const now = new Date(); const out = [];
+  for (let k = n - 1; k >= 0; k--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - k, 1);
+    out.push({ key: d.getFullYear() + '-' + d.getMonth(), label: d.toLocaleDateString('en-US', { month: 'short' }), total: 0 });
+  }
+  for (const i of invoices) {
+    if (i.status !== 'paid' || !i.paid_at) continue;
+    const d = new Date(i.paid_at);
+    const row = out.find((r) => r.key === d.getFullYear() + '-' + d.getMonth());
+    if (row) row.total += Number(i.amount || 0);
+  }
+  return out;
+}
+function greeting() { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; }
+
+function Kpi({ label, value, note, tone, onClick }) {
+  return (
+    <button type="button" className="dkpi" onClick={onClick}>
+      <span className="dkpi-l">{label}</span>
+      <span className="dkpi-v mono">{value}</span>
+      <span className={'dkpi-n' + (tone ? ' ' + tone : '')}>{note}</span>
+    </button>
+  );
+}
+function Widget({ title, badge, children, id }) {
+  return (
+    <section className="widget" id={id}>
+      <div className="widget-h"><h2 className="h2">{title}</h2>{badge != null && <span className="widget-b">{badge}</span>}</div>
+      {children}
+    </section>
+  );
+}
+function MonthBars({ months }) {
+  const max = Math.max(1, ...months.map((m) => m.total));
+  const any = months.some((m) => m.total > 0);
+  const W = 320, H = 130, base = 104, bw = 30, gap = (W - months.length * bw) / (months.length + 1);
+  if (!any) return <p className="sub" style={{ padding: '14px 0 6px' }}>No payments yet. They show here as invoices are paid.</p>;
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Paid by month, last six months" style={{ width: '100%', height: 'auto', display: 'block' }}>
+      <line x1="0" x2={W} y1={base} y2={base} stroke="rgba(236,217,178,.26)" />
+      {months.map((m, k) => {
+        const h = Math.max(m.total ? 3 : 0, (m.total / max) * (base - 22));
+        const x = gap + k * (bw + gap);
+        const last = k === months.length - 1;
+        return (
+          <g key={m.key}>
+            <rect x={x} y={base - h} width={bw} height={h} fill={last ? '#f5cd6a' : '#d99a3d'} opacity={last ? 1 : .62} />
+            {m.total > 0 && <text x={x + bw / 2} y={base - h - 6} textAnchor="middle" fontSize="11" fill="#ecd9b2">{m.total >= 1000 ? '$' + (m.total / 1000).toFixed(m.total % 1000 ? 1 : 0) + 'k' : '$' + Math.round(m.total)}</text>}
+            <text x={x + bw / 2} y={base + 17} textAnchor="middle" fontSize="12" fill="#ad9a74">{m.label}</text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+function Today({ data, open, go }) {
+  const { needs, invoices, events, jobs, proposals } = data;
   const jobOf = (id) => jobs.find((j) => j.id === id);
+  const isOpen = (j) => j.stage !== 'paid' && j.stage !== 'closed';
+  const openJobs = jobs.filter(isOpen);
+  const due = invoices.filter((i) => i.status === 'sent');
+  const dueTotal = due.reduce((a, i) => a + Number(i.amount || 0), 0);
+  const overdue = due.filter((i) => daysSince(i.sent_at) >= 14);
+  const out = proposals.filter((p) => p.status === 'sent');
+  const outTotal = out.reduce((a, p) => a + Number(p.total || 0), 0);
+  const months = paidByMonth(invoices);
+  const thisM = months[months.length - 1].total, lastM = months[months.length - 2].total;
+  const delta = lastM ? Math.round(((thisM - lastM) / lastM) * 100) : null;
+  const hot = needs.filter((n) => n.hot).length;
+  const valueOf = (j) => { const p = proposals.find((x) => x.job_id === j.id); return p ? Number(p.total || 0) : 0; };
+  const STAGE_ROWS = [['new', 'New'], ['proposed', 'Proposed'], ['drafts', 'Directions'], ['final', 'Final']];
+  const maxStage = Math.max(1, ...STAGE_ROWS.map(([id]) => jobs.filter((j) => j.stage === id).length));
+  const paidJobs = jobs.filter((j) => j.stage === 'paid').length;
+  const feed = events.filter((e) => EVENT_TEXT[e.kind]).slice(0, 8);
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   return (
     <div className="stack">
-      <section className="tile brief">
-        <div className="tilehead"><h2 className="h2">Needs you</h2><span className="lbl">{needs.length ? needs.length + ' waiting' : 'All clear'}</span></div>
-        <div className="minirows">
-          {needs.map((n, k) => (
-            <button key={k} className="minirow" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(n.j.id)}>
-              <span className="mtxt"><b>{n.j.title}</b> · {n.what}</span>
-              <span className={'mono mval' + (n.hot ? ' hot' : '')}>{n.age ? n.age + 'd' : 'today'}</span>
-            </button>
-          ))}
-          {!needs.length && <p className="sub">Nothing is waiting on you.</p>}
-        </div>
-      </section>
-      <div className="hgrid">
-        <div className="tile">
-          <div className="tilehead"><h2 className="h2">Due to you</h2></div>
-          <div className="bigline"><span className="big mono">{usd(due.reduce((a, i) => a + Number(i.amount || 0), 0))}</span></div>
-          <p className="sub">{due.length} invoice{due.length === 1 ? '' : 's'} out</p>
-        </div>
-        <div className="tile">
-          <div className="tilehead"><h2 className="h2">Paid this month</h2></div>
-          <div className="bigline"><span className="big mono">{usd(paidMonth.reduce((a, i) => a + Number(i.amount || 0), 0))}</span></div>
-        </div>
-        <div className="tile">
-          <div className="tilehead"><h2 className="h2">Just happened</h2></div>
+      <div className="dash-h">
+        <div><h1 className="h1">{greeting()}, Carter.</h1><p className="sub">{today}</p></div>
+        <button className="btn" onClick={() => go('jobs')}>New job</button>
+      </div>
+      <div className="dkpis">
+        <Kpi label="Needs you" value={needs.length} note={needs.length ? (hot ? hot + ' to do first' : 'Nothing urgent') : 'All clear'} tone={hot ? 'hot' : ''} onClick={() => document.getElementById('needs')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
+        <Kpi label="Open jobs" value={openJobs.length} note={(openJobs.filter((j) => j.stage === 'new').length || 'No') + ' new'} onClick={() => go('jobs')} />
+        <Kpi label="Proposals out" value={out.length} note={out.length ? usd(outTotal) + ' waiting' : 'None waiting'} onClick={() => go('proposals')} />
+        <Kpi label="Due to you" value={usd(dueTotal)} note={overdue.length ? overdue.length + ' overdue' : due.length + ' invoice' + (due.length === 1 ? '' : 's') + ' out'} tone={overdue.length ? 'hot' : ''} onClick={() => go('money')} />
+        <Kpi label="Paid this month" value={usd(thisM)} note={delta == null ? (thisM ? 'First month with income' : 'Nothing yet') : (delta >= 0 ? '+' : '') + delta + '% vs last month'} tone={delta != null && delta < 0 ? 'hot' : ''} onClick={() => go('money')} />
+      </div>
+      <div className="dash-g">
+        <Widget title="Needs you" id="needs" badge={needs.length ? needs.length + ' waiting' : 'All clear'}>
           <div className="minirows">
-            {events.filter((e) => e.who === 'client').slice(0, 6).map((e) => (
-              <button key={e.id} className="minirow plain" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(e.job_id)}>
-                <span className="mtxt">{jobOf(e.job_id) ? jobOf(e.job_id).title : 'Job'}: {e.kind}</span>
-                <span className="mono mval">{fdate(e.created_at)}</span>
+            {needs.map((n, k) => (
+              <button key={k} className="minirow" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(n.j.id)}>
+                <span className="mtxt"><b>{n.j.title}</b> · {n.what}</span>
+                <span className={'mono mval' + (n.hot ? ' hot' : '')}>{n.age ? n.age + 'd' : 'today'}</span>
               </button>
             ))}
-            {!events.some((e) => e.who === 'client') && <p className="sub">Nothing yet.</p>}
+            {!needs.length && <p className="sub" style={{ padding: '10px 0' }}>Nothing is waiting on you.</p>}
           </div>
-        </div>
+        </Widget>
+        <Widget title="Paid by month" badge="last 6 months"><MonthBars months={months} /></Widget>
+        <Widget title="Pipeline" badge={openJobs.length + ' open'}>
+          <div className="pipe">
+            {STAGE_ROWS.map(([id, label]) => {
+              const list = jobs.filter((j) => j.stage === id);
+              const val = list.reduce((a, j) => a + valueOf(j), 0);
+              return (
+                <button key={id} type="button" className="pipe-r" onClick={() => go('jobs')}>
+                  <span className="pipe-n">{label}</span>
+                  <span className="pipe-bar"><i style={{ width: (list.length / maxStage) * 100 + '%' }} /></span>
+                  <span className="pipe-c mono">{list.length}{val ? ' · ' + usd(val) : ''}</span>
+                </button>
+              );
+            })}
+            <div className="pipe-r static"><span className="pipe-n">Paid</span><span className="pipe-bar" /><span className="pipe-c mono">{paidJobs}</span></div>
+          </div>
+        </Widget>
+        <Widget title="Just happened" badge={feed.length ? 'latest' : null}>
+          <div className="minirows">
+            {feed.map((e) => (
+              <button key={e.id} className="minirow plain" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(e.job_id)}>
+                <span className="mtxt"><b>{jobOf(e.job_id) ? jobOf(e.job_id).title : 'Job'}</b> · {EVENT_TEXT[e.kind]}</span>
+                <span className="mono mval">{relTime(e.created_at)}</span>
+              </button>
+            ))}
+            {!feed.length && <p className="sub" style={{ padding: '10px 0' }}>Nothing yet. Briefs, replies and payments show up here.</p>}
+          </div>
+        </Widget>
       </div>
     </div>
   );
@@ -806,7 +908,7 @@ function BusinessHub() {
           {data && (
             <React.Fragment>
               {tab === 'ring' && <Ring go={go} data={data} />}
-              {tab === 'today' && <Today data={data} open={open} />}
+              {tab === 'today' && <Today data={data} open={open} go={go} />}
               {tab === 'jobs' && (jobId ? <JobPage jobId={jobId} data={data} reload={reloadAll} back={() => go('jobs')} /> : <Jobs data={data} open={open} reload={reloadAll} />)}
               {tab === 'proposals' && <Proposals data={data} open={open} />}
               {tab === 'mail' && <Mail data={data} open={open} />}

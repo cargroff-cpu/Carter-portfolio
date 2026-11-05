@@ -666,3 +666,20 @@ behind the same login (middleware.js) and logout-on-close.
 - Left alone on purpose: the public portfolio's own work history and résumé
   (cg-store.js, data.jsx, admin-ui.jsx) still name Log & Timber Worx, since
   that is Carter's real employment, not Backroom data.
+
+## Client page and Today dashboard
+
+- The client page (/j/<token>) now follows the layout of the studio's
+  existing client tools: one framed card with an amber stripe, a masthead
+  band, a numbered step bar (Proposal, Directions, Final, Paid), then one
+  screen for where the project is right now, a footer band, and full-width
+  action buttons. Colours and type are the Scaffold's own. Only what the
+  Scaffold needs is kept: no phone number, no tagline, no fee options.
+- One screen per stage: waiting, proposal with Accept, directions with Pick,
+  final with Approve or Ask for changes, and an all-done screen with the files
+  and payments. Anything owed shows as a Payment block at the top; the
+  proposal and directions stay under "Look back at your project".
+- Today is a dashboard for the Scaffold only: five clickable cards (Needs
+  you, Open jobs, Proposals out, Due to you, Paid this month), a Needs you
+  list, paid by month for six months, a pipeline by stage and a latest
+  activity feed. A greeting and a New job button sit at the top.
