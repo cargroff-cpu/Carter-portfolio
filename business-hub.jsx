@@ -847,44 +847,168 @@ function Money({ data, open, reload }) {
 
 function Clients({ data, reload, open }) {
   const [sel, setSel] = React.useState(null);
+  const [q, setQ] = React.useState('');
+  const [adding, setAdding] = React.useState(false);
   const [f, setF] = React.useState({ name: '', email: '', notes: '' });
-  const client = data.clients.find((c) => c.id === sel);
-  const create = () => { if (!f.name.trim()) return; saveClient({ name: f.name.trim(), email: f.email.trim() || null, notes: f.notes.trim() || null, since: new Date().toISOString().slice(0, 10) }).then(() => { setF({ name: '', email: '', notes: '' }); reload(); }); };
+  const [err, setErr] = React.useState('');
   // Jobs match a client by email, since a brief arrives before anyone is "a client".
   const jobsOf = (c) => data.jobs.filter((j) => j.client_id === c.id || (c.email && j.email && j.email.toLowerCase() === c.email.toLowerCase()));
+  const statsOf = (c) => {
+    const jobs = jobsOf(c), ids = new Set(jobs.map((j) => j.id));
+    const inv = data.invoices.filter((i) => ids.has(i.job_id));
+    const sum = (st) => inv.filter((i) => i.status === st).reduce((a, i) => a + Number(i.amount || 0), 0);
+    const last = [...jobs.map((j) => j.last_activity_at), ...inv.map((i) => i.paid_at || i.sent_at)].filter(Boolean).sort().pop();
+    return { jobs, inv, openJobs: jobs.filter((j) => j.stage !== 'paid' && j.stage !== 'closed').length, paid: sum('paid'), due: sum('sent'), last };
+  };
+  const create = () => {
+    if (!f.name.trim()) { setErr('Add a name.'); return; }
+    saveClient({ name: f.name.trim(), email: f.email.trim() || null, notes: f.notes.trim() || null, since: new Date().toISOString().slice(0, 10) })
+      .then(() => { setF({ name: '', email: '', notes: '' }); setAdding(false); setErr(''); reload(); })
+      .catch((e) => setErr(e.message));
+  };
+  const client = data.clients.find((c) => c.id === sel);
+  if (client) return <ClientPage key={client.id} client={client} stats={statsOf(client)} data={data} open={open} reload={reload} back={() => setSel(null)} gone={() => { setSel(null); reload(); }} />;
+
+  const rows = data.clients.map((c) => ({ c, s: statsOf(c) }))
+    .filter(({ c }) => !q.trim() || (c.name + ' ' + (c.email || '')).toLowerCase().includes(q.trim().toLowerCase()));
+  const all = data.clients.map(statsOf);
+  const total = all.reduce((a, s) => a + s.paid, 0), owed = all.reduce((a, s) => a + s.due, 0);
   return (
-    <div className="cols leadcols">
-      <section className="card">
-        <div className="pad" style={{ borderBottom: '1px solid var(--line)' }}><h2 className="h2">Clients</h2></div>
-        <div className="pad formgrid">
-          <input className="input" placeholder="Name or business" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
-          <input className="input" placeholder="Email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
-          <button className="btn sm" onClick={create}>Add client</button>
-        </div>
-        <div className="reclistwrap">
-          {data.clients.map((c) => (
-            <button key={c.id} className={'reclist' + (c.id === sel ? ' on' : '')} onClick={() => setSel(c.id)}>
-              <div style={{ fontSize: 13.5, fontWeight: 500 }}>{c.name}</div><div className="sub">{c.email}</div>
-            </button>
-          ))}
-          {!data.clients.length && <p className="sub" style={{ padding: '20px 2px' }}>No clients yet.</p>}
-        </div>
-      </section>
-      {client ? (
-        <section className="tile">
-          <div className="tilehead"><h2 className="h2">{client.name}</h2></div>
-          <div className="vrow"><span className="lbl">Email</span><span className="mono">{client.email || '—'}</span></div>
-          {client.notes && <p className="sub" style={{ marginTop: 10 }}>{client.notes}</p>}
-          <div className="minirows" style={{ marginTop: 14 }}>
-            {jobsOf(client).map((j) => (
-              <button key={j.id} className="minirow plain" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(j.id)}>
-                <span className="mtxt">{j.title}</span>{pill(STAGE_LABEL[j.stage], stageKind(j.stage))}
-              </button>
-            ))}
-            {!jobsOf(client).length && <p className="sub">No jobs yet.</p>}
+    <div className="stack">
+      <div className="dash-h">
+        <div><h1 className="h1">Clients</h1><p className="sub">The people you work for, with their jobs and money in one place.</p></div>
+        <button className="btn" onClick={() => setAdding(!adding)}>{adding ? 'Close' : 'Add client'}</button>
+      </div>
+      {adding && (
+        <section className="widget">
+          <div className="formgrid">
+            <input className="input" placeholder="Name or business" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} autoFocus />
+            <input className="input" placeholder="Email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
+            <input className="input" placeholder="A note (optional)" value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} />
+            {err && <p className="sub" style={{ color: 'var(--warn)' }}>{err}</p>}
+            <div><button className="btn sm" onClick={create}>Save client</button></div>
           </div>
         </section>
-      ) : <p className="sub">Select a client.</p>}
+      )}
+      <div className="dkpis four">
+        <div className="dkpi static"><span className="dkpi-l">Clients</span><span className="dkpi-v mono">{data.clients.length}</span><span className="dkpi-n">{all.filter((s) => s.openJobs).length} with open work</span></div>
+        <div className="dkpi static"><span className="dkpi-l">Open jobs</span><span className="dkpi-v mono">{all.reduce((a, s) => a + s.openJobs, 0)}</span><span className="dkpi-n">across all clients</span></div>
+        <div className="dkpi static"><span className="dkpi-l">Paid, all time</span><span className="dkpi-v mono">{usd(total)}</span><span className="dkpi-n">no card fees</span></div>
+        <div className="dkpi static"><span className="dkpi-l">Owed to you</span><span className="dkpi-v mono">{usd(owed)}</span><span className="dkpi-n">invoices sent</span></div>
+      </div>
+      {data.clients.length > 0 && <input className="input" placeholder="Search clients" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search clients" style={{ maxWidth: 360 }} />}
+      {rows.length > 0 ? (
+        <div className="widget" style={{ padding: '4px 18px 6px' }}>
+          <div className="scroll-x"><table className="ctable">
+            <thead><tr><th>Client</th><th>Jobs</th><th>Paid</th><th>Owed</th><th>Last activity</th></tr></thead>
+            <tbody>
+              {rows.map(({ c, s }) => (
+                <tr key={c.id} tabIndex={0} onClick={() => setSel(c.id)} onKeyDown={(e) => { if (e.key === 'Enter') setSel(c.id); }}>
+                  <td><b>{c.name}</b><div className="sub">{c.email || 'No email'}</div></td>
+                  <td className="mono">{s.jobs.length}{s.openJobs ? <span className="sub"> · {s.openJobs} open</span> : null}</td>
+                  <td className="mono">{usd(s.paid)}</td>
+                  <td className="mono" style={s.due ? { color: 'var(--accent-lit)' } : undefined}>{s.due ? usd(s.due) : '—'}</td>
+                  <td className="sub">{s.last ? relTime(s.last) + ' ago' : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table></div>
+        </div>
+      ) : (
+        <p className="sub">{data.clients.length ? 'No client matches that search.' : 'No clients yet. Add one, or they appear as briefs turn into jobs.'}</p>
+      )}
+    </div>
+  );
+}
+
+function ClientPage({ client, stats, data, open, reload, back, gone }) {
+  const [tab, setTab] = React.useState('overview');
+  const [notes, setNotes] = React.useState(client.notes || '');
+  const [saved, setSaved] = React.useState(false);
+  const [confirm, setConfirm] = React.useState(false);
+  const ids = new Set(stats.jobs.map((j) => j.id));
+  const events = data.events.filter((e) => ids.has(e.job_id) && EVENT_TEXT[e.kind]).slice(0, 12);
+  const titleOf = (id) => (stats.jobs.find((j) => j.id === id) || {}).title || 'Job';
+  const saveNotes = () => saveClient({ id: client.id, notes: notes.trim() || null }).then(() => { setSaved(true); reload(); setTimeout(() => setSaved(false), 2000); }).catch(() => {});
+  const remove = () => deleteClient(client.id).then(gone).catch(() => setConfirm(false));
+  const TABS = [['overview', 'Overview'], ['jobs', 'Jobs (' + stats.jobs.length + ')'], ['money', 'Money'], ['activity', 'Activity']];
+  return (
+    <div className="stack">
+      <button className="btn quiet sm" style={{ alignSelf: 'flex-start' }} onClick={back}>All clients</button>
+      <div className="dash-h">
+        <div>
+          <h1 className="h1">{client.name}</h1>
+          <p className="sub">{client.email || 'No email yet'}{client.since ? ' · client since ' + new Date(client.since + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : ''}</p>
+        </div>
+        {client.email && <a className="btn ghost" href={'mailto:' + client.email}>Email {client.name.split(' ')[0]}</a>}
+      </div>
+      <div className="ctabs" role="tablist">
+        {TABS.map(([id, label]) => <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{label}</button>)}
+      </div>
+      <div key={tab} className="ctab-body">
+        {tab === 'overview' && (
+          <div className="dash-g">
+            <Widget title="Lifetime">
+              <div className="vrow"><span className="lbl">Paid</span><span className="mono">{usd(stats.paid)}</span></div>
+              <div className="vrow"><span className="lbl">Owed</span><span className="mono">{usd(stats.due)}</span></div>
+              <div className="vrow"><span className="lbl">Jobs</span><span className="mono">{stats.jobs.length} · {stats.openJobs} open</span></div>
+              <div className="vrow"><span className="lbl">Last activity</span><span className="mono">{stats.last ? relTime(stats.last) + ' ago' : '—'}</span></div>
+            </Widget>
+            <Widget title="Notes">
+              <textarea className="input" rows={5} value={notes} onChange={(e) => { setNotes(e.target.value); setSaved(false); }} placeholder="Anything worth remembering about this client" style={{ resize: 'vertical' }} />
+              <div className="between" style={{ padding: '10px 0 6px' }}>
+                <button className="btn sm" onClick={saveNotes} disabled={notes === (client.notes || '')}>Save notes</button>
+                {saved && <span className="sub" role="status">Saved</span>}
+              </div>
+            </Widget>
+            <Widget title="Recent activity" badge={events.length ? 'latest' : null}>
+              <div className="minirows">
+                {events.slice(0, 5).map((e) => <div key={e.id} className="minirow"><span className="mtxt"><b>{titleOf(e.job_id)}</b> · {EVENT_TEXT[e.kind]}</span><span className="mono mval">{relTime(e.created_at)}</span></div>)}
+                {!events.length && <p className="sub" style={{ padding: '10px 0' }}>Nothing yet.</p>}
+              </div>
+            </Widget>
+            <Widget title="Open jobs">
+              <div className="minirows">
+                {stats.jobs.filter((j) => j.stage !== 'paid' && j.stage !== 'closed').map((j) => (
+                  <button key={j.id} className="minirow plain" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(j.id)}>
+                    <span className="mtxt">{j.title}</span>{pill(STAGE_LABEL[j.stage], stageKind(j.stage))}
+                  </button>
+                ))}
+                {!stats.openJobs && <p className="sub" style={{ padding: '10px 0' }}>No open work.</p>}
+              </div>
+            </Widget>
+          </div>
+        )}
+        {tab === 'jobs' && (
+          <div className="widget" style={{ padding: '4px 18px 6px' }}>
+            {stats.jobs.length ? <div className="minirows">{stats.jobs.map((j) => (
+              <button key={j.id} className="minirow plain" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(j.id)}>
+                <span className="mtxt"><b>{j.title}</b><span className="sub"> · {relTime(j.last_activity_at)} ago</span></span>{pill(STAGE_LABEL[j.stage], stageKind(j.stage))}
+              </button>
+            ))}</div> : <p className="sub" style={{ padding: '12px 0' }}>No jobs yet.</p>}
+          </div>
+        )}
+        {tab === 'money' && (
+          <div className="widget" style={{ padding: '4px 18px 6px' }}>
+            {stats.inv.length ? <div className="scroll-x"><table className="ctable"><thead><tr><th>Invoice</th><th>Amount</th><th>Status</th></tr></thead><tbody>
+              {stats.inv.map((i) => <tr key={i.id} onClick={() => open(i.job_id)}><td><b>{titleOf(i.job_id)}</b><div className="sub">{i.label || 'Invoice'}</div></td><td className="mono">{usd(i.amount)}</td><td>{pill(i.status === 'paid' ? 'Paid' : i.status === 'sent' ? 'Sent' : i.status, i.status === 'paid' ? 'ok' : 'warn')}</td></tr>)}
+            </tbody></table></div> : <p className="sub" style={{ padding: '12px 0' }}>No invoices yet. They are made when this client accepts or approves.</p>}
+          </div>
+        )}
+        {tab === 'activity' && (
+          <div className="widget" style={{ padding: '4px 18px 6px' }}>
+            <div className="minirows">
+              {events.map((e) => <div key={e.id} className="minirow"><span className="mtxt"><b>{titleOf(e.job_id)}</b> · {EVENT_TEXT[e.kind]}</span><span className="mono mval">{relTime(e.created_at)}</span></div>)}
+              {!events.length && <p className="sub" style={{ padding: '12px 0' }}>Nothing yet.</p>}
+            </div>
+          </div>
+        )}
+      </div>
+      <div style={{ paddingTop: 8 }}>
+        {confirm
+          ? <div className="row"><span className="sub">Remove {client.name}? Their jobs stay.</span><button className="btn sm ghost" onClick={remove}>Yes, remove</button><button className="btn sm quiet" onClick={() => setConfirm(false)}>Keep</button></div>
+          : <button className="btn sm quiet" onClick={() => setConfirm(true)}>Remove client</button>}
+      </div>
     </div>
   );
 }

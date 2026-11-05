@@ -36,6 +36,19 @@ body { min-height: 100vh; background: linear-gradient(180deg, #1e1509, var(--bg)
 .jcards .reclist { text-align: left; }
 @media (max-width: 1100px) { .jboard { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 700px) { .jboard { grid-template-columns: minmax(0, 1fr); } }
+/* Clients: summary cards, a table, a profile with tabs */
+.dkpis.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.dkpi.static { cursor: default; }
+.dkpi.static:hover { transform: none; box-shadow: none; border-color: var(--line); border-top-color: var(--accent); }
+.ctable td .sub, .ctable th { font-size: 13px; }
+.ctable tbody tr:focus-visible { outline: 2px solid var(--accent-lit); outline-offset: -2px; }
+.ctabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.ctabs button { background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; color: var(--text-3); font-family: var(--ui); font-size: 14px; padding: 12px 14px; min-height: 44px; white-space: nowrap; }
+.ctabs button:hover { color: var(--text); }
+.ctabs button.on { color: var(--text); border-bottom-color: var(--accent-lit); }
+.ctabs button:focus-visible { outline: 2px solid var(--accent-lit); outline-offset: -2px; }
+@media (max-width: 1000px) { .dkpis.four { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .dkpis.four .dkpi:last-child { grid-column: auto; } }
 /* Today: the dashboard */
 .dash-h { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .dash-h .sub { margin-top: 4px; }
