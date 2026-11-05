@@ -65,7 +65,7 @@ window.CG_THEME = PARLOR;
   const s = document.createElement('style');
   s.id = 'cg-globals';
   s.textContent = `
-    html, body { background: #0d0905; }
+    html, body { background: #0d0905; overflow-x: clip; }
     .cg-root, .cg-root * { box-sizing: border-box; }
     .cg-root { color: var(--ink); background: var(--bg); position: relative; }
     .cg-root img { display: block; max-width: 100%; }
@@ -142,10 +142,9 @@ window.CG_THEME = PARLOR;
     .cg-divider .line { flex: 0 0 80px; height: 1px; background: var(--rule-strong); }
     .cg-divider .dot { width: 4px; height: 4px; background: var(--amber); transform: rotate(45deg); }
 
-    /* Section eyebrow — labels feel like a cinema title card */
+    /* Small label above a fact (Based in, Working since): Karla, sentence case, untracked */
     .cg-eyebrow {
-      font-family: var(--ui-font); font-size: 11px; letter-spacing: 0.32em; text-transform: uppercase;
-      color: var(--amber); font-weight: 500;
+      font-family: var(--ui-font); font-size: 13px; color: var(--amber); font-weight: 500;
     }
 
     /* Worn-photo card — used for both video + design tiles */

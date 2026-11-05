@@ -445,3 +445,29 @@ The medallion felt boxy (a dark band and a hard-edged enamel disc). After five o
 - The marks light one after another, so the pulse travels round the crest.
 - The circle spins up on load and then turns slowly, the glow breathes, and light passes over the gold.
 - The brief's engraved ring is unchanged.
+
+## Portfolio polish: the Scaffold's Hallmark rules, applied to www.cargroff.com
+
+The portfolio keeps its look (the lamp, rain, candles, wood, Cormorant and its
+italic second lines) and takes the same fixes the Scaffold page got:
+
+- Labels are Karla in sentence case at 13px, untracked; no tracked capitals
+  anywhere on the page. The section eyebrows above each heading are gone (the
+  nav already names each section), and the hero's eyebrow line went with them
+  (its year and town are in the hero's meta row and the footer).
+- No dot-joined strings, no glued arrows, no dashes in titles or meta.
+- "See the work" is now the page's one filled button, visible at 1280 by 800.
+- The footer's design-services link goes to scaffold.cargroff.com.
+- The tab icon is the Scaffold's gold antler set, served at /favicon.ico for
+  every host (the old black antler vanished on dark tab bars).
+- The page is precompiled: `npm run build:portfolio` turns themes, data,
+  motifs, portfolio and app into `portfolio.js`, each file in its own scope,
+  and the page loads React's production build. Visitors no longer download
+  and run in-browser Babel. Admin.html still compiles the .jsx in the browser.
+  Commit portfolio.js after editing any of those sources.
+- Decorative SVGs carry aria-hidden; the travel map has a label; the follower
+  count jumps straight to its value under reduced motion.
+
+Kept on purpose: the italic accent words in the headings ("Six recent
+*pictures*.") are the portfolio's signature, and the inline overlay colours
+stay as they are.

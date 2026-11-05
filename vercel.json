@@ -7,6 +7,8 @@
     { "source": "/", "has": [{ "type": "host", "value": "scaffold.cargroff.com" }], "destination": "/Carter%20Groff%20Design.html" },
     { "source": "/favicon.ico", "has": [{ "type": "host", "value": "scaffold.cargroff.com" }], "destination": "/assets/scaffold-favicon.ico" },
     { "source": "/apple-touch-icon.png", "has": [{ "type": "host", "value": "scaffold.cargroff.com" }], "destination": "/assets/scaffold-icon-180.png" },
+    { "source": "/favicon.ico", "destination": "/assets/scaffold-favicon.ico" },
+    { "source": "/apple-touch-icon.png", "destination": "/assets/scaffold-icon-180.png" },
     { "source": "/", "destination": "/Carter%20Portfolio.html" },
     { "source": "/backroom", "destination": "/Scaffold%20Hub.html" },
     { "source": "/docket", "destination": "/The%20Docket.html" },
@@ -31,7 +33,7 @@
       "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
     },
     {
-      "source": "/design.js",
+      "source": "/(design|portfolio).js",
       "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
     }
   ]
