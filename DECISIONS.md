@@ -640,3 +640,15 @@ behind the same login (middleware.js) and logout-on-close.
   cached on the device.
 - The sign-in cookie lasts for the browser session. An installed app may
   ask for the password again more often than a browser tab does.
+
+## Back Room on phones
+
+- Phone-only styles (760px and under) in mcc.css and Business Hub.html;
+  desktop is unchanged. Labels are 12px with tighter spacing instead of 9-10px
+  spaced capitals, muted text is brighter, fields are 16px so iOS does not
+  zoom in on focus, buttons are 44-48px, and file pickers are styled.
+- The Business Hub's tools sit in a bar at the bottom of the screen (Today,
+  Jobs, Proposals, Mail, Money, Clients), so you can switch without going back
+  to the wheel. The wheel becomes a list with the count beside each name and
+  the blurb under it, and the centre light bar lies flat across the top.
+- Jobs are tiles inside each stage. The header is one row.

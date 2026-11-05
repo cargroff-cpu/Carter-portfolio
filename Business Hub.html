@@ -35,6 +35,16 @@ body { min-height: 100vh; background: linear-gradient(180deg, #1e1509, var(--bg)
 .jcards .reclist { text-align: left; }
 @media (max-width: 1100px) { .jboard { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 700px) { .jboard { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 760px) {
+  .top .topin { padding: 10px 16px; gap: 2px 8px; flex-wrap: nowrap; }
+  .top .topnav { margin-left: auto; flex-wrap: nowrap; }
+  .top .topnav a { font-size: 13px; letter-spacing: .03em; text-transform: none; padding: 12px 8px; }
+  .mark b { font-size: 18px; }
+  .jcol .pad { padding: 12px 0; }
+  .jcards { padding: 0 0 12px; gap: 8px; }
+  .jcards .reclist { border: 1px solid var(--line-2); padding: 14px; background: rgba(236,217,178,.03); }
+  .jcards > .sub { padding: 0 0 4px !important; }
+}
 </style>
 </head>
 <body>

@@ -252,4 +252,52 @@ tbody tr:hover{background:rgba(236,217,178,.035);cursor:pointer}
 .shell main{flex:1;min-width:0;padding:20px}
 @media(max-width:900px){.tools{width:74px}.tools .tname,.tools .tmeta,.tools .ring-back span{display:none}.tools button,.tools .ring-back{justify-content:center}}
 @media(max-width:760px){.shell{display:block}.tools{display:none!important}.shell main{padding:16px}}
+/* ── phones (a home-screen app too): the Back Room, made for a thumb ────────
+   Desktop is untouched. On a phone: type you can read (no 9-10px spaced caps,
+   brighter muted text), 16px fields so iOS does not zoom, 44px targets, and
+   the Business Hub's tools in a bar at the bottom of the screen. */
+.tbody{display:contents}
+@media(max-width:760px){
+  :root{--text-3:#ad9a74;--text-4:#8b7a5b;--line:rgba(236,217,178,.18)}
+  html,body{font-size:16px}
+  .sub{font-size:15px;line-height:1.55}
+  .lbl,.field-lbl{font-size:12px;letter-spacing:.1em}
+  .tag,.pill{font-size:12px;letter-spacing:.08em}
+  .h1{font-size:30px}.h2{font-size:23px}
+  .btn{font-size:13px;letter-spacing:.08em;min-height:48px;padding:13px 18px}
+  .btn.sm{font-size:12.5px;min-height:44px;padding:11px 14px}
+  .btn.quiet{letter-spacing:.08em}
+  input,select,textarea,.input,.select{font-size:16px}
+  .input,.select{min-height:48px}
+  ::placeholder{color:var(--text-4);opacity:1}
+  input[type=file]{font-size:15px;max-width:100%}
+  input[type=file]::file-selector-button{font:inherit;font-size:13px;min-height:40px;margin-right:12px;padding:0 14px;border:1px solid var(--line-2);background:none;color:var(--text);border-radius:0}
+  .tile{padding:16px}
+  .itemrow{flex-wrap:wrap}.itemrow>input:first-child{flex:1 1 100%!important}.itemrow>input:nth-child(2){width:auto!important;flex:1}
+  .stagetrack{gap:4px 12px!important}
+  .stagetrack .pill.mute{color:var(--text-3)}
+  /* the ring becomes a list: icon, name and count on one line, the blurb under */
+  .lwick{width:100%;height:16px;padding:0 7px;margin-bottom:22px;flex-direction:row;align-items:center}
+  .lwick .core{width:auto;flex:1;height:6px;background:linear-gradient(to right,rgba(245,205,106,.4),rgba(245,205,106,.9) 9%,#fff3d2 50%,rgba(245,205,106,.9) 91%,rgba(245,205,106,.4))}
+  .tnode{display:grid;grid-template-columns:56px minmax(0,1fr);column-gap:16px;align-items:center;padding:14px 2px}
+  .tnode .plate{grid-row:1}
+  .tbody{display:block;grid-column:2;min-width:0}
+  .tlabel{display:inline;font-size:14px;letter-spacing:.1em}
+  .tsub{display:inline;margin-left:10px;font-size:15px;color:var(--text-3)}
+  .tdesc{font-size:14px;margin-top:3px;color:var(--text-3)}
+  /* header: one tidy row, links you can hit */
+  .topin{gap:4px 8px;padding:10px 16px}
+  .mark b{font-size:18px}
+  .topnav a{font-size:13px;letter-spacing:.04em;text-transform:none;padding:12px 9px}
+  /* the tools as a bar at the bottom */
+  .tools.on{display:flex!important;position:fixed;left:0;right:0;bottom:0;top:auto;width:auto;height:auto;z-index:50;flex-direction:row;
+    gap:0;padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));background:rgba(22,15,9,.97);backdrop-filter:blur(12px);
+    border-right:none;border-top:1px solid var(--line-2);overflow:visible}
+  .tools.on button{flex:1;min-width:0;flex-direction:column;gap:3px;padding:6px 2px;justify-content:center;text-align:center;border-radius:8px;box-shadow:none!important}
+  .tools.on button[aria-current="true"]{background:rgba(245,205,106,.1)}
+  .tools.on .tname{display:block!important;font-size:11px;letter-spacing:.02em;text-transform:none;font-weight:500}
+  .tools.on .tmeta,.tools.on .ring-back{display:none!important}
+  .tools.on .tplate{width:30px;height:30px}
+  .shell main{padding:16px 16px calc(96px + env(safe-area-inset-bottom,0px))}
+}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}

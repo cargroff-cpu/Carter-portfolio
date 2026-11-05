@@ -165,9 +165,11 @@ function Ring({ go, data }) {
             onFocus={() => setHover(i)} onBlur={() => setHover(null)}
             onClick={() => go(n.id)}>
             <span className="plate"><img src={n.icon} alt="" style={n.mirror ? { transform: 'scaleX(-1)' } : undefined} /></span>
-            <span className="tlabel">{n.label}</span>
-            <span className="tsub">{ringMetaOf(n.id, data)}</span>
-            <span className="tdesc">{n.desc}</span>
+            <span className="tbody">
+              <span className="tlabel">{n.label}</span>
+              <span className="tsub">{ringMetaOf(n.id, data)}</span>
+              <span className="tdesc">{n.desc}</span>
+            </span>
           </button>
         ))}
       </div>
@@ -414,7 +416,7 @@ function ProposalPanel({ job, proposal, reload, compose }) {
       <Field label="What you'll do"><textarea className="input" rows={3} style={{ width: '100%' }} disabled={locked} value={p.summary || ''} onChange={(e) => setP({ ...p, summary: e.target.value })} placeholder="One or two sentences on the job and the outcome." /></Field>
       <span className="lbl" style={{ display: 'block', marginBottom: 5 }}>What's included, with prices</span>
       {p.items.map((it, k) => (
-        <div key={k} className="row" style={{ gap: 8, marginBottom: 6 }}>
+        <div key={k} className="row itemrow" style={{ gap: 8, marginBottom: 6 }}>
           <input className="input" style={{ flex: 1 }} disabled={locked} placeholder="e.g. Three homepage directions" value={it.label} onChange={(e) => setItem(k, 'label', e.target.value)} />
           <input className="input" style={{ width: 110 }} disabled={locked} inputMode="decimal" placeholder="$" value={it.amount} onChange={(e) => setItem(k, 'amount', e.target.value)} />
           {!locked && p.items.length > 1 && <button className="btn quiet sm" onClick={() => setP((s) => ({ ...s, items: s.items.filter((_, i) => i !== k) }))}>Remove</button>}
@@ -565,7 +567,7 @@ function JobPage({ jobId, data, reload, back }) {
         </div>
         <h2 className="h2" style={{ marginTop: 12 }}>{job.title}</h2>
         <p className="sub">{job.name}{job.business ? ', ' + job.business : ''}{job.email ? ' · ' + job.email : ''} · {job.lane === 'automation' ? 'Tools' : 'Design'}</p>
-        <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
+        <div className="row stagetrack" style={{ gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
           {STAGES.map(([id, label]) => <span key={id}>{pill(label, id === job.stage ? stageKind(id) : 'mute')}</span>)}
           {job.stage === 'closed' && pill('Closed', 'bad')}
         </div>
