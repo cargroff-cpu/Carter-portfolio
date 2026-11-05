@@ -255,15 +255,11 @@ html:has(.ringmain),body:has(.ringmain){overflow:hidden;height:100dvh}
 .tools button:hover .tplate img{opacity:1}
 .tools button[aria-current="true"] .tplate{border-color:rgba(245,205,106,.85);box-shadow:0 0 12px rgba(245,205,106,.3)}
 .tools button[aria-current="true"] .tplate img{opacity:1}
-.tools .ring-back{margin:0 0 8px;padding:8px 10px 12px;border-bottom:1px solid var(--line);border-radius:9px 9px 0 0;color:var(--text-3);box-shadow:none;justify-content:flex-start}
-.tools .ring-back .tname{color:inherit}
-.tools .ring-back:hover{color:var(--accent);background:rgba(217,154,61,.06)}
-.miniring{width:34px;height:34px;flex:none;display:block}
 .backlink{display:inline-flex;align-items:center;gap:7px;color:var(--text-3);text-decoration:none;font-size:12px;letter-spacing:.14em;text-transform:uppercase;padding:10px 12px 10px 0;margin-right:6px;border-right:1px solid var(--line);white-space:nowrap}
 .backlink i{font-style:normal;font-size:16px;line-height:1;transition:transform .2s}
 .backlink:hover{color:var(--accent)}.backlink:hover i{transform:translateX(-3px)}
 .shell main{flex:1;min-width:0;padding:20px}
-@media(max-width:900px){.tools{width:74px}.tools .tname,.tools .tmeta{display:none}.tools .ring-back{padding:8px 0 10px}.tools button,.tools .ring-back{justify-content:center}}
+@media(max-width:900px){.tools{width:74px}.tools .tname,.tools .tmeta{display:none}.tools button,.tools .ring-back{justify-content:center}}
 @media(max-width:760px){.shell{display:block}.tools{display:none!important}.shell main{padding:16px}}
 /* ── phones (a home-screen app too): the Backroom, made for a thumb ────────
    Desktop is untouched. On a phone: type you can read (no 9-10px spaced caps,
@@ -310,8 +306,6 @@ html:has(.ringmain),body:has(.ringmain){overflow:hidden;height:100dvh}
   .tools.on button[aria-current="true"]{background:rgba(245,205,106,.1)}
   .tools.on .tname{display:block!important;font-size:11px;letter-spacing:.02em;text-transform:none;font-weight:500}
   .tools.on .tmeta{display:none!important}
-  .tools.on .ring-back{margin:0;padding:6px 2px;border-bottom:0;border-radius:8px;flex-direction:column}
-  .tools.on .miniring{width:30px;height:30px}
   .topnav a.navhome{display:none}
   .backlink{font-size:12px;letter-spacing:.06em;text-transform:none;padding:12px 10px 12px 0}
   .tools.on .tplate{width:30px;height:30px}
