@@ -21,6 +21,7 @@
 import { sb, sbHeaders, sendEmail, esc, parseBody, logEvent, SUPABASE_URL, BRAND, BRAND_FULL, NOTIFY_EMAIL, FROM_VERIFIED } from '../lib/server.js';
 import { clientIp, hit } from '../lib/rate-limit.js';
 import { triageAndSave } from '../lib/brief-triage.js';
+import { randomUUID } from 'node:crypto';
 
 // Keep these lists in sync with design.jsx (the form's chips and choices).
 const DESIGN_SERVICES = ['Website', 'Social graphics', 'Business card or print', 'Flyer or one-pager',
@@ -33,6 +34,54 @@ const FILE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif'
 const MAX_FILES = 3;
 const MAX_FILE_BYTES = 2.5 * 1024 * 1024; // Vercel caps the whole request at 4.5 MB
 const BUCKET = 'brief-uploads';
+
+// The optional large plan (tools lane): the browser asks for a one-time
+// upload URL, sends the file straight to private storage (Vercel caps a
+// request at 4.5 MB, so it can't come through here), then submits the brief
+// with the path. Up to 25 MB; documents, spreadsheets, slides, PDFs, images,
+// zip.
+const PLAN_BUCKET = 'brief-plans';
+const PLAN_MAX_BYTES = 25 * 1024 * 1024;
+const PLAN_TYPES = new Set([
+  'application/pdf', 'application/zip', 'text/plain', 'text/csv', 'image/png', 'image/jpeg',
+  'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+]);
+const encPath = (p) => p.split('/').map(encodeURIComponent).join('/');
+
+async function planUploadUrl(req, res, body) {
+  if (!hit('plan', clientIp(req), RATE)) {
+    res.status(429).json({ error: 'Too many uploads in a few minutes. Wait a bit and try again.' });
+    return;
+  }
+  const type = typeof body.type === 'string' ? body.type : '';
+  const size = Number(body.size);
+  if (!PLAN_TYPES.has(type)) { res.status(400).json({ error: 'That file type is not accepted. Use a PDF, Word, Excel, PowerPoint, text, image or zip file.' }); return; }
+  if (!(size > 0) || size > PLAN_MAX_BYTES) { res.status(400).json({ error: 'The plan must be 25 MB or smaller.' }); return; }
+  const name = String(body.filename || 'plan').replace(/[^\w.\- ]+/g, '_').slice(0, 120) || 'plan';
+  const path = `plans/${randomUUID()}-${name}`;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/storage/v1/object/upload/sign/${PLAN_BUCKET}/${encPath(path)}`, { method: 'POST', headers: sbHeaders(), body: '{}' });
+    const j = await r.json();
+    if (!r.ok || !j.url) throw new Error(JSON.stringify(j).slice(0, 200));
+    res.status(200).json({ ok: true, path, url: `${SUPABASE_URL}/storage/v1${j.url}` });
+  } catch (e) {
+    await logEvent({ kind: 'plan_upload_url', ok: false, detail: e.message.slice(0, 300) });
+    res.status(502).json({ error: 'The upload could not start. Send the brief without it and email the plan to car.groff@gmail.com.' });
+  }
+}
+
+// A plan the browser says it uploaded: the path must be one of ours and the
+// object must really be there.
+async function validPlan(raw) {
+  if (!raw || typeof raw.path !== 'string' || !/^plans\/[0-9a-f-]{36}-[\w.\- ]{1,120}$/.test(raw.path)) return null;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/storage/v1/object/info/${PLAN_BUCKET}/${encPath(raw.path)}`, { headers: sbHeaders() });
+    if (!r.ok) return null;
+  } catch (e) { return null; }
+  return { path: raw.path, filename: String(raw.filename || raw.path.split('/').pop()).slice(0, 160), type: PLAN_TYPES.has(raw.type) ? raw.type : null };
+}
 
 const RATE = { limit: 5, windowMs: 10 * 60 * 1000 };
 
@@ -116,6 +165,7 @@ export default async function handler(req, res) {
     return;
   }
   const ip = clientIp(req);
+  if (body.action === 'plan-upload') return planUploadUrl(req, res, body);
 
   // Honeypot: a hidden "website" field people never see. Bots fill it in.
   // Answer as if it worked so they don't learn to skip it.
@@ -141,6 +191,7 @@ export default async function handler(req, res) {
 
   const allowedNeeds = lane === 'automation' ? AUTOMATION_SERVICES : DESIGN_SERVICES;
   const files = validFiles(body.files);
+  const plan = lane === 'automation' ? await validPlan(body.plan) : null;
   const brief = {
     reference: makeReference(),
     lane, name, email, about,
@@ -160,6 +211,7 @@ export default async function handler(req, res) {
   };
   const lines = briefLines(brief);
   if (files.length) lines.push(`Files: ${files.map((f) => f.filename).join(', ')}`);
+  if (plan) lines.push(`Plan uploaded: ${plan.filename} (in the Back Room)`);
 
   // 1. Email Carter first — the email alone is enough to act on the lead.
   let emailed = false;
@@ -181,20 +233,22 @@ export default async function handler(req, res) {
   try {
     [saved] = await sb('design_briefs', {
       method: 'POST', prefer: 'return=representation',
-      body: { ...brief, attachment_count: files.length },
+      body: { ...brief, attachment_count: files.length + (plan ? 1 : 0) },
     });
+    // Every brief starts a job at "new"; the Back Room's Jobs board takes it
+    // from there (see api/job.js).
     try {
-      const [lead] = await sb('leads', {
+      const [job] = await sb('jobs', {
         method: 'POST', prefer: 'return=representation',
         body: {
-          name: brief.business || name, contact: name, email,
-          source: lane === 'automation' ? 'Automation brief' : 'Design page',
-          ask: brief.need.length ? brief.need.join(', ') : about.slice(0, 140), status: 'New',
+          brief_id: saved.id, lane, name, email, business: brief.business,
+          title: (brief.need.length ? brief.need.join(', ') : about.slice(0, 80)) + (brief.business ? ` for ${brief.business}` : ''),
         },
       });
-      await sb(`design_briefs?id=eq.${saved.id}`, { method: 'PATCH', body: { converted_lead_id: lead.id } });
+      await sb(`design_briefs?id=eq.${saved.id}`, { method: 'PATCH', body: { job_id: job.id } });
+      await sb('job_events', { method: 'POST', body: { job_id: job.id, kind: 'brief', who: 'client', body: `Brief ${brief.reference} received.` } });
     } catch (e) {
-      await logEvent({ kind: 'lead_create', ok: false, reference: brief.reference, detail: e.message.slice(0, 500) });
+      await logEvent({ kind: 'job_create', ok: false, reference: brief.reference, detail: e.message.slice(0, 500) });
     }
   } catch (e) {
     saveError = e.message;
@@ -220,6 +274,12 @@ export default async function handler(req, res) {
       try { await uploadFiles(saved.id, files); } catch (e) {
         await logEvent({ kind: 'upload', ok: false, reference: brief.reference, detail: e.message.slice(0, 500) });
       }
+    }
+    if (plan) {
+      await sb('design_brief_attachments', {
+        method: 'POST',
+        body: { design_brief_id: saved.id, bucket: PLAN_BUCKET, storage_path: plan.path, filename: plan.filename, content_type: plan.type },
+      }).catch((e) => logEvent({ kind: 'plan_attach', ok: false, reference: brief.reference, detail: e.message.slice(0, 300) }));
     }
     const t = await triageAndSave({ ...brief, id: saved.id, attachment_count: files.length }, { timeoutMs: 12000 });
     if (!t.ok) await logEvent({ kind: 'triage', ok: false, reference: brief.reference, detail: String(t.error).slice(0, 500) });

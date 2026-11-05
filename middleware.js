@@ -24,11 +24,9 @@ export const config = {
     '/docket.jsx',
     '/Scaffold Hub.html',
     '/scaffold-hub.jsx',
-    '/api/pipedrive-goals',
     '/business',
     '/Business Hub.html',
     '/business-hub.jsx',
-    '/api/create-invoice-link',
     '/api/brief-reply',
   ],
 };

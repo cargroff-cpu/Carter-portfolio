@@ -525,6 +525,24 @@ function Faq() {
 // api/design-brief.js (3 files, 2.5 MB each, images or PDF).
 const FILE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/svg+xml', 'application/pdf'];
 const MAX_FILE_BYTES = 2.5 * 1024 * 1024;
+// The optional large plan on a tools brief goes straight to private storage
+// (api/design-brief.js hands out a one-time upload URL). Match its limits.
+const PLAN_TYPES = ['application/pdf', 'application/zip', 'text/plain', 'text/csv', 'image/png', 'image/jpeg',
+  'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'];
+const PLAN_MAX_BYTES = 25 * 1024 * 1024;
+async function uploadPlan(file) {
+  const r = await fetch('/api/design-brief', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'plan-upload', filename: file.name, type: file.type, size: file.size }),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.url) throw new Error(j.error || 'The plan could not upload.');
+  const put = await fetch(j.url, { method: 'PUT', headers: { 'Content-Type': file.type, 'x-upsert': 'false' }, body: file });
+  if (!put.ok) throw new Error('The plan could not upload.');
+  return { path: j.path, filename: file.name, type: file.type };
+}
 function readFile(file) {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -541,6 +559,8 @@ const Brief = React.forwardRef(function Brief(props, ref) {
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState('');
   const [files, setFiles] = React.useState([]);
+  const [plan, setPlan] = React.useState(null);
+  const [busyNote, setBusyNote] = React.useState('');
   const [f, setF] = React.useState({
     lane: 'design', name: '', email: '', business: '', need: [], about: '', where: '', when: '', flexible: false,
     assets: '', copy: '', refs: '', notes: '', budget: '', auto_slow: '', auto_tools: '', auto_who: '', website: '',
@@ -569,6 +589,16 @@ const Brief = React.forwardRef(function Brief(props, ref) {
     setFiles(chosen);
   };
 
+  const onPlan = (e) => {
+    setError('');
+    const p = (e.target.files || [])[0] || null;
+    if (p && (!PLAN_TYPES.includes(p.type) || p.size > PLAN_MAX_BYTES)) {
+      setError(`${p.name}: a PDF, Word, Excel, PowerPoint, text, image or zip file, up to 25 MB.`);
+      e.target.value = ''; setPlan(null); return;
+    }
+    setPlan(p);
+  };
+
   const stepValid = (i) => {
     if (i === 0) return f.name.trim().length > 1 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email.trim());
     if (i === 1) return f.about.trim().length > 1;
@@ -586,6 +616,14 @@ const Brief = React.forwardRef(function Brief(props, ref) {
     setBusy(true); setError('');
     try {
       const payload = { ...f, files: await Promise.all(files.map(readFile)) };
+      if (auto && plan) {
+        setBusyNote('Uploading your plan\u2026');
+        try { payload.plan = await uploadPlan(plan); } catch (e) {
+          setError(e.message + ' Remove it and send the brief without it, or email it to car.groff@gmail.com.');
+          return;
+        }
+        setBusyNote('');
+      }
       const r = await fetch('/api/design-brief', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
       });
@@ -595,7 +633,7 @@ const Brief = React.forwardRef(function Brief(props, ref) {
     } catch (e) {
       setError('Something went wrong. Try again, or email car.groff@gmail.com.');
     } finally {
-      setBusy(false);
+      setBusy(false); setBusyNote('');
     }
   };
 
@@ -750,10 +788,18 @@ const Brief = React.forwardRef(function Brief(props, ref) {
                   <input className="dfile" type="file" multiple accept={FILE_TYPES.join(',')} onChange={onFiles} />
                   {files.length > 0 && <span className="dhint">{files.map((x) => x.name).join(', ')}</span>}
                 </label>
+                {auto && (
+                  <label className="dfl"><span className="dlb">Your plan or spec</span>
+                    <span className="dhint">Optional. If you have a written plan for the tool, attach it: a PDF, Word, Excel, PowerPoint, text, image or zip file, up to 25 MB.</span>
+                    <input className="dfile" type="file" accept={PLAN_TYPES.join(',')} onChange={onPlan} />
+                    {plan && <span className="dhint">{plan.name}</span>}
+                  </label>
+                )}
               </div>
             </div>
           )}
 
+          {busyNote && <p className="dhint" role="status">{busyNote}</p>}
           {error && <p className="derr" role="alert">{error}</p>}
 
           <div className="dwalk">

@@ -1,67 +1,112 @@
-// business-hub.jsx — The Business Hub, door 02 of The Back Room. Full CRUD
-// against the freelance-schema.sql tables (clients, leads + lead_messages,
-// projects + project_deliverables, invoices, notes) plus a read view over
-// design_briefs (the public /design page's submissions). Scoped to the
-// handoff's §6 schema, not the larger freelance-views.js prototype feature
-// set — see DECISIONS.md.
+// business-hub.jsx — The Business Hub, door 03 of The Back Room: the job
+// workflow, brief to paid (2026-11-06).
+//
+//   new -> proposed -> drafts -> final -> paid
+//
+// Every brief from scaffold.cargroff.com becomes a job. Carter writes a
+// proposal, sends directions, sends the final; the client accepts, picks,
+// approves and pays on their private page (/j/<token>, Job.html), and each of
+// their actions comes back here and to Carter's inbox. Billing per job:
+// split (50% deposit on accept, 50% on approval) or end (one invoice on
+// approval). No card fee.
+//
+// Tools: Today (what needs you), Jobs (the board and each job's page),
+// Proposals, Mail (sent log and templates), Money (invoices), Clients.
+// Data: command-center-data.jsx (window.CC). Server: api/job.js,
+// api/brief-reply.js, api/scaffold-read.js / scaffold-write.js.
 const {
-  fetchClients, saveClient,
-  fetchLeads, saveLead, fetchLeadMessages, saveLeadMessage,
-  fetchProjects, saveProject, fetchProjectDeliverables, saveProjectDeliverable, deleteProjectDeliverable,
-  fetchInvoices, saveInvoice,
-  fetchNotes, saveNote, deleteNote,
-  fetchDesignBriefs, saveDesignBrief, briefAction,
+  fetchClients, saveClient, fetchInvoices, saveInvoice,
+  fetchJobs, saveJob, fetchProposals, saveProposal, fetchJobFiles, fetchJobEvents, fetchAllEvents, saveJobEvent,
+  jobAction, uploadJobFile,
+  fetchDesignBriefs, fetchDesignBriefAttachments, briefAction,
 } = window.CC;
 
-const SERVICES = ['Website', 'Social graphics', 'Business card or print', 'Flyer or one-pager',
-  'Document or report', 'Presentation or deck', 'Brand basics', 'Video',
-  'Inquiries and leads', 'Quotes and invoices', 'Scheduling and bookings', 'Dashboards and reports', 'Reminders and follow-ups', 'AI assistants', 'Something else'];
+const STAGES = [
+  ['new', 'New'], ['proposed', 'Proposed'], ['drafts', 'Drafts'], ['final', 'Final'], ['paid', 'Paid'],
+];
+const STAGE_LABEL = Object.fromEntries([...STAGES, ['closed', 'Closed']]);
+const JOB_URL = (token) => 'https://scaffold.cargroff.com/j/' + token;
 
-const usd = (n) => (n == null ? '—' : '$' + Math.round(n).toLocaleString('en-US'));
-const fdate = (s) => { if (!s) return '—'; const [y, m, d] = String(s).slice(0, 10).split('-'); return new Date(+y, +m - 1, +d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); };
-const daysBetween = (a, b) => Math.round((b - a) / 864e5);
-const statusKind = (s) => ({ Paid: 'ok', paid: 'ok', Converted: 'ok', Overdue: 'bad', overdue: 'bad', Dead: 'bad', New: 'warn', new: 'warn', 'Awaiting Response': 'warn', Draft: 'mute', draft: 'mute', Sent: 'mute', sent: 'mute', Replied: 'mute', answered: 'mute' }[s] || 'mute');
+const usd = (n) => (n == null || n === '' ? '—' : '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 }));
+const fdate = (s) => { if (!s) return '—'; return new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); };
+const daysSince = (s) => (s ? Math.floor((Date.now() - new Date(s).getTime()) / 864e5) : 0);
 const pill = (txt, kind) => <span className={'pill ' + (kind || 'mute')}>{txt}</span>;
+const stageKind = (s) => ({ new: 'warn', proposed: 'mute', drafts: 'mute', final: 'warn', paid: 'ok', closed: 'mute' }[s] || 'mute');
+const firstName = (n) => String(n || '').trim().split(/\s+/)[0] || 'there';
+const fill = (t, f) => String(t || '').replace(/\{(\w+)\}/g, (m, k) => (f[k] != null && f[k] !== '' ? String(f[k]) : m));
+const sumItems = (items) => (items || []).reduce((s, i) => s + (Number(i.amount) || 0), 0);
 
-const TABS = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'clients', label: 'Clients' },
-  { id: 'leads', label: 'Leads' },
-  { id: 'projects', label: 'Projects' },
-  { id: 'invoices', label: 'Invoices' },
-  { id: 'notes', label: 'Notes' },
-  { id: 'design', label: 'Design' },
-];
+// ── Mail templates. {fields} fill from the job; the email goes out in the
+// branded frame (lib/mail.js) with a button to the client's project page.
+const TEMPLATES = {
+  proposal: { label: 'Proposal', subject: 'Your proposal: {title}', heading: 'Your proposal',
+    body: 'Hi {first},\n\nThanks for the brief. Your proposal for {title} is ready: {total}, {billing}.\n\nOpen your project page to see what is included and the timeline, and accept it when you are happy. Any questions, just reply.\n\nCarter', button: 'See the proposal' },
+  drafts: { label: 'Directions ready', subject: 'Your directions are ready: {title}', heading: 'Your directions are ready',
+    body: 'Hi {first},\n\nThe first directions for {title} are ready. Have a look, pick the one you like best, and tell me anything you would change.\n\nCarter', button: 'Pick a direction' },
+  final: { label: 'Final ready', subject: 'Your final is ready to review: {title}', heading: 'Your final is ready',
+    body: 'Hi {first},\n\nThe finished {title} is ready to review. Approve it, or ask for changes ({left} round{leftS} of changes left).\n\nCarter', button: 'Review the final' },
+  invoice: { label: 'Invoice', subject: 'Your invoice: {title}', heading: 'Your invoice is ready',
+    body: 'Hi {first},\n\n{due} is ready to pay on your project page, by card or bank. Thank you.\n\nCarter', button: 'Pay now' },
+  reminder: { label: 'Reminder', subject: 'A quick nudge: {title}', heading: 'A quick nudge',
+    body: 'Hi {first},\n\nJust checking in on {title}. Everything is waiting on your project page whenever you are ready.\n\nCarter', button: 'Open your project page' },
+  note: { label: 'Blank', subject: '{title}', heading: '', body: 'Hi {first},\n\n\n\nCarter', button: 'Open your project page' },
+};
 
-// Six brass plates around the ring, evenly spaced (the source's per-node
-// `a`/`fa` angles are vestigial — Business Hub.dc.html's own wireOrbit()
-// computes even spacing at runtime and ignores them). "Acquire" (proposals/
-// referrals) isn't in this build's scope, so Clients takes that slot —
-// see DECISIONS.md.
-const RING_NODES = [
-  { id: 'overview', label: 'Brief', icon: 'assets/tool-brief.png', desc: 'The daily read — what is moving and what needs you.' },
-  { id: 'leads', label: 'Leads', icon: 'assets/tool-leads.png', desc: 'Every inquiry, where it stands, what to do next.' },
-  { id: 'projects', label: 'Work', icon: 'assets/tool-work.png', desc: 'Projects in motion, deliverables ticked off.' },
-  { id: 'invoices', label: 'Money', icon: 'assets/tool-money.png', desc: 'Invoices out, paid, and what still needs chasing.' },
-  { id: 'clients', label: 'Clients', icon: 'assets/tool-acquire.png', desc: 'Who you work for, rates, and how they like to be reached.' },
-  { id: 'design', label: 'Design', icon: 'assets/tool-vault.png', mirror: true, desc: 'The back end for scaffold.cargroff.com — briefs in, AI triage, replies out.' },
-];
-
-function ringMetaOf(id, { leads, projects, invoices, clients }) {
-  if (id === 'leads') return leads.filter((l) => l.status !== 'Converted' && l.status !== 'Dead').length + ' open';
-  if (id === 'projects') return projects.filter((p) => p.status !== 'Delivered').length + ' active';
-  if (id === 'invoices') return usd(invoices.filter((i) => i.status === 'sent' || i.status === 'overdue').reduce((a, i) => a + Number(i.amount || 0), 0)) + ' out';
-  if (id === 'clients') return clients.length + ' on the books';
-  if (id === 'design') return 'The site';
-  return 'Today';
+function fieldsFor(job, proposal, invoices) {
+  const total = proposal ? Number(proposal.total) || sumItems(proposal.items) : 0;
+  const billing = (proposal ? proposal.billing : job.billing) === 'end' ? 'paid in full when you approve the final' : 'half to start and half when you approve the final';
+  const due = (invoices || []).filter((i) => i.job_id === job.id && i.status === 'sent');
+  const left = Math.max(0, job.revisions_included - job.revisions_used);
+  return {
+    first: firstName(job.name), name: job.name, title: job.title, business: job.business || '',
+    total: usd(total), billing, left, leftS: left === 1 ? '' : 's',
+    due: due.length ? due.map((i) => `${i.label || 'Invoice'} (${usd(i.amount)})`).join(' and ') : 'Your invoice',
+  };
 }
 
-// Geometry ported from Business Hub.dc.html's wireOrbit()/layout(): the
-// hovered node steps in to 0.92r, its neighbours fan out up to 16deg and
-// 1.06r weighted by ring distance, everything else dims. Simplified from
-// the source's two-pass measured-band version (no DOM measurement of label
-// overflow) since our fixed 120px node width doesn't need it — the radius
-// comes straight from the orbit container's own rendered size.
+// ── Needs you: what is waiting on Carter, oldest first ─────────────────
+function needsYou(jobs, proposals, invoices, briefs, events) {
+  const out = [];
+  const briefOf = (j) => briefs.find((b) => b.id === j.brief_id);
+  const propOf = (j) => proposals.find((p) => p.job_id === j.id);
+  const lastClient = (j) => events.find((e) => e.job_id === j.id && e.who === 'client');
+  for (const j of jobs) {
+    if (j.stage === 'closed' || j.stage === 'paid') continue;
+    const b = briefOf(j); const p = propOf(j); const lc = lastClient(j);
+    if (j.stage === 'new' && b && b.status !== 'answered' && !p) out.push({ j, what: 'Reply to the brief', age: daysSince(j.created_at), hot: true });
+    else if (j.stage === 'new' && (!p || p.status === 'draft')) out.push({ j, what: 'Write and send the proposal', age: daysSince(j.created_at), hot: daysSince(j.created_at) >= 2 });
+    if (j.stage === 'proposed' && p && p.status === 'sent' && daysSince(p.sent_at) >= 5) out.push({ j, what: 'Proposal waiting ' + daysSince(p.sent_at) + ' days: nudge them', age: daysSince(p.sent_at) });
+    if (j.stage === 'drafts' && lc && lc.kind === 'accepted') out.push({ j, what: 'Proposal accepted: send the directions', age: daysSince(lc.created_at), hot: true });
+    if (j.stage === 'drafts' && lc && lc.kind === 'picked') out.push({ j, what: 'Direction picked: make and send the final', age: daysSince(lc.created_at), hot: true });
+    if (j.stage === 'final' && lc && lc.kind === 'changes') out.push({ j, what: 'Changes asked for: revise and resend', age: daysSince(lc.created_at), hot: true });
+  }
+  for (const i of invoices) {
+    if (i.status === 'sent' && daysSince(i.sent_at) >= 14) {
+      const j = jobs.find((x) => x.id === i.job_id);
+      if (j) out.push({ j, what: `${i.label || 'Invoice'} unpaid ${daysSince(i.sent_at)} days: send a reminder`, age: daysSince(i.sent_at) });
+    }
+  }
+  return out.sort((a, b) => (b.hot ? 1 : 0) - (a.hot ? 1 : 0) || b.age - a.age);
+}
+
+// ── The tool wheel ─────────────────────────────────────────────────────
+const RING_NODES = [
+  { id: 'today', label: 'Today', icon: 'assets/tool-brief.png', desc: 'What needs you, what just happened, money in and out.' },
+  { id: 'jobs', label: 'Jobs', icon: 'assets/tool-work.png', desc: 'Every job from brief to paid, one column per stage.' },
+  { id: 'proposals', label: 'Proposals', icon: 'assets/tool-vault.png', mirror: true, desc: 'Every proposal, where it stands, and what it is worth.' },
+  { id: 'mail', label: 'Mail', icon: 'assets/tool-leads.png', desc: 'Everything sent to clients, and the templates behind it.' },
+  { id: 'money', label: 'Money', icon: 'assets/tool-money.png', desc: 'Deposits and finals: due, paid, and what to chase.' },
+  { id: 'clients', label: 'Clients', icon: 'assets/tool-acquire.png', desc: 'Who you work for and everything you have done for them.' },
+];
+function ringMetaOf(id, d) {
+  if (id === 'today') return d.needs.length ? d.needs.length + ' need you' : 'All clear';
+  if (id === 'jobs') return d.jobs.filter((j) => j.stage !== 'paid' && j.stage !== 'closed').length + ' open';
+  if (id === 'proposals') return d.proposals.filter((p) => p.status === 'sent').length + ' out';
+  if (id === 'mail') return d.events.filter((e) => e.kind === 'email').length + ' sent';
+  if (id === 'money') return usd(d.invoices.filter((i) => i.status === 'sent').reduce((a, i) => a + Number(i.amount || 0), 0)) + ' due';
+  if (id === 'clients') return d.clients.length + ' on the books';
+  return '';
+}
 const N_RING = RING_NODES.length;
 function ringNodeTransform(i, hover, radius) {
   let a = (i * (360 / N_RING) - 90) * Math.PI / 180;
@@ -79,22 +124,17 @@ function ringNodeTransform(i, hover, radius) {
   return `translate(-50%,-50%) translate(${Math.cos(a) * rad}px,${Math.sin(a) * rad}px)`;
 }
 
-function Ring({ go, leads, projects, invoices, clients }) {
+function Ring({ go, data }) {
   const [hover, setHover] = React.useState(null);
   const [wickHot, setWickHot] = React.useState(false);
-  const warm = () => setWickHot(true);
-  const cool = () => setWickHot(false);
   const orbitRef = React.useRef(null);
   const [radius, setRadius] = React.useState(220);
-  const data = { leads, projects, invoices, clients };
-
   React.useEffect(() => {
     const measure = () => { if (orbitRef.current) setRadius(orbitRef.current.getBoundingClientRect().width / 2); };
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
   }, []);
-
   return (
     <div className={'launch' + (hover !== null ? ' hovering' : '') + (wickHot ? ' wickhot' : '')}>
       <div className="rings">
@@ -102,9 +142,7 @@ function Ring({ go, leads, projects, invoices, clients }) {
         <span className="ticks" /><span className="ticks-minor" /><span className="ticks-fine" />
       </div>
       <div className="spokes">
-        {RING_NODES.map((_, i) => (
-          <span key={i} className={'spoke' + (hover === i ? ' lit' : '')} style={{ transform: `rotate(${i * (360 / N_RING) - 90}deg)` }} />
-        ))}
+        {RING_NODES.map((_, i) => <span key={i} className={'spoke' + (hover === i ? ' lit' : '')} style={{ transform: `rotate(${i * (360 / N_RING) - 90}deg)` }} />)}
       </div>
       <div className="ldesc">{hover !== null ? RING_NODES[hover].desc : ''}</div>
       <div className="lwall" aria-hidden="true" />
@@ -115,9 +153,8 @@ function Ring({ go, leads, projects, invoices, clients }) {
         <i style={{ left: '68%', '--dx': '16px', animationDelay: '3.4s' }} />
         <i style={{ left: '46%', '--dx': '4px', animationDelay: '4.6s' }} />
       </div>
-      {/* The light bar at the wheel's centre. Wick is retired, so it is not a
-          link; it is the room's light, and it brightens when you rest on it. */}
-      <div className="lwick" aria-hidden="true" onMouseEnter={warm} onMouseLeave={cool}>
+      {/* The light bar at the wheel's centre: decoration (Wick is retired), brightens when you rest on it. */}
+      <div className="lwick" aria-hidden="true" onMouseEnter={() => setWickHot(true)} onMouseLeave={() => setWickHot(false)}>
         <span className="core" />
       </div>
       <div className="orbit" ref={orbitRef}>
@@ -138,10 +175,7 @@ function Ring({ go, leads, projects, invoices, clients }) {
   );
 }
 
-// The persistent icon rail shown once inside a tool — same brass plates as
-// the ring, standing in a column, so the icon you clicked stays with you.
-function ToolSidebar({ tab, go, leads, projects, invoices, clients }) {
-  const data = { leads, projects, invoices, clients };
+function ToolSidebar({ tab, go, data }) {
   return (
     <nav className="tools on">
       {RING_NODES.map((n) => (
@@ -150,7 +184,7 @@ function ToolSidebar({ tab, go, leads, projects, invoices, clients }) {
           <span><span className="tname">{n.label}</span><span className="tmeta">{ringMetaOf(n.id, data)}</span></span>
         </button>
       ))}
-      <button className="ring-back" onClick={() => go('ring')}><span>← Ring</span></button>
+      <button className="ring-back" onClick={() => go('ring')}><span>Ring</span></button>
     </nav>
   );
 }
@@ -158,60 +192,52 @@ function ToolSidebar({ tab, go, leads, projects, invoices, clients }) {
 function useCollection(fetcher) {
   const [rows, setRows] = React.useState(null);
   const [error, setError] = React.useState(null);
-  const reload = React.useCallback(() => {
-    fetcher().then(setRows).catch((e) => setError(e.message || 'Could not load.'));
-  }, [fetcher]);
-  React.useEffect(reload, [reload]);
-  return [rows, setRows, reload, error];
+  const reload = React.useCallback(() => fetcher().then((r) => { setRows(r); setError(null); }).catch((e) => setError(e.message || 'Could not load.')), [fetcher]);
+  React.useEffect(() => { reload(); }, [reload]);
+  return [rows, reload, error];
 }
 
-// ── Overview ─────────────────────────────────────────────────────────
-function Overview({ clients, leads, projects, invoices, notes, go }) {
-  const openLeads = leads.filter((l) => l.status !== 'Converted' && l.status !== 'Dead');
-  const overdue = invoices.filter((i) => effectiveStatus(i) === 'overdue');
-  const outstanding = invoices.filter((i) => i.status === 'sent' || i.status === 'overdue').reduce((a, i) => a + Number(i.amount || 0), 0);
-  const today = new Date();
-  const active = projects.filter((p) => p.status !== 'Delivered');
-  const dueSoon = active.map((p) => ({ ...p, inDays: p.due ? daysBetween(today, new Date(p.due)) : null }))
-    .filter((p) => p.inDays != null).sort((a, b) => a.inDays - b.inDays).slice(0, 6);
-
+// ── Today ──────────────────────────────────────────────────────────────
+function Today({ data, open }) {
+  const { needs, invoices, events, jobs } = data;
+  const due = invoices.filter((i) => i.status === 'sent');
+  const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+  const paidMonth = invoices.filter((i) => i.status === 'paid' && i.paid_at && new Date(i.paid_at) >= monthStart);
+  const jobOf = (id) => jobs.find((j) => j.id === id);
   return (
     <div className="stack">
       <section className="tile brief">
-        <div className="tilehead"><h2 className="h2">Overview</h2><span className="lbl">{clients.length} clients · {active.length} active projects</span></div>
-        <p className="briefline">
-          {openLeads.length ? <React.Fragment><b>{openLeads.length}</b> open lead{openLeads.length === 1 ? '' : 's'}. </React.Fragment> : null}
-          {overdue.length ? <React.Fragment><b>{overdue.length}</b> invoice{overdue.length === 1 ? '' : 's'} overdue, {usd(overdue.reduce((a, i) => a + Number(i.amount || 0), 0))}. </React.Fragment> : null}
-          {!openLeads.length && !overdue.length ? 'Nothing urgent right now.' : null}
-        </p>
-        <div className="briefacts">
-          <button className="btn sm" onClick={() => go('leads')}>Open leads</button>
-          <button className="btn ghost sm" onClick={() => go('invoices')}>Chase overdue</button>
+        <div className="tilehead"><h2 className="h2">Needs you</h2><span className="lbl">{needs.length ? needs.length + ' waiting' : 'All clear'}</span></div>
+        <div className="minirows">
+          {needs.map((n, k) => (
+            <button key={k} className="minirow" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(n.j.id)}>
+              <span className="mtxt"><b>{n.j.title}</b> · {n.what}</span>
+              <span className={'mono mval' + (n.hot ? ' hot' : '')}>{n.age ? n.age + 'd' : 'today'}</span>
+            </button>
+          ))}
+          {!needs.length && <p className="sub">Nothing is waiting on you.</p>}
         </div>
       </section>
       <div className="hgrid">
         <div className="tile">
-          <div className="tilehead"><h2 className="h2">Outstanding</h2></div>
-          <div className="bigline"><span className="big mono">{usd(outstanding)}</span></div>
+          <div className="tilehead"><h2 className="h2">Due to you</h2></div>
+          <div className="bigline"><span className="big mono">{usd(due.reduce((a, i) => a + Number(i.amount || 0), 0))}</span></div>
+          <p className="sub">{due.length} invoice{due.length === 1 ? '' : 's'} out</p>
         </div>
         <div className="tile">
-          <div className="tilehead"><h2 className="h2">Due next</h2><span className="lbl">Active projects</span></div>
-          <div className="minirows">
-            {dueSoon.length ? dueSoon.map((p) => (
-              <div className="minirow plain" key={p.id}>
-                <span className="mtxt">{p.name}</span>
-                <span className={'mono mval' + (p.inDays <= 3 ? ' hot' : '')}>{p.inDays <= 0 ? 'today' : 'in ' + p.inDays + 'd'}</span>
-              </div>
-            )) : <p className="sub">Nothing on the calendar.</p>}
-          </div>
+          <div className="tilehead"><h2 className="h2">Paid this month</h2></div>
+          <div className="bigline"><span className="big mono">{usd(paidMonth.reduce((a, i) => a + Number(i.amount || 0), 0))}</span></div>
         </div>
         <div className="tile">
-          <div className="tilehead"><h2 className="h2">Recent notes</h2></div>
+          <div className="tilehead"><h2 className="h2">Just happened</h2></div>
           <div className="minirows">
-            {notes.slice(0, 5).map((n) => (
-              <div className="minirow plain" key={n.id}><span className="mtxt">{n.body.slice(0, 90)}</span></div>
+            {events.filter((e) => e.who === 'client').slice(0, 6).map((e) => (
+              <button key={e.id} className="minirow plain" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(e.job_id)}>
+                <span className="mtxt">{jobOf(e.job_id) ? jobOf(e.job_id).title : 'Job'}: {e.kind}</span>
+                <span className="mono mval">{fdate(e.created_at)}</span>
+              </button>
             ))}
-            {!notes.length && <p className="sub">Nothing captured yet.</p>}
+            {!events.some((e) => e.who === 'client') && <p className="sub">Nothing yet.</p>}
           </div>
         </div>
       </div>
@@ -219,548 +245,148 @@ function Overview({ clients, leads, projects, invoices, notes, go }) {
   );
 }
 
-// ── Clients ──────────────────────────────────────────────────────────
-function NewClientForm({ onCreated }) {
+// ── Jobs board ─────────────────────────────────────────────────────────
+function NewJobForm({ onCreated }) {
   const [open, setOpen] = React.useState(false);
-  const [f, setF] = React.useState({ name: '', contact: '', email: '', rate: '', prefers: '', notes: '' });
+  const [f, setF] = React.useState({ title: '', name: '', email: '', business: '', lane: 'design' });
+  const [err, setErr] = React.useState('');
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
-
   const create = () => {
-    if (!f.name.trim()) return;
-    saveClient({
-      name: f.name.trim(), contact: f.contact.trim() || null, email: f.email.trim() || null,
-      rate: f.rate ? Number(f.rate) : null, prefers: f.prefers.trim() || null, notes: f.notes.trim() || null,
-      since: new Date().toISOString().slice(0, 10),
-    }).then(() => { setF({ name: '', contact: '', email: '', rate: '', prefers: '', notes: '' }); setOpen(false); onCreated(); }).catch(() => {});
+    if (!f.title.trim() || !f.name.trim()) { setErr('A title and the client’s name are needed.'); return; }
+    saveJob({ title: f.title.trim(), name: f.name.trim(), email: f.email.trim() || null, business: f.business.trim() || null, lane: f.lane })
+      .then((r) => { setOpen(false); setF({ title: '', name: '', email: '', business: '', lane: 'design' }); onCreated(r.row && r.row.id); })
+      .catch((e) => setErr(e.message));
   };
-
-  if (!open) return <button className="btn sm" onClick={() => setOpen(true)}>New client</button>;
+  if (!open) return <button className="btn sm" onClick={() => setOpen(true)}>New job</button>;
   return (
     <div className="formgrid">
-      <input className="input" placeholder="Client or business name" value={f.name} onChange={set('name')} />
-      <input className="input" placeholder="Contact name" value={f.contact} onChange={set('contact')} />
-      <input className="input" placeholder="Email" value={f.email} onChange={set('email')} />
-      <input className="input" placeholder="Rate, per hour" inputMode="numeric" value={f.rate} onChange={set('rate')} />
-      <input className="input" placeholder="Prefers (how they like to be reached)" value={f.prefers} onChange={set('prefers')} />
-      <input className="input" placeholder="Notes" value={f.notes} onChange={set('notes')} />
+      <input className="input" placeholder="What it is, e.g. Website for Ridge Bakery" value={f.title} onChange={set('title')} />
+      <input className="input" placeholder="Client name" value={f.name} onChange={set('name')} />
+      <input className="input" placeholder="Client email" value={f.email} onChange={set('email')} />
+      <input className="input" placeholder="Business (optional)" value={f.business} onChange={set('business')} />
+      <select className="input" value={f.lane} onChange={set('lane')}><option value="design">Design</option><option value="automation">Tools</option></select>
       <div className="row" style={{ gap: 10, gridColumn: '1/-1' }}>
-        <button className="btn sm" onClick={create}>Save client</button>
+        <button className="btn sm" onClick={create}>Create job</button>
         <button className="btn ghost sm" onClick={() => setOpen(false)}>Cancel</button>
+        {err && <span className="sub" style={{ color: 'var(--warn)' }}>{err}</span>}
       </div>
     </div>
   );
 }
 
-function ClientDetail({ client, projects, invoices }) {
-  const clientProjects = projects.filter((p) => p.client_id === client.id);
-  const clientInvoices = invoices.filter((i) => i.client_id === client.id);
+function Jobs({ data, open, reload }) {
+  const [showClosed, setShowClosed] = React.useState(false);
+  const { jobs, proposals } = data;
+  const propOf = (j) => proposals.find((p) => p.job_id === j.id);
+  return (
+    <div className="stack">
+      <section className="card">
+        <div className="pad between" style={{ borderBottom: '1px solid var(--line)', gap: 12, flexWrap: 'wrap' }}>
+          <h2 className="h2">Jobs</h2>
+          <label className="sub" style={{ display: 'flex', gap: 8, alignItems: 'center' }}><input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} /> Show closed</label>
+        </div>
+        <div className="pad"><NewJobForm onCreated={(id) => { reload(); if (id) open(id); }} /></div>
+      </section>
+      <div className="jboard">
+        {[...STAGES, ...(showClosed ? [['closed', 'Closed']] : [])].map(([id, label]) => {
+          const col = jobs.filter((j) => j.stage === id);
+          return (
+            <section key={id} className="card jcol">
+              <div className="pad between" style={{ borderBottom: '1px solid var(--line)' }}><span className="lbl">{label}</span><span className="sub mono">{col.length}</span></div>
+              <div className="jcards">
+                {col.map((j) => {
+                  const p = propOf(j);
+                  return (
+                    <button key={j.id} className="reclist" onClick={() => open(j.id)}>
+                      <div style={{ fontSize: 14, fontWeight: 500 }}>{j.title}</div>
+                      <div className="between" style={{ marginTop: 5, gap: 8 }}>
+                        <span className="sub">{j.business || j.name}</span>
+                        <span className="sub mono">{p && Number(p.total) ? usd(p.total) : ''}</span>
+                      </div>
+                      <div className="sub" style={{ marginTop: 4 }}>{daysSince(j.last_activity_at) ? daysSince(j.last_activity_at) + 'd since last move' : 'Moved today'}</div>
+                    </button>
+                  );
+                })}
+                {!col.length && <p className="sub" style={{ padding: '10px 4px' }}>None.</p>}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── One job ────────────────────────────────────────────────────────────
+function Field({ label, children }) {
+  return <label style={{ display: 'block', marginBottom: 10 }}><span className="lbl" style={{ display: 'block', marginBottom: 5 }}>{label}</span>{children}</label>;
+}
+
+function BriefPanel({ job, briefs, reload }) {
+  const b = briefs.find((x) => x.id === job.brief_id);
+  const [atts, setAtts] = React.useState([]);
+  React.useEffect(() => { if (b) fetchDesignBriefAttachments(b.id).then(setAtts).catch(() => setAtts([])); }, [b && b.id]);
+  if (!b) return null;
+  const get = (att) => jobAction(job.id, 'brief-file', { attachment_id: att.id }).then((r) => window.open(r.url, '_blank', 'noopener')).catch((e) => alert(e.message));
+  const rows = b.lane === 'automation'
+    ? [['What is slow today', b.auto_slow], ['Tools they use', b.auto_tools], ['Who does it now', b.auto_who]]
+    : [['Where it will be used', b.where], ['Assets', b.assets], ['Copy', b.copy], ['References', b.refs]];
   return (
     <section className="tile">
-      <div className="tilehead"><h2 className="h2">{client.name}</h2></div>
-      <div className="vrow"><span className="lbl">Contact</span><span className="mono">{client.contact || '—'}</span></div>
-      <div className="vrow"><span className="lbl">Email</span><span className="mono">{client.email || '—'}</span></div>
-      <div className="vrow"><span className="lbl">Rate</span><span className="mono">{client.rate != null ? usd(client.rate) + '/h' : '—'}</span></div>
-      <div className="vrow"><span className="lbl">Since</span><span className="mono">{fdate(client.since)}</span></div>
-      {client.prefers && <p className="sub" style={{ marginTop: 12 }}>{client.prefers}</p>}
-      {client.notes && <p className="sub" style={{ marginTop: 8 }}>{client.notes}</p>}
-      <div className="minirows" style={{ marginTop: 16 }}>
-        {clientProjects.map((p) => (
-          <div className="minirow plain" key={p.id}><span className="mtxt">{p.name}</span>{pill(p.status, p.status === 'Delivered' ? 'ok' : 'warn')}</div>
-        ))}
-        {!clientProjects.length && <p className="sub">No projects yet.</p>}
-      </div>
-      <div className="vrow" style={{ marginTop: 8 }}>
-        <span className="lbl">Invoiced total</span>
-        <span className="mono">{usd(clientInvoices.reduce((a, i) => a + Number(i.amount || 0), 0))}</span>
-      </div>
+      <div className="tilehead"><h2 className="h2">The brief</h2><span className="lbl">{b.reference} · {fdate(b.created_at)}</span></div>
+      <p style={{ margin: '0 0 10px', whiteSpace: 'pre-wrap' }}>{b.about}</p>
+      <div className="vrow"><span className="lbl">Needs</span><span>{(b.need || []).join(', ') || '—'}</span></div>
+      {rows.map(([k, v]) => v ? <div className="vrow" key={k}><span className="lbl">{k}</span><span>{v}</span></div> : null)}
+      <div className="vrow"><span className="lbl">When</span><span>{b.when_date || (b.flexible ? 'Flexible' : '—')}</span></div>
+      <div className="vrow"><span className="lbl">Budget</span><span>{b.budget || '—'}</span></div>
+      {b.notes && <div className="vrow"><span className="lbl">Notes</span><span>{b.notes}</span></div>}
+      {atts.length > 0 && (
+        <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+          {atts.map((a) => <button key={a.id} className="btn ghost sm" onClick={() => get(a)}>{a.bucket === 'brief-plans' ? 'Plan: ' : ''}{a.filename}</button>)}
+        </div>
+      )}
+      <TriageCard b={b} reload={reload} />
     </section>
   );
 }
 
-function Clients({ clients, projects, invoices, reload }) {
-  const [sel, setSel] = React.useState(null);
-  const client = clients.find((c) => c.id === sel);
-  return (
-    <div className="cols leadcols">
-      <section className="card">
-        <div className="pad between" style={{ borderBottom: '1px solid var(--line)' }}><h2 className="h2">Clients</h2></div>
-        <div className="pad"><NewClientForm onCreated={reload} /></div>
-        <div className="reclistwrap">
-          {clients.map((c) => (
-            <button key={c.id} className={'reclist' + (c.id === sel ? ' on' : '')} onClick={() => setSel(c.id)}>
-              <div className="between"><span style={{ fontSize: 13.5, fontWeight: 500 }}>{c.name}</span>{c.rate != null && <span className="sub mono">{usd(c.rate)}/h</span>}</div>
-              <div className="row" style={{ gap: 12, marginTop: 5 }}><span className="sub">{c.contact}</span></div>
-            </button>
-          ))}
-          {!clients.length && <p className="sub" style={{ padding: '20px 2px' }}>No clients yet.</p>}
-        </div>
-      </section>
-      {client ? <ClientDetail client={client} projects={projects} invoices={invoices} /> : <p className="sub">Select a client.</p>}
-    </div>
-  );
-}
-
-// ── Leads ────────────────────────────────────────────────────────────
-function NewLeadForm({ onCreated }) {
-  const [open, setOpen] = React.useState(false);
-  const [f, setF] = React.useState({ name: '', contact: '', email: '', source: '', ask: '', value: '' });
-  const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
-
-  const create = () => {
-    if (!f.name.trim()) return;
-    saveLead({
-      name: f.name.trim(), contact: f.contact.trim() || null, email: f.email.trim() || null,
-      source: f.source.trim() || null, ask: f.ask.trim() || null, value: f.value ? Number(f.value) : null, status: 'New',
-    }).then(() => { setF({ name: '', contact: '', email: '', source: '', ask: '', value: '' }); setOpen(false); onCreated(); }).catch(() => {});
-  };
-
-  if (!open) return <button className="btn sm" onClick={() => setOpen(true)}>New lead</button>;
-  return (
-    <div className="formgrid">
-      <input className="input" placeholder="Who's asking" value={f.name} onChange={set('name')} />
-      <input className="input" placeholder="Contact name" value={f.contact} onChange={set('contact')} />
-      <input className="input" placeholder="Email" value={f.email} onChange={set('email')} />
-      <input className="input" placeholder="Source (referral, website, etc.)" value={f.source} onChange={set('source')} />
-      <input className="input" placeholder="What they're asking for" value={f.ask} onChange={set('ask')} />
-      <input className="input" placeholder="Estimated value" inputMode="numeric" value={f.value} onChange={set('value')} />
-      <div className="row" style={{ gap: 10, gridColumn: '1/-1' }}>
-        <button className="btn sm" onClick={create}>Save lead</button>
-        <button className="btn ghost sm" onClick={() => setOpen(false)}>Cancel</button>
-      </div>
-    </div>
-  );
-}
-
-function LeadDetail({ lead, clients, projects, onSaved }) {
-  const [messages, setMessages] = React.useState([]);
-  const [reply, setReply] = React.useState('');
-  const [busy, setBusy] = React.useState(false);
-
-  React.useEffect(() => {
-    fetchLeadMessages(lead.id).then(setMessages).catch(() => setMessages([]));
-  }, [lead.id]);
-
-  const setStatus = (status) => {
-    saveLead({ id: lead.id, status, last_activity_at: new Date().toISOString() }).then(onSaved).catch(() => {});
-  };
-
-  const send = () => {
-    const body = reply.trim();
-    if (!body) return;
-    setBusy(true);
-    saveLeadMessage({ lead_id: lead.id, from: 'me', body, sent_at: new Date().toISOString() })
-      .then((res) => {
-        setMessages((m) => [...m, res.row]);
-        setReply('');
-        return saveLead({ id: lead.id, status: lead.status === 'New' ? 'Replied' : lead.status, last_activity_at: new Date().toISOString() });
-      })
-      .then(onSaved)
-      .catch(() => {})
-      .finally(() => setBusy(false));
-  };
-
-  const convert = () => {
-    const existing = clients.find((c) => c.name === lead.name);
-    const clientPromise = existing
-      ? Promise.resolve(existing)
-      : saveClient({ name: lead.name, contact: lead.contact || null, email: lead.email || null, since: new Date().toISOString().slice(0, 10) })
-          .then((res) => res.row);
-    clientPromise
-      .then((client) => saveProject({
-        client_id: client.id, name: lead.name + ' — ' + (lead.ask || 'project'), kind: null,
-        status: 'Scheduled', fee: lead.value || null, scope: lead.ask || '',
-      }))
-      .then((res) => saveLead({ id: lead.id, status: 'Converted', converted_project_id: res.row.id, last_activity_at: new Date().toISOString() }))
-      .then(onSaved).catch(() => {});
-  };
-
-  return (
-    <section className="card">
-      <div className="pad" style={{ borderBottom: '1px solid var(--line)' }}>
-        <div className="between"><h2 className="h2">{lead.name}</h2>{pill(lead.status, statusKind(lead.status))}</div>
-        <div className="row" style={{ gap: 14, marginTop: 8, flexWrap: 'wrap' }}>
-          <span className="sub">{lead.contact}</span><span className="sub mono">{lead.email}</span><span className="sub">{lead.source}</span>
-          {lead.value != null && <span className="sub mono">{usd(lead.value)}</span>}
-        </div>
-        <div className="row" style={{ gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
-          {lead.status !== 'Converted' && <button className="btn sm" onClick={convert}>Convert to project</button>}
-          {lead.status !== 'Dead' && lead.status !== 'Converted' && <button className="btn quiet sm" onClick={() => setStatus('Dead')}>Mark dead</button>}
-        </div>
-      </div>
-      <div className="thread">
-        {messages.map((m) => (
-          <div className={'msg ' + (m.from === 'me' ? 'me' : 'them')} key={m.id}>
-            <div className="msghead"><span className="lbl">{m.from === 'me' ? 'You' : lead.contact || lead.name}</span><span className="lbl">{fdate(m.sent_at)}</span></div>
-            <p>{m.body}</p>
-          </div>
-        ))}
-        {!messages.length && <p className="sub">No messages logged yet.</p>}
-      </div>
-      <div className="pad replybox">
-        <div className="lbl">Reply</div>
-        <textarea className="input" rows={3} style={{ marginTop: 9, resize: 'vertical', minHeight: 84 }}
-          placeholder="Write it the way you talk…" value={reply} onChange={(e) => setReply(e.target.value)} />
-        <div className="row" style={{ gap: 10, marginTop: 11 }}>
-          <button className="btn sm" disabled={busy || !reply.trim()} onClick={send}>Log reply</button>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Leads({ leads, clients, projects, reload }) {
-  const [sel, setSel] = React.useState(null);
-  const lead = leads.find((l) => l.id === sel) || leads[0];
-  if (!lead) {
-    return (
-      <section className="card">
-        <div className="pad between" style={{ borderBottom: '1px solid var(--line)' }}><h2 className="h2">Lead inbox</h2></div>
-        <div className="pad">
-          <NewLeadForm onCreated={reload} />
-          <p className="sub" style={{ marginTop: 16 }}>No leads yet. New leads from the /design brief form land here automatically too.</p>
-        </div>
-      </section>
-    );
-  }
-  return (
-    <div className="cols leadcols">
-      <section className="card">
-        <div className="pad between" style={{ borderBottom: '1px solid var(--line)' }}><h2 className="h2">Lead inbox</h2></div>
-        <div className="pad"><NewLeadForm onCreated={reload} /></div>
-        <div className="reclistwrap">
-          {leads.map((l) => (
-            <button key={l.id} className={'reclist' + (l.id === lead.id ? ' on' : '')} onClick={() => setSel(l.id)}>
-              <div className="between"><span style={{ fontSize: 13.5, fontWeight: 500 }}>{l.name}</span>{pill(l.status, statusKind(l.status))}</div>
-              <div className="row" style={{ gap: 12, marginTop: 5 }}><span className="sub">{l.ask}</span></div>
-              <div className="row" style={{ gap: 12, marginTop: 4 }}>{l.value != null && <span className="sub mono">{usd(l.value)}</span>}<span className="sub">{l.source}</span></div>
-            </button>
-          ))}
-        </div>
-      </section>
-      <LeadDetail key={lead.id} lead={lead} clients={clients} projects={projects} onSaved={reload} />
-    </div>
-  );
-}
-
-// ── Projects ─────────────────────────────────────────────────────────
-function ProjectDetail({ project, clients, onSaved }) {
-  const [deliverables, setDeliverables] = React.useState([]);
-  const [newLabel, setNewLabel] = React.useState('');
-  const client = clients.find((c) => c.id === project.client_id);
-
-  const loadDeliverables = React.useCallback(() => {
-    fetchProjectDeliverables(project.id).then(setDeliverables).catch(() => setDeliverables([]));
-  }, [project.id]);
-  React.useEffect(loadDeliverables, [loadDeliverables]);
-
-  const pct = deliverables.length ? Math.round(deliverables.filter((d) => d.done).length / deliverables.length * 100) : 0;
-
-  const toggle = (d) => {
-    saveProjectDeliverable({ id: d.id, done: !d.done }).then(loadDeliverables).catch(() => {});
-  };
-  const addDeliverable = (e) => {
-    if (e.key !== 'Enter') return;
-    const label = newLabel.trim();
-    if (!label) return;
-    saveProjectDeliverable({ project_id: project.id, label, sort_order: deliverables.length })
-      .then(() => { setNewLabel(''); loadDeliverables(); }).catch(() => {});
-  };
-  const removeDeliverable = (id) => { deleteProjectDeliverable(id).then(loadDeliverables).catch(() => {}); };
-  const setStatus = (status) => { saveProject({ id: project.id, status }).then(onSaved).catch(() => {}); };
-
-  return (
-    <div className="stack">
-      <section className="tile">
-        <div className="tilehead"><h2 className="h2">{project.name}</h2>{pill(project.status, project.status === 'Delivered' ? 'ok' : 'warn')}</div>
-        <div className="row" style={{ gap: 14, flexWrap: 'wrap' }}>
-          <span className="sub">{client ? client.name : 'No client set'}</span>
-          {project.kind && <span className="sub">{project.kind}</span>}
-          {project.fee != null && <span className="sub mono">{usd(project.fee)}</span>}
-          {project.due && <span className="sub mono">due {fdate(project.due)}</span>}
-        </div>
-        {project.scope && <p className="sub" style={{ marginTop: 8 }}>{project.scope}</p>}
-        <div className="row" style={{ gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-          {['Scheduled', 'In edit', 'Awaiting feedback', 'Delivered'].map((s) => (
-            <button key={s} className={'btn sm' + (project.status === s ? '' : ' ghost')} onClick={() => setStatus(s)}>{s}</button>
-          ))}
-        </div>
-      </section>
-      <section className="tile">
-        <div className="tilehead"><h2 className="h2">Deliverables</h2><span className="lbl">{pct}%</span></div>
-        <div className="bar" style={{ marginBottom: 14 }}><i style={{ width: pct + '%' }} /></div>
-        <div className="checks">
-          {deliverables.map((d) => (
-            <div className={'chk ' + (d.done ? 'on' : 'off')} key={d.id} style={{ cursor: 'pointer' }}>
-              <span className="box" onClick={() => toggle(d)}>{d.done ? '✓' : ''}</span>
-              <span onClick={() => toggle(d)} style={{ flex: 1 }}>{d.label}</span>
-              <button className="btn quiet sm" onClick={() => removeDeliverable(d.id)}>Remove</button>
-            </div>
-          ))}
-        </div>
-        <input className="input" style={{ marginTop: 12 }} placeholder="Add a deliverable, press Enter"
-          value={newLabel} onChange={(e) => setNewLabel(e.target.value)} onKeyDown={addDeliverable} />
-      </section>
-    </div>
-  );
-}
-
-function NewProjectForm({ clients, onCreated }) {
-  const [open, setOpen] = React.useState(false);
-  const [f, setF] = React.useState({ clientId: '', name: '', kind: '', fee: '', due: '', scope: '' });
-  const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
-
-  const create = () => {
-    if (!f.name.trim()) return;
-    saveProject({
-      client_id: f.clientId || null, name: f.name.trim(), kind: f.kind.trim() || null,
-      status: 'Scheduled', fee: f.fee ? Number(f.fee) : null, due: f.due || null, scope: f.scope.trim() || null,
-    }).then(() => { setF({ clientId: '', name: '', kind: '', fee: '', due: '', scope: '' }); setOpen(false); onCreated(); }).catch(() => {});
-  };
-
-  if (!open) return <button className="btn sm" onClick={() => setOpen(true)}>New project</button>;
-  return (
-    <div className="formgrid">
-      <input className="input" placeholder="Project name" value={f.name} onChange={set('name')} />
-      <select className="select" value={f.clientId} onChange={set('clientId')}>
-        <option value="">Client…</option>
-        {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-      </select>
-      <input className="input" placeholder="Kind (Video, Design, Photo…)" value={f.kind} onChange={set('kind')} />
-      <input className="input" placeholder="Fee" inputMode="numeric" value={f.fee} onChange={set('fee')} />
-      <input className="input" type="date" placeholder="Due" value={f.due} onChange={set('due')} />
-      <input className="input" placeholder="Scope" value={f.scope} onChange={set('scope')} />
-      <div className="row" style={{ gap: 10, gridColumn: '1/-1' }}>
-        <button className="btn sm" onClick={create}>Save project</button>
-        <button className="btn ghost sm" onClick={() => setOpen(false)}>Cancel</button>
-      </div>
-    </div>
-  );
-}
-
-function Projects({ projects, clients, reload }) {
-  const [sel, setSel] = React.useState(null);
-  const project = projects.find((p) => p.id === sel) || projects[0];
-  if (!project) {
-    return (
-      <div className="stack">
-        <NewProjectForm clients={clients} onCreated={reload} />
-        <p className="sub">No projects yet. Add one here, or convert a lead from the Leads tab.</p>
-      </div>
-    );
-  }
-  return (
-    <div className="stack">
-      <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-        <div className="projrail">
-          {projects.map((p) => (
-            <button key={p.id} className={'projchip' + (p.id === project.id ? ' on' : '')} onClick={() => setSel(p.id)}>
-              <span className="pname">{p.name}</span><span className="lbl">{p.status}</span>
-            </button>
-          ))}
-        </div>
-        <NewProjectForm clients={clients} onCreated={reload} />
-      </div>
-      <ProjectDetail key={project.id} project={project} clients={clients} onSaved={reload} />
-    </div>
-  );
-}
-
-// ── Invoices ─────────────────────────────────────────────────────────
-function NewInvoiceForm({ clients, projects, onCreated }) {
-  const [clientId, setClientId] = React.useState('');
-  const [projectId, setProjectId] = React.useState('');
-  const [amount, setAmount] = React.useState('');
-  const [dueDate, setDueDate] = React.useState('');
-
-  const create = () => {
-    if (!clientId || !amount) return;
-    saveInvoice({ client_id: clientId, project_id: projectId || null, amount: Number(amount), due_date: dueDate || null, status: 'draft' })
-      .then(() => { setClientId(''); setProjectId(''); setAmount(''); setDueDate(''); onCreated(); }).catch(() => {});
-  };
-
-  return (
-    <div className="formgrid" style={{ marginTop: 4 }}>
-      <select className="select" value={clientId} onChange={(e) => setClientId(e.target.value)}>
-        <option value="">Client…</option>
-        {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-      </select>
-      <select className="select" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-        <option value="">Project (optional)…</option>
-        {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-      </select>
-      <input className="input" placeholder="Amount" inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value)} />
-      <input className="input" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-      <button className="btn sm" style={{ gridColumn: '1/-1' }} onClick={create}>Create draft invoice</button>
-    </div>
-  );
-}
-
-// Overdue is derived, not stored: a 'sent' invoice past its due date reads
-// as overdue in the UI without a cron job to flip a status column.
-const effectiveStatus = (i) => (i.status === 'sent' && i.due_date && new Date(i.due_date) < new Date() ? 'overdue' : i.status);
-
-function Invoices({ invoices, clients, projects, reload }) {
-  const [linking, setLinking] = React.useState(null);
-  const clientOf = (id) => clients.find((c) => c.id === id);
-  const projectOf = (id) => projects.find((p) => p.id === id);
-  const outstanding = invoices.filter((i) => i.status === 'sent' || i.status === 'overdue').reduce((a, i) => a + Number(i.amount || 0), 0);
-  const paid = invoices.filter((i) => i.status === 'paid').reduce((a, i) => a + Number(i.amount || 0), 0);
-
-  const sendInvoice = (inv) => {
-    setLinking(inv.id);
-    fetch('/api/create-invoice-link', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ invoiceId: inv.id }),
-    }).then((r) => r.json()).then((data) => {
-      if (data.error) { alert(data.error); return; }
-      reload();
-    }).catch(() => alert('Could not create the payment link.')).finally(() => setLinking(null));
-  };
-
-  // Manual fallback so invoices are usable before STRIPE_SECRET_KEY is set —
-  // see DECISIONS.md. Once Stripe is wired, "Send via Stripe" is the normal
-  // path and the webhook marks paid automatically; these stay as an escape
-  // hatch for cash, check, or anything paid outside Stripe.
-  const markSent = (inv) => { saveInvoice({ id: inv.id, status: 'sent', sent_at: new Date().toISOString() }).then(reload).catch(() => {}); };
-  const markPaid = (inv) => { saveInvoice({ id: inv.id, status: 'paid', paid_at: new Date().toISOString() }).then(reload).catch(() => {}); };
-
-  return (
-    <div className="stack">
-      <div className="kpis">
-        <div className="kpi"><div className="lbl">Outstanding</div><div className="mono kpin">{usd(outstanding)}</div></div>
-        <div className="kpi"><div className="lbl">Paid</div><div className="mono kpin">{usd(paid)}</div></div>
-        <div className="kpi"><div className="lbl">Total invoices</div><div className="mono kpin">{invoices.length}</div></div>
-      </div>
-      <section className="card">
-        <div className="pad between" style={{ borderBottom: '1px solid var(--line)' }}><h2 className="h2">New invoice</h2></div>
-        <div className="pad"><NewInvoiceForm clients={clients} projects={projects} onCreated={reload} /></div>
-      </section>
-      <section className="card">
-        <div className="pad between" style={{ borderBottom: '1px solid var(--line)' }}><h2 className="h2">Invoices</h2></div>
-        <div className="scroll-x">
-          <table>
-            <thead><tr><th>Client</th><th>Project</th><th>Amount</th><th>Due</th><th>Status</th><th></th></tr></thead>
-            <tbody>
-              {invoices.map((i) => (
-                <tr key={i.id}>
-                  <td style={{ color: 'var(--text)' }}>{clientOf(i.client_id) ? clientOf(i.client_id).name : '—'}</td>
-                  <td>{projectOf(i.project_id) ? projectOf(i.project_id).name : '—'}</td>
-                  <td className="mono" style={{ color: 'var(--text)' }}>{usd(i.amount)}</td>
-                  <td className="mono">{fdate(i.due_date)}</td>
-                  <td>{pill(effectiveStatus(i), statusKind(effectiveStatus(i)))}</td>
-                  <td>
-                    <div className="row" style={{ gap: 8 }}>
-                      {i.status === 'draft' && (
-                        <React.Fragment>
-                          <button className="btn ghost sm" disabled={linking === i.id} onClick={() => sendInvoice(i)}>
-                            {linking === i.id ? 'Creating…' : 'Send via Stripe'}
-                          </button>
-                          <button className="btn quiet sm" onClick={() => markSent(i)}>Mark sent</button>
-                        </React.Fragment>
-                      )}
-                      {(i.status === 'sent' || effectiveStatus(i) === 'overdue') && (
-                        <button className="btn quiet sm" onClick={() => markPaid(i)}>Mark paid</button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-// ── Notes ────────────────────────────────────────────────────────────
-function Notes({ notes, clients, projects, reload }) {
-  const [body, setBody] = React.useState('');
-  const [clientId, setClientId] = React.useState('');
-  const clientOf = (id) => clients.find((c) => c.id === id);
-
-  const add = () => {
-    const b = body.trim();
-    if (!b) return;
-    saveNote({ body: b, client_id: clientId || null }).then(() => { setBody(''); setClientId(''); reload(); }).catch(() => {});
-  };
-  const remove = (id) => { deleteNote(id).then(reload).catch(() => {}); };
-
-  return (
-    <div className="stack">
-      <section className="card">
-        <div className="pad">
-          <textarea className="input" rows={3} style={{ resize: 'vertical', minHeight: 84 }}
-            placeholder="Capture a thought…" value={body} onChange={(e) => setBody(e.target.value)} />
-          <div className="row" style={{ gap: 10, marginTop: 11, flexWrap: 'wrap' }}>
-            <select className="select" style={{ width: 220 }} value={clientId} onChange={(e) => setClientId(e.target.value)}>
-              <option value="">No client…</option>
-              {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <button className="btn sm" onClick={add}>Save note</button>
-          </div>
-        </div>
-      </section>
-      <section className="card">
-        {notes.map((n) => (
-          <div className="note" key={n.id}>
-            <div className="between">
-              <span className="lbl">{clientOf(n.client_id) ? clientOf(n.client_id).name : 'Unfiled'} · {fdate(n.created_at)}</span>
-              <button className="btn quiet sm" onClick={() => remove(n.id)}>Delete</button>
-            </div>
-            <p>{n.body}</p>
-          </div>
-        ))}
-        {!notes.length && <p className="sub" style={{ padding: '20px 2px' }}>Nothing captured yet.</p>}
-      </section>
-    </div>
-  );
-}
-
-// ── Design-briefs inbox ─────────────────────────────────────────────
-// Each brief carries an AI triage package (lib/brief-triage.js): summary,
-// lane, scope, missing info, red flags and a draft reply. Nothing goes to a
-// client until "Approve & send" here (api/brief-reply.js).
 function TriageCard({ b, reload }) {
   const t = b.triage || null;
   const [reply, setReply] = React.useState(t ? (t.sent_reply || t.draft_reply || '') : '');
   const [busy, setBusy] = React.useState('');
   const [msg, setMsg] = React.useState('');
   React.useEffect(() => { if (t) setReply(t.sent_reply || t.draft_reply || ''); }, [b.triaged_at]);
-
   const run = (action, extra) => {
     setBusy(action); setMsg('');
     briefAction(b.id, action, extra)
-      .then(() => { setMsg(action === 'send' ? 'Sent.' : action === 'reject' ? 'Rejected.' : 'Triage updated.'); reload(); })
-      .catch((e) => setMsg(e.message))
-      .finally(() => setBusy(''));
+      .then(() => { setMsg(action === 'send' ? 'Sent.' : action === 'reject' ? 'Marked answered.' : 'Updated.'); reload(); })
+      .catch((e) => setMsg(e.message)).finally(() => setBusy(''));
   };
   const decided = t && (t.status === 'sent' || t.status === 'rejected');
-
   return (
-    <div style={{ marginTop: 10, padding: '12px 14px', border: '1px solid var(--line)' }}>
+    <div style={{ marginTop: 14, padding: '12px 14px', border: '1px solid var(--line)' }}>
       {t ? (
         <React.Fragment>
           <div className="between" style={{ gap: 8, flexWrap: 'wrap' }}>
-            <span className="lbl">AI triage · {t.lane} · {t.scope}{t.suggested_price ? ' · ' + t.suggested_price : ''}</span>
-            {pill(t.status === 'sent' ? 'sent' : t.status === 'rejected' ? 'rejected' : 'needs you', t.status === 'pending' ? 'warn' : 'mute')}
+            <span className="lbl">AI summary · {t.scope}{t.suggested_price ? ' · ' + t.suggested_price : ''}</span>
+            {pill(t.status === 'sent' ? 'reply sent' : t.status === 'rejected' ? 'no reply' : 'draft reply ready', t.status === 'pending' ? 'warn' : 'mute')}
           </div>
           <p style={{ margin: '8px 0' }}>{t.summary}</p>
-          {t.missing && t.missing.length ? <p className="sub">Missing: {t.missing.join(' · ')}</p> : null}
-          {t.red_flags && t.red_flags.length ? <p className="sub" style={{ color: 'var(--warn)' }}>Flags: {t.red_flags.join(' · ')}</p> : null}
-          <textarea className="input" rows={6} style={{ width: '100%', marginTop: 8, resize: 'vertical' }}
-            value={reply} onChange={(e) => setReply(e.target.value)} disabled={decided} />
+          {t.missing && t.missing.length ? <p className="sub">Missing: {t.missing.join('; ')}</p> : null}
+          {t.red_flags && t.red_flags.length ? <p className="sub" style={{ color: 'var(--warn)' }}>Flags: {t.red_flags.join('; ')}</p> : null}
+          <textarea className="input" rows={5} style={{ width: '100%', marginTop: 8, resize: 'vertical' }} value={reply} onChange={(e) => setReply(e.target.value)} disabled={decided} />
           {!decided && (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-              <button className="btn sm" disabled={!!busy} onClick={() => run('send', { reply })}>{busy === 'send' ? 'Sending…' : 'Approve & send'}</button>
-              <button className="btn ghost sm" disabled={!!busy} onClick={() => run('triage')}>{busy === 'triage' ? 'Re-running…' : 'Re-run triage'}</button>
-              <button className="btn quiet sm" disabled={!!busy} onClick={() => run('reject')}>Reject</button>
+            <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+              <button className="btn sm" disabled={!!busy} onClick={() => run('send', { reply })}>{busy === 'send' ? 'Sending…' : 'Send this reply'}</button>
+              <button className="btn ghost sm" disabled={!!busy} onClick={() => run('triage')}>{busy === 'triage' ? 'Working…' : 'Redo the summary'}</button>
+              <button className="btn quiet sm" disabled={!!busy} onClick={() => run('reject')}>No reply needed</button>
             </div>
           )}
         </React.Fragment>
       ) : (
         <div className="between" style={{ gap: 8 }}>
-          <span className="sub">No AI triage yet.</span>
-          <button className="btn ghost sm" disabled={!!busy} onClick={() => run('triage')}>{busy ? 'Running…' : 'Run triage'}</button>
+          <span className="sub">No AI summary yet.</span>
+          <button className="btn ghost sm" disabled={!!busy} onClick={() => run('triage')}>{busy ? 'Working…' : 'Summarise the brief'}</button>
         </div>
       )}
       {msg && <p className="sub" style={{ marginTop: 6 }}>{msg}</p>}
@@ -768,93 +394,391 @@ function TriageCard({ b, reload }) {
   );
 }
 
-function Design({ briefs, reload }) {
-  const open = briefs.filter((b) => b.status !== 'answered');
-  const [openId, setOpenId] = React.useState(null);
-  const tally = SERVICES.map((s) => ({ name: s, n: briefs.filter((b) => Array.isArray(b.need) && b.need.includes(s)).length }))
-    .filter((r) => r.n > 0).sort((a, b) => b.n - a.n);
-
-  const markAnswered = (b) => {
-    saveDesignBrief({ id: b.id, status: 'answered', answered_at: new Date().toISOString() }).then(reload).catch(() => {});
+function ProposalPanel({ job, proposal, reload, compose }) {
+  const blank = { summary: '', items: [{ label: '', amount: '' }], timeline: '', terms: 'Two rounds of changes included. Files are yours once paid.', billing: job.billing || 'split' };
+  const [p, setP] = React.useState(proposal ? { ...proposal, items: proposal.items && proposal.items.length ? proposal.items : blank.items } : blank);
+  const [msg, setMsg] = React.useState('');
+  React.useEffect(() => { if (proposal) setP({ ...proposal, items: proposal.items && proposal.items.length ? proposal.items : blank.items }); }, [proposal && proposal.updated_at]);
+  const locked = proposal && proposal.status === 'accepted';
+  const total = sumItems(p.items);
+  const setItem = (k, key, v) => setP((s) => ({ ...s, items: s.items.map((it, i) => (i === k ? { ...it, [key]: v } : it)) }));
+  const save = () => {
+    const items = p.items.filter((i) => i.label.trim() || Number(i.amount)).map((i) => ({ label: i.label.trim(), amount: Number(i.amount) || 0 }));
+    const row = { job_id: job.id, summary: p.summary, items, timeline: p.timeline, terms: p.terms, billing: p.billing, total: sumItems(items), updated_at: new Date().toISOString() };
+    if (proposal) row.id = proposal.id;
+    return saveProposal(row).then(() => saveJob({ id: job.id, billing: p.billing })).then(() => { setMsg('Saved.'); reload(); });
   };
+  return (
+    <section className="tile">
+      <div className="tilehead"><h2 className="h2">Proposal</h2>{proposal ? pill(proposal.status, proposal.status === 'accepted' ? 'ok' : proposal.status === 'sent' ? 'warn' : 'mute') : pill('not written', 'mute')}</div>
+      <Field label="What you'll do"><textarea className="input" rows={3} style={{ width: '100%' }} disabled={locked} value={p.summary || ''} onChange={(e) => setP({ ...p, summary: e.target.value })} placeholder="One or two sentences on the job and the outcome." /></Field>
+      <span className="lbl" style={{ display: 'block', marginBottom: 5 }}>What's included, with prices</span>
+      {p.items.map((it, k) => (
+        <div key={k} className="row" style={{ gap: 8, marginBottom: 6 }}>
+          <input className="input" style={{ flex: 1 }} disabled={locked} placeholder="e.g. Three homepage directions" value={it.label} onChange={(e) => setItem(k, 'label', e.target.value)} />
+          <input className="input" style={{ width: 110 }} disabled={locked} inputMode="decimal" placeholder="$" value={it.amount} onChange={(e) => setItem(k, 'amount', e.target.value)} />
+          {!locked && p.items.length > 1 && <button className="btn quiet sm" onClick={() => setP((s) => ({ ...s, items: s.items.filter((_, i) => i !== k) }))}>Remove</button>}
+        </div>
+      ))}
+      {!locked && <button className="btn quiet sm" onClick={() => setP((s) => ({ ...s, items: [...s.items, { label: '', amount: '' }] }))}>Add a line</button>}
+      <div className="vrow" style={{ marginTop: 8 }}><span className="lbl">Total</span><span className="mono">{usd(total)}</span></div>
+      <Field label="Timeline"><input className="input" style={{ width: '100%' }} disabled={locked} value={p.timeline || ''} onChange={(e) => setP({ ...p, timeline: e.target.value })} placeholder="e.g. Directions in 2 business days, final within a week of your pick" /></Field>
+      <Field label="Terms"><input className="input" style={{ width: '100%' }} disabled={locked} value={p.terms || ''} onChange={(e) => setP({ ...p, terms: e.target.value })} /></Field>
+      <Field label="Payment">
+        <select className="input" disabled={locked} value={p.billing} onChange={(e) => setP({ ...p, billing: e.target.value })}>
+          <option value="split">50% deposit on accepting, 50% on approval</option>
+          <option value="end">All at the end, on approval</option>
+        </select>
+      </Field>
+      {!locked && (
+        <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+          <button className="btn ghost sm" onClick={() => save().catch((e) => setMsg(e.message))}>Save</button>
+          <button className="btn sm" disabled={!(total > 0)} onClick={() => save().then(() => compose('proposal')).catch((e) => setMsg(e.message))}>{proposal && proposal.status === 'sent' ? 'Save and resend' : 'Save and email it'}</button>
+          {msg && <span className="sub">{msg}</span>}
+        </div>
+      )}
+      {locked && <p className="sub">Accepted {fdate(proposal.accepted_at)}. {proposal.billing === 'split' ? 'Deposit invoice created.' : 'Paid in full on approval.'}</p>}
+    </section>
+  );
+}
 
+function FilesPanel({ job, kind, files, reload, compose }) {
+  const [label, setLabel] = React.useState('');
+  const [link, setLink] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
+  const [msg, setMsg] = React.useState('');
+  const fileRef = React.useRef(null);
+  const round = kind === 'final' ? job.revisions_used + 1 : 1;
+  const mine = files.filter((f) => f.kind === kind);
+  const add = async () => {
+    setMsg(''); setBusy(true);
+    try {
+      const chosen = Array.from((fileRef.current && fileRef.current.files) || []);
+      for (const file of chosen) await uploadJobFile(job.id, file, { kind, round, label: chosen.length === 1 && label ? label : file.name });
+      if (link.trim()) await jobAction(job.id, 'add-file', { kind, round, label: label || link.trim(), url: link.trim() });
+      if (!chosen.length && !link.trim()) { setMsg('Choose a file or paste a link.'); return; }
+      setLabel(''); setLink(''); if (fileRef.current) fileRef.current.value = '';
+      reload();
+    } catch (e) { setMsg(e.message); } finally { setBusy(false); }
+  };
+  const remove = (f) => jobAction(job.id, 'remove-file', { file_id: f.id }).then(reload).catch((e) => setMsg(e.message));
+  const title = kind === 'final' ? 'Final' : 'Directions';
+  return (
+    <section className="tile">
+      <div className="tilehead"><h2 className="h2">{title}</h2><span className="lbl">{kind === 'final' ? `Round ${round} · ${job.revisions_used} of ${job.revisions_included} changes used` : 'Usually three'}</span></div>
+      <div className="minirows">
+        {mine.map((f) => (
+          <div className="minirow plain" key={f.id}>
+            <span className="mtxt">{kind === 'final' ? `R${f.round} · ` : ''}{f.label || f.filename || f.url}{job.picked_file_id === f.id ? ' · picked' : ''}{f.url ? ' (link)' : ''}</span>
+            <button className="btn quiet sm" onClick={() => remove(f)}>Remove</button>
+          </div>
+        ))}
+        {!mine.length && <p className="sub">Nothing added yet.</p>}
+      </div>
+      <div className="formgrid" style={{ marginTop: 10 }}>
+        <input className="input" placeholder="Label (optional), e.g. Direction A: bold" value={label} onChange={(e) => setLabel(e.target.value)} />
+        <input className="input" placeholder="Or paste a link (Canva, Figma, Drive)" value={link} onChange={(e) => setLink(e.target.value)} />
+        <input ref={fileRef} className="input" type="file" multiple />
+        <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+          <button className="btn ghost sm" disabled={busy} onClick={add}>{busy ? 'Adding…' : 'Add'}</button>
+          <button className="btn sm" disabled={!mine.length} onClick={() => compose(kind === 'final' ? 'final' : 'drafts')}>{kind === 'final' ? 'Email: final ready' : 'Email: directions ready'}</button>
+        </div>
+      </div>
+      {msg && <p className="sub" style={{ marginTop: 6, color: 'var(--warn)' }}>{msg}</p>}
+    </section>
+  );
+}
+
+function Composer({ job, proposal, invoices, kind, onClose, onSent }) {
+  const tpl = TEMPLATES[kind] || TEMPLATES.note;
+  const f = fieldsFor(job, proposal, invoices);
+  const [k, setK] = React.useState(kind);
+  const [m, setM] = React.useState({ subject: fill(tpl.subject, f), heading: fill(tpl.heading, f), body: fill(tpl.body, f), button: true, button_label: tpl.button });
+  const [busy, setBusy] = React.useState('');
+  const [msg, setMsg] = React.useState('');
+  const pick = (nk) => { const t = TEMPLATES[nk]; setK(nk); setM({ subject: fill(t.subject, f), heading: fill(t.heading, f), body: fill(t.body, f), button: true, button_label: t.button }); };
+  const send = (test) => {
+    setBusy(test ? 'test' : 'send'); setMsg('');
+    jobAction(job.id, 'send', { kind: k, subject: m.subject, heading: m.heading, body: m.body, button: m.button, button_label: m.button_label, test })
+      .then(() => { setMsg(test ? 'Test sent to you.' : 'Sent.'); if (!test) onSent(); })
+      .catch((e) => setMsg(e.message)).finally(() => setBusy(''));
+  };
+  return (
+    <section className="tile" style={{ outline: '1px solid var(--line)' }}>
+      <div className="tilehead"><h2 className="h2">Email {job.name}</h2><button className="btn quiet sm" onClick={onClose}>Close</button></div>
+      <Field label="Template">
+        <select className="input" value={k} onChange={(e) => pick(e.target.value)}>
+          {Object.entries(TEMPLATES).map(([id, t]) => <option key={id} value={id}>{t.label}</option>)}
+        </select>
+      </Field>
+      <Field label="To"><input className="input" style={{ width: '100%' }} value={job.email || 'No email on this job'} disabled /></Field>
+      <Field label="Subject"><input className="input" style={{ width: '100%' }} value={m.subject} onChange={(e) => setM({ ...m, subject: e.target.value })} /></Field>
+      <Field label="Heading"><input className="input" style={{ width: '100%' }} value={m.heading} onChange={(e) => setM({ ...m, heading: e.target.value })} /></Field>
+      <Field label="Message"><textarea className="input" rows={8} style={{ width: '100%', resize: 'vertical' }} value={m.body} onChange={(e) => setM({ ...m, body: e.target.value })} /></Field>
+      <label className="sub" style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
+        <input type="checkbox" checked={m.button} onChange={(e) => setM({ ...m, button: e.target.checked })} /> Button to their project page:
+        <input className="input" style={{ flex: 1 }} value={m.button_label} disabled={!m.button} onChange={(e) => setM({ ...m, button_label: e.target.value })} />
+      </label>
+      <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+        <button className="btn sm" disabled={!!busy} onClick={() => send(false)}>{busy === 'send' ? 'Sending…' : 'Send'}</button>
+        <button className="btn ghost sm" disabled={!!busy} onClick={() => send(true)}>{busy === 'test' ? 'Sending…' : 'Send a test to me'}</button>
+        {msg && <span className="sub">{msg}</span>}
+      </div>
+      {['proposal', 'drafts', 'final'].includes(k) && <p className="sub" style={{ marginTop: 8 }}>Sending moves the job to {STAGE_LABEL[{ proposal: 'proposed', drafts: 'drafts', final: 'final' }[k]]}.</p>}
+    </section>
+  );
+}
+
+function JobPage({ jobId, data, reload, back }) {
+  const job = data.jobs.find((j) => j.id === jobId);
+  const [files, setFiles] = React.useState([]);
+  const [events, setEvents] = React.useState([]);
+  const [compose, setCompose] = React.useState(null);
+  const [note, setNote] = React.useState('');
+  const [copied, setCopied] = React.useState(false);
+  const loadMine = React.useCallback(() => {
+    fetchJobFiles(jobId).then(setFiles).catch(() => {});
+    fetchJobEvents(jobId).then(setEvents).catch(() => {});
+  }, [jobId]);
+  React.useEffect(loadMine, [loadMine]);
+  if (!job) return <p className="sub">That job is not here. <button className="btn quiet sm" onClick={back}>Back to Jobs</button></p>;
+  const proposal = data.proposals.find((p) => p.job_id === job.id);
+  const invoices = data.invoices.filter((i) => i.job_id === job.id);
+  const refresh = () => { reload(); loadMine(); };
+  const copy = () => { navigator.clipboard && navigator.clipboard.writeText(JOB_URL(job.token)).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }); };
+  const addNote = () => { if (!note.trim()) return; saveJobEvent({ job_id: job.id, kind: 'note', who: 'me', body: note.trim() }).then(() => { setNote(''); loadMine(); }); };
+  const setStage = (stage) => saveJob({ id: job.id, stage }).then(refresh);
+  const markPaid = (i) => saveInvoice({ id: i.id, status: 'paid', paid_at: new Date().toISOString() })
+    .then(() => saveJobEvent({ job_id: job.id, kind: 'paid', who: 'me', body: `Marked ${i.label || 'invoice'} paid by hand (${usd(i.amount)}).` }))
+    .then(() => { const left = invoices.filter((x) => x.id !== i.id && x.status !== 'paid'); return job.approved_at && !left.length ? saveJob({ id: job.id, stage: 'paid' }) : null; })
+    .then(refresh);
   return (
     <div className="stack">
       <section className="tile brief">
-        <div className="tilehead"><h2 className="h2">The Scaffold</h2><span className="lbl">scaffold.cargroff.com</span></div>
-        <p className="briefline">
-          {briefs.length ? <React.Fragment><b>{open.length} brief{open.length === 1 ? '' : 's'}</b> waiting on a reply, out of {briefs.length} received.</React.Fragment>
-            : 'Live and wired — no briefs submitted yet.'}
-        </p>
-      </section>
-      <div className="cols workcols">
-        <section className="card">
-          <div className="pad between" style={{ borderBottom: '1px solid var(--line)' }}>
-            <h2 className="h2">Brief inbox</h2>{pill(briefs.length ? 'live' : 'not connected', briefs.length ? 'ok' : 'warn')}
+        <div className="between" style={{ gap: 10, flexWrap: 'wrap' }}>
+          <button className="btn quiet sm" onClick={back}>All jobs</button>
+          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+            <button className="btn ghost sm" onClick={copy}>{copied ? 'Copied' : 'Copy client link'}</button>
+            <a className="btn ghost sm" href={JOB_URL(job.token)} target="_blank" rel="noopener">See their page</a>
+            <button className="btn sm" onClick={() => setCompose('note')}>Email client</button>
           </div>
-          {briefs.length ? (
-            <div className="feed">
-              {briefs.map((b) => (
-                <div className="feedrow" key={b.id} style={{ flexWrap: 'wrap' }}>
-                  <span className="lbl fkind">{b.status === 'answered' ? 'answered' : 'new'}{b.lane === 'automation' ? ' · auto' : ''}</span>
-                  <span className="ftxt">
-                    {b.reference ? <span className="sub mono">{b.reference} · </span> : null}
-                    {b.name}{b.business ? ' · ' + b.business : ''}{b.about ? ' — ' + b.about.slice(0, 90) : ''}
-                    <br /><span className="sub mono">{b.email}</span>{Array.isArray(b.need) && b.need.length ? <span className="sub"> · {b.need.join(', ')}</span> : null}
-                    {b.budget ? <span className="sub"> · {b.budget}</span> : null}
-                    {b.attachment_count ? <span className="sub"> · {b.attachment_count} file{b.attachment_count === 1 ? '' : 's'}</span> : null}
-                    {b.triage && b.triage.status === 'pending' ? <span className="sub" style={{ color: 'var(--warn)' }}> · draft reply ready</span> : null}
-                  </span>
-                  <span className="lbl fwhen">
-                    {fdate(b.created_at)}
-                    <button className="btn quiet sm" style={{ display: 'block', marginTop: 6 }} onClick={() => setOpenId(openId === b.id ? null : b.id)}>{openId === b.id ? 'Close' : 'Open'}</button>
-                    {b.status !== 'answered' && <button className="btn quiet sm" style={{ display: 'block' }} onClick={() => markAnswered(b)}>Mark answered</button>}
-                  </span>
-                  {openId === b.id && (
-                    <div style={{ flexBasis: '100%' }}>
-                      <p className="sub" style={{ whiteSpace: 'pre-wrap', marginTop: 8 }}>{[
-                        b.about,
-                        b.lane === 'automation' ? `Slow today: ${b.auto_slow || '—'}\nTools: ${b.auto_tools || '—'}\nWho does it now: ${b.auto_who || '—'}`
-                          : `Where: ${b.where || '—'} · Assets: ${b.assets || '—'}\nCopy: ${b.copy || '—'}\nRefs: ${b.refs || '—'}`,
-                        `When: ${b.when_date || (b.flexible ? 'Flexible' : '—')} · Notes: ${b.notes || '—'}`,
-                      ].join('\n\n')}</p>
-                      <TriageCard b={b} reload={reload} />
-                    </div>
-                  )}
-                </div>
-              ))}
+        </div>
+        <h2 className="h2" style={{ marginTop: 12 }}>{job.title}</h2>
+        <p className="sub">{job.name}{job.business ? ', ' + job.business : ''}{job.email ? ' · ' + job.email : ''} · {job.lane === 'automation' ? 'Tools' : 'Design'}</p>
+        <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
+          {STAGES.map(([id, label]) => <span key={id}>{pill(label, id === job.stage ? stageKind(id) : 'mute')}</span>)}
+          {job.stage === 'closed' && pill('Closed', 'bad')}
+        </div>
+        <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+          <span className="sub">Move by hand:</span>
+          <select className="input" value={job.stage} onChange={(e) => setStage(e.target.value)}>
+            {[...STAGES, ['closed', 'Closed (dropped)']].map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+          </select>
+        </div>
+      </section>
+      {compose && <Composer job={job} proposal={proposal} invoices={data.invoices} kind={compose} onClose={() => setCompose(null)} onSent={() => { setCompose(null); refresh(); }} />}
+      <BriefPanel job={job} briefs={data.briefs} reload={refresh} />
+      <ProposalPanel job={job} proposal={proposal} reload={refresh} compose={setCompose} />
+      <FilesPanel job={job} kind="draft" files={files} reload={loadMine} compose={setCompose} />
+      <FilesPanel job={job} kind="final" files={files} reload={loadMine} compose={setCompose} />
+      <section className="tile">
+        <div className="tilehead"><h2 className="h2">Invoices</h2><span className="lbl">{job.billing === 'end' ? 'All at the end' : '50% deposit, 50% on approval'}</span></div>
+        <div className="minirows">
+          {invoices.map((i) => (
+            <div className="minirow plain" key={i.id}>
+              <span className="mtxt">{i.label || 'Invoice'} · {usd(i.amount)}</span>
+              <span className="row" style={{ gap: 8 }}>{pill(i.status, i.status === 'paid' ? 'ok' : 'warn')}{i.status !== 'paid' && <button className="btn quiet sm" onClick={() => markPaid(i)}>Mark paid</button>}</span>
             </div>
-          ) : <p className="sub" style={{ padding: '20px 2px' }}>No briefs yet.</p>}
-        </section>
-        <section className="tile">
-          <div className="tilehead"><h2 className="h2">What gets asked for</h2></div>
-          {tally.length ? (
-            <div className="minirows">
-              {tally.map((r) => (
-                <div className="minirow" key={r.name}>
-                  <span className="mtxt">{r.name}</span><span className="mono mval">{r.n}</span>
-                  <div className="bar" style={{ height: 3, gridColumn: '1/-1' }}><i style={{ width: Math.round(r.n / tally[0].n * 100) + '%' }} /></div>
-                </div>
-              ))}
+          ))}
+          {!invoices.length && <p className="sub">Invoices appear here when the client accepts (the deposit) and approves (the rest).</p>}
+        </div>
+        {invoices.some((i) => i.status === 'sent') && <button className="btn ghost sm" style={{ marginTop: 8 }} onClick={() => setCompose('invoice')}>Email: invoice ready</button>}
+      </section>
+      <section className="tile">
+        <div className="tilehead"><h2 className="h2">History</h2></div>
+        <div className="row" style={{ gap: 8, marginBottom: 10 }}>
+          <input className="input" style={{ flex: 1 }} placeholder="Add a note (only you see it)" value={note} onChange={(e) => setNote(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') addNote(); }} />
+          <button className="btn ghost sm" onClick={addNote}>Add</button>
+        </div>
+        <div className="minirows">
+          {events.map((e) => (
+            <div className="minirow plain" key={e.id} style={{ alignItems: 'flex-start' }}>
+              <span className="mtxt" style={{ whiteSpace: 'pre-wrap' }}><b>{e.who === 'client' ? job.name.split(' ')[0] : e.who === 'me' ? 'You' : 'System'}</b> · {e.kind}{e.body ? ': ' + e.body.slice(0, 400) : ''}</span>
+              <span className="mono mval">{fdate(e.created_at)}</span>
             </div>
-          ) : <p className="sub">Once briefs arrive, the services they check are counted here.</p>}
-        </section>
-      </div>
+          ))}
+          {!events.length && <p className="sub">Nothing yet.</p>}
+        </div>
+      </section>
     </div>
   );
 }
 
-// ── Shell ────────────────────────────────────────────────────────────
-function BusinessHub() {
-  const [tab, setTab] = React.useState('ring');
-  const [clients, setClients, reloadClients] = useCollection(fetchClients);
-  const [leads, setLeads, reloadLeads] = useCollection(fetchLeads);
-  const [projects, setProjects, reloadProjects] = useCollection(fetchProjects);
-  const [invoices, setInvoices, reloadInvoices] = useCollection(fetchInvoices);
-  const [notes, setNotes, reloadNotes] = useCollection(fetchNotes);
-  const [briefs, setBriefs, reloadBriefs] = useCollection(fetchDesignBriefs);
+// ── Proposals, Mail, Money, Clients ────────────────────────────────────
+function Proposals({ data, open }) {
+  const jobOf = (id) => data.jobs.find((j) => j.id === id);
+  return (
+    <section className="card">
+      <div className="pad" style={{ borderBottom: '1px solid var(--line)' }}><h2 className="h2">Proposals</h2></div>
+      <div className="scroll-x"><table>
+        <thead><tr><th>Job</th><th>Total</th><th>Payment</th><th>Status</th><th>Sent</th></tr></thead>
+        <tbody>
+          {data.proposals.map((p) => {
+            const j = jobOf(p.job_id);
+            return (
+              <tr key={p.id} style={{ cursor: 'pointer' }} onClick={() => j && open(j.id)}>
+                <td style={{ color: 'var(--text)' }}>{j ? j.title : '—'}</td><td className="mono">{usd(p.total)}</td>
+                <td>{p.billing === 'end' ? 'At the end' : '50/50'}</td>
+                <td>{pill(p.status, p.status === 'accepted' ? 'ok' : p.status === 'sent' ? 'warn' : 'mute')}</td>
+                <td className="mono">{fdate(p.sent_at)}{p.status === 'sent' && daysSince(p.sent_at) >= 5 ? ' · ' + daysSince(p.sent_at) + 'd' : ''}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table></div>
+      {!data.proposals.length && <p className="sub pad">No proposals yet. Write one from a job's page.</p>}
+    </section>
+  );
+}
 
-  const loading = [clients, leads, projects, invoices, notes, briefs].some((r) => r === null);
+function Mail({ data, open }) {
+  const sent = data.events.filter((e) => e.kind === 'email');
+  const jobOf = (id) => data.jobs.find((j) => j.id === id);
+  return (
+    <div className="stack">
+      <section className="card">
+        <div className="pad" style={{ borderBottom: '1px solid var(--line)' }}><h2 className="h2">Sent</h2></div>
+        <div className="minirows pad">
+          {sent.map((e) => (
+            <button key={e.id} className="minirow plain" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(e.job_id)}>
+              <span className="mtxt"><b>{jobOf(e.job_id) ? jobOf(e.job_id).name : 'Client'}</b> · {String(e.body || '').split('\n')[0]}</span>
+              <span className="mono mval">{fdate(e.created_at)}</span>
+            </button>
+          ))}
+          {!sent.length && <p className="sub">Nothing sent yet. Emails go out from each job's page.</p>}
+        </div>
+      </section>
+      <section className="card">
+        <div className="pad" style={{ borderBottom: '1px solid var(--line)' }}><h2 className="h2">Templates</h2></div>
+        <div className="pad">
+          <p className="sub" style={{ marginBottom: 12 }}>Each starts the message on a job's page, where you can change anything before sending. Words in braces fill in from the job.</p>
+          {Object.entries(TEMPLATES).map(([id, t]) => (
+            <details key={id} style={{ borderTop: '1px solid var(--line)', padding: '10px 0' }}>
+              <summary style={{ cursor: 'pointer' }}>{t.label}: <span className="sub">{t.subject}</span></summary>
+              <p style={{ whiteSpace: 'pre-wrap', margin: '8px 0 0' }}>{t.body}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function Money({ data, open, reload }) {
+  const jobOf = (id) => data.jobs.find((j) => j.id === id);
+  const due = data.invoices.filter((i) => i.status === 'sent');
+  const markPaid = (i) => saveInvoice({ id: i.id, status: 'paid', paid_at: new Date().toISOString() }).then(reload);
+  return (
+    <div className="stack">
+      <div className="hgrid">
+        <div className="tile"><div className="tilehead"><h2 className="h2">Due</h2></div><div className="bigline"><span className="big mono">{usd(due.reduce((a, i) => a + Number(i.amount || 0), 0))}</span></div></div>
+        <div className="tile"><div className="tilehead"><h2 className="h2">Paid, all time</h2></div><div className="bigline"><span className="big mono">{usd(data.invoices.filter((i) => i.status === 'paid').reduce((a, i) => a + Number(i.amount || 0), 0))}</span></div></div>
+      </div>
+      <section className="card">
+        <div className="pad" style={{ borderBottom: '1px solid var(--line)' }}><h2 className="h2">Invoices</h2></div>
+        <div className="scroll-x"><table>
+          <thead><tr><th>Job</th><th>What</th><th>Amount</th><th>Status</th><th>Paid</th><th></th></tr></thead>
+          <tbody>
+            {data.invoices.map((i) => (
+              <tr key={i.id}>
+                <td style={{ color: 'var(--text)', cursor: 'pointer' }} onClick={() => i.job_id && open(i.job_id)}>{jobOf(i.job_id) ? jobOf(i.job_id).title : '—'}</td>
+                <td>{i.label || 'Invoice'}</td><td className="mono">{usd(i.amount)}</td>
+                <td>{pill(i.status === 'sent' && daysSince(i.sent_at) >= 14 ? 'overdue' : i.status, i.status === 'paid' ? 'ok' : daysSince(i.sent_at) >= 14 ? 'bad' : 'warn')}</td>
+                <td className="mono">{fdate(i.paid_at)}</td>
+                <td>{i.status === 'sent' && <button className="btn quiet sm" onClick={() => markPaid(i)}>Mark paid</button>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table></div>
+        {!data.invoices.length && <p className="sub pad">No invoices yet. They are made when a client accepts a proposal (the deposit) and approves the final.</p>}
+      </section>
+    </div>
+  );
+}
+
+function Clients({ data, reload, open }) {
+  const [sel, setSel] = React.useState(null);
+  const [f, setF] = React.useState({ name: '', email: '', notes: '' });
+  const client = data.clients.find((c) => c.id === sel);
+  const create = () => { if (!f.name.trim()) return; saveClient({ name: f.name.trim(), email: f.email.trim() || null, notes: f.notes.trim() || null, since: new Date().toISOString().slice(0, 10) }).then(() => { setF({ name: '', email: '', notes: '' }); reload(); }); };
+  // Jobs match a client by email, since a brief arrives before anyone is "a client".
+  const jobsOf = (c) => data.jobs.filter((j) => j.client_id === c.id || (c.email && j.email && j.email.toLowerCase() === c.email.toLowerCase()));
+  return (
+    <div className="cols leadcols">
+      <section className="card">
+        <div className="pad" style={{ borderBottom: '1px solid var(--line)' }}><h2 className="h2">Clients</h2></div>
+        <div className="pad formgrid">
+          <input className="input" placeholder="Name or business" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+          <input className="input" placeholder="Email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
+          <button className="btn sm" onClick={create}>Add client</button>
+        </div>
+        <div className="reclistwrap">
+          {data.clients.map((c) => (
+            <button key={c.id} className={'reclist' + (c.id === sel ? ' on' : '')} onClick={() => setSel(c.id)}>
+              <div style={{ fontSize: 13.5, fontWeight: 500 }}>{c.name}</div><div className="sub">{c.email}</div>
+            </button>
+          ))}
+          {!data.clients.length && <p className="sub" style={{ padding: '20px 2px' }}>No clients yet.</p>}
+        </div>
+      </section>
+      {client ? (
+        <section className="tile">
+          <div className="tilehead"><h2 className="h2">{client.name}</h2></div>
+          <div className="vrow"><span className="lbl">Email</span><span className="mono">{client.email || '—'}</span></div>
+          {client.notes && <p className="sub" style={{ marginTop: 10 }}>{client.notes}</p>}
+          <div className="minirows" style={{ marginTop: 14 }}>
+            {jobsOf(client).map((j) => (
+              <button key={j.id} className="minirow plain" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(j.id)}>
+                <span className="mtxt">{j.title}</span>{pill(STAGE_LABEL[j.stage], stageKind(j.stage))}
+              </button>
+            ))}
+            {!jobsOf(client).length && <p className="sub">No jobs yet.</p>}
+          </div>
+        </section>
+      ) : <p className="sub">Select a client.</p>}
+    </div>
+  );
+}
+
+// ── The hub ────────────────────────────────────────────────────────────
+function BusinessHub() {
+  // The address holds the view (#jobs, #money, #job=<id>) so a reload or a
+  // pasted link lands in the same place.
+  const TABS = ['ring', 'today', 'jobs', 'proposals', 'mail', 'money', 'clients'];
+  const fromHash = () => {
+    const id = (location.hash.match(/job=([0-9a-f-]{36})/) || [])[1] || null;
+    const t = location.hash.slice(1);
+    return { tab: id ? 'jobs' : (TABS.includes(t) ? t : 'ring'), id };
+  };
+  const [tab, setTab] = React.useState(() => fromHash().tab);
+  const [jobId, setJobId] = React.useState(() => fromHash().id);
+  React.useEffect(() => {
+    const on = () => { const h = fromHash(); setTab(h.tab); setJobId(h.id); };
+    window.addEventListener('hashchange', on);
+    return () => window.removeEventListener('hashchange', on);
+  }, []);
+  const [jobs, reloadJobs, e1] = useCollection(fetchJobs);
+  const [proposals, reloadProposals, e2] = useCollection(fetchProposals);
+  const [invoices, reloadInvoices, e3] = useCollection(fetchInvoices);
+  const [clients, reloadClients, e4] = useCollection(fetchClients);
+  const [briefs, reloadBriefs, e5] = useCollection(fetchDesignBriefs);
+  const [events, reloadEvents, e6] = useCollection(fetchAllEvents);
+  const error = e1 || e2 || e3 || e4 || e5 || e6;
+  const loading = [jobs, proposals, invoices, clients, briefs, events].some((r) => r === null);
+  const reloadAll = () => { reloadJobs(); reloadProposals(); reloadInvoices(); reloadClients(); reloadBriefs(); reloadEvents(); };
+  const data = loading ? null : { jobs, proposals, invoices, clients, briefs, events, needs: needsYou(jobs, proposals, invoices, briefs, events) };
+  const go = (t) => { setTab(t); setJobId(null); history.replaceState(null, '', '#' + t); };
+  const open = (id) => { setTab('jobs'); setJobId(id); history.replaceState(null, '', '#job=' + id); window.scrollTo(0, 0); };
 
   return (
     <React.Fragment>
@@ -864,37 +788,28 @@ function BusinessHub() {
       </div>
       <header className="top">
         <div className="topin">
-          <a className="mark" href="/backroom">
-            <img src="assets/antler.png" alt="" />
-            <div><b>Business Hub</b><span>The Back Room</span></div>
-          </a>
+          <a className="mark" href="/backroom"><img src="assets/antler.png" alt="" /><div><b>Business Hub</b><span>The Back Room</span></div></a>
           <nav className="topnav">
-            <a href="#ring" aria-current={tab === 'ring' ? 'page' : undefined}
-              style={tab === 'ring' ? { color: 'var(--text)' } : undefined}
-              onClick={(e) => { e.preventDefault(); setTab('ring'); }}>Home</a>
-            <a href="#notes" aria-current={tab === 'notes' ? 'page' : undefined}
-              style={tab === 'notes' ? { color: 'var(--text)' } : undefined}
-              onClick={(e) => { e.preventDefault(); setTab('notes'); }}>Notes</a>
+            <a href="#ring" onClick={(e) => { e.preventDefault(); go('ring'); }} style={tab === 'ring' ? { color: 'var(--text)' } : undefined}>Home</a>
             <a href="/docket">Docket</a>
-            <a href="/backroom">Hub</a>
+            <a href="/backroom">Back Room</a>
           </nav>
         </div>
       </header>
       <div className="shell">
-        {!loading && tab !== 'ring' && (
-          <ToolSidebar tab={tab} go={setTab} leads={leads} projects={projects} invoices={invoices} clients={clients} />
-        )}
+        {data && tab !== 'ring' && <ToolSidebar tab={tab} go={go} data={data} />}
         <main id="app">
-          {loading ? <p className="sub" style={{ padding: '20px 2px' }}>Loading…</p> : (
+          {error && <p className="sub" style={{ padding: '20px 2px', color: 'var(--warn)' }}>{error} If this is the first run, the workflow tables may not be set up yet.</p>}
+          {!error && loading && <p className="sub" style={{ padding: '20px 2px' }}>Loading…</p>}
+          {data && (
             <React.Fragment>
-              {tab === 'ring' && <Ring go={setTab} leads={leads} projects={projects} invoices={invoices} clients={clients} />}
-              {tab === 'overview' && <Overview clients={clients} leads={leads} projects={projects} invoices={invoices} notes={notes} go={setTab} />}
-              {tab === 'clients' && <Clients clients={clients} projects={projects} invoices={invoices} reload={reloadClients} />}
-              {tab === 'leads' && <Leads leads={leads} clients={clients} projects={projects} reload={() => { reloadLeads(); reloadProjects(); reloadClients(); }} />}
-              {tab === 'projects' && <Projects projects={projects} clients={clients} reload={reloadProjects} />}
-              {tab === 'invoices' && <Invoices invoices={invoices} clients={clients} projects={projects} reload={reloadInvoices} />}
-              {tab === 'notes' && <Notes notes={notes} clients={clients} projects={projects} reload={reloadNotes} />}
-              {tab === 'design' && <Design briefs={briefs} reload={reloadBriefs} />}
+              {tab === 'ring' && <Ring go={go} data={data} />}
+              {tab === 'today' && <Today data={data} open={open} />}
+              {tab === 'jobs' && (jobId ? <JobPage jobId={jobId} data={data} reload={reloadAll} back={() => go('jobs')} /> : <Jobs data={data} open={open} reload={reloadAll} />)}
+              {tab === 'proposals' && <Proposals data={data} open={open} />}
+              {tab === 'mail' && <Mail data={data} open={open} />}
+              {tab === 'money' && <Money data={data} open={open} reload={reloadAll} />}
+              {tab === 'clients' && <Clients data={data} reload={reloadClients} open={open} />}
             </React.Fragment>
           )}
         </main>

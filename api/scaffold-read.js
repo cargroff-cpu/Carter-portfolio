@@ -12,8 +12,8 @@
 import { SUPABASE_URL, sbHeaders } from '../lib/server.js';
 
 const ALLOWED_TABLES = new Set([
-  'campaigns', 'links', 'docket_tasks',
-  'clients', 'leads', 'lead_messages', 'projects', 'project_deliverables', 'invoices', 'notes',
+  'docket_tasks', 'clients', 'invoices',
+  'jobs', 'proposals', 'job_files', 'job_events',
   'design_briefs', 'design_brief_attachments', 'brief_events',
 ]);
 
