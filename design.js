@@ -691,22 +691,30 @@ function Nav() {
     href: "#brief"
   }, "Start a brief")));
 }
-function Medallion() {
+function TickRing({
+  r1 = 268,
+  r1Major = 258,
+  r2 = 280
+}) {
   const ticks = [];
   for (let i = 0; i < 120; i++) {
     const major = i % 10 === 0,
       t = i * 3 * Math.PI / 180,
-      r1 = major ? 258 : 268,
-      r2 = 280;
+      a = major ? r1Major : r1;
     ticks.push(React.createElement("line", {
       key: i,
       className: major ? 'major' : '',
-      x1: (300 + r1 * Math.sin(t)).toFixed(2),
-      y1: (300 - r1 * Math.cos(t)).toFixed(2),
+      x1: (300 + a * Math.sin(t)).toFixed(2),
+      y1: (300 - a * Math.cos(t)).toFixed(2),
       x2: (300 + r2 * Math.sin(t)).toFixed(2),
       y2: (300 - r2 * Math.cos(t)).toFixed(2)
     }));
   }
+  return React.createElement("g", {
+    className: "dm-ticks"
+  }, ticks);
+}
+function Medallion() {
   return React.createElement("svg", {
     className: "dmedal",
     viewBox: "0 0 600 600",
@@ -735,6 +743,21 @@ function Medallion() {
   }), React.createElement("stop", {
     offset: "100%",
     className: "dm-gold-lo"
+  })), React.createElement("linearGradient", {
+    id: "dm-sheen",
+    x1: "0",
+    y1: "0",
+    x2: "1",
+    y2: "0"
+  }, React.createElement("stop", {
+    offset: "0%",
+    className: "dm-sheen-0"
+  }), React.createElement("stop", {
+    offset: "50%",
+    className: "dm-sheen-1"
+  }), React.createElement("stop", {
+    offset: "100%",
+    className: "dm-sheen-0"
   })), React.createElement("mask", {
     id: "dm-crest",
     maskUnits: "userSpaceOnUse",
@@ -749,6 +772,16 @@ function Medallion() {
     width: "300",
     height: "229"
   }))), React.createElement("circle", {
+    className: "dm-ripple",
+    cx: "300",
+    cy: "300",
+    r: "246"
+  }), React.createElement("circle", {
+    className: "dm-ripple two",
+    cx: "300",
+    cy: "300",
+    r: "246"
+  }), React.createElement("circle", {
     className: "dm-band",
     cx: "300",
     cy: "300",
@@ -764,8 +797,10 @@ function Medallion() {
     cy: "300",
     r: "286"
   }), React.createElement("g", {
-    className: "dm-ticks"
-  }, ticks), React.createElement("circle", {
+    className: "dm-spin-in"
+  }, React.createElement("g", {
+    className: "dm-spin"
+  }, React.createElement(TickRing, null))), React.createElement("circle", {
     className: "dm-enamel",
     cx: "300",
     cy: "300",
@@ -776,7 +811,7 @@ function Medallion() {
     cy: "300",
     r: "246"
   }), React.createElement("circle", {
-    className: "dm-rule dashed",
+    className: "dm-rule dashed dm-spin-back",
     cx: "300",
     cy: "300",
     r: "230"
@@ -787,6 +822,49 @@ function Medallion() {
     height: "250",
     fill: "url(#dm-gold)",
     mask: "url(#dm-crest)"
+  }), React.createElement("g", {
+    mask: "url(#dm-crest)"
+  }, React.createElement("rect", {
+    className: "dm-sheen",
+    x: "60",
+    y: "176",
+    width: "140",
+    height: "250",
+    fill: "url(#dm-sheen)"
+  })));
+}
+function BriefRing() {
+  return React.createElement("svg", {
+    className: "dbrief-ring",
+    viewBox: "0 0 600 600",
+    "aria-hidden": "true"
+  }, React.createElement("circle", {
+    className: "dm-ripple",
+    cx: "300",
+    cy: "300",
+    r: "250"
+  }), React.createElement("circle", {
+    className: "dm-rule",
+    cx: "300",
+    cy: "300",
+    r: "294"
+  }), React.createElement("g", {
+    className: "dm-spin slow"
+  }, React.createElement(TickRing, null)), React.createElement("circle", {
+    className: "dm-rule",
+    cx: "300",
+    cy: "300",
+    r: "250"
+  }), React.createElement("circle", {
+    className: "dm-rule dashed dm-spin-back",
+    cx: "300",
+    cy: "300",
+    r: "232"
+  }), React.createElement("circle", {
+    className: "dm-rule",
+    cx: "300",
+    cy: "300",
+    r: "214"
   }));
 }
 function HeroLamp({
@@ -808,7 +886,7 @@ function Hero({
   onAddNeed
 }) {
   return React.createElement("header", {
-    className: "dhero dpanel",
+    className: "dhero dpanel dlive",
     id: "top"
   }, React.createElement("div", {
     className: "dhero-fog",
@@ -914,7 +992,7 @@ function Doors({
   }, "Design"), React.createElement("h3", {
     className: "ddisplay"
   }, "Three drafts. You pick one."), React.createElement("div", {
-    className: "dsheet"
+    className: "dsheet up"
   }, React.createElement("div", {
     className: "dhv-drafts",
     role: "group",
@@ -1177,17 +1255,29 @@ function Shelf({
 function Make({
   onAddNeed
 }) {
+  const [show, setShow] = React.useState('design');
   return React.createElement("section", {
     id: "make",
     className: "dsection dplain"
   }, React.createElement("div", {
     className: "dwrap"
   }, React.createElement("div", {
-    className: "dshead up"
+    className: "dshead"
   }, React.createElement("h2", {
     className: "ddisplay"
   }, "Two kinds of work, one person.")), React.createElement("div", {
-    className: "dduo dmake"
+    className: "dmaketabs",
+    role: "tablist",
+    "aria-label": "Kind of work"
+  }, [['design', 'Design'], ['automation', 'Tools']].map(([v, label]) => React.createElement("button", {
+    key: v,
+    type: "button",
+    role: "tab",
+    "aria-selected": show === v,
+    className: 'dlane' + (show === v ? ' on' : '') + (v === 'automation' ? ' auto' : ''),
+    onClick: () => setShow(v)
+  }, label))), React.createElement("div", {
+    className: 'dduo dmake show-' + show
   }, React.createElement(Shelf, {
     lane: "design",
     label: "Design",
@@ -1400,26 +1490,25 @@ const Brief = React.forwardRef(function Brief(props, ref) {
   const chips = auto ? AUTOMATION_CHIPS : DESIGN_CHIPS;
   return React.createElement("section", {
     id: "brief",
-    className: 'dsection ddeep' + (auto ? ' dauto' : '')
+    className: 'dsection ddeep dlive' + (auto ? ' dauto' : '')
   }, React.createElement("div", {
-    className: "dwrap dbriefgrid"
+    className: "dbrief-glow",
+    "aria-hidden": "true"
+  }), React.createElement(BriefRing, null), React.createElement("div", {
+    className: "dwrap dbriefwrap"
   }, React.createElement("div", {
-    className: "dbriefside up"
-  }, React.createElement("p", {
-    className: "dbig"
-  }, auto ? '1 day' : '2 days'), React.createElement("p", {
-    className: "dbig-k"
-  }, auto ? 'A price and a timeline, back on your brief.' : 'Three design directions from a complete brief.')), React.createElement("div", {
-    className: "dbriefmain"
-  }, React.createElement("div", {
-    className: "dbriefhead up"
-  }, React.createElement("h2", {
+    className: "dbriefhead"
+  }, React.createElement("img", {
+    className: "dbrief-crest",
+    src: "assets/antler.png",
+    alt: ""
+  }), React.createElement("h2", {
     className: "ddisplay"
   }, "Write me a brief."), React.createElement("p", {
     className: "ddeck"
   }, "Three short steps. The more you tell me, the sooner you get a price."), React.createElement("p", {
     className: "dbriefmeta"
-  }, "About three minutes. No account, and no call.")), React.createElement("div", {
+  }, "About three minutes. No account, and no call. ", auto ? 'A price and a timeline within a day.' : 'Three design directions within two business days.')), React.createElement("div", {
     className: "dlanes",
     role: "radiogroup",
     "aria-label": "What kind of project"
@@ -1678,7 +1767,7 @@ const Brief = React.forwardRef(function Brief(props, ref) {
     className: "p-btn",
     type: "submit",
     disabled: busy || !stepValid(step)
-  }, busy ? 'Sending…' : step === 2 ? 'Send brief' : 'Continue'))))));
+  }, busy ? 'Sending…' : step === 2 ? 'Send brief' : 'Continue')))));
 });
 function Footer() {
   return React.createElement("footer", {
@@ -1725,7 +1814,15 @@ function useReveal() {
       rootMargin: '0px 0px -8% 0px'
     });
     els.forEach(el => io.observe(el));
-    return () => io.disconnect();
+    const lives = document.querySelectorAll('.dlive');
+    const live = new IntersectionObserver(entries => {
+      entries.forEach(e => e.target.classList.toggle('idle', !e.isIntersecting));
+    });
+    lives.forEach(el => live.observe(el));
+    return () => {
+      io.disconnect();
+      live.disconnect();
+    };
   }, []);
 }
 function TheScaffold() {

@@ -73,16 +73,23 @@ function Nav() {
   );
 }
 
-// The medallion: the crest struck in gold on a green enamel disc, inside an
-// engraved ring of ticks like the seal in How it works. Drawn in a 600 box.
-function Medallion() {
+// An engraved ring of 120 ticks with an amber mark every 30 degrees, drawn
+// in a 600 box. Shared by the hero medallion and the brief.
+function TickRing({ r1 = 268, r1Major = 258, r2 = 280 }) {
   const ticks = [];
   for (let i = 0; i < 120; i++) {
-    const major = i % 10 === 0, t = (i * 3 * Math.PI) / 180, r1 = major ? 258 : 268, r2 = 280;
+    const major = i % 10 === 0, t = (i * 3 * Math.PI) / 180, a = major ? r1Major : r1;
     ticks.push(<line key={i} className={major ? 'major' : ''}
-      x1={(300 + r1 * Math.sin(t)).toFixed(2)} y1={(300 - r1 * Math.cos(t)).toFixed(2)}
+      x1={(300 + a * Math.sin(t)).toFixed(2)} y1={(300 - a * Math.cos(t)).toFixed(2)}
       x2={(300 + r2 * Math.sin(t)).toFixed(2)} y2={(300 - r2 * Math.cos(t)).toFixed(2)} />);
   }
+  return <g className="dm-ticks">{ticks}</g>;
+}
+
+// The medallion: the crest struck in gold on a green enamel disc. On load the
+// tick ring spins up and settles into a slow turn; the gold rim breathes with
+// the lamps, a ring ripples out from it, and light passes over the crest.
+function Medallion() {
   return (
     <svg className="dmedal" viewBox="0 0 600 600" role="img" aria-label="The Scaffold, by Carter Groff">
       <defs>
@@ -92,18 +99,39 @@ function Medallion() {
         <linearGradient id="dm-gold" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" className="dm-gold-hi" /><stop offset="100%" className="dm-gold-lo" />
         </linearGradient>
+        <linearGradient id="dm-sheen" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" className="dm-sheen-0" /><stop offset="50%" className="dm-sheen-1" /><stop offset="100%" className="dm-sheen-0" />
+        </linearGradient>
         <mask id="dm-crest" maskUnits="userSpaceOnUse" x="0" y="0" width="600" height="600">
           <image href="assets/antler.png" x="150" y="186" width="300" height="229" />
         </mask>
       </defs>
+      <circle className="dm-ripple" cx="300" cy="300" r="246" />
+      <circle className="dm-ripple two" cx="300" cy="300" r="246" />
       <circle className="dm-band" cx="300" cy="300" r="292" />
       <circle className="dm-rule" cx="300" cy="300" r="294" />
       <circle className="dm-rule" cx="300" cy="300" r="286" />
-      <g className="dm-ticks">{ticks}</g>
+      <g className="dm-spin-in"><g className="dm-spin"><TickRing /></g></g>
       <circle className="dm-enamel" cx="300" cy="300" r="246" />
       <circle className="dm-rule gold" cx="300" cy="300" r="246" />
-      <circle className="dm-rule dashed" cx="300" cy="300" r="230" />
+      <circle className="dm-rule dashed dm-spin-back" cx="300" cy="300" r="230" />
       <rect x="140" y="176" width="320" height="250" fill="url(#dm-gold)" mask="url(#dm-crest)" />
+      <g mask="url(#dm-crest)"><rect className="dm-sheen" x="60" y="176" width="140" height="250" fill="url(#dm-sheen)" /></g>
+    </svg>
+  );
+}
+
+// The brief's backdrop: the same engraved ring, large, turning slowly behind
+// the heading, the way the original page's rings sat behind its brief.
+function BriefRing() {
+  return (
+    <svg className="dbrief-ring" viewBox="0 0 600 600" aria-hidden="true">
+      <circle className="dm-ripple" cx="300" cy="300" r="250" />
+      <circle className="dm-rule" cx="300" cy="300" r="294" />
+      <g className="dm-spin slow"><TickRing /></g>
+      <circle className="dm-rule" cx="300" cy="300" r="250" />
+      <circle className="dm-rule dashed dm-spin-back" cx="300" cy="300" r="232" />
+      <circle className="dm-rule" cx="300" cy="300" r="214" />
     </svg>
   );
 }
@@ -121,7 +149,7 @@ function HeroLamp({ side }) {
 
 function Hero({ onAddNeed }) {
   return (
-    <header className="dhero dpanel" id="top">
+    <header className="dhero dpanel dlive" id="top">
       {/* The portfolio's room: fog banks rolling across the wood, under a deep vignette */}
       <div className="dhero-fog" aria-hidden="true" style={{ top: '24%', animationDuration: '26s' }} />
       <div className="dhero-fog" aria-hidden="true" style={{ top: '50%', animationDuration: '34s', animationDelay: '-12s' }} />
@@ -178,7 +206,7 @@ function Doors({ onAddNeed }) {
           <div className="ddoor up">
             <span className="dk">Design</span>
             <h3 className="ddisplay">Three drafts. You pick one.</h3>
-            <div className="dsheet">
+            <div className="dsheet up">
               <div className="dhv-drafts" role="group" aria-label="Three drafts of a spring menu flyer">
                 {DRAFTS.map((d, i) => (
                   <button key={d.cls} type="button" className="dprint" aria-pressed={pick === i} aria-label={'Draft ' + (i + 1)} onClick={() => setPick(i)}>
@@ -336,13 +364,21 @@ function Shelf({ lane, label, title, blurb, items, cta, onAddNeed }) {
 }
 
 function Make({ onAddNeed }) {
+  // On a phone one list shows at a time, chosen with the Design | Tools switch.
+  const [show, setShow] = React.useState('design');
   return (
     <section id="make" className="dsection dplain">
       <div className="dwrap">
-        <div className="dshead up">
+        <div className="dshead">
           <h2 className="ddisplay">Two kinds of work, one person.</h2>
         </div>
-        <div className="dduo dmake">
+        <div className="dmaketabs" role="tablist" aria-label="Kind of work">
+          {[['design', 'Design'], ['automation', 'Tools']].map(([v, label]) => (
+            <button key={v} type="button" role="tab" aria-selected={show === v}
+              className={'dlane' + (show === v ? ' on' : '') + (v === 'automation' ? ' auto' : '')} onClick={() => setShow(v)}>{label}</button>
+          ))}
+        </div>
+        <div className={'dduo dmake show-' + show}>
           <Shelf lane="design" label="Design" title="What your customers see"
             blurb="Three directions, you pick one, I finish it."
             items={DESIGN_SERVICES} cta="Start a design brief" onAddNeed={onAddNeed} />
@@ -513,17 +549,15 @@ const Brief = React.forwardRef(function Brief(props, ref) {
   const chips = auto ? AUTOMATION_CHIPS : DESIGN_CHIPS;
 
   return (
-    <section id="brief" className={'dsection ddeep' + (auto ? ' dauto' : '')}>
-      <div className="dwrap dbriefgrid">
-        <div className="dbriefside up">
-          <p className="dbig">{auto ? '1 day' : '2 days'}</p>
-          <p className="dbig-k">{auto ? 'A price and a timeline, back on your brief.' : 'Three design directions from a complete brief.'}</p>
-        </div>
-        <div className="dbriefmain">
-        <div className="dbriefhead up">
+    <section id="brief" className={'dsection ddeep dlive' + (auto ? ' dauto' : '')}>
+      <div className="dbrief-glow" aria-hidden="true" />
+      <BriefRing />
+      <div className="dwrap dbriefwrap">
+        <div className="dbriefhead">
+          <img className="dbrief-crest" src="assets/antler.png" alt="" />
           <h2 className="ddisplay">Write me a brief.</h2>
           <p className="ddeck">Three short steps. The more you tell me, the sooner you get a price.</p>
-          <p className="dbriefmeta">About three minutes. No account, and no call.</p>
+          <p className="dbriefmeta">About three minutes. No account, and no call. {auto ? 'A price and a timeline within a day.' : 'Three design directions within two business days.'}</p>
         </div>
 
         <div className="dlanes" role="radiogroup" aria-label="What kind of project">
@@ -664,7 +698,6 @@ const Brief = React.forwardRef(function Brief(props, ref) {
             </button>
           </div>
         </form>
-        </div>
       </div>
     </section>
   );
@@ -700,7 +733,13 @@ function useReveal() {
       entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('shown'); io.unobserve(e.target); } });
     }, { threshold: 0.15, rootMargin: '0px 0px -8% 0px' });
     els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
+    // Looping motion (the medallion, the brief ring) pauses while off screen.
+    const lives = document.querySelectorAll('.dlive');
+    const live = new IntersectionObserver((entries) => {
+      entries.forEach((e) => e.target.classList.toggle('idle', !e.isIntersecting));
+    });
+    lives.forEach((el) => live.observe(el));
+    return () => { io.disconnect(); live.disconnect(); };
   }, []);
 }
 

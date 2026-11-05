@@ -31,7 +31,7 @@
   --fog-1: rgba(230,222,205,.30); --fog-2: rgba(205,196,176,.15);
   --vignette-1: rgba(8,5,2,.55); --vignette-2: rgba(8,5,2,.85);
   --medal-band: #160f09; --medal-dash: rgba(245,205,106,.28);
-  --enamel-hi: #2f5640; --enamel-lo: #12261b; --gold-hi: #f8dc8e;
+  --enamel-hi: #2f5640; --enamel-lo: #12261b; --gold-hi: #f8dc8e; --sheen: #fff6dc;
   --seal-ink: rgba(236,217,178,.22); --seal-word: rgba(236,217,178,.5);
   --nav-bg: rgba(15,10,6,.92); --well: rgba(15,10,6,.6); --on-ink: #1a120b; --mask: #000;
   --terracotta: #b8643f;
@@ -70,7 +70,8 @@ a:hover { color: var(--amber-lit); }
 .dbrand b { font-family: var(--display); font-size: 19px; font-weight: 500; }
 .dsub { display: block; font-family: var(--ui); font-size: 13px; color: var(--ink-mute); margin-top: 2px; }
 .dnavlinks { display: none; gap: 24px; margin-left: auto; }
-.dnavlinks a { font-family: var(--ui); font-size: 15px; font-weight: 500; color: var(--ink-soft); }
+.dnavlinks a { font-family: var(--ui); font-size: 15px; font-weight: 500; color: var(--ink-soft); padding: 4px 0; background: linear-gradient(var(--amber), var(--amber)) left bottom / 0% 1px no-repeat; transition: background-size .3s cubic-bezier(.16, 1, .3, 1), color .2s; }
+.dnavlinks a:hover { background-size: 100% 1px; }
 .dnavlinks a:hover { color: var(--ink); }
 .dnav .p-btn { margin-left: auto; min-height: 44px; padding: 0 20px; }
 @media (min-width: 900px) { .dnavlinks { display: flex; } .dnav .p-btn { margin-left: 0; } }
@@ -109,6 +110,27 @@ a:hover { color: var(--amber-lit); }
 .dm-enamel-lo { stop-color: var(--enamel-lo); }
 .dm-gold-hi { stop-color: var(--gold-hi); }
 .dm-gold-lo { stop-color: var(--amber); }
+/* medallion motion: spin up on load, then a slow turn; the rim breathes with
+   the lamps, a ring ripples out, and light passes over the gold crest */
+.dm-spin-in, .dm-spin, .dm-spin-back, .dm-ripple { transform-box: view-box; transform-origin: 50% 50%; }
+.dm-spin-in { animation: dm-spinin 2.6s cubic-bezier(.16, 1, .3, 1) both; }
+.dm-spin { animation: dm-turn 140s linear infinite; }
+.dm-spin.slow { animation-duration: 220s; }
+.dm-spin-back { animation: dm-turnback 110s linear infinite; }
+.dm-rule.gold { animation: dm-breathe 6s ease-in-out infinite; }
+.dm-ripple { fill: none; stroke: var(--amber-lit); stroke-width: 3; opacity: 0; animation: dm-ripple 6s cubic-bezier(.16, 1, .3, 1) 2.2s infinite; }
+.dm-ripple.two { animation-delay: 5.2s; }
+.dm-sheen { animation: dm-sheen 8s cubic-bezier(.45, 0, .25, 1) 2.4s infinite both; }
+.dm-sheen-0 { stop-color: var(--sheen); stop-opacity: 0; }
+.dm-sheen-1 { stop-color: var(--sheen); stop-opacity: .8; }
+@keyframes dm-spinin { from { transform: rotate(-220deg); } to { transform: rotate(0deg); } }
+@keyframes dm-turn { to { transform: rotate(360deg); } }
+@keyframes dm-turnback { to { transform: rotate(-360deg); } }
+@keyframes dm-breathe { 0%, 100% { stroke: var(--amber); } 50% { stroke: var(--amber-lit); } }
+@keyframes dm-ripple { 0% { transform: scale(1); opacity: .75; } 80% { opacity: 0; } 100% { transform: scale(1.45); opacity: 0; } }
+.dm-ticks line.major { animation: dm-breathe 6s ease-in-out infinite; }
+@keyframes dm-sheen { 0% { transform: translateX(-160px); } 30%, 100% { transform: translateX(420px); } }
+.js .dlive.idle .dm-spin, .js .dlive.idle .dm-spin-back, .js .dlive.idle .dm-ripple, .js .dlive.idle .dm-sheen, .js .dlive.idle .dm-rule.gold, .js .dlive.idle .dm-ticks line.major { animation-play-state: paused; }
 .dhero h1.ddisplay { font-size: clamp(40px, 5vw, 70px); line-height: 1; max-width: 10em; margin: 0 auto; text-wrap: balance; }
 .dhero .ddeck { margin: 20px auto 0; max-width: 28em; }
 .dhero .dacts { justify-content: center; margin-top: 32px; }
@@ -207,6 +229,8 @@ a:hover { color: var(--amber-lit); }
 .dseal-stop:hover text { fill: var(--ink); }
 .dseal-mark { transform-origin: 200px 200px; transition: transform .8s cubic-bezier(.3,.7,.2,1); pointer-events: none; }
 .dseal-mark rect { fill: none; stroke: var(--amber-lit); stroke-width: 1.5; }
+.dseal-mark rect { animation: dseal-pulse 2.8s ease-in-out infinite; }
+@keyframes dseal-pulse { 0%, 100% { stroke-opacity: 1; } 50% { stroke-opacity: .35; } }
 .dseal-crest { opacity: .55; }
 .dsteplist { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
 .dsteplist li { border-bottom: 1px solid var(--rule); }
@@ -220,6 +244,16 @@ a:hover { color: var(--amber-lit); }
 
 /* ── the shelf ── */
 .dmake { align-items: start; }
+/* on a phone the two lists sit behind a Design | Tools switch */
+.dmaketabs { display: none; }
+@media (max-width: 899px) {
+  .dmaketabs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); margin: -12px 0 28px; }
+  .dmake.show-design .dhalf-sec.dauto, .dmake.show-automation .dhalf-sec:not(.dauto) { display: none; }
+  .dmake .dhalf-sec { animation: dshelf-in .35s cubic-bezier(.16, 1, .3, 1); }
+  .dmake .dhalf-sec .dk { display: none; }
+  .dmake .dhalf-sec h3.ddisplay { margin-top: 0; }
+}
+@keyframes dshelf-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .dhalf-sec h3.ddisplay { font-size: clamp(28px, 3.2vw, 38px); margin: 8px 0 0; }
 .dhalf-sec .dp { max-width: 44ch; }
 .dhalf-sec.dauto { --amber: var(--brass); --amber-lit: var(--brass-lit); }
@@ -265,15 +299,18 @@ a:hover { color: var(--amber-lit); }
 .dfaq p { margin: 12px 0 0; font-size: 17px; line-height: 1.7; color: var(--ink-soft); max-width: 64ch; }
 
 /* ── the brief ── */
-#brief { position: relative; }
+#brief { position: relative; overflow: hidden; text-align: center; }
 #brief.dauto { --amber: var(--brass); --amber-lit: var(--brass-lit); }
-.dbriefgrid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 48px; align-items: start; }
-@media (min-width: 980px) { .dbriefgrid { grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: 72px; } .dbriefside { position: sticky; top: 120px; } }
-.dbig { margin: 0; font-family: var(--display); font-weight: 500; font-size: clamp(96px, 12vw, 176px); line-height: .85; letter-spacing: -.03em; color: var(--amber); white-space: nowrap; }
-.dbig-k { margin: 20px 0 0; font-family: var(--display); font-size: 26px; line-height: 1.25; color: var(--ink); max-width: 14em; }
-.dbriefhead { max-width: 44ch; }
-.dbriefhead .ddeck { margin: 16px 0 0; }
-.dbriefmeta { margin: 16px 0 0; font-family: var(--ui); font-size: 14px; font-weight: 500; color: var(--ink-mute); }
+/* the original brief's composition: centred, with the engraved ring turning behind the heading */
+.dbrief-ring { position: absolute; z-index: 0; left: 50%; top: clamp(8px, 3vw, 40px); width: min(720px, 150vw); height: auto; transform: translateX(-50%); pointer-events: none; opacity: .6; overflow: visible; -webkit-mask-image: linear-gradient(var(--mask) 45%, transparent 70%); mask-image: linear-gradient(var(--mask) 45%, transparent 70%); }
+.dbrief-glow { position: absolute; z-index: 0; left: 50%; top: clamp(-120px, -8vw, -40px); width: 900px; aspect-ratio: 1; border-radius: 50%; transform: translateX(-50%); pointer-events: none; background: radial-gradient(circle, var(--candle-glow) 0%, var(--candle-edge) 40%, transparent 70%); mix-blend-mode: screen; opacity: .55; }
+.dbriefwrap { position: relative; z-index: 1; }
+.dbriefhead { max-width: 34em; margin: 0 auto; padding-top: clamp(64px, 9vw, 120px); }
+.dbrief-crest { display: block; width: 48px; height: auto; margin: 0 auto 20px; opacity: .85; }
+#brief h2.ddisplay { font-size: clamp(44px, 6vw, 80px); }
+#brief .ddeck { margin: 16px auto 0; }
+.dbriefmeta { margin: 16px auto 0; max-width: 34em; font-family: var(--ui); font-size: 14px; font-weight: 500; color: var(--ink-mute); }
+#brief .dlanes, #brief .dprog, #brief .dform { margin-left: auto; margin-right: auto; text-align: left; }
 .dlanes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); margin: 32px 0 0; max-width: 640px; }
 .dlane { background: none; border: 1px solid var(--rule-strong); color: var(--ink-soft); font-family: var(--ui); font-size: 16px; font-weight: 500; padding: 12px; cursor: pointer; min-height: 48px; transition: background-color .2s, border-color .2s, color .2s; }
 .dlane:hover { color: var(--ink); }
@@ -338,10 +375,13 @@ a:hover { color: var(--amber-lit); }
 .dfootsub { color: var(--ink-mute); font-size: 16px; margin: 8px 0 0; font-style: italic; }
 
 /* ── scroll reveal: hidden only once the page's script has set html.js ── */
-.up { transition: opacity .6s ease, transform .6s cubic-bezier(.2,.7,.3,1); }
-.js .up { opacity: 0; transform: translateY(14px); }
-.js .up.shown { opacity: 1; transform: none; }
-.dduo .up.shown:nth-child(2) { transition-delay: 90ms; }
+/* the drafts are dealt onto the sheet the first time it comes into view */
+.js .dsheet.up .dprint { transition: transform .8s cubic-bezier(.16, 1, .3, 1), opacity .5s ease, border-color .2s, box-shadow .2s; }
+.js .dsheet.up:not(.shown) .dprint { opacity: 0; transform: translateY(32px) rotate(var(--deal-r, 0deg)); }
+.dsheet .dprint:nth-child(1) { --deal-r: -7deg; }
+.dsheet .dprint:nth-child(3) { --deal-r: 7deg; }
+.js .dsheet.up.shown .dprint:nth-child(2) { transition-delay: .1s, .1s, 0s, 0s; }
+.js .dsheet.up.shown .dprint:nth-child(3) { transition-delay: .2s, .2s, 0s, 0s; }
 
 @media (max-width: 760px) {
   .dfields.two { grid-template-columns: minmax(0, 1fr); }
@@ -352,6 +392,9 @@ a:hover { color: var(--amber-lit); }
 
 @media (prefers-reduced-motion: reduce) {
   .dcursor, .dmv, .dhero-fog, .dhero-candle { animation: none; }
-  .up, .dsession li, .js .up, .js .dsession li { opacity: 1; transform: none; transition: none; }
+  .dsession li, .js .dsession li, .js .dsheet.up .dprint { opacity: 1; transform: none; transition: none; }
+  .js .dsheet.up .dprint:not([aria-pressed="true"]) { opacity: .66; }
+  .dm-spin-in, .dm-spin, .dm-spin-back, .dm-ripple, .dm-sheen, .dm-rule.gold, .dm-ticks line.major, .dseal-mark rect, .dhalf-sec { animation: none; }
+  .dm-ripple { opacity: 0; }
   .dseal-done, .dseal-mark, .dprint, .dlane, .dchip { transition: none; }
 }
