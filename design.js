@@ -691,20 +691,13 @@ function Nav() {
     href: "#brief"
   }, "Start a brief")));
 }
-const MEDAL_WORDS = ['Design that looks right', 'Tools that work right', 'Harrisonburg, Virginia'];
-function medalArc(a, r) {
-  const t1 = (a - 52) * Math.PI / 180,
-    t2 = (a + 52) * Math.PI / 180;
-  const p = t => (300 + r * Math.sin(t)).toFixed(2) + ' ' + (300 - r * Math.cos(t)).toFixed(2);
-  return 'M' + p(t1) + ' A' + r + ' ' + r + ' 0 0 1 ' + p(t2);
-}
 function Medallion() {
   const ticks = [];
   for (let i = 0; i < 120; i++) {
     const major = i % 10 === 0,
       t = i * 3 * Math.PI / 180,
-      r1 = major ? 256 : 265,
-      r2 = 276;
+      r1 = major ? 258 : 268,
+      r2 = 280;
     ticks.push(React.createElement("line", {
       key: i,
       className: major ? 'major' : '',
@@ -719,11 +712,7 @@ function Medallion() {
     viewBox: "0 0 600 600",
     role: "img",
     "aria-label": "The Scaffold, by Carter Groff"
-  }, React.createElement("defs", null, MEDAL_WORDS.map((w, i) => React.createElement("path", {
-    key: w,
-    id: 'dmw-' + i,
-    d: medalArc(i * 120, 230)
-  })), React.createElement("radialGradient", {
+  }, React.createElement("defs", null, React.createElement("radialGradient", {
     id: "dm-enamel",
     cx: "50%",
     cy: "38%",
@@ -755,17 +744,12 @@ function Medallion() {
     height: "600"
   }, React.createElement("image", {
     href: "assets/antler.png",
-    x: "180",
-    y: "208",
-    width: "240",
-    height: "183"
+    x: "150",
+    y: "186",
+    width: "300",
+    height: "229"
   }))), React.createElement("circle", {
     className: "dm-band",
-    cx: "300",
-    cy: "300",
-    r: "290"
-  }), React.createElement("circle", {
-    className: "dm-rule",
     cx: "300",
     cy: "300",
     r: "292"
@@ -773,54 +757,34 @@ function Medallion() {
     className: "dm-rule",
     cx: "300",
     cy: "300",
-    r: "284"
-  }), React.createElement("g", {
-    className: "dm-ticks"
-  }, ticks), React.createElement("circle", {
+    r: "294"
+  }), React.createElement("circle", {
     className: "dm-rule",
     cx: "300",
     cy: "300",
-    r: "248"
-  }), MEDAL_WORDS.map((w, i) => React.createElement("text", {
-    key: w,
-    className: "dm-word"
-  }, React.createElement("textPath", {
-    href: '#dmw-' + i,
-    startOffset: "50%",
-    textAnchor: "middle"
-  }, w))), [60, 180, 300].map(a => {
-    const t = a * Math.PI / 180,
-      x = 300 + 238 * Math.sin(t),
-      y = 300 - 238 * Math.cos(t);
-    return React.createElement("rect", {
-      key: a,
-      className: "dm-loz",
-      x: x - 5,
-      y: y - 5,
-      width: "10",
-      height: "10",
-      transform: 'rotate(' + (a + 45) + ' ' + x + ' ' + y + ')'
-    });
-  }), React.createElement("circle", {
+    r: "286"
+  }), React.createElement("g", {
+    className: "dm-ticks"
+  }, ticks), React.createElement("circle", {
     className: "dm-enamel",
     cx: "300",
     cy: "300",
-    r: "200"
+    r: "246"
   }), React.createElement("circle", {
     className: "dm-rule gold",
     cx: "300",
     cy: "300",
-    r: "200"
+    r: "246"
   }), React.createElement("circle", {
     className: "dm-rule dashed",
     cx: "300",
     cy: "300",
-    r: "186"
+    r: "230"
   }), React.createElement("rect", {
-    x: "160",
-    y: "190",
-    width: "280",
-    height: "220",
+    x: "140",
+    y: "176",
+    width: "320",
+    height: "250",
     fill: "url(#dm-gold)",
     mask: "url(#dm-crest)"
   }));

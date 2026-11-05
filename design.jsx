@@ -73,18 +73,12 @@ function Nav() {
   );
 }
 
-// The medallion: the crest struck in gold on a green enamel disc, set inside
-// an engraved seal like the one in How it works. Drawn in a 600 box.
-const MEDAL_WORDS = ['Design that looks right', 'Tools that work right', 'Harrisonburg, Virginia'];
-function medalArc(a, r) {
-  const t1 = ((a - 52) * Math.PI) / 180, t2 = ((a + 52) * Math.PI) / 180;
-  const p = (t) => (300 + r * Math.sin(t)).toFixed(2) + ' ' + (300 - r * Math.cos(t)).toFixed(2);
-  return 'M' + p(t1) + ' A' + r + ' ' + r + ' 0 0 1 ' + p(t2);
-}
+// The medallion: the crest struck in gold on a green enamel disc, inside an
+// engraved ring of ticks like the seal in How it works. Drawn in a 600 box.
 function Medallion() {
   const ticks = [];
   for (let i = 0; i < 120; i++) {
-    const major = i % 10 === 0, t = (i * 3 * Math.PI) / 180, r1 = major ? 256 : 265, r2 = 276;
+    const major = i % 10 === 0, t = (i * 3 * Math.PI) / 180, r1 = major ? 258 : 268, r2 = 280;
     ticks.push(<line key={i} className={major ? 'major' : ''}
       x1={(300 + r1 * Math.sin(t)).toFixed(2)} y1={(300 - r1 * Math.cos(t)).toFixed(2)}
       x2={(300 + r2 * Math.sin(t)).toFixed(2)} y2={(300 - r2 * Math.cos(t)).toFixed(2)} />);
@@ -92,7 +86,6 @@ function Medallion() {
   return (
     <svg className="dmedal" viewBox="0 0 600 600" role="img" aria-label="The Scaffold, by Carter Groff">
       <defs>
-        {MEDAL_WORDS.map((w, i) => <path key={w} id={'dmw-' + i} d={medalArc(i * 120, 230)} />)}
         <radialGradient id="dm-enamel" cx="50%" cy="38%" r="65%">
           <stop offset="0%" className="dm-enamel-hi" /><stop offset="100%" className="dm-enamel-lo" />
         </radialGradient>
@@ -100,25 +93,17 @@ function Medallion() {
           <stop offset="0%" className="dm-gold-hi" /><stop offset="100%" className="dm-gold-lo" />
         </linearGradient>
         <mask id="dm-crest" maskUnits="userSpaceOnUse" x="0" y="0" width="600" height="600">
-          <image href="assets/antler.png" x="180" y="208" width="240" height="183" />
+          <image href="assets/antler.png" x="150" y="186" width="300" height="229" />
         </mask>
       </defs>
-      <circle className="dm-band" cx="300" cy="300" r="290" />
-      <circle className="dm-rule" cx="300" cy="300" r="292" />
-      <circle className="dm-rule" cx="300" cy="300" r="284" />
+      <circle className="dm-band" cx="300" cy="300" r="292" />
+      <circle className="dm-rule" cx="300" cy="300" r="294" />
+      <circle className="dm-rule" cx="300" cy="300" r="286" />
       <g className="dm-ticks">{ticks}</g>
-      <circle className="dm-rule" cx="300" cy="300" r="248" />
-      {MEDAL_WORDS.map((w, i) => (
-        <text key={w} className="dm-word"><textPath href={'#dmw-' + i} startOffset="50%" textAnchor="middle">{w}</textPath></text>
-      ))}
-      {[60, 180, 300].map((a) => {
-        const t = (a * Math.PI) / 180, x = 300 + 238 * Math.sin(t), y = 300 - 238 * Math.cos(t);
-        return <rect key={a} className="dm-loz" x={x - 5} y={y - 5} width="10" height="10" transform={'rotate(' + (a + 45) + ' ' + x + ' ' + y + ')'} />;
-      })}
-      <circle className="dm-enamel" cx="300" cy="300" r="200" />
-      <circle className="dm-rule gold" cx="300" cy="300" r="200" />
-      <circle className="dm-rule dashed" cx="300" cy="300" r="186" />
-      <rect x="160" y="190" width="280" height="220" fill="url(#dm-gold)" mask="url(#dm-crest)" />
+      <circle className="dm-enamel" cx="300" cy="300" r="246" />
+      <circle className="dm-rule gold" cx="300" cy="300" r="246" />
+      <circle className="dm-rule dashed" cx="300" cy="300" r="230" />
+      <rect x="140" y="176" width="320" height="250" fill="url(#dm-gold)" mask="url(#dm-crest)" />
     </svg>
   );
 }
