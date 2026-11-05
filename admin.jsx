@@ -359,6 +359,7 @@ function App() {
         padding: '14px 28px', background: 'rgba(13,9,5,0.92)', backdropFilter: 'blur(10px)',
         borderBottom: '1px solid var(--rule)', zIndex: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <a href="/backroom" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, color: 'var(--ink-soft)', textDecoration: 'none', fontFamily: 'var(--ui-font)', fontSize: 12, letterSpacing: '0.14em', textTransform: 'uppercase', padding: '10px 16px 10px 0', marginRight: 4, borderRight: '1px solid var(--rule)', whiteSpace: 'nowrap' }}><span aria-hidden="true" style={{ fontSize: 16 }}>←</span> Backroom</a>
           <div style={{ width: 32, height: 32, border: '1px solid var(--ink-dim)', display: 'flex',
             alignItems: 'center', justifyContent: 'center' }}>
             <img src="assets/logo.png" alt="Carter Groff" style={{ width: '76%', height: '76%', objectFit: 'contain' }} />

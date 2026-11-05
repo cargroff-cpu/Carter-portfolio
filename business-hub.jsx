@@ -192,16 +192,33 @@ function Ring({ go, data }) {
   );
 }
 
+// A small copy of the ring: the six plates around the wick, the open tool lit.
+function MiniRing({ tab }) {
+  const ids = RING_NODES.map((n) => n.id);
+  return (
+    <svg className="miniring" viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" strokeOpacity=".45" strokeWidth="1.5" />
+      <circle cx="24" cy="24" r="12.5" fill="none" stroke="currentColor" strokeOpacity=".25" strokeWidth="1" />
+      {ids.map((id, i) => {
+        const a = -Math.PI / 2 + (i * Math.PI * 2) / ids.length;
+        const on = id === tab;
+        return <circle key={id} cx={24 + 12.5 * Math.cos(a)} cy={24 + 12.5 * Math.sin(a)} r={on ? 3.4 : 2.2} fill={on ? '#f5cd6a' : 'currentColor'} fillOpacity={on ? 1 : .55} />;
+      })}
+      <circle cx="24" cy="24" r="2" fill="#f5cd6a" />
+    </svg>
+  );
+}
+
 function ToolSidebar({ tab, go, data }) {
   return (
     <nav className="tools on">
+      <button className="ring-back" onClick={() => go('ring')} aria-label="Back to the ring"><MiniRing tab={tab} /><span className="tname">The ring</span></button>
       {RING_NODES.map((n) => (
         <button key={n.id} aria-current={tab === n.id ? 'true' : undefined} onClick={() => go(n.id)}>
           <span className="tplate"><img src={n.icon} alt="" style={n.mirror ? { transform: 'scaleX(-1)' } : undefined} /></span>
           <span><span className="tname">{n.label}</span><span className="tmeta">{ringMetaOf(n.id, data)}</span></span>
         </button>
       ))}
-      <button className="ring-back" onClick={() => go('ring')}><span>Ring</span></button>
     </nav>
   );
 }
@@ -1119,9 +1136,12 @@ function BusinessHub() {
       </div>
       <header className="top">
         <div className="topin">
+          {tab === 'ring'
+            ? <a className="backlink" href="/backroom"><i aria-hidden="true">←</i> Backroom</a>
+            : <a className="backlink" href={jobId ? '#jobs' : '#ring'} onClick={(e) => { e.preventDefault(); go(jobId ? 'jobs' : 'ring'); }}><i aria-hidden="true">←</i> {jobId ? 'Jobs' : 'Ring'}</a>}
           <a className="mark" href="/backroom"><img src="assets/antler.png" alt="" /><div><b>Business Hub</b><span>The Backroom</span></div></a>
           <nav className="topnav">
-            <a href="#ring" onClick={(e) => { e.preventDefault(); go('ring'); }} style={tab === 'ring' ? { color: 'var(--text)' } : undefined}>Home</a>
+            <a className="navhome" href="#ring" onClick={(e) => { e.preventDefault(); go('ring'); }} style={tab === 'ring' ? { color: 'var(--text)' } : undefined}>Home</a>
             <a href="/docket">Docket</a>
             <a href="/backroom">Backroom</a>
           </nav>
