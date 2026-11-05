@@ -487,3 +487,10 @@ near lamps. Carter tried a phone lane (first one blurred pair, then three
 pairs in perspective) and preferred the two lamps. The other pairs are hidden
 with `visibility`, not `display`, because every GasLamp shares one set of
 gradient ids and a display:none copy earlier in the page breaks the lit ones.
+
+## Scaffold hero: the lamps come in on load
+
+The lamp posts fade up out of the fog when the page loads, pair by pair from
+the back of the lane to the front (0.3s, 0.8s, 1.3s, 1.8s, each over 2.4s):
+each rises a little, settles, and flickers once like gas catching. On phones
+the two lamps come in at 0.4s. Reduced motion shows them at once.

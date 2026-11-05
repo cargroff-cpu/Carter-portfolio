@@ -120,6 +120,14 @@ a:hover { color: var(--amber-lit); }
 .dhero-veil.mid, .dhero-wisp.mid { z-index: 6; height: 46%; }
 .dhero-veil.mid { opacity: .75; }
 @keyframes dwisp { from { transform: translateX(-6%); } to { transform: translateX(6%); } }
+/* on load the lane comes in out of the fog, back to front: each pair rises
+   slightly and fades up, catching like gas as it settles */
+.dhero-lamp { animation: dlamp-in 2.4s cubic-bezier(.22, .8, .3, 1) both; }
+.dhero-lamp.back { animation-delay: .3s; }
+.dhero-lamp.far { animation-delay: .8s; }
+.dhero-lamp.mid { animation-delay: 1.3s; }
+.dhero-lamp.near { animation-delay: 1.8s; }
+@keyframes dlamp-in { 0% { opacity: 0; transform: translateY(28px) scale(.97); } 62% { opacity: .9; } 70% { opacity: .7; } 78% { opacity: 1; } 100% { opacity: 1; transform: none; } }
 .dhero .dhero-vignette { z-index: 8; }
 .dhero .dhero-in { z-index: 9; }
 .dmedal { display: block; width: 100%; height: auto; overflow: visible; }
@@ -184,6 +192,7 @@ a:hover { color: var(--amber-lit); }
      copy earlier in the page breaks the lit ones */
   .dhero-lamp.mid, .dhero-lamp.far, .dhero-lamp.back { visibility: hidden; }
   .dhero-veil, .dhero-wisp, .dhero-path { display: none; }
+  .dhero-lamp.near { animation-delay: .4s; }
   .dhero-lamp.l.near { left: max(-142px, calc(50% - 320px)); } .dhero-lamp.r.near { right: max(-142px, calc(50% - 320px)); }
   .dhero-candle { width: 300px; top: 77px; }
   .dhero-in { padding: 0 24px; }
@@ -435,7 +444,7 @@ a:hover { color: var(--amber-lit); }
 @media (max-width: 899px) { .ddial { order: 2; width: min(100%, 360px); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .dcursor, .dmv, .dhero-fog, .dhero-candle, .dhero-wisp { animation: none; }
+  .dcursor, .dmv, .dhero-fog, .dhero-candle, .dhero-wisp, .dhero-lamp { animation: none; }
   .dsession li, .js .dsession li, .js .dsheet.up .dprint { opacity: 1; transform: none; transition: none; }
   .js .dsheet.up .dprint:not([aria-pressed="true"]) { opacity: .66; }
   .dm-spin-in, .dm-spin, .dm-spin-back, .dm-ripple, .dm-sheen, .dm-rule.gold, .dm-ticks line.major, .dseal-mark rect, .dhalf-sec { animation: none; }
