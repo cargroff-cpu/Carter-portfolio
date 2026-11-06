@@ -799,3 +799,41 @@ of it off. Desktop is unchanged.
 Follow-up: the nudge was too much on repeat, so it plays once the first time
 the cards scroll into view (an IntersectionObserver in Make) and never again.
 Then softened again: one slow 12px ease out and back, no bounce.
+
+## 2026-11-06 — Business Hub: the ring is gone, Today is home
+
+Carter: the ring was an extra step. The Business Hub now opens straight on
+Today with the tool sidebar (bottom bar on phones) always showing. Removed the
+Ring launcher, its lamps, the fly-to-sidebar hand-off and the hidden "ghost"
+sidebar (business-hub.jsx), the ring/launch styles (mcc.css, motion.css), and
+motifs.jsx from Business Hub.html (only the ring's lamps used it there). The
+header's back link is "← Backroom" everywhere except a job page ("← Jobs"),
+and the header's Home link is now "Today". Old `#ring` links land on Today.
+
+## 2026-11-06 — Business Hub: tabs on top, Scaffold type (layout options 4 + 1)
+
+Carter picked option 4 (tabs on top) with option 1 (cleaner type) from five
+mockups. On a computer or tablet the tools are a row of tabs under the
+header, sticky just below it (its height is measured into `--toph`), and
+every screen gets the full width. On a phone and in the home-screen app the
+same tools stay a bar at the bottom, where a thumb reaches; only its styling
+changed. Type follows the Scaffold: sentence case instead of small spaced
+capitals, bigger and brighter small text, cream buttons in sentence case.
+Today's numbers are one ruled row and the panels sit on hairlines with no
+boxes. The header's "Today" link is gone (the Today tab does that). All of
+it lives in Business Hub.html's own styles, so the Docket, which shares
+mcc.css, is unchanged.
+
+## 2026-11-06 — Sidebar back; an opening that plays once per visit
+
+- Carter preferred the sidebar to the top tabs, so it's back on computers and
+  tablets (sticky under the header, sentence case). The Scaffold type from
+  option 1 stays. Phones and the home-screen app keep the bottom bar.
+- Opening (`Intro` in business-hub.jsx): the antler crest lights over a green
+  glow inside the Scaffold's dial (a ring that draws itself, twelve amber
+  hours, slow fine rays), "Business Hub" rises under it, then the crest flies
+  into its place in the header and the page settles in. About two seconds; a
+  tap skips it. It plays once per visit: the flag is in sessionStorage, which
+  lasts while the tab or home-screen app is open, so moving between tools or
+  reloading doesn't replay it, and closing and reopening does. Reduced motion
+  never plays it.

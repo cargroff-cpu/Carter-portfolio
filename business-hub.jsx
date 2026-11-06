@@ -103,10 +103,10 @@ function needsYou(jobs, proposals, invoices, briefs, events) {
   return out.sort((a, b) => (b.hot ? 1 : 0) - (a.hot ? 1 : 0) || b.age - a.age);
 }
 
-// ── The tool wheel ─────────────────────────────────────────────────────
+// ── The tools ──────────────────────────────────────────────────────────
 // Each tool shows a line icon that says what it is. The antler artwork the
 // plates used before is kept in assets/tool-*.png (the antler field below) for later.
-const RING_NODES = [
+const TOOL_LIST = [
   { id: 'today', label: 'Today', glyph: 'today', antler: 'assets/tool-brief.png', desc: 'What needs you, what just happened, money in and out.' },
   { id: 'jobs', label: 'Jobs', glyph: 'jobs', antler: 'assets/tool-work.png', desc: 'Every job from brief to paid, one column per stage.' },
   { id: 'proposals', label: 'Proposals', glyph: 'proposals', antler: 'assets/tool-vault.png', desc: 'Every proposal, where it stands, and what it is worth.' },
@@ -129,7 +129,7 @@ function ToolIcon({ name }) {
     </svg>
   );
 }
-function ringMetaOf(id, d, short) {
+function toolMetaOf(id, d, short) {
   if (id === 'today') return d.needs.length ? d.needs.length + ' need you' : 'All clear';
   if (id === 'jobs') return d.jobs.filter((j) => j.stage !== 'paid' && j.stage !== 'closed').length + ' open';
   if (id === 'proposals') return d.proposals.filter((p) => p.status === 'sent').length + ' out';
@@ -138,181 +138,15 @@ function ringMetaOf(id, d, short) {
   if (id === 'clients') return d.clients.length + (short ? (d.clients.length === 1 ? ' client' : ' clients') : ' on the books');
   return '';
 }
-const N_RING = RING_NODES.length;
-function ringNodeTransform(i, hover, radius) {
-  let a = (i * (360 / N_RING) - 90) * Math.PI / 180;
-  let rad = radius;
-  if (hover !== null) {
-    if (i === hover) rad = radius * 0.92;
-    else {
-      const half = N_RING / 2;
-      const d = ((i - hover + half) % N_RING) - half;
-      const w = 1 - Math.abs(d) / half;
-      a += 16 * w * Math.sign(d || 1) * Math.PI / 180;
-      rad = radius * (1 + 0.06 * w);
-    }
-  }
-  return `translate(-50%,-50%) translate(${Math.cos(a) * rad}px,${Math.sin(a) * rad}px)`;
-}
-
-// The same cast-iron gas lamp as the portfolio and Scaffold heroes (motifs.jsx).
-const HubGasLamp = window.CG_MOTIFS.GasLamp;
-function Lamp({ side }) {
-  const [out, setOut] = React.useState(false);
+// The tools: a sidebar on a computer or tablet, a bar at the bottom of the
+// screen on a phone (and in the home-screen app).
+function ToolSidebar({ tab, go, data }) {
   return (
-    <div className={'lamp ' + side + (out ? ' out' : '')} aria-hidden="true">
-      <HubGasLamp height={640} variant={'near-' + side} out={out} onGlobeClick={() => setOut((o) => !o)} />
-    </div>
-  );
-}
-
-// The fan-out plays the first time the wheel shows in a visit, not every
-// time you come back to it from a tool.
-function ringIntroOnce() {
-  try { if (sessionStorage.getItem('hub-ring')) return false; sessionStorage.setItem('hub-ring', '1'); } catch (e) {}
-  return true;
-}
-function usePhone() {
-  const q = '(max-width: 760px)';
-  const [m, setM] = React.useState(() => window.matchMedia(q).matches);
-  React.useEffect(() => {
-    const mq = window.matchMedia(q); const on = () => setM(mq.matches);
-    mq.addEventListener ? mq.addEventListener('change', on) : mq.addListener(on);
-    return () => (mq.removeEventListener ? mq.removeEventListener('change', on) : mq.removeListener(on));
-  }, []);
-  return m;
-}
-// On a phone the wheel is a half-ring standing on the left edge: its centre
-// sits on the edge, the plates ride just outside the curve, and each tool's
-// name and count sit inside the ring beside its plate.
-// The ring is as wide as the screen allows; the arc then opens only as far
-// as the height fits and as far as the top and bottom labels still have room.
-const NODE_W = 236;      // a phone node: label column, then the 56px plate
-const LABEL_ROOM = 135;  // plate centre must sit this far in for its label to fit
-function phoneGeometry(w, h) {
-  const cx = 22, cy = h / 2;                 // the light bar sits whole on the left edge
-  const rn = Math.max(200, w - cx - 40);
-  const byHeight = Math.asin(Math.min(1, (h - 90) / (2 * rn)));   // fill the screen top to bottom
-  const byLabel = Math.acos(Math.min(1, Math.max(0, LABEL_ROOM - cx) / rn));
-  const spread = Math.min(byHeight, byLabel, 72 * Math.PI / 180) * 180 / Math.PI;
-  return { cx, cy, rn, r: rn - 40, spread };
-}
-function phoneAngle(i, spread) { return -spread + i * (2 * spread / (N_RING - 1)); }
-
-function Ring({ go, data }) {
-  const phone = usePhone();
-  const [hover, setHover] = React.useState(null);
-  const [wickHot, setWickHot] = React.useState(false);
-  const [intro] = React.useState(ringIntroOnce);
-  const [ready, setReady] = React.useState(!intro);
-  const [picked, setPicked] = React.useState(null);
-  const [fly, setFly] = React.useState(null);
-  const plateRefs = React.useRef([]);
-  const launchRef = React.useRef(null);
-  const orbitRef = React.useRef(null);
-  const [radius, setRadius] = React.useState(220);
-  const [box, setBox] = React.useState({ w: 390, h: 640 });
-  React.useEffect(() => {
-    const measure = () => {
-      if (orbitRef.current) setRadius(orbitRef.current.getBoundingClientRect().width / 2);
-      if (launchRef.current) {
-        const r = launchRef.current.getBoundingClientRect();
-        setBox({ w: r.width, h: Math.max(420, window.innerHeight - r.top) });
-      }
-    };
-    measure();
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, [phone]);
-  React.useEffect(() => {
-    if (ready) return;
-    let a = requestAnimationFrame(() => { a = requestAnimationFrame(() => setReady(true)); });
-    return () => cancelAnimationFrame(a);
-  }, []);
-  const g = phone ? phoneGeometry(box.w, box.h) : null;
-  const lit = picked !== null ? picked : hover;
-  // A tap lights the plate, the rest fold back into the light, and the plate
-  // flies to its own slot in the tool bar before the page opens. Where the
-  // slot is comes from the (hidden) bar the page will show, so it lands exactly.
-  const choose = (i, id) => {
-    if (picked !== null) return;
-    const from = plateRefs.current[i];
-    const to = document.querySelector('.tools.ghost button:nth-child(' + (i + 1) + ') .tplate');
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduce || !from || !to) { go(id); return; }
-    const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
-    const top = phone ? 0 : launchRef.current.getBoundingClientRect().top - 60; // desktop bar starts under the header
-    setFly({ x: b.left + b.width / 2 - (a.left + a.width / 2), y: b.top + top + b.height / 2 - (a.top + a.height / 2), s: b.width / from.offsetWidth });
-    setPicked(i);
-    setTimeout(() => go(id), 700);
-  };
-  const nodeStyle = (i) => {
-    const d = { transitionDelay: ready && intro ? (0.15 + i * 0.07) + 's' : '0s' };
-    if (!phone) {
-      return { ...d, transform: ready ? ringNodeTransform(i, hover, radius) : 'translate(-50%,-50%) scale(.35)', opacity: ready ? 1 : 0 };
-    }
-    const a = phoneAngle(i, g.spread) * Math.PI / 180;
-    const rn = g.rn + (lit === i ? 10 : 0);
-    const x = ready ? g.cx + Math.cos(a) * rn : g.cx;
-    const y = ready ? g.cy + Math.sin(a) * rn : g.cy;
-    return { ...d, width: NODE_W, transform: `translate(${x + 28 - NODE_W}px,${y - 28}px) scale(${ready ? 1 : 0.35})`, opacity: ready ? 1 : 0 };
-  };
-  const ringBox = phone ? { width: g.r * 2, height: g.r * 2, left: g.cx - g.r, top: g.cy - g.r } : undefined;
-  return (
-    <div ref={launchRef} className={'launch' + (phone ? ' phone' : '') + (lit !== null ? ' hovering' : '') + (wickHot ? ' wickhot' : '') + (ready ? ' ready' : '') + (picked !== null ? ' leaving' : '')}
-      style={phone ? { height: box.h } : undefined}>
-      {!phone && <React.Fragment><Lamp side="L" /><Lamp side="R" /></React.Fragment>}
-      <div className="rings" style={ringBox}>
-        <span className="ring-outer" /><span className="ring-mid" /><span className="ring-inner" />
-        <span className="ticks" /><span className="ticks-minor" /><span className="ticks-fine" />
-      </div>
-      <div className="spokes" style={phone ? { ...ringBox, transform: 'none' } : undefined}>
-        {RING_NODES.map((_, i) => <span key={i} className={'spoke' + (lit === i ? ' lit' : '')} style={{ transform: `rotate(${phone ? phoneAngle(i, g.spread) : i * (360 / N_RING) - 90}deg)` }} />)}
-      </div>
-      {!phone && <div className="ldesc">{hover !== null ? RING_NODES[hover].desc : ''}</div>}
-      <div className="lwall" aria-hidden="true" style={phone ? { left: g.cx, top: g.cy } : undefined} />
-      <div className="lembers" aria-hidden="true" style={phone ? { left: g.cx, top: g.cy } : undefined}>
-        <i style={{ left: '20%', '--dx': '-14px', animationDelay: '0s' }} />
-        <i style={{ left: '38%', '--dx': '10px', animationDelay: '1.1s' }} />
-        <i style={{ left: '52%', '--dx': '-8px', animationDelay: '2.3s' }} />
-        <i style={{ left: '68%', '--dx': '16px', animationDelay: '3.4s' }} />
-        <i style={{ left: '46%', '--dx': '4px', animationDelay: '4.6s' }} />
-      </div>
-      {/* The light bar at the wheel's centre: decoration (Wick is retired), brightens when you rest on it. */}
-      <div className="lwick" aria-hidden="true" style={phone ? { left: g.cx - 9, top: g.cy } : undefined}
-        onMouseEnter={() => setWickHot(true)} onMouseLeave={() => setWickHot(false)}>
-        <span className="core" />
-      </div>
-      <div className="orbit" ref={orbitRef}>
-        {RING_NODES.map((n, i) => (
-          <button key={n.id} className={'tnode' + (lit === i ? ' on' : '') + (picked === i ? ' flying' : '')}
-            style={nodeStyle(i)}
-            onMouseEnter={() => !phone && setHover(i)} onMouseLeave={() => !phone && setHover(null)}
-            onFocus={() => setHover(i)} onBlur={() => setHover(null)}
-            onClick={() => choose(i, n.id)}>
-            <span className="plate" ref={(el) => { plateRefs.current[i] = el; }}
-              style={picked === i && fly ? { transform: `translate(${fly.x}px,${fly.y}px) scale(${fly.s})`, transition: 'transform .58s cubic-bezier(.65,0,.25,1), border-color .3s, box-shadow .3s' } : undefined}>
-              <ToolIcon name={n.glyph} />
-            </span>
-            <span className="tbody">
-              <span className="tlabel">{n.label}</span>
-              <span className="tsub">{ringMetaOf(n.id, data, phone)}</span>
-              <span className="tdesc">{n.desc}</span>
-            </span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ToolSidebar({ tab, go, data, ghost }) {
-  return (
-    <nav className={'tools on' + (ghost ? ' ghost' : '')} aria-hidden={ghost ? 'true' : undefined}>
-      {RING_NODES.map((n) => (
-        <button key={n.id} tabIndex={ghost ? -1 : undefined} aria-current={tab === n.id ? 'true' : undefined} onClick={() => go(n.id)}>
+    <nav className="tools on" aria-label="Tools">
+      {TOOL_LIST.map((n) => (
+        <button key={n.id} aria-current={tab === n.id ? 'true' : undefined} onClick={() => go(n.id)}>
           <span className="tplate"><ToolIcon name={n.glyph} /></span>
-          <span><span className="tname">{n.label}</span><span className="tmeta">{ringMetaOf(n.id, data)}</span></span>
+          <span><span className="tname">{n.label}</span><span className="tmeta">{toolMetaOf(n.id, data)}</span></span>
         </button>
       ))}
     </nav>
@@ -1221,15 +1055,63 @@ function ClientPage({ client, stats, data, open, reload, back, gone }) {
   );
 }
 
+// ── The opening ────────────────────────────────────────────────────────
+// Plays once per visit: sessionStorage lives as long as the tab or the
+// home-screen app is open, so moving between tools or reloading doesn't
+// replay it, but closing and reopening does. The crest lights inside the
+// Scaffold's dial, the name rises, then the crest flies into its place in
+// the header. A tap skips it; reduced motion never plays it.
+function introWanted() {
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+  try { if (sessionStorage.getItem('hub-intro')) return false; sessionStorage.setItem('hub-intro', '1'); } catch (e) {}
+  return true;
+}
+function Intro({ onDone }) {
+  const crestRef = React.useRef(null);
+  const [phase, setPhase] = React.useState('in');
+  const [fly, setFly] = React.useState(null);
+  const done = React.useRef(false);
+  const finish = React.useCallback(() => { if (!done.current) { done.current = true; onDone(); } }, [onDone]);
+  React.useEffect(() => {
+    const t1 = setTimeout(() => {
+      const from = crestRef.current, to = document.querySelector('.top .mark img');
+      if (from && to) {
+        const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+        setFly(`translate(${b.left + b.width / 2 - (a.left + a.width / 2)}px,${b.top + b.height / 2 - (a.top + a.height / 2)}px) scale(${b.width / a.width})`);
+      }
+      setPhase('out');
+    }, 1650);
+    const t2 = setTimeout(finish, 2250);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [finish]);
+  const hours = Array.from({ length: 12 }, (_, i) => i);
+  const rays = Array.from({ length: 36 }, (_, i) => i);
+  return (
+    <div className={'intro ' + phase} onClick={finish} aria-hidden="true">
+      <div className="intro-glow" />
+      <svg className="intro-dial" viewBox="-120 -120 240 240">
+        <g className="intro-rays">{rays.map((i) => <line key={i} x1="0" y1="-62" x2="0" y2={i % 3 ? -78 : -92} transform={`rotate(${i * 10})`} />)}</g>
+        <circle className="intro-ring" r="104" pathLength="100" />
+        <circle className="intro-ring2" r="96" />
+        <g className="intro-hours">{hours.map((i) => <line key={i} x1="0" y1="-112" x2="0" y2={i % 3 ? -104 : -100} transform={`rotate(${i * 30})`} style={{ animationDelay: (0.35 + i * 0.045) + 's' }} />)}</g>
+      </svg>
+      <img ref={crestRef} className="intro-crest" src="assets/antler.png" alt=""
+        style={fly ? { transform: fly, transition: 'transform .55s cubic-bezier(.65,0,.25,1), filter .55s ease' } : undefined} />
+      <div className="intro-word"><b>Business Hub</b><span>The Backroom</span></div>
+    </div>
+  );
+}
+
 // ── The hub ────────────────────────────────────────────────────────────
 function BusinessHub() {
   // The address holds the view (#jobs, #money, #job=<id>) so a reload or a
   // pasted link lands in the same place.
-  const TABS = ['ring', 'today', 'jobs', 'proposals', 'mail', 'money', 'clients'];
+  // Today is home. (The old ring launcher is gone; an old #ring link lands on Today.)
+  const TABS = ['today', 'jobs', 'proposals', 'mail', 'money', 'clients'];
   const fromHash = () => {
     const id = (location.hash.match(/job=([0-9a-f-]{36})/) || [])[1] || null;
     const t = location.hash.slice(1);
-    return { tab: id ? 'jobs' : (TABS.includes(t) ? t : 'ring'), id };
+    return { tab: id ? 'jobs' : (TABS.includes(t) ? t : 'today'), id };
   };
   const [tab, setTab] = React.useState(() => fromHash().tab);
   const [jobId, setJobId] = React.useState(() => fromHash().id);
@@ -1249,35 +1131,46 @@ function BusinessHub() {
   const reloadAll = () => { reloadJobs(); reloadProposals(); reloadInvoices(); reloadClients(); reloadBriefs(); reloadEvents(); };
   const data = loading ? null : { jobs, proposals, invoices, clients, briefs, events, needs: needsYou(jobs, proposals, invoices, briefs, events) };
   const [startNew, setStartNew] = React.useState(false);
+  const [intro, setIntro] = React.useState(introWanted);
+  const endIntro = React.useCallback(() => setIntro(false), []);
+  // The sidebar sticks just under the header, whatever height the header wraps to.
+  const headRef = React.useRef(null);
+  React.useEffect(() => {
+    const el = headRef.current; if (!el) return;
+    const set = () => document.documentElement.style.setProperty('--toph', el.offsetHeight + 'px');
+    set();
+    const ro = window.ResizeObserver ? new ResizeObserver(set) : null;
+    if (ro) ro.observe(el); else window.addEventListener('resize', set);
+    return () => { if (ro) ro.disconnect(); else window.removeEventListener('resize', set); };
+  }, []);
   const go = (t, opts) => { setTab(t); setJobId(null); setStartNew(!!(opts && opts.newJob)); history.replaceState(null, '', '#' + t); };
   const open = (id) => { setTab('jobs'); setJobId(id); history.replaceState(null, '', '#job=' + id); window.scrollTo(0, 0); };
 
   return (
     <React.Fragment>
+      {intro && <Intro onDone={endIntro} />}
       <div className="room" aria-hidden="true">
         <div className="amb"><i className="a1" /><i className="a2" /><i className="a3" /></div>
         <div className="grain" />
       </div>
-      <header className="top">
+      <header className="top" ref={headRef}>
         <div className="topin">
-          {tab === 'ring'
-            ? <a className="backlink" href="/backroom"><i aria-hidden="true">←</i> Backroom</a>
-            : <a className="backlink" href={jobId ? '#jobs' : '#ring'} onClick={(e) => { e.preventDefault(); go(jobId ? 'jobs' : 'ring'); }}><i aria-hidden="true">←</i> {jobId ? 'Jobs' : 'Ring'}</a>}
+          {jobId
+            ? <a className="backlink" href="#jobs" onClick={(e) => { e.preventDefault(); go('jobs'); }}><i aria-hidden="true">←</i> Jobs</a>
+            : <a className="backlink" href="/backroom"><i aria-hidden="true">←</i> Backroom</a>}
           <a className="mark" href="/backroom"><img src="assets/antler.png" alt="" /><div><b>Business Hub</b><span>The Backroom</span></div></a>
           <nav className="topnav">
-            <a className="navhome" href="#ring" onClick={(e) => { e.preventDefault(); go('ring'); }} style={tab === 'ring' ? { color: 'var(--text)' } : undefined}>Home</a>
-            <a href="/docket">Docket</a>
+<a href="/docket">Docket</a>
           </nav>
         </div>
       </header>
       <div className="shell">
-        {data && <ToolSidebar tab={tab} go={go} data={data} ghost={tab === 'ring'} />}
-        <main id="app" key={tab + (jobId || '')} className={tab === 'ring' ? 'ringmain' : undefined}>
+        {data && <ToolSidebar tab={tab} go={go} data={data} />}
+        <main id="app" key={tab + (jobId || '') + (intro ? '-intro' : '')}>
           {error && <p className="sub" style={{ padding: '20px 2px', color: 'var(--warn)' }}>{error} If this is the first run, the workflow tables may not be set up yet.</p>}
           {!error && loading && <p className="sub" style={{ padding: '20px 2px' }}>Loading…</p>}
           {data && (
             <React.Fragment>
-              {tab === 'ring' && <Ring go={go} data={data} />}
               {tab === 'today' && <Today data={data} open={open} go={go} />}
               {tab === 'jobs' && (jobId ? <JobPage jobId={jobId} data={data} reload={reloadAll} back={() => go('jobs')} /> : <Jobs data={data} open={open} reload={reloadAll} startNew={startNew} />)}
               {tab === 'proposals' && <Proposals data={data} open={open} />}

@@ -145,112 +145,12 @@ tbody tr:hover{background:rgba(236,217,178,.035);cursor:pointer}
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>")}
 .top,.shell{position:relative;z-index:1}
 
-/* ── The ring: Business Hub's launcher, adapted from Business Hub.dc.html's
-   orbit. Six brass plates evenly spaced by CSS custom property (--a) rather
-   than the source's runtime-measured geometry engine, and no flying "carry"
-   transition between ring and sidebar — see DECISIONS.md. */
-.launch{position:relative;box-sizing:border-box;width:100%;height:calc(100dvh - 76px);min-height:420px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.launch{--ring:min(calc(100dvh - 110px),92vw,1000px)}
-/* the ring page fits one screen: no page scroll, no padding below the wheel */
-.shell main.ringmain{padding:0}
-html:has(.ringmain),body:has(.ringmain){overflow:hidden;height:100dvh}
-.rings{position:absolute;width:var(--ring);height:var(--ring);border-radius:50%;pointer-events:none}
-.ring-outer{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(217,154,61,.16);animation:ringspin 90s linear infinite}
-.ring-mid{position:absolute;inset:7%;border-radius:50%;border:1px dashed rgba(217,154,61,.14)}
-.ring-inner{position:absolute;inset:15%;border-radius:50%;border:1px solid rgba(217,154,61,.1);animation:ringspinrev 70s linear infinite}
-.ticks,.ticks-minor,.ticks-fine{position:absolute;border-radius:50%;animation:ringspin 90s linear infinite;transition:opacity .5s ease}
-.ticks{inset:0;opacity:.6;
-  background:repeating-conic-gradient(from 0deg,rgba(245,205,106,.5) 0 .9deg,transparent .9deg 15deg);
-  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 15px),#000 calc(100% - 14px),#000 calc(100% - 3px),transparent calc(100% - 2px));
-  mask:radial-gradient(farthest-side,transparent calc(100% - 15px),#000 calc(100% - 14px),#000 calc(100% - 3px),transparent calc(100% - 2px))}
-.ticks-minor{inset:0;opacity:.3;
-  background:repeating-conic-gradient(from 2.5deg,rgba(217,154,61,.32) 0 .45deg,transparent .45deg 5deg);
-  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 10px),#000 calc(100% - 9px),#000 calc(100% - 3px),transparent calc(100% - 2px));
-  mask:radial-gradient(farthest-side,transparent calc(100% - 10px),#000 calc(100% - 9px),#000 calc(100% - 3px),transparent calc(100% - 2px))}
-.ticks-fine{inset:9%;opacity:.25;animation-name:ringspinrev;animation-duration:110s;
-  background:repeating-conic-gradient(from 1deg,rgba(217,154,61,.26) 0 .3deg,transparent .3deg 2.5deg);
-  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 7px),#000 calc(100% - 6px),#000 calc(100% - 2px),transparent calc(100% - 1px));
-  mask:radial-gradient(farthest-side,transparent calc(100% - 7px),#000 calc(100% - 6px),#000 calc(100% - 2px),transparent calc(100% - 1px))}
-.launch.hovering .ticks{opacity:1}
-.launch.hovering .ticks-minor{opacity:.75}
-.launch.hovering .ticks-fine,.launch.wickhot .ticks-fine{opacity:.68}
-@keyframes ringspin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
-@keyframes ringspinrev{from{transform:rotate(0)}to{transform:rotate(-360deg)}}
-.spokes{position:absolute;left:50%;top:50%;width:var(--ring);height:var(--ring);transform:translate(-50%,-50%);pointer-events:none;z-index:0}
-.spoke{position:absolute;left:50%;top:50%;height:1px;width:37%;transform-origin:0 50%;background:linear-gradient(to right,rgba(217,154,61,.22),transparent 85%);opacity:.5;transition:opacity .4s ease,background .4s ease}
-.spoke.lit{opacity:1;background:linear-gradient(to right,rgba(245,205,106,.85),rgba(217,154,61,.1) 88%)}
-.lwick{position:relative;z-index:3;width:16px;height:min(20vmin,150px);border-radius:20px;
-  background:linear-gradient(90deg,#0e0904,#221809 34%,#33260f 58%,#140d06);border:1px solid rgba(217,154,61,.4);
-  box-shadow:inset 0 0 20px rgba(0,0,0,.9),0 6px 22px rgba(0,0,0,.6);display:flex;justify-content:center;padding:7px 0;
-  text-decoration:none;cursor:default;transition:box-shadow .3s ease,border-color .3s ease}
-.launch.wickhot .lwick{border-color:rgba(245,205,106,.95);box-shadow:inset 0 0 22px rgba(0,0,0,.85),0 0 42px -6px rgba(217,154,61,.55),0 6px 22px rgba(0,0,0,.6)}
-.lwick:focus-visible{outline:none}
-.lwick .core{width:6px;border-radius:6px;background:linear-gradient(to bottom,rgba(245,205,106,.4),rgba(245,205,106,.9) 9%,#fff3d2 50%,rgba(245,205,106,.9) 91%,rgba(245,205,106,.4));
-  box-shadow:0 0 14px #f5cd6a,0 0 46px rgba(245,205,106,.72),0 0 110px rgba(217,154,61,.48);animation:lflick 4.4s ease-in-out infinite,coreglow 2.1s ease-in-out infinite}
-.launch.wickhot .lwick .core{filter:brightness(1.3) saturate(1.06)}
-@keyframes lflick{0%{filter:brightness(1)}7%{filter:brightness(.86)}14%{filter:brightness(1.12)}23%{filter:brightness(.93)}34%{filter:brightness(1.22)}45%{filter:brightness(.97)}58%{filter:brightness(1.3)}67%{filter:brightness(.9)}79%{filter:brightness(1.15)}90%{filter:brightness(.95)}100%{filter:brightness(1)}}
-@keyframes coreglow{0%,100%{box-shadow:0 0 14px #f5cd6a,0 0 46px rgba(245,205,106,.72),0 0 110px rgba(217,154,61,.48)}50%{box-shadow:0 0 22px #fff3d2,0 0 70px rgba(245,205,106,.92),0 0 160px rgba(217,154,61,.68)}}
-.lwall{position:absolute;left:50%;top:50%;width:min(46vmin,400px);height:min(46vmin,400px);transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;z-index:1;
-  background:radial-gradient(closest-side,rgba(245,205,106,.16),rgba(217,154,61,.05) 46%,transparent 76%);mix-blend-mode:screen;animation:lbreathe 4.2s ease-in-out infinite}
-.launch.wickhot .lwall{filter:brightness(1.25)}
-@keyframes lbreathe{0%,100%{opacity:.6;transform:translate(-50%,-50%) scale(.9)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}}
-.lembers{position:absolute;left:50%;top:50%;width:160px;height:min(30vmin,240px);margin-left:-80px;margin-top:calc(-1 * min(15vmin,120px));pointer-events:none;z-index:2}
-.lembers i{position:absolute;bottom:0;width:3px;height:3px;border-radius:50%;background:#f5cd6a;box-shadow:0 0 8px rgba(245,205,106,.9);opacity:0;animation:lember 6s ease-out infinite}
-@keyframes lember{0%{transform:translate3d(0,0,0) scale(.7);opacity:0}10%{opacity:.8}70%{opacity:.4}100%{transform:translate3d(var(--dx,10px),-220px,0) scale(.3);opacity:0}}
-.ldesc{position:absolute;left:50%;bottom:2px;transform:translateX(-50%) translateY(4px);width:min(420px,86vw);text-align:center;font-family:var(--sans);font-size:12.5px;line-height:1.5;color:var(--text-3);opacity:0;pointer-events:none;transition:opacity .45s ease,transform .45s cubic-bezier(.2,.7,.3,1);min-height:1.6em}
-.launch.hovering .ldesc{opacity:1;transform:translateX(-50%)}
-.orbit{position:absolute;left:50%;top:50%;width:calc(var(--ring) * .7);height:calc(var(--ring) * .7);transform:translate(-50%,-50%);pointer-events:none}
-.tnode{position:absolute;left:50%;top:50%;width:120px;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:auto;
-  background:none;border:none;cursor:pointer;padding:8px;text-decoration:none;transition:transform .7s cubic-bezier(.25,.46,.45,.94),opacity .5s ease}
-.plate{width:56px;height:56px;border-radius:12px;background:linear-gradient(180deg,#1c140a,#120c06);border:1px solid rgba(217,154,61,.3);
-  display:flex;align-items:center;justify-content:center;transition:border-color .3s ease,box-shadow .3s ease,transform .3s ease}
-.plate img{max-width:30px;max-height:42px;opacity:.62;transition:opacity .3s ease}
-.ticon{display:block;width:26px;height:26px;color:var(--accent,#d99a3d);opacity:.7;transition:opacity .3s ease,color .3s ease,filter .3s ease,transform .4s cubic-bezier(.2,.7,.3,1)}
-.tnode:hover .ticon{opacity:.95}
-.tnode.on .plate{border-color:rgba(245,205,106,.9);box-shadow:0 0 20px rgba(245,205,106,.4),0 0 50px rgba(217,154,61,.25);transform:scale(1.08)}
-.tnode.on .plate img{opacity:1}
-.tnode.on .ticon{opacity:1;color:#f5cd6a;filter:drop-shadow(0 0 6px rgba(245,205,106,.7));transform:scale(1.06)}
-/* the fan-out: plates start at the centre and spread to their places */
-.tnode{opacity:1}
-.launch:not(.ready) .tnode{transition:none}
-.launch.ready .tnode{transition:transform .9s cubic-bezier(.2,.8,.2,1),opacity .6s ease}
-.tnode:focus-visible{outline:none}
-.tlabel{font-family:var(--ui);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-3);transition:color .3s ease}
-.tsub{font-family:var(--display);font-size:13px;color:var(--text-4)}
-.tdesc{display:none}
-.tnode.on .tlabel{color:var(--text)}
-.launch.hovering .tnode:not(.on) .plate{opacity:.5}
-.launch.hovering .tnode:not(.on) .tlabel,.launch.hovering .tnode:not(.on) .tsub{opacity:.55}
-@media(max-width:760px){
-  /* the half-ring: Ring() in business-hub.jsx places everything in px */
-  .shell main.ringmain{padding:0}
-  .launch.phone{display:block;min-height:0;overflow:hidden}
-  .launch.phone .rings,.launch.phone .spokes{position:absolute}
-  .launch.phone .spoke{width:50%}
-  .launch.phone .lwall{width:340px;height:340px}
-  .launch.phone .lembers{margin-left:-20px;width:120px}
-  .launch.phone .lwick{position:absolute;width:18px;height:min(34vh,240px);transform:translateY(-50%);padding:8px 0}
-  .launch.phone .orbit{position:absolute;inset:0;width:auto;height:auto;transform:none}
-  .launch.phone .tnode{left:0;top:0;flex-direction:row-reverse;align-items:center;justify-content:flex-start;gap:22px;padding:0;text-align:right;transform-origin:calc(100% - 28px) 50%;-webkit-tap-highlight-color:transparent}
-  .launch.phone .plate{flex:none}
-  .launch.phone .tnode:active .plate{transform:scale(.94)}
-}
-
-/* gas lampposts flanking the wheel: the shared GasLamp from motifs.jsx, hidden when the room is too narrow */
-.lamp{position:absolute;bottom:0;height:min(92%,860px);aspect-ratio:200/900;pointer-events:none;z-index:0}
-.lamp.L{left:clamp(8px,6vw,150px)}.lamp.R{right:clamp(8px,6vw,150px)}
-.lamp svg{position:relative;z-index:1;display:block;width:100%;height:100%}
-.lamp svg g,.lamp svg ellipse{pointer-events:none}
-@media(max-width:1000px){.lamp{display:none}}
-
-/* ── the tool sidebar: the ring's brass plates, standing in a column ── */
+/* ── the tool sidebar: the brass plates, standing in a column ── */
 .shell{display:flex;align-items:flex-start}
 .tools{display:none;flex:none;width:216px;box-sizing:border-box;flex-direction:column;gap:2px;
   padding:22px 12px 20px;position:sticky;top:60px;height:calc(100dvh - 60px);overflow-y:auto;
   border-right:1px solid var(--line)}
 .tools.on{display:flex}
-/* the bar the page will show, built but unseen on the ring so the chosen plate knows where to land */
-.tools.ghost{position:fixed;left:0;top:60px;opacity:0;pointer-events:none}
 .tools{transition:opacity .4s ease}
 .tools button{display:flex;align-items:center;gap:12px;background:none;border:none;border-radius:9px;
   color:var(--text-3);font-family:var(--ui);padding:9px 10px;cursor:pointer;text-align:left;
@@ -273,13 +173,12 @@ html:has(.ringmain),body:has(.ringmain){overflow:hidden;height:100dvh}
 .backlink i{font-style:normal;font-size:16px;line-height:1;transition:transform .2s}
 .backlink:hover{color:var(--accent)}.backlink:hover i{transform:translateX(-3px)}
 .shell main{flex:1;min-width:0;padding:20px}
-@media(max-width:900px){.tools{width:74px}.tools .tname,.tools .tmeta{display:none}.tools button,.tools .ring-back{justify-content:center}}
+@media(max-width:900px){.tools{width:74px}.tools .tname,.tools .tmeta{display:none}.tools button{justify-content:center}}
 @media(max-width:760px){.shell{display:block}.tools{display:none!important}.shell main{padding:16px}}
 /* ── phones (a home-screen app too): the Backroom, made for a thumb ────────
    Desktop is untouched. On a phone: type you can read (no 9-10px spaced caps,
    brighter muted text), 16px fields so iOS does not zoom, 44px targets, and
    the Business Hub's tools in a bar at the bottom of the screen. */
-.tbody{display:contents}
 @media(max-width:760px){
   :root{--text-3:#ad9a74;--text-4:#8b7a5b;--line:rgba(236,217,178,.18)}
   html,body{font-size:16px}
@@ -299,12 +198,6 @@ html:has(.ringmain),body:has(.ringmain){overflow:hidden;height:100dvh}
   .itemrow{flex-wrap:wrap}.itemrow>input:first-child{flex:1 1 100%!important}.itemrow>input:nth-child(2){width:auto!important;flex:1}
   .stagetrack{gap:4px 12px!important}
   .stagetrack .pill.mute{color:var(--text-3)}
-  /* each tool on the curve: plate, then its name and count beside it */
-  .launch.phone .tbody{display:flex;flex-direction:column;align-items:flex-end;gap:2px;min-width:0;text-shadow:0 1px 10px rgba(10,7,4,.95),0 0 2px rgba(10,7,4,.9)}
-  .launch.phone .tlabel{font-size:12px;letter-spacing:.16em;white-space:nowrap}
-  .launch.phone .tsub{font-size:14px;color:var(--text-3);white-space:nowrap}
-  .launch.phone .tdesc{display:none}
-  .launch.phone.hovering .tnode:not(.on){opacity:.45}
   /* header: one tidy row, links you can hit */
   .topin{gap:4px 8px;padding:10px 16px}
   .mark b{font-size:18px}
@@ -323,16 +216,3 @@ html:has(.ringmain),body:has(.ringmain){overflow:hidden;height:100dvh}
   .shell main{padding:16px 16px calc(96px + env(safe-area-inset-bottom,0px))}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
-
-/* ── leaving the ring: the chosen plate flies to the tool bar (Ring() sets its
-   transform), the other five fold back into the light, the dials let go ── */
-.launch.leaving .tnode{pointer-events:none}
-.launch.leaving .tnode.flying{z-index:6}
-.launch.leaving .tnode.flying .tbody{opacity:0;transition:opacity .2s ease}
-.launch.leaving .tnode.flying .plate{border-color:rgba(245,205,106,.95);box-shadow:0 0 22px rgba(245,205,106,.45)}
-.launch.leaving .tnode:not(.flying){opacity:0!important;transition:opacity .35s ease!important}
-.launch.leaving .tnode:not(.flying) .plate{transform:scale(.4);transition:transform .45s cubic-bezier(.5,0,.8,.4)}
-.launch.leaving .rings,.launch.leaving .spokes,.launch.leaving .lwall,.launch.leaving .lembers,.launch.leaving .ldesc,.launch.leaving .lamp{opacity:0;transition:opacity .45s ease}
-.launch.leaving .rings{transform:scale(.94)}
-.launch.leaving .lwick{opacity:.35;transition:opacity .5s ease}
-.rings{transition:transform .6s ease}

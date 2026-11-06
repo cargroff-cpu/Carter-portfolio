@@ -17,7 +17,7 @@ details>summary{cursor:pointer}
 
 @media (prefers-reduced-motion:no-preference){
   /* a press you can feel */
-  .btn:active,button:active:not(:disabled):not(.ring-back):not(.tnode):not(.plate){transform:scale(.97)}
+  .btn:active,button:active:not(:disabled){transform:scale(.97)}
   main .dkpi:active,main .pipe-r:active{transform:scale(.985)}
   @media (hover:hover){
     main .dkpi:hover{transform:translateY(-3px);box-shadow:0 14px 28px -18px rgba(0,0,0,.85)}
@@ -40,22 +40,20 @@ details>summary{cursor:pointer}
   /* the page: header settles, main rises. Re-keyed per tab, so each tab does it too */
   header.top,.top{animation:m-down .55s var(--ease-out) backwards}
   main#app,.shell>main,body>main{animation:m-up .5s var(--ease-out) backwards}
-  main.ringmain{animation:m-fade .6s ease backwards}
   .tools:not(.on){animation:m-side .5s var(--ease-out) .05s backwards}
   .tools.on{animation:m-bar .6s var(--ease-out) .1s backwards}
 
   /* groups arrive one after another, capped so a long list never drags */
   :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts)>*{animation:m-up .55s var(--ease-out) backwards}
   tbody>tr{animation:m-sweep .45s var(--ease-out) backwards}
-  /* .tnode entrance is the fan-out in mcc.css, played once per visit */
-  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(1),.tnode:nth-child(1){animation-delay:.04s}
-  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(2),.tnode:nth-child(2){animation-delay:.09s}
-  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(3),.tnode:nth-child(3){animation-delay:.14s}
-  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(4),.tnode:nth-child(4){animation-delay:.19s}
-  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(5),.tnode:nth-child(5){animation-delay:.24s}
-  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(6),.tnode:nth-child(6){animation-delay:.29s}
-  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(7),.tnode:nth-child(7){animation-delay:.33s}
-  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(n+8),.tnode:nth-child(n+8){animation-delay:.37s}
+  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(1){animation-delay:.04s}
+  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(2){animation-delay:.09s}
+  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(3){animation-delay:.14s}
+  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(4){animation-delay:.19s}
+  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(5){animation-delay:.24s}
+  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(6){animation-delay:.29s}
+  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(7){animation-delay:.33s}
+  :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(n+8){animation-delay:.37s}
 
   /* charts draw themselves */
   .mbar{transform-box:fill-box;transform-origin:50% 100%;animation:m-growY .8s var(--ease-out) backwards}
