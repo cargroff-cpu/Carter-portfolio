@@ -792,6 +792,9 @@ hint line below it (with a nudging arrow) show where you are and also jump to a
 card. As you swipe, the card coming in straightens, lifts and brightens while
 the one leaving tilts away and dims (driven by scroll position through a
 `--a` custom property); the new card's crest and name pop and its lines rise in
-one after another; the Tools card gets a lamp glow. Until someone swipes, the
-next card nudges in from the edge every few seconds. Reduced motion turns all
+one after another; the Tools card gets a lamp glow. The next card nudges in
+from the edge once, the first time the cards come into view. Reduced motion turns all
 of it off. Desktop is unchanged.
+
+Follow-up: the nudge was too much on repeat, so it plays once the first time
+the cards scroll into view (an IntersectionObserver in Make) and never again.

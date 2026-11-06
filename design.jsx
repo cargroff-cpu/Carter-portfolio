@@ -534,7 +534,16 @@ function Make({ onAddNeed }) {
   // dots and the hint line follow the swipe and also jump to a card when tapped.
   const [show, setShow] = React.useState('design');
   const [touched, setTouched] = React.useState(false);
+  const [nudge, setNudge] = React.useState(false);
   const track = React.useRef(null);
+  // the next card nudges in from the edge once, the first time the cards come into view
+  React.useEffect(() => {
+    const el = track.current;
+    if (!el || !('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver((es) => { if (es[0].isIntersecting) { setNudge(true); io.disconnect(); } }, { threshold: 0.35 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   const raf = React.useRef(0);
   const onScroll = () => {
     if (raf.current) return;
@@ -563,7 +572,7 @@ function Make({ onAddNeed }) {
         <div className="dshead">
           <h2 className="ddisplay">Two kinds of work, one person.</h2>
         </div>
-        <div className={'dduo dmake' + (touched ? '' : ' beckon')} ref={track} onScroll={onScroll}>
+        <div className={'dduo dmake' + (nudge && !touched ? ' beckon' : '')} ref={track} onScroll={onScroll}>
           <Shelf lane="design" label="Design" title="What your customers see" active={show === 'design'}
             blurb="Three directions, you pick one, I finish it."
             items={DESIGN_SERVICES} cta="Start a design brief" onAddNeed={onAddNeed} />

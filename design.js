@@ -1647,7 +1647,22 @@ function Make({
 }) {
   const [show, setShow] = React.useState('design');
   const [touched, setTouched] = React.useState(false);
+  const [nudge, setNudge] = React.useState(false);
   const track = React.useRef(null);
+  React.useEffect(() => {
+    const el = track.current;
+    if (!el || !('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver(es => {
+      if (es[0].isIntersecting) {
+        setNudge(true);
+        io.disconnect();
+      }
+    }, {
+      threshold: 0.35
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   const raf = React.useRef(0);
   const onScroll = () => {
     if (raf.current) return;
@@ -1684,7 +1699,7 @@ function Make({
   }, React.createElement("h2", {
     className: "ddisplay"
   }, "Two kinds of work, one person.")), React.createElement("div", {
-    className: 'dduo dmake' + (touched ? '' : ' beckon'),
+    className: 'dduo dmake' + (nudge && !touched ? ' beckon' : ''),
     ref: track,
     onScroll: onScroll
   }, React.createElement(Shelf, {
