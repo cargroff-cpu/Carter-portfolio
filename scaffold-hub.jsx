@@ -136,22 +136,25 @@ function ScaffoldHub() {
       {picking && !locked && (
         <div className="pick" role="dialog" aria-modal="true" aria-label="Which website?" onMouseDown={(e) => { if (e.target === e.currentTarget) setPicking(false); }}>
           <div className="pickbox">
-            <div className="plaque" style={{ margin: 0, animation: 'none' }}>Which website?</div>
+            <div className="pickhead">
+              <h3>Which website?</h3>
+              <button type="button" className="pickx" onClick={() => setPicking(false)} aria-label="Close">×</button>
+            </div>
+            <p className="picksub">Pick the site whose copy and content you want to edit.</p>
             <div className="pickpair">
-              <a className="door" href="Admin.html" autoFocus>
-                <span className="no">cargroff.com</span>
-                <h2>Portfolio</h2>
-                <p>Copy, work, resume and travel pins.</p>
-                <span className="arrow">→</span>
+              <a className="site" href="Admin.html" autoFocus>
+                <span className="dom">cargroff.com</span>
+                <b>Portfolio</b>
+                <span className="d">Copy, work, resume and travel pins.</span>
+                <span className="go" aria-hidden="true">→</span>
               </a>
-              <a className="door" href="/backroom/scaffold">
-                <span className="no">scaffold.cargroff.com</span>
-                <h2>Scaffold</h2>
-                <p>Services, prices, How it works, questions and copy.</p>
-                <span className="arrow">→</span>
+              <a className="site" href="/backroom/scaffold">
+                <span className="dom">scaffold.cargroff.com</span>
+                <b>Scaffold</b>
+                <span className="d">Services, prices, how it works, questions and copy.</span>
+                <span className="go" aria-hidden="true">→</span>
               </a>
             </div>
-            <button type="button" className="pickx" onClick={() => setPicking(false)}>Close</button>
           </div>
         </div>
       )}
