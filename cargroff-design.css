@@ -157,7 +157,11 @@ a:hover { color: var(--amber-lit); }
   .dhero-lamp.near.r { --g: dlamp-glass-c; --h: dlamp-halo-c; --gd: 1.3s; --fs: .34s; }
   .dhero-lamp path[fill="#1a1008"] { animation: var(--g) var(--gd) ease-out calc(var(--fd) + var(--fs)) backwards; }
   .dhero-lamp svg > g:first-of-type { animation: var(--h) var(--gd) ease-out calc(var(--fd) + var(--fs)) backwards; }
+  /* no hard "now it's on": as the stutter fades out the whole post swells a
+     little past its steady light and eases back down, slowly */
+  .dhero-lamp svg { animation: dlamp-swell 2.6s cubic-bezier(.3, 0, .2, 1) calc(var(--fd) + var(--fs) + var(--gd) * .45) backwards; }
 }
+@keyframes dlamp-swell { 0% { filter: brightness(1); } 28% { filter: brightness(1.32) saturate(1.1); } 100% { filter: brightness(1) saturate(1); } }
 @keyframes dlamp-glass-b { 0% { opacity: 1; } 10% { opacity: .4; } 16% { opacity: 1; } 30% { opacity: .2; } 36% { opacity: .7; } 50% { opacity: .15; } 58% { opacity: .45; } 78% { opacity: .05; } 100% { opacity: 0; } }
 @keyframes dlamp-halo-b { 0% { opacity: 0; } 10% { opacity: .6; } 16% { opacity: 0; } 30% { opacity: .8; } 36% { opacity: .3; } 50% { opacity: .85; } 58% { opacity: .55; } 78% { opacity: .95; } 100% { opacity: 1; } }
 @keyframes dlamp-glass-c { 0% { opacity: 1; } 22% { opacity: .35; } 30% { opacity: .8; } 46% { opacity: .5; } 70% { opacity: .1; } 100% { opacity: 0; } }
@@ -541,10 +545,10 @@ a:hover { color: var(--amber-lit); }
 @media (max-width: 899px) { .ddial { order: 2; width: min(100%, 360px); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .dcursor, .dmv, .dhero-fog, .dhero-candle, .dhero-wisp, .dhero-lamp, .dhero-lamp path[fill="#1a1008"], .dhero-lamp svg > g:first-of-type, .dhero-lamp .dhero-candle { animation: none; }
+  .dcursor, .dmv, .dhero-fog, .dhero-candle, .dhero-wisp, .dhero-lamp, .dhero-lamp path[fill="#1a1008"], .dhero-lamp svg > g:first-of-type, .dhero-lamp .dhero-candle, .dhero-lamp svg { animation: none; }
   .dsession li, .js .dsession li, .js .dsheet.up .dprint { opacity: 1; transform: none; transition: none; }
   .js .dsheet.up .dprint:not([aria-pressed="true"]) { opacity: .66; }
-  .dm-spin-in, .dm-spin, .dm-spin-back, .dm-ripple, .dm-sheen, .dm-rule.gold, .dm-ticks line.major, .dseal-mark rect, .dhalf-sec, .dseal-dots, .dseal-dot, .dseal-track, .dseal-crest, .dseal-name.on text { animation: none; }
+  .dhero-lamp svg, .dm-spin-in, .dm-spin, .dm-spin-back, .dm-ripple, .dm-sheen, .dm-rule.gold, .dm-ticks line.major, .dseal-mark rect, .dhalf-sec, .dseal-dots, .dseal-dot, .dseal-track, .dseal-crest, .dseal-name.on text { animation: none; }
   .dm-ripple { opacity: 0; }
   .dm-hour, .dm-wash, .dm-rays, .dm-ray { animation: none; }
   .dm-hour { opacity: .7; }
