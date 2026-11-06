@@ -47,7 +47,7 @@ details>summary{cursor:pointer}
   /* groups arrive one after another, capped so a long list never drags */
   :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts)>*{animation:m-up .55s var(--ease-out) backwards}
   tbody>tr{animation:m-sweep .45s var(--ease-out) backwards}
-  .tnode{animation:m-fade .7s ease backwards}
+  /* .tnode entrance is the fan-out in mcc.css, played once per visit */
   :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(1),.tnode:nth-child(1){animation-delay:.04s}
   :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(2),.tnode:nth-child(2){animation-delay:.09s}
   :is(.stack,.dkpis,.dash-g,.hgrid,.cols,.minirows,.pipe,.list,.jboard,.briefacts,tbody)>:nth-child(3),.tnode:nth-child(3){animation-delay:.14s}
