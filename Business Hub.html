@@ -148,6 +148,82 @@ body { min-height: 100vh; background: linear-gradient(180deg, #1e1509, var(--bg)
   .jcards .reclist { border: 1px solid var(--line-2); padding: 14px; background: rgba(236,217,178,.03); }
   .jcards > .sub { padding: 0 0 4px !important; }
 }
+/* ── 2026-11-06: tabs on top + the Scaffold's type (options 4 and 1) ──────
+   Scoped to this page; the Docket shares mcc.css and is untouched.
+   Sentence case everywhere, bigger and brighter small text, hairline rules
+   instead of boxes. Computer/tablet: the tools are a row of tabs under the
+   header. Phone and the home-screen app: the same tools stay a bar at the
+   bottom (mcc.css), restyled to match. */
+:root { --text-3: #ad9a74; --text-4: #8b7a5b; }
+.lbl, .field-lbl { font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--text-2); }
+.tag, .pill { font-size: 12.5px; letter-spacing: 0; text-transform: none; font-weight: 500; }
+th { font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--text-3); }
+.btn { font-size: 15px; letter-spacing: 0; text-transform: none; }
+.btn.sm { font-size: 13.5px; }
+.btn.quiet { letter-spacing: 0; }
+.sub { font-size: 14.5px; }
+.h1 { font-size: 40px; font-weight: 400; line-height: 1.05; }
+.h2 { font-size: 24px; font-weight: 400; }
+.mark span { font-size: 12px; letter-spacing: 0; text-transform: none; color: var(--text-3); }
+.topnav a { font-size: 14px; letter-spacing: 0; text-transform: none; color: var(--text-2); }
+.backlink { font-size: 14px; letter-spacing: 0; text-transform: none; }
+/* Today: no boxes. The numbers are one ruled row; the panels sit on hairlines. */
+.dkpis { gap: 0; border-top: 1px solid var(--line-2); border-bottom: 1px solid var(--line); }
+.dkpi { background: none; border: 0; border-left: 1px solid var(--line); padding: 16px 18px; transition: background .2s; }
+.dkpi:first-child { border-left: 0; padding-left: 0; }
+.dkpi:hover { background: rgba(236,217,178,.03); transform: none; border-color: var(--line); }
+.dkpi-l { font-size: 14px; letter-spacing: 0; text-transform: none; color: var(--text-2); }
+.dkpi-v { font-size: 40px; font-weight: 400; }
+.dkpi-n { font-size: 13.5px; }
+.dkpi.static:hover { border-color: var(--line); }
+.dash-g { gap: 36px 48px; margin-top: 18px; }
+.widget svg[role="img"] { height: 190px !important; }
+.widget { background: none; border: 0; padding: 0; }
+.widget-h { padding-bottom: 12px; margin-bottom: 2px; }
+.widget-b { font-size: 13.5px; letter-spacing: 0; }
+.mtxt { font-size: 15px; }
+.mval { font-size: 14px; }
+.minirow { padding: 12px 0; }
+.pipe-n, .pipe-c { font-size: 15px; }
+.pipe-bar { height: 6px; }
+.tplcard { background: none; border-top-width: 1px; border-top-color: var(--line-2); }
+.ctabs button { font-size: 15px; }
+@media (max-width: 1100px) { .dkpi:nth-child(4) { border-left: 0; padding-left: 0; } }
+@media (max-width: 560px) {
+  .dkpis { gap: 0; }
+  .dkpi { padding: 14px 12px; }
+  .dkpi:nth-child(odd) { border-left: 0; padding-left: 0; }
+  .dkpi:nth-child(4) { border-left: 1px solid var(--line); padding-left: 12px; }
+  .dkpis .dkpi:last-child { border-top: 1px solid var(--line); }
+  .dkpi-v { font-size: 30px; }
+  .h1 { font-size: 32px; }
+}
+/* the tab row (computer and tablet) */
+@media (min-width: 761px) {
+  .shell { display: block; }
+  .tools.on { position: sticky; top: var(--toph, 77px); z-index: 30; width: auto; height: auto; flex-direction: row; gap: 2px;
+    padding: 0 22px; border-right: 0; border-bottom: 1px solid var(--line); background: rgba(22,15,9,.94); backdrop-filter: blur(10px);
+    overflow-x: auto; scrollbar-width: none; }
+  .tools.on::-webkit-scrollbar { display: none; }
+  .tools.on button { flex: none; gap: 9px; padding: 15px 14px 14px; border-radius: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; box-shadow: none; color: var(--text-2); }
+  .tools.on button:hover { background: none; color: var(--text); }
+  .tools.on button[aria-current="true"] { background: none; box-shadow: none; color: var(--text); border-bottom-color: var(--accent); }
+  .tools.on button > span:last-child { display: flex; align-items: baseline; gap: 8px; }
+  .tools.on .tname, .tools.on .tmeta { display: block; }
+  .tools.on .tname { font-size: 15px; letter-spacing: 0; text-transform: none; font-weight: 500; }
+  .tools.on .tmeta { font-family: var(--ui); font-size: 13px; color: var(--text-3); margin-top: 0; white-space: nowrap; }
+  .tools.on button[aria-current="true"] .tmeta { color: var(--text-2); }
+  .tools.on .tplate { width: auto; height: auto; background: none; border: 0; box-shadow: none !important; }
+  .tools.on .tplate .ticon { width: 17px; height: 17px; color: var(--brass, #c2a46a); }
+  .shell main { max-width: 1440px; margin: 0 auto; padding: 30px 32px 90px; }
+}
+@media (min-width: 761px) and (max-width: 1050px) { .tools.on .tmeta { display: none; } .tools.on button { padding-left: 11px; padding-right: 11px; } }
+/* the bottom bar (phone and the home-screen app): same names, sentence case */
+@media (max-width: 760px) {
+  .tools.on .tname { font-size: 12px; }
+  .tools.on button[aria-current="true"] { background: none; }
+  .tools.on button[aria-current="true"] .tname { color: var(--accent-lit); }
+}
 </style>
 </head>
 <body>

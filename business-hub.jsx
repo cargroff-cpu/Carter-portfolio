@@ -138,7 +138,9 @@ function toolMetaOf(id, d, short) {
   if (id === 'clients') return d.clients.length + (short ? (d.clients.length === 1 ? ' client' : ' clients') : ' on the books');
   return '';
 }
-function ToolSidebar({ tab, go, data }) {
+// The tools: a row of tabs under the header on a computer or tablet, a bar
+// at the bottom of the screen on a phone (and in the home-screen app).
+function ToolTabs({ tab, go, data }) {
   return (
     <nav className="tools on" aria-label="Tools">
       {TOOL_LIST.map((n) => (
@@ -1082,6 +1084,16 @@ function BusinessHub() {
   const reloadAll = () => { reloadJobs(); reloadProposals(); reloadInvoices(); reloadClients(); reloadBriefs(); reloadEvents(); };
   const data = loading ? null : { jobs, proposals, invoices, clients, briefs, events, needs: needsYou(jobs, proposals, invoices, briefs, events) };
   const [startNew, setStartNew] = React.useState(false);
+  // The tab row sticks just under the header, whatever height the header wraps to.
+  const headRef = React.useRef(null);
+  React.useEffect(() => {
+    const el = headRef.current; if (!el) return;
+    const set = () => document.documentElement.style.setProperty('--toph', el.offsetHeight + 'px');
+    set();
+    const ro = window.ResizeObserver ? new ResizeObserver(set) : null;
+    if (ro) ro.observe(el); else window.addEventListener('resize', set);
+    return () => { if (ro) ro.disconnect(); else window.removeEventListener('resize', set); };
+  }, []);
   const go = (t, opts) => { setTab(t); setJobId(null); setStartNew(!!(opts && opts.newJob)); history.replaceState(null, '', '#' + t); };
   const open = (id) => { setTab('jobs'); setJobId(id); history.replaceState(null, '', '#job=' + id); window.scrollTo(0, 0); };
 
@@ -1091,20 +1103,19 @@ function BusinessHub() {
         <div className="amb"><i className="a1" /><i className="a2" /><i className="a3" /></div>
         <div className="grain" />
       </div>
-      <header className="top">
+      <header className="top" ref={headRef}>
         <div className="topin">
           {jobId
             ? <a className="backlink" href="#jobs" onClick={(e) => { e.preventDefault(); go('jobs'); }}><i aria-hidden="true">←</i> Jobs</a>
             : <a className="backlink" href="/backroom"><i aria-hidden="true">←</i> Backroom</a>}
           <a className="mark" href="/backroom"><img src="assets/antler.png" alt="" /><div><b>Business Hub</b><span>The Backroom</span></div></a>
           <nav className="topnav">
-            <a className="navhome" href="#today" onClick={(e) => { e.preventDefault(); go('today'); }} style={tab === 'today' && !jobId ? { color: 'var(--text)' } : undefined}>Today</a>
-            <a href="/docket">Docket</a>
+<a href="/docket">Docket</a>
           </nav>
         </div>
       </header>
       <div className="shell">
-        {data && <ToolSidebar tab={tab} go={go} data={data} />}
+        {data && <ToolTabs tab={tab} go={go} data={data} />}
         <main id="app" key={tab + (jobId || '')}>
           {error && <p className="sub" style={{ padding: '20px 2px', color: 'var(--warn)' }}>{error} If this is the first run, the workflow tables may not be set up yet.</p>}
           {!error && loading && <p className="sub" style={{ padding: '20px 2px' }}>Loading…</p>}

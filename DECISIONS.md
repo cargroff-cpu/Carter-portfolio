@@ -809,3 +809,17 @@ sidebar (business-hub.jsx), the ring/launch styles (mcc.css, motion.css), and
 motifs.jsx from Business Hub.html (only the ring's lamps used it there). The
 header's back link is "← Backroom" everywhere except a job page ("← Jobs"),
 and the header's Home link is now "Today". Old `#ring` links land on Today.
+
+## 2026-11-06 — Business Hub: tabs on top, Scaffold type (layout options 4 + 1)
+
+Carter picked option 4 (tabs on top) with option 1 (cleaner type) from five
+mockups. On a computer or tablet the tools are a row of tabs under the
+header, sticky just below it (its height is measured into `--toph`), and
+every screen gets the full width. On a phone and in the home-screen app the
+same tools stay a bar at the bottom, where a thumb reaches; only its styling
+changed. Type follows the Scaffold: sentence case instead of small spaced
+capitals, bigger and brighter small text, cream buttons in sentence case.
+Today's numbers are one ruled row and the panels sit on hairlines with no
+boxes. The header's "Today" link is gone (the Today tab does that). All of
+it lives in Business Hub.html's own styles, so the Docket, which shares
+mcc.css, is unchanged.
