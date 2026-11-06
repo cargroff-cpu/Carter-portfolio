@@ -140,6 +140,16 @@ a:hover { color: var(--amber-lit); }
 @keyframes dlamp-glass { 0% { opacity: 1; } 14% { opacity: .55; } 20% { opacity: .9; } 34% { opacity: .3; } 42% { opacity: .6; } 60% { opacity: .12; } 100% { opacity: 0; } }
 @keyframes dlamp-halo { 0% { opacity: 0; } 14% { opacity: .45; } 20% { opacity: .1; } 34% { opacity: .7; } 42% { opacity: .4; } 60% { opacity: .88; } 100% { opacity: 1; } }
 @keyframes dlamp-in { 0% { opacity: 0; transform: translateY(28px) scale(.97); } 62% { opacity: .9; } 70% { opacity: .7; } 78% { opacity: 1; } 100% { opacity: 1; transform: none; } }
+/* on a desktop screen the gas catches as each pair rises: the glass and its glow
+   sputter up to full light, short, timed to the row's own delay (the phone
+   rules below do the same without the rise) */
+@media (min-width: 900px) {
+  .dhero-lamp { --fd: .9s; }
+  .dhero-lamp.far { --fd: 1.4s; } .dhero-lamp.mid { --fd: 1.9s; } .dhero-lamp.near { --fd: 2.4s; }
+  .dhero-lamp.r { --fs: .22s; }
+  .dhero-lamp path[fill="#1a1008"] { animation: dlamp-glass 1.5s ease-out calc(var(--fd) + var(--fs, 0s)) backwards; }
+  .dhero-lamp svg > g:first-of-type { animation: dlamp-halo 1.5s ease-out calc(var(--fd) + var(--fs, 0s)) backwards; }
+}
 .dhero .dhero-vignette { z-index: 8; }
 .dhero .dhero-in { z-index: 9; }
 .dmedal { display: block; width: 100%; height: auto; overflow: visible; }
