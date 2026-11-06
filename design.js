@@ -706,8 +706,20 @@ const TESTIMONIALS = [];
 const FAQ = [['Do you use AI?', 'Yes. AI does the drafting and the first pass of the build. I make the decisions, check everything and finish it.'], ['What does it cost?', 'Graphics and print are priced per piece. Websites and tools are quoted after a short brief. Either way, you see the price before anything starts.'], ['Can you build the back end of a website too?', 'Yes. Besides the pages people see, I build what runs behind them: logins, databases, payments, booking and contact forms that land somewhere useful, and the admin pages you run it from.'], ['What if what I need isn’t listed?', 'Ask anyway. The lists are where most people start, not where it ends. Describe what you picture in the brief and I’ll come back with how I’d make it.'], ['Will I need new software?', 'Not usually. Where I can, I build on what you already use.'], ['How fast is it?', 'Most design pieces: three directions within two business days of a complete brief. Tools: a plan within a few days, then a first working version.'], ['What if something breaks?', 'I fix it. Ongoing care is available as a monthly plan.'], ['Who owns the work?', 'You do, once it’s paid.'], ['Do we need a call?', 'No. The brief covers it. If a call would help, I’ll say so.']];
 const STEPS = [['I', 'Who’s asking'], ['II', 'What you need'], ['III', 'Details that save time']];
 function Nav() {
+  const [past, setPast] = React.useState(false);
+  React.useEffect(() => {
+    const on = () => {
+      const h = document.getElementById('top');
+      setPast(!!h && h.getBoundingClientRect().bottom < 72);
+    };
+    on();
+    window.addEventListener('scroll', on, {
+      passive: true
+    });
+    return () => window.removeEventListener('scroll', on);
+  }, []);
   return React.createElement("nav", {
-    className: "dnav"
+    className: 'dnav' + (past ? ' past' : '')
   }, React.createElement("div", {
     className: "dnavin"
   }, React.createElement("a", {
@@ -1162,7 +1174,11 @@ function Hero({
     className: "dhero-medal"
   }, React.createElement(Medallion, null)), React.createElement("h1", {
     className: "ddisplay"
-  }, SITE.headline), React.createElement("p", {
+  }, String(SITE.headline).split(/(?<=[.!?])\s+/).map((s, i, a) => React.createElement(React.Fragment, {
+    key: i
+  }, React.createElement("span", {
+    className: "dh1-line"
+  }, s), i < a.length - 1 ? ' ' : null))), React.createElement("p", {
     className: "ddeck"
   }, SITE.deck), React.createElement("div", {
     className: "dacts"
@@ -1563,12 +1579,13 @@ function Shelf({
   blurb,
   items,
   cta,
-  onAddNeed
+  onAddNeed,
+  active
 }) {
   const [peek, setPeek] = React.useState(null);
   const note = peek && peek.desc ? peek.desc : blurb;
   return React.createElement("div", {
-    className: 'dhalf-sec dmenu up' + (lane === 'automation' ? ' dauto' : '')
+    className: 'dhalf-sec dmenu up' + (lane === 'automation' ? ' dauto' : '') + (active ? ' on' : '')
   }, React.createElement("div", {
     className: "dmenu-in"
   }, React.createElement("img", {
@@ -1629,6 +1646,49 @@ function Make({
   onAddNeed
 }) {
   const [show, setShow] = React.useState('design');
+  const [touched, setTouched] = React.useState(false);
+  const [nudge, setNudge] = React.useState(false);
+  const track = React.useRef(null);
+  React.useEffect(() => {
+    const el = track.current;
+    if (!el || !('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver(es => {
+      if (es[0].isIntersecting) {
+        setNudge(true);
+        io.disconnect();
+      }
+    }, {
+      threshold: 0.35
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  const raf = React.useRef(0);
+  const onScroll = () => {
+    if (raf.current) return;
+    raf.current = requestAnimationFrame(() => {
+      raf.current = 0;
+      const el = track.current;
+      if (!el || !el.children[1]) return;
+      const step = Math.max(Math.min(el.children[1].offsetLeft - el.children[0].offsetLeft, el.scrollWidth - el.clientWidth), 1);
+      const p = Math.min(1, Math.max(0, el.scrollLeft / step));
+      el.children[0].style.setProperty('--a', (1 - p).toFixed(3));
+      el.children[1].style.setProperty('--a', p.toFixed(3));
+      setShow(p >= 0.5 ? 'automation' : 'design');
+      if (el.scrollLeft > 6) setTouched(true);
+    });
+  };
+  const go = v => {
+    const el = track.current;
+    if (!el) return;
+    setTouched(true);
+    const card = el.children[v === 'automation' ? 1 : 0];
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollTo({
+      left: card.offsetLeft - el.children[0].offsetLeft,
+      behavior: calm ? 'auto' : 'smooth'
+    });
+  };
   return React.createElement("section", {
     id: "make",
     className: "dsection dplain"
@@ -1639,22 +1699,14 @@ function Make({
   }, React.createElement("h2", {
     className: "ddisplay"
   }, "Two kinds of work, one person.")), React.createElement("div", {
-    className: "dmaketabs",
-    role: "tablist",
-    "aria-label": "Kind of work"
-  }, [['design', 'Design'], ['automation', 'Tools']].map(([v, label]) => React.createElement("button", {
-    key: v,
-    type: "button",
-    role: "tab",
-    "aria-selected": show === v,
-    className: 'dlane' + (show === v ? ' on' : '') + (v === 'automation' ? ' auto' : ''),
-    onClick: () => setShow(v)
-  }, label))), React.createElement("div", {
-    className: 'dduo dmake show-' + show
+    className: 'dduo dmake' + (nudge && !touched ? ' beckon' : ''),
+    ref: track,
+    onScroll: onScroll
   }, React.createElement(Shelf, {
     lane: "design",
     label: "Design",
     title: "What your customers see",
+    active: show === 'design',
     blurb: "Three directions, you pick one, I finish it.",
     items: DESIGN_SERVICES,
     cta: "Start a design brief",
@@ -1663,11 +1715,34 @@ function Make({
     lane: "automation",
     label: "Tools",
     title: "What runs behind the scenes",
+    active: show === 'automation',
     blurb: "Proven by hand first. Quoted after a short brief.",
     items: TOOL_SERVICES,
     cta: "Start a tools brief",
     onAddNeed: onAddNeed
-  })), React.createElement("p", {
+  })), React.createElement("div", {
+    className: "dswipenav"
+  }, React.createElement("div", {
+    className: "ddots",
+    role: "tablist",
+    "aria-label": "Kind of work"
+  }, [['design', 'Design'], ['automation', 'Tools']].map(([v, label]) => React.createElement("button", {
+    key: v,
+    type: "button",
+    role: "tab",
+    "aria-selected": show === v,
+    "aria-label": 'Show ' + label,
+    className: 'ddot' + (show === v ? ' on' : ''),
+    onClick: () => go(v)
+  }))), React.createElement("button", {
+    type: "button",
+    className: "dswipehint",
+    onClick: () => go(show === 'design' ? 'automation' : 'design')
+  }, show === 'design' ? React.createElement(React.Fragment, null, "Swipe for Tools ", React.createElement("i", {
+    className: "darrow"
+  }, '\u2192')) : React.createElement(React.Fragment, null, React.createElement("i", {
+    className: "darrow back"
+  }, '\u2190'), " Swipe for Design"))), React.createElement("p", {
     className: "dany up"
   }, "These are just examples. Have something else in mind? I can make that happen too."), WORK.length > 0 && React.createElement(React.Fragment, null, React.createElement("div", {
     className: "dworkhead"

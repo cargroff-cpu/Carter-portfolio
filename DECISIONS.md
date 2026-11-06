@@ -746,3 +746,56 @@ behind the same login (middleware.js) and logout-on-close.
 
 - `lib/mail.js` now renders a dark card (warm near-black, cream type, amber accents): an amber band on top, a crest header with "The Scaffold, by Carter Groff", a large heading with an amber rule, an amber button, and a darker footer with the sign-off. It declares `color-scheme: dark` and uses `bgcolor` attributes so mail apps keep it dark.
 - All text is cream or soft tan on the dark surface (7:1 or better), links are lit amber and underlined. Still tables and inline styles only; everything typed is escaped. The Backroom's preview matches.
+
+## Scaffold on phones: the desktop page, fitted
+
+Carter found the phone page crowded and in your face. Four bigger rethinks
+(merged sections, chapters, a contents list) were turned down in favour of
+keeping the desktop page as it is and only fitting it to a phone. Phone-only
+rules (899px and under) in cargroff-design.css, desktop unchanged:
+
+- 24px side margins instead of 16px.
+- A slimmer header whose Start a brief is an outline, so the hero's is the
+  one filled button on screen. Section buttons are outlines on phones too.
+- The hero is sized to its content, not the screen, and the headline breaks
+  between its sentences ("Design that looks right." / "Tools that work
+  right."), one line each from 360px up. design.jsx wraps each sentence in a
+  span; desktop reads exactly as before.
+- Headings one size down, body text 16px.
+- The two halves of What each half looks like are split by a hairline; the
+  drafts sheet and the terminal are inset, with a smaller terminal font.
+- The dial sits above its steps (as it sits beside them on desktop), smaller.
+- The menu cards are inset from the edges with tighter type, so most rows fit
+  on one line; the portrait is capped at 320px.
+
+### Fewer Start a brief buttons on phones
+
+Carter: too many Start a brief buttons. On phones there is now one at a time.
+The hero's is the only one at the top; the header's fades in once the hero is
+behind you (a scroll check in Nav, phone CSS only), and "See the work" is a
+quiet text link. The buttons under each example and inside the menu card are
+hidden on phones (the card's rows and the header still open the brief).
+Desktop keeps every button.
+
+### Two kinds of work: a swipe on phones
+
+The two menu cards (Design, Tools) now sit side by side in a snap-scrolling
+row on phones, each 84% wide so the next card peeks in from the edge. The
+Design | Tools switch follows the swipe and jumps to a card when tapped, and
+a hint line under the row ("Swipe for Tools" / "Swipe for Design") flips the
+card too. Desktop still shows both cards in two columns.
+
+### The swipe gets character (and loses its buttons)
+
+The Design | Tools buttons above the phone swipe are gone; two dots and the
+hint line below it (with a nudging arrow) show where you are and also jump to a
+card. As you swipe, the card coming in straightens, lifts and brightens while
+the one leaving tilts away and dims (driven by scroll position through a
+`--a` custom property); the new card's crest and name pop and its lines rise in
+one after another; the Tools card gets a lamp glow. The next card nudges in
+from the edge once, the first time the cards come into view. Reduced motion turns all
+of it off. Desktop is unchanged.
+
+Follow-up: the nudge was too much on repeat, so it plays once the first time
+the cards scroll into view (an IntersectionObserver in Make) and never again.
+Then softened again: one slow 12px ease out and back, no bounce.

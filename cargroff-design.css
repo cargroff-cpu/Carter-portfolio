@@ -419,12 +419,9 @@ a:hover { color: var(--amber-lit); }
 .js .dmenu.dauto.up { transition-delay: .12s; }
 @keyframes dshelf-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 /* on a phone the two cards sit behind a Design | Tools switch */
-.dmaketabs { display: none; }
+.dmaketabs, .dswipenav { display: none; }
 @media (max-width: 899px) {
-  .dmaketabs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); margin: -12px 0 24px; }
-  .dmake.show-design .dhalf-sec.dauto, .dmake.show-automation .dhalf-sec:not(.dauto) { display: none; }
   .dmake .dhalf-sec { animation: dshelf-in .35s cubic-bezier(.16, 1, .3, 1); }
-  .dmenu, .dmenu.dauto { transform: rotate(-.6deg); }
   .dmenu-name b { font-size: 20px; }
   .dmenu-turn { font-size: 15px; }
 }
@@ -651,3 +648,127 @@ a:hover { color: var(--amber-lit); }
 #faq .dfaq summary { font-family: var(--ui); font-size: 15px; font-weight: 500; color: var(--ink-soft); }
 #faq .dfaq details[open] summary { color: var(--ink); }
 #faq .dfaq p { margin: 8px 0 2px; font-size: 14px; line-height: 1.6; color: var(--ink-mute); }
+
+/* ── Phones: the desktop page, fitted to a small screen ──
+   Same sections, order and look as desktop. Only the fit changes: wider side
+   margins, a quieter header, one size down on headings, the dial above its
+   steps and smaller, the cards and terminal inset so nothing runs edge to edge,
+   and section buttons as outlines so the hero's is the one filled button. */
+@media (max-width: 899px) {
+  .dwrap { padding: 0 24px; }
+  .dnavin { padding: 10px 24px; gap: 12px; }
+  .dbrand img { width: 24px; }
+  .dbrand b { font-size: 18px; }
+  .dsub { font-size: 12px; margin-top: 1px; }
+  .dnav .p-btn { min-height: 38px; padding: 0 14px; font-size: 14px; background: transparent; color: var(--ink); border-color: var(--rule-strong); }
+  .dnav .p-btn:hover { background: transparent; color: var(--amber-lit); border-color: var(--amber); }
+  /* one Start a brief at a time: the hero's own at the top, the header's once the hero is behind you */
+  .dnav .p-btn { opacity: 0; visibility: hidden; transition: opacity .3s ease, visibility .3s; }
+  .dnav.past .p-btn { opacity: 1; visibility: visible; }
+  .dhero .p-btn.ghost { min-height: 44px; padding: 0 12px; background: none; border-color: transparent; color: var(--ink-soft); }
+  .dhero .p-btn.ghost:hover { color: var(--amber-lit); }
+
+  .dhero { min-height: 0; padding: 56px 0 64px; }
+  .dhero-medal { width: 156px; margin-bottom: 28px; }
+  .dhero h1.ddisplay { font-size: clamp(31px, 8.6vw, 40px); line-height: 1.04; max-width: none; }
+  .dh1-line { display: block; }
+  .dh1-line + .dh1-line { margin-top: .12em; }
+  .dhero .ddeck { font-size: 16px; max-width: 21em; margin-top: 18px; }
+  .dhero .dacts { margin-top: 28px; }
+
+  .dsection h2.ddisplay { font-size: clamp(30px, 8.2vw, 36px); }
+  .dshead { margin-bottom: 32px; }
+  .dp, .dsteplist p { font-size: 16px; line-height: 1.65; }
+  .ddeck { font-size: 17px; }
+
+  /* What each half looks like: the two halves read as two stops, a hairline between */
+  .dduo { gap: 0; }
+  .ddoor { gap: 16px; }
+  .ddoor + .ddoor { margin-top: 48px; padding-top: 44px; border-top: 1px solid var(--rule); }
+  .ddoor h3.ddisplay { font-size: 26px; }
+  .dsheet { padding: 12px; margin: 0 4px; }
+  .dhv-drafts { gap: 8px; }
+  .dprint-n { font-size: 20px; padding: 6px 10px; }
+  .dhv-d { padding: 10px; }
+  .dsession { min-height: 0; margin: 0 4px; padding: 18px 16px; font-size: 12.5px; line-height: 1.85; }
+  .dcap { font-size: 14px; margin: 0; }
+  /* no button under each example or inside the menu card: the rows and the header open the brief */
+  .ddoor > p:last-child, .dmenu-cta { display: none; }
+  .ddoor > .dcap { margin-bottom: 0; }
+
+  /* How it works: the dial sits above its steps, as it sits beside them on desktop */
+  .ddialwrap { gap: 36px; }
+  .ddial { order: 0; width: min(76%, 280px); }
+  .dstep-t { font-size: 24px; }
+  .dstep-n { font-size: 22px; }
+  .dsteplist button { padding: 14px 0; gap: 16px; }
+  .dsteplist p { padding: 0 0 18px calc(1em + 16px); }
+
+  /* Two kinds of work: the card laid on the table with room around it */
+  /* a swipe row: both cards side by side, the next one peeking in from the edge.
+     --a is how far each card is "on top" (1 = centred, 0 = away); the card
+     tilts, shrinks and dims as it leaves, and straightens and lifts as it comes in */
+  .dmake { display: grid; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 84%; gap: 14px; align-items: stretch; margin: 0 -24px; padding: 14px 24px 36px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scroll-padding-inline: 24px; overscroll-behavior-x: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .dmake::-webkit-scrollbar { display: none; }
+  .dmake .dhalf-sec { scroll-snap-align: start; animation: none; min-width: 0; }
+  .dmake .dmenu:nth-child(1) { --a: 1; --tilt: -5deg; --rest: -.7deg; }
+  .dmake .dmenu:nth-child(2) { --a: 0; --tilt: 5deg; --rest: .8deg; }
+  .js .dmake .dmenu.up, .js .dmake .dmenu.up:not(.shown), .js .dmake .dmenu.dauto.up:not(.shown) {
+    opacity: calc(.6 + .4 * var(--a)); transition: box-shadow .5s ease;
+    transform: translateY(calc((1 - var(--a)) * 16px)) rotate(calc(var(--rest) + (1 - var(--a)) * var(--tilt))) scale(calc(.92 + .08 * var(--a)));
+  }
+  .dmake .dmenu, .dmake .dmenu.dauto { margin: 0; padding: 10px; }
+  .dmenu-in { height: 100%; }
+  /* the card on top wakes up: its crest and name pop, its lines rise in one after another */
+  .dmake .dmenu.on .dmenu-h { animation: dpop .7s cubic-bezier(.3, 1.6, .5, 1) both; }
+  .dmake .dmenu.on .dmenu-crest { animation: dcrest .9s cubic-bezier(.3, 1.4, .5, 1) both; }
+  .dmake .dmenu-list li { opacity: .45; transform: translateX(16px); transition: opacity .3s ease, transform .3s ease; }
+  .dmake .dmenu.on .dmenu-list li { opacity: 1; transform: none; transition: opacity .5s ease, transform .6s cubic-bezier(.2, .8, .3, 1); }
+  .dmake .dmenu.on .dmenu-list li:nth-child(1) { transition-delay: .10s; }
+  .dmake .dmenu.on .dmenu-list li:nth-child(2) { transition-delay: .17s; }
+  .dmake .dmenu.on .dmenu-list li:nth-child(3) { transition-delay: .24s; }
+  .dmake .dmenu.on .dmenu-list li:nth-child(4) { transition-delay: .31s; }
+  .dmake .dmenu.on .dmenu-list li:nth-child(5) { transition-delay: .38s; }
+  .dmake .dmenu.on .dmenu-list li:nth-child(n+6) { transition-delay: .45s; }
+  .dmake .dmenu.dauto.on { box-shadow: 0 24px 50px var(--vignette-1), 0 0 56px -8px rgba(217, 154, 61, .38); }
+  /* the next card nudges in from the edge once, the first time the cards come into view */
+  .dmake.beckon .dhalf-sec:nth-child(2) { animation: dpeek 1.6s ease-in-out .6s 1; }
+  @keyframes dpeek { 0%, 100% { translate: 0 0; } 45% { translate: -12px 0; } }
+  @keyframes dpop { 0% { transform: scale(.82); opacity: .4; } 60% { transform: scale(1.06); opacity: 1; } 100% { transform: none; opacity: 1; } }
+  @keyframes dcrest { 0% { transform: rotate(-14deg) scale(.7); } 60% { transform: rotate(5deg) scale(1.12); } 100% { transform: none; } }
+  .dswipenav { display: grid; justify-items: center; gap: 2px; margin-top: -20px; }
+  .ddots { display: flex; gap: 8px; }
+  .ddot { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 4px; background: var(--ink-dim); cursor: pointer; transition: width .35s cubic-bezier(.2, .8, .3, 1), background-color .3s; position: relative; }
+  .ddot::after { content: ""; position: absolute; inset: -18px -8px; }
+  .ddot.on { width: 26px; background: var(--amber); }
+  .dswipehint { display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 12px 16px; background: none; border: 0; cursor: pointer; font-family: var(--ui); font-size: 14px; font-weight: 500; color: var(--amber); }
+  .dswipehint:hover { color: var(--amber-lit); }
+  .darrow { font-style: normal; display: inline-block; animation: dnudge 1.8s ease-in-out infinite; }
+  .darrow.back { animation-name: dnudge-back; }
+  @keyframes dnudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(6px); } }
+  @keyframes dnudge-back { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-6px); } }
+  @media (prefers-reduced-motion: reduce) {
+    .dmake.beckon .dhalf-sec:nth-child(2), .dmake .dmenu.on .dmenu-h, .dmake .dmenu.on .dmenu-crest, .darrow { animation: none; }
+    .dmake .dmenu-list li, .dmake .dmenu.on .dmenu-list li { opacity: 1; transform: none; transition: none; }
+    .ddot { transition: none; }
+  }
+  .dmenu-in { padding: 24px 16px 22px; }
+  .dmenu-crest { width: 40px; }
+  .dmenu-h { font-size: 36px; }
+  .dmenu-tag { font-size: 15px; }
+  .dmenu-orn { margin: 16px auto 8px; }
+  .dmenu-list a { padding: 10px 0; gap: 6px; }
+  .dmenu-name b { font-size: 18px; }
+  .dmenu-name small { font-size: 13.5px; }
+  .dmenu-dots { flex-basis: 12px; min-width: 12px; }
+  .dmenu-turn { font-size: 13.5px; }
+  .dmenu-note { font-size: 15px; min-height: 0; }
+
+  /* I'm Carter: the portrait at a size that leaves room for the words */
+  .dwhyhead { gap: 32px; }
+  .dportrait { max-width: min(100%, 320px); }
+  .drules-k { margin-top: 28px; }
+
+  #brief h2.ddisplay { font-size: clamp(38px, 10vw, 44px); }
+  .dbriefhead { padding-top: 56px; }
+}

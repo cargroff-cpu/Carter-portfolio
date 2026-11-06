@@ -67,8 +67,16 @@ const STEPS = [
 ];
 
 function Nav() {
+  // phones: the header's Start a brief appears only once the hero (which has its own) is behind you
+  const [past, setPast] = React.useState(false);
+  React.useEffect(() => {
+    const on = () => { const h = document.getElementById('top'); setPast(!!h && h.getBoundingClientRect().bottom < 72); };
+    on();
+    window.addEventListener('scroll', on, { passive: true });
+    return () => window.removeEventListener('scroll', on);
+  }, []);
   return (
-    <nav className="dnav">
+    <nav className={'dnav' + (past ? ' past' : '')}>
       <div className="dnavin">
         <a className="dbrand" href="#top">
           <img src="assets/antler.png" alt="" />
@@ -230,7 +238,8 @@ function Hero({ onAddNeed }) {
       ))}
       <div className="dwrap dhero-in">
         <div className="dhero-medal"><Medallion /></div>
-        <h1 className="ddisplay">{SITE.headline}</h1>
+        {/* one span per sentence, so a phone breaks the headline between ideas, not mid-idea */}
+        <h1 className="ddisplay">{String(SITE.headline).split(/(?<=[.!?])\s+/).map((s, i, a) => <React.Fragment key={i}><span className="dh1-line">{s}</span>{i < a.length - 1 ? ' ' : null}</React.Fragment>)}</h1>
         <p className="ddeck">{SITE.deck}</p>
         <div className="dacts">
           <a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('design'); }}>Start a brief</a>
@@ -480,11 +489,11 @@ function Turn({ s, lane }) {
 // leader to its turnaround (and its price when prices are on). Resting on a
 // line swaps the card's footnote for that service's description; choosing a
 // line starts a brief with that need ticked.
-function Shelf({ lane, label, title, blurb, items, cta, onAddNeed }) {
+function Shelf({ lane, label, title, blurb, items, cta, onAddNeed, active }) {
   const [peek, setPeek] = React.useState(null);
   const note = peek && peek.desc ? peek.desc : blurb;
   return (
-    <div className={'dhalf-sec dmenu up' + (lane === 'automation' ? ' dauto' : '')}>
+    <div className={'dhalf-sec dmenu up' + (lane === 'automation' ? ' dauto' : '') + (active ? ' on' : '')}>
       <div className="dmenu-in">
         <img className="dmenu-crest" src="assets/antler.png" alt="" />
         <h3 className="dmenu-h">{label}</h3>
@@ -519,27 +528,70 @@ function Shelf({ lane, label, title, blurb, items, cta, onAddNeed }) {
 }
 
 function Make({ onAddNeed }) {
-  // On a phone one card shows at a time, chosen with the Design | Tools switch.
+  // On a phone the two cards sit side by side in a swipeable row, the next one
+  // peeking in from the edge. As you swipe, the card coming in straightens and
+  // lifts, the one leaving tilts away, and the new card's lines rise in. The
+  // dots and the hint line follow the swipe and also jump to a card when tapped.
   const [show, setShow] = React.useState('design');
+  const [touched, setTouched] = React.useState(false);
+  const [nudge, setNudge] = React.useState(false);
+  const track = React.useRef(null);
+  // the next card nudges in from the edge once, the first time the cards come into view
+  React.useEffect(() => {
+    const el = track.current;
+    if (!el || !('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver((es) => { if (es[0].isIntersecting) { setNudge(true); io.disconnect(); } }, { threshold: 0.35 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  const raf = React.useRef(0);
+  const onScroll = () => {
+    if (raf.current) return;
+    raf.current = requestAnimationFrame(() => {
+      raf.current = 0;
+      const el = track.current; if (!el || !el.children[1]) return;
+      // the row ends before the second card reaches the left edge, so measure against the room there is
+      const step = Math.max(Math.min(el.children[1].offsetLeft - el.children[0].offsetLeft, el.scrollWidth - el.clientWidth), 1);
+      const p = Math.min(1, Math.max(0, el.scrollLeft / step));
+      el.children[0].style.setProperty('--a', (1 - p).toFixed(3));
+      el.children[1].style.setProperty('--a', p.toFixed(3));
+      setShow(p >= 0.5 ? 'automation' : 'design');
+      if (el.scrollLeft > 6) setTouched(true);
+    });
+  };
+  const go = (v) => {
+    const el = track.current; if (!el) return;
+    setTouched(true);
+    const card = el.children[v === 'automation' ? 1 : 0];
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollTo({ left: card.offsetLeft - el.children[0].offsetLeft, behavior: calm ? 'auto' : 'smooth' });
+  };
   return (
     <section id="make" className="dsection dplain">
       <div className="dwrap">
         <div className="dshead">
           <h2 className="ddisplay">Two kinds of work, one person.</h2>
         </div>
-        <div className="dmaketabs" role="tablist" aria-label="Kind of work">
-          {[['design', 'Design'], ['automation', 'Tools']].map(([v, label]) => (
-            <button key={v} type="button" role="tab" aria-selected={show === v}
-              className={'dlane' + (show === v ? ' on' : '') + (v === 'automation' ? ' auto' : '')} onClick={() => setShow(v)}>{label}</button>
-          ))}
-        </div>
-        <div className={'dduo dmake show-' + show}>
-          <Shelf lane="design" label="Design" title="What your customers see"
+        <div className={'dduo dmake' + (nudge && !touched ? ' beckon' : '')} ref={track} onScroll={onScroll}>
+          <Shelf lane="design" label="Design" title="What your customers see" active={show === 'design'}
             blurb="Three directions, you pick one, I finish it."
             items={DESIGN_SERVICES} cta="Start a design brief" onAddNeed={onAddNeed} />
-          <Shelf lane="automation" label="Tools" title="What runs behind the scenes"
+          <Shelf lane="automation" label="Tools" title="What runs behind the scenes" active={show === 'automation'}
             blurb="Proven by hand first. Quoted after a short brief."
             items={TOOL_SERVICES} cta="Start a tools brief" onAddNeed={onAddNeed} />
+        </div>
+        <div className="dswipenav">
+          <div className="ddots" role="tablist" aria-label="Kind of work">
+            {[['design', 'Design'], ['automation', 'Tools']].map(([v, label]) => (
+              <button key={v} type="button" role="tab" aria-selected={show === v} aria-label={'Show ' + label}
+                className={'ddot' + (show === v ? ' on' : '')} onClick={() => go(v)} />
+            ))}
+          </div>
+          <button type="button" className="dswipehint" onClick={() => go(show === 'design' ? 'automation' : 'design')}>
+            {show === 'design'
+              ? <React.Fragment>Swipe for Tools <i className="darrow">{'\u2192'}</i></React.Fragment>
+              : <React.Fragment><i className="darrow back">{'\u2190'}</i> Swipe for Design</React.Fragment>}
+          </button>
         </div>
         <p className="dany up">These are just examples. Have something else in mind? I can make that happen too.</p>
         {WORK.length > 0 && (
