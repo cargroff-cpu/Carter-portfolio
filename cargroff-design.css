@@ -155,7 +155,7 @@ a:hover { color: var(--amber-lit); }
   .dhero-lamp.mid.r { --g: dlamp-glass-b; --h: dlamp-halo-b; --gd: 1.6s; --fs: .26s; }
   .dhero-lamp.near.l { --g: dlamp-glass-b; --h: dlamp-halo-b; --gd: 1.6s; --fs: .08s; }
   .dhero-lamp.near.r { --g: dlamp-glass-c; --h: dlamp-halo-c; --gd: 1.3s; --fs: .34s; }
-  .dhero-lamp path[fill="#1a1008"] { animation: var(--g) var(--gd) ease-out calc(var(--fd) + var(--fs)) backwards; }
+  .dhero-lamp .lamp-lit { animation: var(--h) var(--gd) ease-out calc(var(--fd) + var(--fs)) backwards; }
   .dhero-lamp svg > g:first-of-type { animation: var(--h) var(--gd) ease-out calc(var(--fd) + var(--fs)) backwards; }
   /* no hard "now it's on": as the stutter fades out the whole post swells a
      little past its steady light and eases back down, slowly */
@@ -238,14 +238,15 @@ a:hover { color: var(--amber-lit); }
   .dhero-lamp .dlamp-iron { display: none; }
   .dhero-lamp.mid, .dhero-lamp.far, .dhero-lamp.back { visibility: hidden; }
   .dhero-veil, .dhero-wisp, .dhero-path { display: none; }
-  /* phones: the posts don't move. They stand dark, then the gas catches: the
+  /* phones: the posts rise like the desktop lane, then stand dark, then the gas catches: the
      glass and its glow sputter up to full light, left lamp first */
-  .dhero-lamp { animation: none; }
-  .dhero-lamp path[fill="#1a1008"] { animation: dlamp-glass 2.2s ease-out .5s both; }
-  .dhero-lamp svg > g:first-of-type { animation: dlamp-halo 2.2s ease-out .5s both; }
-  .dhero-lamp .dhero-candle { animation: dlamp-halo 2.6s ease-out .6s both, dcandle 7s ease-in-out 3.2s infinite; }
-  .dhero-lamp.r path[fill="#1a1008"], .dhero-lamp.r svg > g:first-of-type { animation-delay: .95s; }
-  .dhero-lamp.r .dhero-candle { animation-delay: 1.05s, 3.65s; }
+  .dhero-lamp { animation: dlamp-in 2.4s cubic-bezier(.22, .8, .3, 1) .2s both; }
+  .dhero-lamp.r { animation-delay: .45s; }
+  .dhero-lamp .lamp-lit { animation: dlamp-halo 2.2s ease-out 1.2s backwards; }
+  .dhero-lamp svg > g:first-of-type { animation: dlamp-halo 2.2s ease-out 1.2s backwards; }
+  .dhero-lamp .dhero-candle { animation: dlamp-halo 2.6s ease-out 1.3s both, dcandle 7s ease-in-out 3.9s infinite; }
+  .dhero-lamp.r .lamp-lit, .dhero-lamp.r svg > g:first-of-type { animation-delay: 1.45s; }
+  .dhero-lamp.r .dhero-candle { animation-delay: 1.55s, 4.15s; }
   .dhero-lamp.l.near { left: max(-142px, calc(50% - 320px)); } .dhero-lamp.r.near { right: max(-142px, calc(50% - 320px)); }
   .dhero-candle { width: 300px; top: 77px; }
   .dhero-in { padding: 0 24px; }
@@ -618,7 +619,7 @@ a:hover { color: var(--amber-lit); }
 @media (max-width: 899px) { .ddial { order: 2; width: min(100%, 360px); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .dcursor, .dmv, .dhero-fog, .dhero-candle, .dhero-wisp, .dhero-lamp, .dhero-lamp path[fill="#1a1008"], .dhero-lamp svg > g:first-of-type, .dhero-lamp .dhero-candle, .dhero-lamp svg { animation: none; }
+  .dcursor, .dmv, .dhero-fog, .dhero-candle, .dhero-wisp, .dhero-lamp, .dhero-lamp .lamp-lit, .dhero-lamp svg > g:first-of-type, .dhero-lamp .dhero-candle, .dhero-lamp svg { animation: none; }
   .dsession li, .js .dsession li, .js .dsheet.up .dprint { opacity: 1; transform: none; transition: none; }
   .js .dsheet.up .dprint:not([aria-pressed="true"]) { opacity: .66; }
   .dhero-lamp svg, .dm-spin-in, .dm-spin, .dm-spin-back, .dm-ripple, .dm-sheen, .dm-rule.gold, .dm-ticks line.major, .dhalf-sec, .dwatch-quiver, .dwatch-jewel, .dwatch-ping, .dwatch-num, .dwatch-rim, .dwatch-ticks line, .dseal-name, .dwatch-numg, .dseal-crest, .dseal-name.on text { animation: none; }

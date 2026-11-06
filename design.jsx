@@ -243,7 +243,6 @@ function Hero({ onAddNeed }) {
         <p className="ddeck">{SITE.deck}</p>
         <div className="dacts">
           <a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('design'); }}>Start a brief</a>
-          <a className="p-btn ghost" href="#doors">See the work</a>
         </div>
       </div>
     </header>
@@ -519,9 +518,6 @@ function Shelf({ lane, label, title, blurb, items, cta, onAddNeed, active }) {
           })}
         </ul>
         <p className={'dmenu-note' + (peek && peek.desc ? ' peek' : '')} key={note}>{note}</p>
-        <p className="dmenu-cta">
-          <a className="dmenu-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed(lane); }}>{cta}</a>
-        </p>
       </div>
     </div>
   );

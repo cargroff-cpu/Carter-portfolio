@@ -920,6 +920,7 @@ function GasLamp({
     height: "900",
     preserveAspectRatio: "none"
   }), React.createElement("image", {
+    className: "lamp-lit",
     href: `/assets/lamps/${variant}-lit.webp`,
     x: "0",
     y: "8.5",

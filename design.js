@@ -155,6 +155,7 @@ function GasLamp({
     height: "900",
     preserveAspectRatio: "none"
   }), React.createElement("image", {
+    className: "lamp-lit",
     href: `/assets/lamps/${variant}-lit.webp`,
     x: "0",
     y: "8.5",
@@ -1189,10 +1190,7 @@ function Hero({
       e.preventDefault();
       onAddNeed('design');
     }
-  }, "Start a brief"), React.createElement("a", {
-    className: "p-btn ghost",
-    href: "#doors"
-  }, "See the work"))));
+  }, "Start a brief"))));
 }
 const DRAFTS = [{
   cls: 'd1',
@@ -1631,16 +1629,7 @@ function Shelf({
   })), React.createElement("p", {
     className: 'dmenu-note' + (peek && peek.desc ? ' peek' : ''),
     key: note
-  }, note), React.createElement("p", {
-    className: "dmenu-cta"
-  }, React.createElement("a", {
-    className: "dmenu-btn",
-    href: "#brief",
-    onClick: e => {
-      e.preventDefault();
-      onAddNeed(lane);
-    }
-  }, cta))));
+  }, note)));
 }
 function Make({
   onAddNeed

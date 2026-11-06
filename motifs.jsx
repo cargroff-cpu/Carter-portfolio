@@ -136,7 +136,7 @@ function GasLamp({ height = 640, style = {}, out = false, onGlobeClick, variant 
           {/* the render's plinth ends 8.5 units above its frame; shift it down so the base sits on the floor */}
           <ellipse cx="100" cy="899" rx="88" ry="6" fill="#000" opacity="0.55" />
           <image href={`/assets/lamps/${variant}-out.webp`} x="0" y="8.5" width="200" height="900" preserveAspectRatio="none" />
-          <image href={`/assets/lamps/${variant}-lit.webp`} x="0" y="8.5" width="200" height="900" preserveAspectRatio="none"
+          <image className="lamp-lit" href={`/assets/lamps/${variant}-lit.webp`} x="0" y="8.5" width="200" height="900" preserveAspectRatio="none"
             style={{ opacity: out ? 0 : 1, transition: `opacity ${out ? 0.3 : 0.5}s ease` }} />
           <path d="M 70 94.5 L 130 94.5 L 122 144.5 L 78 144.5 Z" fill="#1a1008" style={{ opacity: 0 }} />
         </g>
