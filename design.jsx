@@ -334,72 +334,110 @@ function sealArc(a, r) {
 }
 const WATCH_ROMAN = ['I', 'II', 'III', 'IV'];
 
-// A pocket-watch face: one hand ticks to each step and settles with a small
-// overshoot, a warm sweep trailing behind it. The hand stops short of the
-// numerals so it points at a step without touching it.
+// A pocket-watch face. It winds up as it scrolls into view (the rim draws, the
+// ticks and numerals fall into place, the hand spins round and settles); then
+// the hand ticks to each step with a small overshoot, the active numeral pops
+// and pings, a glint chases round the minute ticks, and the ticks turn a little
+// as the page scrolls. The hand stops short of the numerals; the numerals are
+// buttons, so a click (or Enter) on one jumps to that step.
 function Dial() {
-  const [turn, setTurn] = React.useState(0);     // counts up forever: the hand only ever goes clockwise
-  const [auto, setAuto] = React.useState(true);  // the hand walks the steps until you take over
-  const [seen, setSeen] = React.useState(false);
-  const [held, setHeld] = React.useState(false); // hovering or focusing inside pauses it
+  const [turn, setTurn] = React.useState(0);       // counts up forever: the hand only ever goes clockwise
+  const [auto, setAuto] = React.useState(true);    // the hand walks the steps until you take over
+  const [seen, setSeen] = React.useState(false);   // on screen right now
+  const [entered, setEntered] = React.useState(false); // has wound up once
+  const [settled, setSettled] = React.useState(false); // the wind-up is over
+  const [held, setHeld] = React.useState(false);   // hovering or focusing inside pauses it
   const box = React.useRef(null);
+  const svg = React.useRef(null);
   const at = turn % 4;
+  const reduce = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const pick = (i) => {
     setAuto(false);
     setTurn((t) => { let n = t; while (n % 4 !== i) n++; return n; });
   };
   React.useEffect(() => {
     const el = box.current;
-    if (!el || !('IntersectionObserver' in window)) return;
-    const io = new IntersectionObserver((es) => setSeen(es[0].isIntersecting), { threshold: 0.4 });
+    if (!el || !('IntersectionObserver' in window)) { setEntered(true); setSettled(true); return; }
+    const io = new IntersectionObserver((es) => { setSeen(es[0].isIntersecting); if (es[0].isIntersecting) setEntered(true); }, { threshold: 0.4 });
     io.observe(el);
     return () => io.disconnect();
   }, []);
   React.useEffect(() => {
-    if (!auto || !seen || held) return;
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!entered) return;
+    const t = setTimeout(() => setSettled(true), reduce() ? 0 : 2300);
+    return () => clearTimeout(t);
+  }, [entered]);
+  React.useEffect(() => {
+    if (!auto || !seen || !settled || held || reduce()) return;
     const t = setInterval(() => setTurn((a) => a + 1), 3800);
     return () => clearInterval(t);
-  }, [auto, seen, held]);
-  const [sw1x, sw1y] = sealPt(90, -76);
-  const [sw2x, sw2y] = sealPt(90, 0);
+  }, [auto, seen, settled, held]);
+  React.useEffect(() => {
+    if (reduce()) return;
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const el = svg.current;
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        const k = (r.top + r.height / 2 - window.innerHeight / 2) / window.innerHeight; // -1 to 1 as it crosses the screen
+        el.style.setProperty('--sc', (Math.max(-1.2, Math.min(1.2, k)) * 36).toFixed(1) + 'deg');
+      });
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); if (raf) cancelAnimationFrame(raf); };
+  }, []);
+  const [px, py] = sealPt(122, at * 90);
+  const spin = entered ? turn * 90 : -330;
   return (
     <section id="how" ref={box} className="dsection dwood dpanel" onMouseEnter={() => setHeld(true)} onMouseLeave={() => setHeld(false)} onFocus={() => setHeld(true)} onBlur={() => setHeld(false)}>
       <div className="dsec-candle" aria-hidden="true" />
       <div className="dwrap ddialwrap">
-        <div className="ddial up" aria-hidden="true">
-          <svg viewBox="0 0 400 400" role="presentation">
+        <div className={'ddial up ' + (entered ? 'in' : 'pre')}>
+          <svg ref={svg} viewBox="0 0 400 400" role="group" aria-label="The four steps, as a watch dial. Choose a numeral to open that step.">
             <defs>
               {HOW_STEPS.map((s, i) => <path key={i} id={'dseal-' + i} d={sealArc(i * 90, i === 2 ? 167 : 150)} />)}
-              <linearGradient id="dwatch-sweep" x1="0" x2="1" y1="0" y2="0"><stop className="dwatch-sweep-0" offset="0" /><stop className="dwatch-sweep-1" offset="1" /></linearGradient>
             </defs>
-            <circle className="dseal-rule" cx="200" cy="200" r="192" />
+            <circle className="dseal-rule dwatch-rim" cx="200" cy="200" r="192" pathLength="1" />
             <circle className="dseal-rule" cx="200" cy="200" r="100" />
-            <g className="dwatch-ticks">
+            <g className="dwatch-ticks" aria-hidden="true">
               {Array.from({ length: 60 }, (_, k) => {
                 const major = k % 5 === 0;
                 const [x1, y1] = sealPt(major ? 172 : 178, k * 6);
                 const [x2, y2] = sealPt(188, k * 6);
-                return <line key={k} className={major ? 'major' : ''} x1={x1} y1={y1} x2={x2} y2={y2} />;
+                return <line key={k} className={major ? 'major' : ''} style={{ '--k': k }} x1={x1} y1={y1} x2={x2} y2={y2} />;
               })}
             </g>
             {HOW_STEPS.map(([title], i) => (
-              <g key={title} className={'dseal-name' + (at === i ? ' on' : '')} onClick={() => pick(i)}>
+              <g key={title} aria-hidden="true" className={'dseal-name' + (at === i ? ' on' : '')} style={{ '--i': i }} onClick={() => pick(i)}>
                 <text><textPath href={'#dseal-' + i} startOffset="50%" textAnchor="middle">{title}</textPath></text>
               </g>
             ))}
+            {settled && <circle key={'ping' + turn} className="dwatch-ping" cx={px} cy={py} r="18" aria-hidden="true" />}
             {WATCH_ROMAN.map((n, i) => {
               const [x, y] = sealPt(122, i * 90);
-              return <text key={n} className={'dwatch-num' + (at === i ? ' on' : '')} x={x} y={y} onClick={() => pick(i)}>{n}</text>;
+              return (
+                <g key={n} className={'dwatch-numg' + (at === i ? ' on' : '')} style={{ '--i': i }} role="button" tabIndex={0}
+                  aria-label={'Step ' + (i + 1) + ': ' + HOW_STEPS[i][0]} aria-pressed={at === i}
+                  onClick={() => pick(i)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(i); } }}>
+                  <circle className="dwatch-hit" cx={x} cy={y} r="27" />
+                  <text className="dwatch-num" x={x} y={y}>{n}</text>
+                </g>
+              );
             })}
-            <image href="assets/antler.png" x="174" y="238" width="52" height="40" className="dseal-crest" />
-            <g className="dwatch-hand" style={{ transform: 'rotate(' + turn * 90 + 'deg)' }}>
-              <path d={'M200 200 L' + sw1x + ' ' + sw1y + ' A90 90 0 0 1 ' + sw2x + ' ' + sw2y + ' Z'} fill="url(#dwatch-sweep)" />
-              <line className="stem" x1="200" y1="226" x2="200" y2="116" />
-              <path className="tip" d="M200 104 L206.5 120 L200 116 L193.5 120 Z" />
+            <image href="assets/antler.png" x="174" y="238" width="52" height="40" className="dseal-crest" aria-hidden="true" />
+            <g className="dwatch-hand" aria-hidden="true" style={{ transform: 'rotate(' + spin + 'deg)', transition: settled ? undefined : 'transform 2s cubic-bezier(.16, .9, .28, 1.12)' }}>
+              <g className="dwatch-quiver">
+                <line className="stem" x1="200" y1="226" x2="200" y2="116" />
+                <path className="tip" d="M200 104 L206.5 120 L200 116 L193.5 120 Z" />
+              </g>
             </g>
-            <circle className="dwatch-jewel" cx="200" cy="200" r="7" />
-            <circle className="dwatch-pin" cx="200" cy="200" r="2.6" />
+            <circle className="dwatch-jewel" cx="200" cy="200" r="7" aria-hidden="true" />
+            <circle className="dwatch-pin" cx="200" cy="200" r="2.6" aria-hidden="true" />
           </svg>
         </div>
         <div>

@@ -325,17 +325,42 @@ a:hover { color: var(--amber-lit); }
 .dseal-name:hover text { fill: var(--ink); }
 .dseal-name.on text { fill: var(--amber-lit); }
 /* the dial is a pocket-watch face: a hand ticks to each step, short of the numerals */
+.dwatch-ticks { transform-box: view-box; transform-origin: 50% 50%; transform: rotate(var(--sc, 0deg)); }
 .dwatch-ticks line { stroke: var(--ink-dim); stroke-width: 1; }
 .dwatch-ticks line.major { stroke: var(--amber); stroke-width: 1.8; }
-.dwatch-num { font-family: var(--display); font-size: 34px; font-weight: 500; fill: var(--ink-mute); text-anchor: middle; dominant-baseline: central; cursor: pointer; transition: fill .4s ease; }
-.dwatch-num:hover { fill: var(--ink); }
-.dwatch-num.on { fill: var(--amber-lit); }
+.dwatch-numg { cursor: pointer; outline: none; transform-box: fill-box; transform-origin: 50% 50%; }
+.dwatch-hit { fill: transparent; stroke: transparent; stroke-width: 2; }
+.dwatch-numg:hover .dwatch-num { fill: var(--ink); }
+.cgd .dwatch-numg:focus-visible { outline: none; }
+.dwatch-numg:focus-visible .dwatch-hit { stroke: var(--amber-lit); stroke-width: 2.5; }
+.dwatch-num { font-family: var(--display); font-size: 34px; font-weight: 500; fill: var(--ink-mute); text-anchor: middle; dominant-baseline: central; transition: fill .4s ease; transform-box: fill-box; transform-origin: 50% 50%; }
+.dwatch-numg.on .dwatch-num { fill: var(--amber-lit); animation: dwatch-pop .7s cubic-bezier(.3, 1.7, .5, 1) both; }
+.dwatch-ping { fill: none; stroke: var(--amber-lit); stroke-width: 1.6; pointer-events: none; transform-box: fill-box; transform-origin: 50% 50%; animation: dwatch-ping 1.1s ease-out both; }
 .dwatch-hand { transform-box: view-box; transform-origin: 50% 50%; transition: transform .8s cubic-bezier(.3, 1.55, .5, 1); pointer-events: none; }
-.dwatch-hand .stem { stroke: var(--amber-lit); stroke-width: 2.6; stroke-linecap: round; }
-.dwatch-hand .tip { fill: var(--amber-lit); }
-.dwatch-sweep-0 { stop-color: var(--amber); stop-opacity: 0; } .dwatch-sweep-1 { stop-color: var(--amber); stop-opacity: .5; }
-.dwatch-jewel { fill: var(--amber); stroke: var(--amber-lit); stroke-width: 1.4; }
+.dwatch-quiver { transform-box: view-box; transform-origin: 50% 50%; animation: dwatch-quiver 2.4s ease-in-out infinite alternate; }
+.dwatch-hand .stem { stroke: var(--amber-lit); stroke-width: 2.6; stroke-linecap: round; filter: drop-shadow(0 0 5px color-mix(in srgb, var(--amber-lit) 60%, transparent)); }
+.dwatch-hand .tip { fill: var(--amber-lit); filter: drop-shadow(0 0 5px color-mix(in srgb, var(--amber-lit) 60%, transparent)); }
+.dwatch-jewel { fill: var(--amber); stroke: var(--amber-lit); stroke-width: 1.4; animation: dwatch-jewel 3s ease-in-out infinite; }
 .dwatch-pin { fill: var(--bg-deep); }
+/* the wind-up: everything starts hidden and falls into place once it is on screen */
+.ddial.pre .dwatch-rim { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.ddial.in .dwatch-rim { stroke-dasharray: 1; animation: dwatch-draw 1.7s cubic-bezier(.5, 0, .2, 1) both; }
+.ddial.pre .dwatch-ticks line, .ddial.pre .dseal-name, .ddial.pre .dwatch-numg, .ddial.pre .dseal-crest, .ddial.pre .dwatch-jewel { opacity: 0; }
+.ddial.pre .dwatch-hand { transition: none; }
+.ddial.pre .dseal-crest, .ddial.pre .dwatch-jewel { animation: none; }
+.ddial.in .dwatch-ticks line { animation: dwatch-tick-in .5s ease-out calc(.2s + var(--k) * .02s) both, dwatch-glint 12s linear calc(2.4s + var(--k) * .2s) infinite; }
+.ddial.in .dseal-name { animation: dwatch-rise .8s ease-out calc(.7s + var(--i) * .16s) both; }
+.ddial.in .dwatch-numg { animation: dwatch-drop .8s cubic-bezier(.3, 1.5, .5, 1) calc(.9s + var(--i) * .14s) both; }
+.ddial.in .dseal-crest, .ddial.in .dwatch-jewel { animation-delay: 1.2s; }
+@keyframes dwatch-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes dwatch-tick-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dwatch-glint { 0% { stroke: var(--amber-lit); } 4% { stroke: var(--amber); } 9%, 100% { stroke: var(--ink-dim); } }
+@keyframes dwatch-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes dwatch-drop { from { opacity: 0; transform: translateY(-14px) scale(.7); } to { opacity: 1; transform: none; } }
+@keyframes dwatch-pop { 0% { transform: scale(1); } 45% { transform: scale(1.32); } 100% { transform: scale(1); } }
+@keyframes dwatch-ping { from { transform: scale(.7); opacity: .85; } to { transform: scale(2.6); opacity: 0; } }
+@keyframes dwatch-quiver { from { transform: rotate(-1.1deg); } to { transform: rotate(1.1deg); } }
+@keyframes dwatch-jewel { 0%, 100% { filter: none; } 50% { filter: drop-shadow(0 0 6px var(--amber-lit)); } }
 .dseal-crest { opacity: .55; animation: dseal-breathe 5s ease-in-out infinite; }
 @keyframes dseal-breathe { 0%, 100% { opacity: .42; } 50% { opacity: .85; } }
 .dseal-name.on text { animation: dseal-glow 3.6s ease-in-out infinite; }
@@ -543,9 +568,10 @@ a:hover { color: var(--amber-lit); }
   .dcursor, .dmv, .dhero-fog, .dhero-candle, .dhero-wisp, .dhero-lamp, .dhero-lamp path[fill="#1a1008"], .dhero-lamp svg > g:first-of-type, .dhero-lamp .dhero-candle, .dhero-lamp svg { animation: none; }
   .dsession li, .js .dsession li, .js .dsheet.up .dprint { opacity: 1; transform: none; transition: none; }
   .js .dsheet.up .dprint:not([aria-pressed="true"]) { opacity: .66; }
-  .dhero-lamp svg, .dm-spin-in, .dm-spin, .dm-spin-back, .dm-ripple, .dm-sheen, .dm-rule.gold, .dm-ticks line.major, .dhalf-sec, .dseal-crest, .dseal-name.on text { animation: none; }
+  .dhero-lamp svg, .dm-spin-in, .dm-spin, .dm-spin-back, .dm-ripple, .dm-sheen, .dm-rule.gold, .dm-ticks line.major, .dhalf-sec, .dwatch-quiver, .dwatch-jewel, .dwatch-ping, .dwatch-num, .dwatch-rim, .dwatch-ticks line, .dseal-name, .dwatch-numg, .dseal-crest, .dseal-name.on text { animation: none; }
   .dm-ripple { opacity: 0; }
   .dm-hour, .dm-wash, .dm-rays, .dm-ray { animation: none; }
   .dm-hour { opacity: .7; }
   .dwatch-hand, .dprint, .dlane, .dchip { transition: none; }
+  .ddial.in .dwatch-ticks line, .ddial.in .dseal-name, .ddial.in .dwatch-numg, .ddial.in .dwatch-rim, .ddial.in .dseal-crest, .ddial.in .dwatch-jewel { animation: none; }
 }
