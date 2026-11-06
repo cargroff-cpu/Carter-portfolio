@@ -129,13 +129,13 @@ function ToolIcon({ name }) {
     </svg>
   );
 }
-function ringMetaOf(id, d) {
+function ringMetaOf(id, d, short) {
   if (id === 'today') return d.needs.length ? d.needs.length + ' need you' : 'All clear';
   if (id === 'jobs') return d.jobs.filter((j) => j.stage !== 'paid' && j.stage !== 'closed').length + ' open';
   if (id === 'proposals') return d.proposals.filter((p) => p.status === 'sent').length + ' out';
   if (id === 'mail') return d.events.filter((e) => e.kind === 'email').length + ' sent';
   if (id === 'money') return usd(d.invoices.filter((i) => i.status === 'sent').reduce((a, i) => a + Number(i.amount || 0), 0)) + ' due';
-  if (id === 'clients') return d.clients.length + ' on the books';
+  if (id === 'clients') return d.clients.length + (short ? (d.clients.length === 1 ? ' client' : ' clients') : ' on the books');
   return '';
 }
 const N_RING = RING_NODES.length;
@@ -188,13 +188,13 @@ function usePhone() {
 // The ring is as wide as the screen allows; the arc then opens only as far
 // as the height fits and as far as the top and bottom labels still have room.
 const NODE_W = 236;      // a phone node: label column, then the 56px plate
-const LABEL_ROOM = 176;  // plate centre must sit this far in for its label to fit
+const LABEL_ROOM = 135;  // plate centre must sit this far in for its label to fit
 function phoneGeometry(w, h) {
-  const cx = 0, cy = h / 2;
-  const rn = Math.max(200, w - 28 - 18);
-  const byHeight = Math.asin(Math.min(1, (h - 130) / (2 * rn)));
-  const byLabel = Math.acos(Math.min(1, LABEL_ROOM / rn));
-  const spread = Math.min(byHeight, byLabel, 62 * Math.PI / 180) * 180 / Math.PI;
+  const cx = 22, cy = h / 2;                 // the light bar sits whole on the left edge
+  const rn = Math.max(200, w - cx - 40);
+  const byHeight = Math.asin(Math.min(1, (h - 90) / (2 * rn)));   // fill the screen top to bottom
+  const byLabel = Math.acos(Math.min(1, Math.max(0, LABEL_ROOM - cx) / rn));
+  const spread = Math.min(byHeight, byLabel, 72 * Math.PI / 180) * 180 / Math.PI;
   return { cx, cy, rn, r: rn - 40, spread };
 }
 function phoneAngle(i, spread) { return -spread + i * (2 * spread / (N_RING - 1)); }
@@ -206,6 +206,8 @@ function Ring({ go, data }) {
   const [intro] = React.useState(ringIntroOnce);
   const [ready, setReady] = React.useState(!intro);
   const [picked, setPicked] = React.useState(null);
+  const [fly, setFly] = React.useState(null);
+  const plateRefs = React.useRef([]);
   const launchRef = React.useRef(null);
   const orbitRef = React.useRef(null);
   const [radius, setRadius] = React.useState(220);
@@ -229,11 +231,20 @@ function Ring({ go, data }) {
   }, []);
   const g = phone ? phoneGeometry(box.w, box.h) : null;
   const lit = picked !== null ? picked : hover;
-  // A tap on a phone lights the plate and its spoke for a beat, then opens the tool.
+  // A tap lights the plate, the rest fold back into the light, and the plate
+  // flies to its own slot in the tool bar before the page opens. Where the
+  // slot is comes from the (hidden) bar the page will show, so it lands exactly.
   const choose = (i, id) => {
-    if (!phone) return go(id);
+    if (picked !== null) return;
+    const from = plateRefs.current[i];
+    const to = document.querySelector('.tools.ghost button:nth-child(' + (i + 1) + ') .tplate');
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce || !from || !to) { go(id); return; }
+    const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+    const top = phone ? 0 : launchRef.current.getBoundingClientRect().top - 60; // desktop bar starts under the header
+    setFly({ x: b.left + b.width / 2 - (a.left + a.width / 2), y: b.top + top + b.height / 2 - (a.top + a.height / 2), s: b.width / from.offsetWidth });
     setPicked(i);
-    setTimeout(() => go(id), 320);
+    setTimeout(() => go(id), 700);
   };
   const nodeStyle = (i) => {
     const d = { transitionDelay: ready && intro ? (0.15 + i * 0.07) + 's' : '0s' };
@@ -248,7 +259,7 @@ function Ring({ go, data }) {
   };
   const ringBox = phone ? { width: g.r * 2, height: g.r * 2, left: g.cx - g.r, top: g.cy - g.r } : undefined;
   return (
-    <div ref={launchRef} className={'launch' + (phone ? ' phone' : '') + (lit !== null ? ' hovering' : '') + (wickHot ? ' wickhot' : '') + (ready ? ' ready' : '')}
+    <div ref={launchRef} className={'launch' + (phone ? ' phone' : '') + (lit !== null ? ' hovering' : '') + (wickHot ? ' wickhot' : '') + (ready ? ' ready' : '') + (picked !== null ? ' leaving' : '')}
       style={phone ? { height: box.h } : undefined}>
       {!phone && <React.Fragment><Lamp side="L" /><Lamp side="R" /></React.Fragment>}
       <div className="rings" style={ringBox}>
@@ -274,15 +285,18 @@ function Ring({ go, data }) {
       </div>
       <div className="orbit" ref={orbitRef}>
         {RING_NODES.map((n, i) => (
-          <button key={n.id} className={'tnode' + (lit === i ? ' on' : '')}
+          <button key={n.id} className={'tnode' + (lit === i ? ' on' : '') + (picked === i ? ' flying' : '')}
             style={nodeStyle(i)}
             onMouseEnter={() => !phone && setHover(i)} onMouseLeave={() => !phone && setHover(null)}
             onFocus={() => setHover(i)} onBlur={() => setHover(null)}
             onClick={() => choose(i, n.id)}>
-            <span className="plate"><ToolIcon name={n.glyph} /></span>
+            <span className="plate" ref={(el) => { plateRefs.current[i] = el; }}
+              style={picked === i && fly ? { transform: `translate(${fly.x}px,${fly.y}px) scale(${fly.s})`, transition: 'transform .58s cubic-bezier(.65,0,.25,1), border-color .3s, box-shadow .3s' } : undefined}>
+              <ToolIcon name={n.glyph} />
+            </span>
             <span className="tbody">
               <span className="tlabel">{n.label}</span>
-              <span className="tsub">{ringMetaOf(n.id, data)}</span>
+              <span className="tsub">{ringMetaOf(n.id, data, phone)}</span>
               <span className="tdesc">{n.desc}</span>
             </span>
           </button>
@@ -292,11 +306,11 @@ function Ring({ go, data }) {
   );
 }
 
-function ToolSidebar({ tab, go, data }) {
+function ToolSidebar({ tab, go, data, ghost }) {
   return (
-    <nav className="tools on">
+    <nav className={'tools on' + (ghost ? ' ghost' : '')} aria-hidden={ghost ? 'true' : undefined}>
       {RING_NODES.map((n) => (
-        <button key={n.id} aria-current={tab === n.id ? 'true' : undefined} onClick={() => go(n.id)}>
+        <button key={n.id} tabIndex={ghost ? -1 : undefined} aria-current={tab === n.id ? 'true' : undefined} onClick={() => go(n.id)}>
           <span className="tplate"><ToolIcon name={n.glyph} /></span>
           <span><span className="tname">{n.label}</span><span className="tmeta">{ringMetaOf(n.id, data)}</span></span>
         </button>
@@ -1257,7 +1271,7 @@ function BusinessHub() {
         </div>
       </header>
       <div className="shell">
-        {data && tab !== 'ring' && <ToolSidebar tab={tab} go={go} data={data} />}
+        {data && <ToolSidebar tab={tab} go={go} data={data} ghost={tab === 'ring'} />}
         <main id="app" key={tab + (jobId || '')} className={tab === 'ring' ? 'ringmain' : undefined}>
           {error && <p className="sub" style={{ padding: '20px 2px', color: 'var(--warn)' }}>{error} If this is the first run, the workflow tables may not be set up yet.</p>}
           {!error && loading && <p className="sub" style={{ padding: '20px 2px' }}>Loading…</p>}

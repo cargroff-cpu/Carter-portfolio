@@ -231,7 +231,7 @@ html:has(.ringmain),body:has(.ringmain){overflow:hidden;height:100dvh}
   .launch.phone .lembers{margin-left:-20px;width:120px}
   .launch.phone .lwick{position:absolute;width:18px;height:min(34vh,240px);transform:translateY(-50%);padding:8px 0}
   .launch.phone .orbit{position:absolute;inset:0;width:auto;height:auto;transform:none}
-  .launch.phone .tnode{left:0;top:0;flex-direction:row-reverse;align-items:center;justify-content:flex-start;gap:30px;padding:0;text-align:right;transform-origin:calc(100% - 28px) 50%;-webkit-tap-highlight-color:transparent}
+  .launch.phone .tnode{left:0;top:0;flex-direction:row-reverse;align-items:center;justify-content:flex-start;gap:22px;padding:0;text-align:right;transform-origin:calc(100% - 28px) 50%;-webkit-tap-highlight-color:transparent}
   .launch.phone .plate{flex:none}
   .launch.phone .tnode:active .plate{transform:scale(.94)}
 }
@@ -249,6 +249,9 @@ html:has(.ringmain),body:has(.ringmain){overflow:hidden;height:100dvh}
   padding:22px 12px 20px;position:sticky;top:60px;height:calc(100dvh - 60px);overflow-y:auto;
   border-right:1px solid var(--line)}
 .tools.on{display:flex}
+/* the bar the page will show, built but unseen on the ring so the chosen plate knows where to land */
+.tools.ghost{position:fixed;left:0;top:60px;opacity:0;pointer-events:none}
+.tools{transition:opacity .4s ease}
 .tools button{display:flex;align-items:center;gap:12px;background:none;border:none;border-radius:9px;
   color:var(--text-3);font-family:var(--ui);padding:9px 10px;cursor:pointer;text-align:left;
   transition:background .3s ease,color .2s ease}
@@ -320,3 +323,16 @@ html:has(.ringmain),body:has(.ringmain){overflow:hidden;height:100dvh}
   .shell main{padding:16px 16px calc(96px + env(safe-area-inset-bottom,0px))}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* ── leaving the ring: the chosen plate flies to the tool bar (Ring() sets its
+   transform), the other five fold back into the light, the dials let go ── */
+.launch.leaving .tnode{pointer-events:none}
+.launch.leaving .tnode.flying{z-index:6}
+.launch.leaving .tnode.flying .tbody{opacity:0;transition:opacity .2s ease}
+.launch.leaving .tnode.flying .plate{border-color:rgba(245,205,106,.95);box-shadow:0 0 22px rgba(245,205,106,.45)}
+.launch.leaving .tnode:not(.flying){opacity:0!important;transition:opacity .35s ease!important}
+.launch.leaving .tnode:not(.flying) .plate{transform:scale(.4);transition:transform .45s cubic-bezier(.5,0,.8,.4)}
+.launch.leaving .rings,.launch.leaving .spokes,.launch.leaving .lwall,.launch.leaving .lembers,.launch.leaving .ldesc,.launch.leaving .lamp{opacity:0;transition:opacity .45s ease}
+.launch.leaving .rings{transform:scale(.94)}
+.launch.leaving .lwick{opacity:.35;transition:opacity .5s ease}
+.rings{transition:transform .6s ease}
