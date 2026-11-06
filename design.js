@@ -703,7 +703,7 @@ const AUTOMATION_CHIPS = [...TOOL_SERVICES.map(t => t.need), 'Something else'];
 const BUDGETS = ['Under $150', '$150–$500', '$500–$1,500', '$1,500–$5,000', '$5,000+', 'Not sure yet'];
 const WORK = [];
 const TESTIMONIALS = [];
-const FAQ = [['Do you use AI?', 'Yes. AI does the drafting and the first pass of the build. I make the decisions, check everything and finish it.'], ['What does it cost?', 'Graphics and print are priced per piece. Websites and tools are quoted after a short brief. Either way, you see the price before anything starts.'], ['Can you build the back end of a website too?', 'Yes. Besides the pages people see, I build what runs behind them: logins, databases, payments, booking and contact forms that land somewhere useful, and the admin pages you run it from.'], ['What if what I need isn’t listed?', 'Ask anyway. The lists are where most people start, not where it ends. Describe what you want in the brief, under Something else, and I’ll tell you how I’d make it, or say so if someone else would do it better.'], ['Will I need new software?', 'Not usually. Where I can, I build on what you already use.'], ['How fast is it?', 'Most design pieces: three directions within two business days of a complete brief. Tools: a plan within a few days, then a first working version.'], ['What if something breaks?', 'I fix it. Ongoing care is available as a monthly plan.'], ['Who owns the work?', 'You do, once it’s paid.'], ['Do we need a call?', 'No. The brief covers it. If a call would help, I’ll say so.']];
+const FAQ = [['Do you use AI?', 'Yes. AI does the drafting and the first pass of the build. I make the decisions, check everything and finish it.'], ['What does it cost?', 'Graphics and print are priced per piece. Websites and tools are quoted after a short brief. Either way, you see the price before anything starts.'], ['Can you build the back end of a website too?', 'Yes. Besides the pages people see, I build what runs behind them: logins, databases, payments, booking and contact forms that land somewhere useful, and the admin pages you run it from.'], ['What if what I need isn’t listed?', 'Ask anyway. The lists are where most people start, not where it ends. Describe what you picture in the brief and I’ll come back with how I’d make it.'], ['Will I need new software?', 'Not usually. Where I can, I build on what you already use.'], ['How fast is it?', 'Most design pieces: three directions within two business days of a complete brief. Tools: a plan within a few days, then a first working version.'], ['What if something breaks?', 'I fix it. Ongoing care is available as a monthly plan.'], ['Who owns the work?', 'You do, once it’s paid.'], ['Do we need a call?', 'No. The brief covers it. If a call would help, I’ll say so.']];
 const STEPS = [['I', 'Who’s asking'], ['II', 'What you need'], ['III', 'Details that save time']];
 function Nav() {
   return React.createElement("nav", {
@@ -1611,22 +1611,7 @@ function Shelf({
     }, "From ", s.from), turn), s.desc && React.createElement("span", {
       className: "dvh"
     }, s.desc)));
-  }), React.createElement("li", null, React.createElement("a", {
-    href: "#brief",
-    onClick: e => {
-      e.preventDefault();
-      onAddNeed(lane, 'Something else');
-    }
-  }, React.createElement("span", {
-    className: "dmenu-name"
-  }, React.createElement("b", null, "Something else"), React.createElement("small", null, "not on the list")), React.createElement("span", {
-    className: "dmenu-dots",
-    "aria-hidden": "true"
-  }), React.createElement("span", {
-    className: "dmenu-turn"
-  }, "Ask"), React.createElement("span", {
-    className: "dvh"
-  }, "Anything not listed here. Describe it and I\u2019ll tell you how I\u2019d make it.")))), React.createElement("p", {
+  })), React.createElement("p", {
     className: 'dmenu-note' + (peek && peek.desc ? ' peek' : ''),
     key: note
   }, note), React.createElement("p", {
@@ -1653,9 +1638,7 @@ function Make({
     className: "dshead"
   }, React.createElement("h2", {
     className: "ddisplay"
-  }, "Two kinds of work, one person."), React.createElement("p", {
-    className: "dlede"
-  }, "These are common starting points, not the limit. If you can describe it, I can make it.")), React.createElement("div", {
+  }, "Two kinds of work, one person.")), React.createElement("div", {
     className: "dmaketabs",
     role: "tablist",
     "aria-label": "Kind of work"
@@ -1684,7 +1667,20 @@ function Make({
     items: TOOL_SERVICES,
     cta: "Start a tools brief",
     onAddNeed: onAddNeed
-  })), WORK.length > 0 && React.createElement(React.Fragment, null, React.createElement("div", {
+  })), React.createElement("div", {
+    className: "dany up"
+  }, React.createElement("p", {
+    className: "dany-h"
+  }, "If you can picture it, I can make it."), React.createElement("p", {
+    className: "dany-p"
+  }, "The lists are where most people start. Design or tools, big or small, on screen or on paper: describe it and I\u2019ll make it real."), React.createElement("a", {
+    className: "dany-btn",
+    href: "#brief",
+    onClick: e => {
+      e.preventDefault();
+      onAddNeed('design', 'Something else');
+    }
+  }, "Tell me what you\u2019re picturing")), WORK.length > 0 && React.createElement(React.Fragment, null, React.createElement("div", {
     className: "dworkhead"
   }, React.createElement("h3", null, "Recent work")), React.createElement("div", {
     className: "dsamples"

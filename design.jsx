@@ -52,7 +52,7 @@ const FAQ = [
   ['Do you use AI?', 'Yes. AI does the drafting and the first pass of the build. I make the decisions, check everything and finish it.'],
   ['What does it cost?', 'Graphics and print are priced per piece. Websites and tools are quoted after a short brief. Either way, you see the price before anything starts.'],
   ['Can you build the back end of a website too?', 'Yes. Besides the pages people see, I build what runs behind them: logins, databases, payments, booking and contact forms that land somewhere useful, and the admin pages you run it from.'],
-  ['What if what I need isn’t listed?', 'Ask anyway. The lists are where most people start, not where it ends. Describe what you want in the brief, under Something else, and I’ll tell you how I’d make it, or say so if someone else would do it better.'],
+  ['What if what I need isn’t listed?', 'Ask anyway. The lists are where most people start, not where it ends. Describe what you picture in the brief and I’ll come back with how I’d make it.'],
   ['Will I need new software?', 'Not usually. Where I can, I build on what you already use.'],
   ['How fast is it?', 'Most design pieces: three directions within two business days of a complete brief. Tools: a plan within a few days, then a first working version.'],
   ['What if something breaks?', 'I fix it. Ongoing care is available as a monthly plan.'],
@@ -508,14 +508,6 @@ function Shelf({ lane, label, title, blurb, items, cta, onAddNeed }) {
               </li>
             );
           })}
-          <li>
-            <a href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed(lane, 'Something else'); }}>
-              <span className="dmenu-name"><b>Something else</b><small>not on the list</small></span>
-              <span className="dmenu-dots" aria-hidden="true" />
-              <span className="dmenu-turn">Ask</span>
-              <span className="dvh">Anything not listed here. Describe it and I’ll tell you how I’d make it.</span>
-            </a>
-          </li>
         </ul>
         <p className={'dmenu-note' + (peek && peek.desc ? ' peek' : '')} key={note}>{note}</p>
         <p className="dmenu-cta">
@@ -534,7 +526,6 @@ function Make({ onAddNeed }) {
       <div className="dwrap">
         <div className="dshead">
           <h2 className="ddisplay">Two kinds of work, one person.</h2>
-          <p className="dlede">These are common starting points, not the limit. If you can describe it, I can make it.</p>
         </div>
         <div className="dmaketabs" role="tablist" aria-label="Kind of work">
           {[['design', 'Design'], ['automation', 'Tools']].map(([v, label]) => (
@@ -549,6 +540,11 @@ function Make({ onAddNeed }) {
           <Shelf lane="automation" label="Tools" title="What runs behind the scenes"
             blurb="Proven by hand first. Quoted after a short brief."
             items={TOOL_SERVICES} cta="Start a tools brief" onAddNeed={onAddNeed} />
+        </div>
+        <div className="dany up">
+          <p className="dany-h">If you can picture it, I can make it.</p>
+          <p className="dany-p">The lists are where most people start. Design or tools, big or small, on screen or on paper: describe it and I’ll make it real.</p>
+          <a className="dany-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('design', 'Something else'); }}>Tell me what you’re picturing</a>
         </div>
         {WORK.length > 0 && (
           <React.Fragment>

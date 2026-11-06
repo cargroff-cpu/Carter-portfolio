@@ -113,7 +113,7 @@ window.SCAFFOLD_DEFAULTS = {
     },
     {
       "q": "What if what I need isn’t listed?",
-      "a": "Ask anyway. The lists are where most people start, not where it ends. Describe what you want in the brief, under Something else, and I’ll tell you how I’d make it, or say so if someone else would do it better."
+      "a": "Ask anyway. The lists are where most people start, not where it ends. Describe what you picture in the brief and I’ll come back with how I’d make it."
     },
     {
       "q": "Will I need new software?",
