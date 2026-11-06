@@ -1671,9 +1671,7 @@ function Make({
     className: "dany up"
   }, React.createElement("p", {
     className: "dany-h"
-  }, "If you can picture it, I can make it."), React.createElement("p", {
-    className: "dany-p"
-  }, "The lists are where most people start. Design or tools, big or small, on screen or on paper: describe it and I\u2019ll make it real."), React.createElement("a", {
+  }, "Not on the list? If you can picture it, I can make it."), React.createElement("a", {
     className: "dany-btn",
     href: "#brief",
     onClick: e => {

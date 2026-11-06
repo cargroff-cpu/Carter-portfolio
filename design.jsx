@@ -542,8 +542,7 @@ function Make({ onAddNeed }) {
             items={TOOL_SERVICES} cta="Start a tools brief" onAddNeed={onAddNeed} />
         </div>
         <div className="dany up">
-          <p className="dany-h">If you can picture it, I can make it.</p>
-          <p className="dany-p">The lists are where most people start. Design or tools, big or small, on screen or on paper: describe it and I’ll make it real.</p>
+          <p className="dany-h">Not on the list? If you can picture it, I can make it.</p>
           <a className="dany-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('design', 'Something else'); }}>Tell me what you’re picturing</a>
         </div>
         {WORK.length > 0 && (
