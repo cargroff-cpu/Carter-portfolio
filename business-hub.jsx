@@ -133,7 +133,7 @@ function Lamp({ side }) {
   const [out, setOut] = React.useState(false);
   return (
     <div className={'lamp ' + side + (out ? ' out' : '')} aria-hidden="true">
-      <HubGasLamp height={640} out={out} onGlobeClick={() => setOut((o) => !o)} />
+      <HubGasLamp height={640} variant={'near-' + side} out={out} onGlobeClick={() => setOut((o) => !o)} />
     </div>
   );
 }

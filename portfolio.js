@@ -768,7 +768,8 @@ function GasLamp({
   height = 640,
   style = {},
   out = false,
-  onGlobeClick
+  onGlobeClick,
+  variant
 }) {
   const halo = {
     opacity: out ? 0 : 1,
@@ -876,7 +877,9 @@ function GasLamp({
     stopOpacity: "0"
   }))), React.createElement("g", {
     style: halo
-  }, React.createElement("g", null, React.createElement("animate", {
+  }, React.createElement("g", {
+    transform: variant ? 'translate(0 14)' : undefined
+  }, React.createElement("animate", {
     attributeName: "opacity",
     values: "0.95;0.95;0.6;0.95;0.95;0.7;0.95",
     keyTimes: "0;0.45;0.52;0.6;0.82;0.88;1",
@@ -902,7 +905,31 @@ function GasLamp({
     ry: "150",
     fill: "url(#lamp-halo)",
     opacity: "0.6"
-  }))), React.createElement("path", {
+  }))), variant ? React.createElement("g", null, React.createElement("image", {
+    href: `/assets/lamps/${variant}-out.webp`,
+    x: "0",
+    y: "0",
+    width: "200",
+    height: "900",
+    preserveAspectRatio: "none"
+  }), React.createElement("image", {
+    href: `/assets/lamps/${variant}-lit.webp`,
+    x: "0",
+    y: "0",
+    width: "200",
+    height: "900",
+    preserveAspectRatio: "none",
+    style: {
+      opacity: out ? 0 : 1,
+      transition: `opacity ${out ? 0.3 : 0.5}s ease`
+    }
+  }), React.createElement("path", {
+    d: "M 70 86 L 130 86 L 122 136 L 78 136 Z",
+    fill: "#1a1008",
+    style: {
+      opacity: 0
+    }
+  })) : React.createElement(React.Fragment, null, React.createElement("path", {
     d: "M 100 6 L 100.8 24 L 100 27 L 99.2 24 Z",
     fill: "url(#lamp-iron)"
   }), React.createElement("ellipse", {
@@ -1327,7 +1354,7 @@ function GasLamp({
     ry: "6",
     fill: "#000",
     opacity: "0.55"
-  }), out && onGlobeClick && React.createElement("ellipse", {
+  })), out && onGlobeClick && React.createElement("ellipse", {
     cx: "100",
     cy: "102",
     rx: "60",
@@ -3471,6 +3498,7 @@ function Hero() {
     }
   }, React.createElement(GasLamp, {
     height: 680,
+    variant: "near-R",
     out: lampOut,
     onGlobeClick: toggleLamp
   }))), React.createElement("div", {

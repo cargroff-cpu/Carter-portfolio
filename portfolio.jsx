@@ -477,7 +477,7 @@ function Hero() {
       <div className="cg-fadeup cg-fadeup-3 cg-hero-lamp" style={{ position: 'absolute',
         right: '6vw', bottom: 0, zIndex: 2, pointerEvents: 'none' }}>
         <div style={{ position: 'relative' }}>
-          <GasLamp height={680} out={lampOut} onGlobeClick={toggleLamp} />
+          <GasLamp height={680} variant="near-R" out={lampOut} onGlobeClick={toggleLamp} />
         </div>
       </div>
 

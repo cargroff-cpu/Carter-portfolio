@@ -195,8 +195,8 @@ function HeroLamp({ side, row, height }) {
     <div className={'dhero-lamp ' + side + ' ' + row + (out ? ' out' : '')} aria-hidden="true">
       <div className="dlamp-vary" style={{ '--lean': v.lean + 'deg', '--sc': v.sc }}>
         <div className="dhero-candle" />
-        <GasLamp height={height} out={out} onGlobeClick={() => setOut((o) => !o)} />
-        {v.iron.length > 0 && <svg className="dlamp-iron" viewBox="0 0 200 900" aria-hidden="true">{v.iron.map((k) => <Ironwork key={k} kind={k} />)}</svg>}
+        <GasLamp height={height} out={out} variant={row + '-' + side.toUpperCase()} onGlobeClick={() => setOut((o) => !o)} />
+        {false && v.iron.length > 0 && <svg className="dlamp-iron" viewBox="0 0 200 900" aria-hidden="true">{v.iron.map((k) => <Ironwork key={k} kind={k} />)}</svg>}
       </div>
     </div>
   );

@@ -68,7 +68,7 @@ function PaperFrame({ children, tilt = 0, padding = 0, style = {} }) {
 // frosted globe (≈12% of height) → neck → slender shaft with three
 // decorative collar bands → flared bell base → ground plinth.
 // Lit by a warm amber halo from inside the globe.
-function GasLamp({ height = 640, style = {}, out = false, onGlobeClick }) {
+function GasLamp({ height = 640, style = {}, out = false, onGlobeClick, variant }) {
   // Transition timing: snuff fast (0.3s), reignite a touch slower (0.5s).
   const halo = { opacity: out ? 0 : 1, transition: `opacity ${out ? 0.3 : 0.5}s ease` };
   const darkGlobe = { opacity: out ? 1 : 0, transition: `opacity ${out ? 0.3 : 0.5}s ease` };
@@ -117,7 +117,7 @@ function GasLamp({ height = 640, style = {}, out = false, onGlobeClick }) {
          blob on some Windows/GPU combinations (Opera in particular).
          Outer group fades the whole halo on/off; inner group keeps its flicker. */}
       <g style={halo}>
-      <g>
+      <g transform={variant ? 'translate(0 14)' : undefined}>
         <animate attributeName="opacity"
           values="0.95;0.95;0.6;0.95;0.95;0.7;0.95"
           keyTimes="0;0.45;0.52;0.6;0.82;0.88;1"
@@ -128,6 +128,18 @@ function GasLamp({ height = 640, style = {}, out = false, onGlobeClick }) {
       </g>
       </g>
 
+      {variant ? (
+        <g>
+          {/* A rendered (3D) lamp: assets/lamps/<variant>-lit.webp and -out.webp, drawn
+              into the same 200x900 frame as the vector lamp, so every page, halo and
+              click target below work unchanged. The dark path is the ignition flicker. */}
+          <image href={`/assets/lamps/${variant}-out.webp`} x="0" y="0" width="200" height="900" preserveAspectRatio="none" />
+          <image href={`/assets/lamps/${variant}-lit.webp`} x="0" y="0" width="200" height="900" preserveAspectRatio="none"
+            style={{ opacity: out ? 0 : 1, transition: `opacity ${out ? 0.3 : 0.5}s ease` }} />
+          <path d="M 70 86 L 130 86 L 122 136 L 78 136 Z" fill="#1a1008" style={{ opacity: 0 }} />
+        </g>
+      ) : (
+      <React.Fragment>
       {/* ─── Finial — thin spike + tiny bead + small pedestal ─── */}
       <path d="M 100 6 L 100.8 24 L 100 27 L 99.2 24 Z" fill="url(#lamp-iron)" />
       <ellipse cx="100" cy="27" rx="1.6" ry="1.0" fill="url(#lamp-iron)" />
@@ -274,7 +286,8 @@ function GasLamp({ height = 640, style = {}, out = false, onGlobeClick }) {
 
       {/* Ground contact shadow pooled under the base */}
       <ellipse cx="100" cy="898" rx="86" ry="6" fill="#000" opacity="0.55" />
-
+      </React.Fragment>
+      )}
       {/* Once snuffed, a faint slow-breathing ember hints the globe is still
           clickable (to relight) without giving away the easter egg upfront —
           only appears in the "out" state, after it's already been found. */}
