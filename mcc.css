@@ -205,8 +205,15 @@ html:has(.ringmain),body:has(.ringmain){overflow:hidden;height:100dvh}
 .plate{width:56px;height:56px;border-radius:12px;background:linear-gradient(180deg,#1c140a,#120c06);border:1px solid rgba(217,154,61,.3);
   display:flex;align-items:center;justify-content:center;transition:border-color .3s ease,box-shadow .3s ease,transform .3s ease}
 .plate img{max-width:30px;max-height:42px;opacity:.62;transition:opacity .3s ease}
+.ticon{display:block;width:26px;height:26px;color:var(--accent,#d99a3d);opacity:.7;transition:opacity .3s ease,color .3s ease,filter .3s ease,transform .4s cubic-bezier(.2,.7,.3,1)}
+.tnode:hover .ticon{opacity:.95}
 .tnode.on .plate{border-color:rgba(245,205,106,.9);box-shadow:0 0 20px rgba(245,205,106,.4),0 0 50px rgba(217,154,61,.25);transform:scale(1.08)}
 .tnode.on .plate img{opacity:1}
+.tnode.on .ticon{opacity:1;color:#f5cd6a;filter:drop-shadow(0 0 6px rgba(245,205,106,.7));transform:scale(1.06)}
+/* the fan-out: plates start at the centre and spread to their places */
+.tnode{opacity:1}
+.launch:not(.ready) .tnode{transition:none}
+.launch.ready .tnode{transition:transform .9s cubic-bezier(.2,.8,.2,1),opacity .6s ease}
 .tnode:focus-visible{outline:none}
 .tlabel{font-family:var(--ui);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-3);transition:color .3s ease}
 .tsub{font-family:var(--display);font-size:13px;color:var(--text-4)}
@@ -215,16 +222,18 @@ html:has(.ringmain),body:has(.ringmain){overflow:hidden;height:100dvh}
 .launch.hovering .tnode:not(.on) .plate{opacity:.5}
 .launch.hovering .tnode:not(.on) .tlabel,.launch.hovering .tnode:not(.on) .tsub{opacity:.55}
 @media(max-width:760px){
-  .launch{height:auto;min-height:0;display:block;padding:8px 0 20px;overflow:visible}
-  html:has(.ringmain),body:has(.ringmain){overflow:auto;height:auto}
-  .shell main.ringmain{padding:16px 16px calc(24px + env(safe-area-inset-bottom,0px))}
-  .rings,.spokes,.lwall,.lembers,.ldesc{display:none}
-  .lwick{margin-bottom:20px}
-  .orbit{position:relative;left:auto;top:auto;width:auto;height:auto;transform:none;display:flex;flex-direction:column;gap:2px}
-  .tnode{position:relative;left:auto;top:auto;width:100%;transform:none!important;flex-direction:row;justify-content:flex-start;gap:14px;
-    padding:14px 2px;border-bottom:1px solid var(--line);text-align:left}
-  .tlabel,.tsub{text-align:left}
-  .tdesc{display:block;font-size:12px;color:var(--text-3);margin-top:2px}
+  /* the half-ring: Ring() in business-hub.jsx places everything in px */
+  .shell main.ringmain{padding:0}
+  .launch.phone{display:block;min-height:0;overflow:hidden}
+  .launch.phone .rings,.launch.phone .spokes{position:absolute}
+  .launch.phone .spoke{width:50%}
+  .launch.phone .lwall{width:340px;height:340px}
+  .launch.phone .lembers{margin-left:-20px;width:120px}
+  .launch.phone .lwick{position:absolute;width:18px;height:min(34vh,240px);transform:translateY(-50%);padding:8px 0}
+  .launch.phone .orbit{position:absolute;inset:0;width:auto;height:auto;transform:none}
+  .launch.phone .tnode{left:0;top:0;flex-direction:row-reverse;align-items:center;justify-content:flex-start;gap:30px;padding:0;text-align:right;transform-origin:calc(100% - 28px) 50%;-webkit-tap-highlight-color:transparent}
+  .launch.phone .plate{flex:none}
+  .launch.phone .tnode:active .plate{transform:scale(.94)}
 }
 
 /* gas lampposts flanking the wheel: the shared GasLamp from motifs.jsx, hidden when the room is too narrow */
@@ -251,6 +260,8 @@ html:has(.ringmain),body:has(.ringmain){overflow:hidden;height:100dvh}
 .tplate{width:34px;height:34px;flex:none;border-radius:8px;background:linear-gradient(180deg,#1c140a,#120c06);border:1px solid rgba(217,154,61,.26);
   display:flex;align-items:center;justify-content:center;transition:border-color .3s ease,box-shadow .3s ease}
 .tplate img{max-width:19px;max-height:24px;opacity:.72;filter:brightness(1.5) sepia(.35) saturate(1.5) hue-rotate(-12deg);transition:opacity .3s ease}
+.tplate .ticon{width:18px;height:18px;opacity:.75}
+.tools button:hover .tplate .ticon,.tools button[aria-current="true"] .tplate .ticon{opacity:1;color:#f5cd6a}
 .tools button:hover .tplate{border-color:rgba(245,205,106,.55)}
 .tools button:hover .tplate img{opacity:1}
 .tools button[aria-current="true"] .tplate{border-color:rgba(245,205,106,.85);box-shadow:0 0 12px rgba(245,205,106,.3)}
@@ -285,15 +296,12 @@ html:has(.ringmain),body:has(.ringmain){overflow:hidden;height:100dvh}
   .itemrow{flex-wrap:wrap}.itemrow>input:first-child{flex:1 1 100%!important}.itemrow>input:nth-child(2){width:auto!important;flex:1}
   .stagetrack{gap:4px 12px!important}
   .stagetrack .pill.mute{color:var(--text-3)}
-  /* the ring becomes a list: icon, name and count on one line, the blurb under */
-  .lwick{width:100%;height:16px;padding:0 7px;margin-bottom:22px;flex-direction:row;align-items:center}
-  .lwick .core{width:auto;flex:1;height:6px;background:linear-gradient(to right,rgba(245,205,106,.4),rgba(245,205,106,.9) 9%,#fff3d2 50%,rgba(245,205,106,.9) 91%,rgba(245,205,106,.4))}
-  .tnode{display:grid;grid-template-columns:56px minmax(0,1fr);column-gap:16px;align-items:center;padding:14px 2px}
-  .tnode .plate{grid-row:1}
-  .tbody{display:block;grid-column:2;min-width:0}
-  .tlabel{display:inline;font-size:14px;letter-spacing:.1em}
-  .tsub{display:inline;margin-left:10px;font-size:15px;color:var(--text-3)}
-  .tdesc{font-size:14px;margin-top:3px;color:var(--text-3)}
+  /* each tool on the curve: plate, then its name and count beside it */
+  .launch.phone .tbody{display:flex;flex-direction:column;align-items:flex-end;gap:2px;min-width:0;text-shadow:0 1px 10px rgba(10,7,4,.95),0 0 2px rgba(10,7,4,.9)}
+  .launch.phone .tlabel{font-size:12px;letter-spacing:.16em;white-space:nowrap}
+  .launch.phone .tsub{font-size:14px;color:var(--text-3);white-space:nowrap}
+  .launch.phone .tdesc{display:none}
+  .launch.phone.hovering .tnode:not(.on){opacity:.45}
   /* header: one tidy row, links you can hit */
   .topin{gap:4px 8px;padding:10px 16px}
   .mark b{font-size:18px}
