@@ -707,8 +707,20 @@ const TESTIMONIALS = [];
 const FAQ = [['Do you use AI?', 'Yes. AI does the drafting and the first pass of the build. I make the decisions, check everything and finish it.'], ['What does it cost?', 'Graphics and print are priced per piece. Websites and tools are quoted after a short brief. Either way, you see the price before anything starts.'], ['Can you build the back end of a website too?', 'Yes. Besides the pages people see, I build what runs behind them: logins, databases, payments, booking and contact forms that land somewhere useful, and the admin pages you run it from.'], ['What if what I need isn’t listed?', 'Ask anyway. The lists are where most people start, not where it ends. Describe what you picture in the brief and I’ll come back with how I’d make it.'], ['Will I need new software?', 'Not usually. Where I can, I build on what you already use.'], ['How fast is it?', 'Most design pieces: three directions within two business days of a complete brief. Tools: a plan within a few days, then a first working version.'], ['What if something breaks?', 'I fix it. Ongoing care is available as a monthly plan.'], ['Who owns the work?', 'You do, once it’s paid.'], ['Do we need a call?', 'No. The brief covers it. If a call would help, I’ll say so.']];
 const STEPS = [['I', 'Who’s asking'], ['II', 'What you need'], ['III', 'Details that save time']];
 function Nav() {
+  const [past, setPast] = React.useState(false);
+  React.useEffect(() => {
+    const on = () => {
+      const h = document.getElementById('top');
+      setPast(!!h && h.getBoundingClientRect().bottom < 72);
+    };
+    on();
+    window.addEventListener('scroll', on, {
+      passive: true
+    });
+    return () => window.removeEventListener('scroll', on);
+  }, []);
   return React.createElement("nav", {
-    className: "dnav"
+    className: 'dnav' + (past ? ' past' : '')
   }, React.createElement("div", {
     className: "dnavin"
   }, React.createElement("a", {
@@ -729,7 +741,10 @@ function Nav() {
     href: "#faq"
   }, "Questions"), React.createElement("a", {
     href: "https://www.cargroff.com/"
-  }, "Portfolio"))));
+  }, "Portfolio")), React.createElement("a", {
+    className: "p-btn",
+    href: "#brief"
+  }, "Start a brief")));
 }
 function TickRing({
   r1 = 268,
