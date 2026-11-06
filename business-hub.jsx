@@ -138,9 +138,9 @@ function toolMetaOf(id, d, short) {
   if (id === 'clients') return d.clients.length + (short ? (d.clients.length === 1 ? ' client' : ' clients') : ' on the books');
   return '';
 }
-// The tools: a row of tabs under the header on a computer or tablet, a bar
-// at the bottom of the screen on a phone (and in the home-screen app).
-function ToolTabs({ tab, go, data }) {
+// The tools: a sidebar on a computer or tablet, a bar at the bottom of the
+// screen on a phone (and in the home-screen app).
+function ToolSidebar({ tab, go, data }) {
   return (
     <nav className="tools on" aria-label="Tools">
       {TOOL_LIST.map((n) => (
@@ -1055,6 +1055,53 @@ function ClientPage({ client, stats, data, open, reload, back, gone }) {
   );
 }
 
+// ── The opening ────────────────────────────────────────────────────────
+// Plays once per visit: sessionStorage lives as long as the tab or the
+// home-screen app is open, so moving between tools or reloading doesn't
+// replay it, but closing and reopening does. The crest lights inside the
+// Scaffold's dial, the name rises, then the crest flies into its place in
+// the header. A tap skips it; reduced motion never plays it.
+function introWanted() {
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+  try { if (sessionStorage.getItem('hub-intro')) return false; sessionStorage.setItem('hub-intro', '1'); } catch (e) {}
+  return true;
+}
+function Intro({ onDone }) {
+  const crestRef = React.useRef(null);
+  const [phase, setPhase] = React.useState('in');
+  const [fly, setFly] = React.useState(null);
+  const done = React.useRef(false);
+  const finish = React.useCallback(() => { if (!done.current) { done.current = true; onDone(); } }, [onDone]);
+  React.useEffect(() => {
+    const t1 = setTimeout(() => {
+      const from = crestRef.current, to = document.querySelector('.top .mark img');
+      if (from && to) {
+        const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+        setFly(`translate(${b.left + b.width / 2 - (a.left + a.width / 2)}px,${b.top + b.height / 2 - (a.top + a.height / 2)}px) scale(${b.width / a.width})`);
+      }
+      setPhase('out');
+    }, 1650);
+    const t2 = setTimeout(finish, 2250);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [finish]);
+  const hours = Array.from({ length: 12 }, (_, i) => i);
+  const rays = Array.from({ length: 36 }, (_, i) => i);
+  return (
+    <div className={'intro ' + phase} onClick={finish} aria-hidden="true">
+      <div className="intro-glow" />
+      <svg className="intro-dial" viewBox="-120 -120 240 240">
+        <g className="intro-rays">{rays.map((i) => <line key={i} x1="0" y1="-62" x2="0" y2={i % 3 ? -78 : -92} transform={`rotate(${i * 10})`} />)}</g>
+        <circle className="intro-ring" r="104" pathLength="100" />
+        <circle className="intro-ring2" r="96" />
+        <g className="intro-hours">{hours.map((i) => <line key={i} x1="0" y1="-112" x2="0" y2={i % 3 ? -104 : -100} transform={`rotate(${i * 30})`} style={{ animationDelay: (0.35 + i * 0.045) + 's' }} />)}</g>
+      </svg>
+      <img ref={crestRef} className="intro-crest" src="assets/antler.png" alt=""
+        style={fly ? { transform: fly, transition: 'transform .55s cubic-bezier(.65,0,.25,1), filter .55s ease' } : undefined} />
+      <div className="intro-word"><b>Business Hub</b><span>The Backroom</span></div>
+    </div>
+  );
+}
+
 // ── The hub ────────────────────────────────────────────────────────────
 function BusinessHub() {
   // The address holds the view (#jobs, #money, #job=<id>) so a reload or a
@@ -1084,7 +1131,9 @@ function BusinessHub() {
   const reloadAll = () => { reloadJobs(); reloadProposals(); reloadInvoices(); reloadClients(); reloadBriefs(); reloadEvents(); };
   const data = loading ? null : { jobs, proposals, invoices, clients, briefs, events, needs: needsYou(jobs, proposals, invoices, briefs, events) };
   const [startNew, setStartNew] = React.useState(false);
-  // The tab row sticks just under the header, whatever height the header wraps to.
+  const [intro, setIntro] = React.useState(introWanted);
+  const endIntro = React.useCallback(() => setIntro(false), []);
+  // The sidebar sticks just under the header, whatever height the header wraps to.
   const headRef = React.useRef(null);
   React.useEffect(() => {
     const el = headRef.current; if (!el) return;
@@ -1099,6 +1148,7 @@ function BusinessHub() {
 
   return (
     <React.Fragment>
+      {intro && <Intro onDone={endIntro} />}
       <div className="room" aria-hidden="true">
         <div className="amb"><i className="a1" /><i className="a2" /><i className="a3" /></div>
         <div className="grain" />
@@ -1115,8 +1165,8 @@ function BusinessHub() {
         </div>
       </header>
       <div className="shell">
-        {data && <ToolTabs tab={tab} go={go} data={data} />}
-        <main id="app" key={tab + (jobId || '')}>
+        {data && <ToolSidebar tab={tab} go={go} data={data} />}
+        <main id="app" key={tab + (jobId || '') + (intro ? '-intro' : '')}>
           {error && <p className="sub" style={{ padding: '20px 2px', color: 'var(--warn)' }}>{error} If this is the first run, the workflow tables may not be set up yet.</p>}
           {!error && loading && <p className="sub" style={{ padding: '20px 2px' }}>Loading…</p>}
           {data && (

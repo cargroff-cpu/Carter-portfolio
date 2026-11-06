@@ -823,3 +823,17 @@ Today's numbers are one ruled row and the panels sit on hairlines with no
 boxes. The header's "Today" link is gone (the Today tab does that). All of
 it lives in Business Hub.html's own styles, so the Docket, which shares
 mcc.css, is unchanged.
+
+## 2026-11-06 — Sidebar back; an opening that plays once per visit
+
+- Carter preferred the sidebar to the top tabs, so it's back on computers and
+  tablets (sticky under the header, sentence case). The Scaffold type from
+  option 1 stays. Phones and the home-screen app keep the bottom bar.
+- Opening (`Intro` in business-hub.jsx): the antler crest lights over a green
+  glow inside the Scaffold's dial (a ring that draws itself, twelve amber
+  hours, slow fine rays), "Business Hub" rises under it, then the crest flies
+  into its place in the header and the page settles in. About two seconds; a
+  tap skips it. It plays once per visit: the flag is in sessionStorage, which
+  lasts while the tab or home-screen app is open, so moving between tools or
+  reloading doesn't replay it, and closing and reopening does. Reduced motion
+  never plays it.
