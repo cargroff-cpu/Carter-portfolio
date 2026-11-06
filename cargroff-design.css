@@ -662,8 +662,8 @@ a:hover { color: var(--amber-lit); }
   .dnav .p-btn { min-height: 38px; padding: 0 14px; font-size: 14px; background: transparent; color: var(--ink); border-color: var(--rule-strong); }
   .dnav .p-btn:hover { background: transparent; color: var(--amber-lit); border-color: var(--amber); }
   /* one Start a brief at a time: the hero's own at the top, the header's once the hero is behind you */
-  .dnav .p-btn { opacity: 0; visibility: hidden; transition: opacity .3s ease, visibility .3s; }
-  .dnav.past .p-btn { opacity: 1; visibility: visible; }
+  .dnav .p-btn { opacity: 0; visibility: hidden; border-color: transparent; transition: none; }
+  .dnav.past .p-btn { opacity: 1; visibility: visible; border-color: var(--rule-strong); transition: opacity .3s ease; }
   .dhero .p-btn.ghost { min-height: 44px; padding: 0 12px; background: none; border-color: transparent; color: var(--ink-soft); }
   .dhero .p-btn.ghost:hover { color: var(--amber-lit); }
 
