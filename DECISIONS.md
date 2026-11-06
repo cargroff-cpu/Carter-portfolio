@@ -767,3 +767,12 @@ rules (899px and under) in cargroff-design.css, desktop unchanged:
 - The dial sits above its steps (as it sits beside them on desktop), smaller.
 - The menu cards are inset from the edges with tighter type, so most rows fit
   on one line; the portrait is capped at 320px.
+
+### Fewer Start a brief buttons on phones
+
+Carter: too many Start a brief buttons. On phones there is now one at a time.
+The hero's is the only one at the top; the header's fades in once the hero is
+behind you (a scroll check in Nav, phone CSS only), and "See the work" is a
+quiet text link. The buttons under each example and inside the menu card are
+hidden on phones (the card's rows and the header still open the brief).
+Desktop keeps every button.

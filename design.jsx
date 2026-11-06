@@ -67,8 +67,16 @@ const STEPS = [
 ];
 
 function Nav() {
+  // phones: the header's Start a brief appears only once the hero (which has its own) is behind you
+  const [past, setPast] = React.useState(false);
+  React.useEffect(() => {
+    const on = () => { const h = document.getElementById('top'); setPast(!!h && h.getBoundingClientRect().bottom < 72); };
+    on();
+    window.addEventListener('scroll', on, { passive: true });
+    return () => window.removeEventListener('scroll', on);
+  }, []);
   return (
-    <nav className="dnav">
+    <nav className={'dnav' + (past ? ' past' : '')}>
       <div className="dnavin">
         <a className="dbrand" href="#top">
           <img src="assets/antler.png" alt="" />
