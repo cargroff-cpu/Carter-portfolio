@@ -1556,121 +1556,6 @@ function Turn({
     className: "dprice"
   }, "From ", s.from), turn && React.createElement("span", null, turn));
 }
-const SERVICE_ICONS = {
-  'Social graphics': React.createElement(React.Fragment, null, React.createElement("rect", {
-    x: "5",
-    y: "3.5",
-    width: "14",
-    height: "17",
-    rx: "2"
-  }), React.createElement("circle", {
-    cx: "9.5",
-    cy: "9",
-    r: "1.6"
-  }), React.createElement("path", {
-    d: "M5.5 16.5l4.2-4 3 2.8 2.3-2 3.5 3.2"
-  })),
-  Website: React.createElement(React.Fragment, null, React.createElement("circle", {
-    cx: "12",
-    cy: "12",
-    r: "8.5"
-  }), React.createElement("ellipse", {
-    cx: "12",
-    cy: "12",
-    rx: "3.6",
-    ry: "8.5"
-  }), React.createElement("path", {
-    d: "M3.8 9h16.4M3.8 15h16.4"
-  })),
-  'Business card or print': React.createElement(React.Fragment, null, React.createElement("rect", {
-    x: "3",
-    y: "6.5",
-    width: "14",
-    height: "9",
-    rx: "1.2"
-  }), React.createElement("path", {
-    d: "M7 18.5h12.8a1.2 1.2 0 0 0 1.2-1.2V10"
-  }), React.createElement("path", {
-    d: "M6 10h5M6 12.5h3"
-  })),
-  'Document or report': React.createElement(React.Fragment, null, React.createElement("path", {
-    d: "M6 3h8l4 4v14H6z"
-  }), React.createElement("path", {
-    d: "M14 3v4h4"
-  }), React.createElement("path", {
-    d: "M9 11.5h6M9 14.5h6M9 17.5h4"
-  })),
-  'Presentation or deck': React.createElement(React.Fragment, null, React.createElement("rect", {
-    x: "3.5",
-    y: "4",
-    width: "17",
-    height: "11",
-    rx: "1"
-  }), React.createElement("path", {
-    d: "M12 15v3.5M8 21l4-2.5 4 2.5"
-  }), React.createElement("path", {
-    d: "M7.5 11.5l3-3 2 2 3.5-3.5"
-  })),
-  'Brand basics': React.createElement(React.Fragment, null, React.createElement("path", {
-    d: "M12 3l5.5 6.5L12 21 6.5 9.5z"
-  }), React.createElement("circle", {
-    cx: "12",
-    cy: "10.5",
-    r: "1.5"
-  }), React.createElement("path", {
-    d: "M12 12v9"
-  })),
-  'Inquiries and leads': React.createElement(React.Fragment, null, React.createElement("path", {
-    d: "M3.5 13.5l2.5-8h12l2.5 8v5h-17z"
-  }), React.createElement("path", {
-    d: "M3.5 13.5h5l1 2h5l1-2h5"
-  })),
-  'Quotes and invoices': React.createElement(React.Fragment, null, React.createElement("path", {
-    d: "M6 3h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5L6 21z"
-  }), React.createElement("path", {
-    d: "M9 8h6M9 11.5h6M9 15h3.5"
-  })),
-  'Scheduling and bookings': React.createElement(React.Fragment, null, React.createElement("rect", {
-    x: "3.5",
-    y: "5",
-    width: "17",
-    height: "15",
-    rx: "1.6"
-  }), React.createElement("path", {
-    d: "M3.5 9.5h17M8 3v4M16 3v4"
-  }), React.createElement("path", {
-    d: "M8.5 14l2.2 2.2 4.6-4.6"
-  })),
-  'Dashboards and reports': React.createElement(React.Fragment, null, React.createElement("path", {
-    d: "M4 20h16"
-  }), React.createElement("path", {
-    d: "M6.5 20v-6M11 20V9M15.5 20v-4M20 20V5"
-  })),
-  'Reminders and follow-ups': React.createElement(React.Fragment, null, React.createElement("path", {
-    d: "M6.5 16.5V11a5.5 5.5 0 0 1 11 0v5.5l1.5 1.5H5z"
-  }), React.createElement("path", {
-    d: "M10 20.5a2 2 0 0 0 4 0"
-  })),
-  'AI assistants': React.createElement(React.Fragment, null, React.createElement("path", {
-    d: "M4 5.5h16v11H11l-4.5 3.5v-3.5H4z"
-  }), React.createElement("path", {
-    d: "M12 7.8l.9 2.3 2.3.9-2.3.9-.9 2.3-.9-2.3-2.3-.9 2.3-.9z"
-  })),
-  _: React.createElement(React.Fragment, null, React.createElement("path", {
-    d: "M12 4l8 8-8 8-8-8z"
-  }), React.createElement("path", {
-    d: "M12 9l3 3-3 3-3-3z"
-  }))
-};
-function ServiceIcon({
-  need
-}) {
-  return React.createElement("svg", {
-    className: "dtile-ic",
-    viewBox: "0 0 24 24",
-    "aria-hidden": "true"
-  }, SERVICE_ICONS[need] || SERVICE_ICONS._);
-}
 function Shelf({
   lane,
   label,
@@ -1681,55 +1566,64 @@ function Shelf({
   onAddNeed
 }) {
   const [peek, setPeek] = React.useState(null);
-  const line = peek && peek.desc ? peek.desc : blurb;
+  const note = peek && peek.desc ? peek.desc : blurb;
   return React.createElement("div", {
-    className: 'dhalf-sec dcab up' + (lane === 'automation' ? ' dauto' : '')
-  }, React.createElement("span", {
-    className: "dk"
-  }, label), React.createElement("h3", {
-    className: "ddisplay"
-  }, title), React.createElement("p", {
-    className: 'dp dcab-line' + (peek && peek.desc ? ' peek' : ''),
-    key: line
-  }, line), React.createElement("ul", {
-    className: "dtiles"
-  }, items.map((s, i) => React.createElement("li", {
-    key: s.title,
-    style: {
-      '--i': i
-    }
+    className: 'dhalf-sec dmenu up' + (lane === 'automation' ? ' dauto' : '')
+  }, React.createElement("div", {
+    className: "dmenu-in"
+  }, React.createElement("img", {
+    className: "dmenu-crest",
+    src: "assets/antler.png",
+    alt: ""
+  }), React.createElement("h3", {
+    className: "dmenu-h"
+  }, label), React.createElement("p", {
+    className: "dmenu-tag"
+  }, title), React.createElement("span", {
+    className: "dmenu-orn",
+    "aria-hidden": "true"
+  }), React.createElement("ul", {
+    className: "dmenu-list"
+  }, items.map(s => {
+    const price = SITE.showPrices && s.from;
+    const turn = lane === 'design' ? s.turn || 'Quoted' : 'Quoted';
+    return React.createElement("li", {
+      key: s.title
+    }, React.createElement("a", {
+      href: "#brief",
+      onMouseEnter: () => setPeek(s),
+      onMouseLeave: () => setPeek(null),
+      onFocus: () => setPeek(s),
+      onBlur: () => setPeek(null),
+      onClick: e => {
+        e.preventDefault();
+        onAddNeed(lane, s.need);
+      }
+    }, React.createElement("span", {
+      className: "dmenu-name"
+    }, React.createElement("b", null, s.title), s.sub && React.createElement("small", null, s.sub)), React.createElement("span", {
+      className: "dmenu-dots",
+      "aria-hidden": "true"
+    }), React.createElement("span", {
+      className: "dmenu-turn"
+    }, price && React.createElement("span", {
+      className: "dmenu-price"
+    }, "From ", s.from), turn), s.desc && React.createElement("span", {
+      className: "dvh"
+    }, s.desc)));
+  })), React.createElement("p", {
+    className: 'dmenu-note' + (peek && peek.desc ? ' peek' : ''),
+    key: note
+  }, note), React.createElement("p", {
+    className: "dmenu-cta"
   }, React.createElement("a", {
-    className: "dtile",
-    href: "#brief",
-    onMouseEnter: () => setPeek(s),
-    onMouseLeave: () => setPeek(null),
-    onFocus: () => setPeek(s),
-    onBlur: () => setPeek(null),
-    onClick: e => {
-      e.preventDefault();
-      onAddNeed(lane, s.need);
-    }
-  }, React.createElement(ServiceIcon, {
-    need: s.need
-  }), React.createElement("span", {
-    className: "dtile-t"
-  }, React.createElement("b", null, s.title), s.sub && React.createElement("small", {
-    className: "dtile-sub"
-  }, s.sub)), React.createElement(Turn, {
-    s: s,
-    lane: lane
-  }), s.desc && React.createElement("span", {
-    className: "dvh"
-  }, s.desc))))), React.createElement("p", {
-    className: "dcab-cta"
-  }, React.createElement("a", {
-    className: "p-btn ghost",
+    className: "dmenu-btn",
     href: "#brief",
     onClick: e => {
       e.preventDefault();
       onAddNeed(lane);
     }
-  }, cta)));
+  }, cta))));
 }
 function Make({
   onAddNeed
@@ -1765,15 +1659,7 @@ function Make({
     items: DESIGN_SERVICES,
     cta: "Start a design brief",
     onAddNeed: onAddNeed
-  }), React.createElement("div", {
-    className: "dseam",
-    "aria-hidden": "true"
-  }, React.createElement("span", {
-    className: "dseam-medal"
-  }, React.createElement("img", {
-    src: "assets/antler.png",
-    alt: ""
-  }))), React.createElement(Shelf, {
+  }), React.createElement(Shelf, {
     lane: "automation",
     label: "Tools",
     title: "What runs behind the scenes",

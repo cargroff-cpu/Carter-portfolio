@@ -474,63 +474,51 @@ function Turn({ s, lane }) {
   );
 }
 
-// One small line drawing per service, matched on the brief's need so a
-// renamed service in the Backroom keeps its picture. Unknown needs get a mark.
-const SERVICE_ICONS = {
-  'Social graphics': <><rect x="5" y="3.5" width="14" height="17" rx="2" /><circle cx="9.5" cy="9" r="1.6" /><path d="M5.5 16.5l4.2-4 3 2.8 2.3-2 3.5 3.2" /></>,
-  Website: <><circle cx="12" cy="12" r="8.5" /><ellipse cx="12" cy="12" rx="3.6" ry="8.5" /><path d="M3.8 9h16.4M3.8 15h16.4" /></>,
-  'Business card or print': <><rect x="3" y="6.5" width="14" height="9" rx="1.2" /><path d="M7 18.5h12.8a1.2 1.2 0 0 0 1.2-1.2V10" /><path d="M6 10h5M6 12.5h3" /></>,
-  'Document or report': <><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v4h4" /><path d="M9 11.5h6M9 14.5h6M9 17.5h4" /></>,
-  'Presentation or deck': <><rect x="3.5" y="4" width="17" height="11" rx="1" /><path d="M12 15v3.5M8 21l4-2.5 4 2.5" /><path d="M7.5 11.5l3-3 2 2 3.5-3.5" /></>,
-  'Brand basics': <><path d="M12 3l5.5 6.5L12 21 6.5 9.5z" /><circle cx="12" cy="10.5" r="1.5" /><path d="M12 12v9" /></>,
-  'Inquiries and leads': <><path d="M3.5 13.5l2.5-8h12l2.5 8v5h-17z" /><path d="M3.5 13.5h5l1 2h5l1-2h5" /></>,
-  'Quotes and invoices': <><path d="M6 3h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5L6 21z" /><path d="M9 8h6M9 11.5h6M9 15h3.5" /></>,
-  'Scheduling and bookings': <><rect x="3.5" y="5" width="17" height="15" rx="1.6" /><path d="M3.5 9.5h17M8 3v4M16 3v4" /><path d="M8.5 14l2.2 2.2 4.6-4.6" /></>,
-  'Dashboards and reports': <><path d="M4 20h16" /><path d="M6.5 20v-6M11 20V9M15.5 20v-4M20 20V5" /></>,
-  'Reminders and follow-ups': <><path d="M6.5 16.5V11a5.5 5.5 0 0 1 11 0v5.5l1.5 1.5H5z" /><path d="M10 20.5a2 2 0 0 0 4 0" /></>,
-  'AI assistants': <><path d="M4 5.5h16v11H11l-4.5 3.5v-3.5H4z" /><path d="M12 7.8l.9 2.3 2.3.9-2.3.9-.9 2.3-.9-2.3-2.3-.9 2.3-.9z" /></>,
-  _: <><path d="M12 4l8 8-8 8-8-8z" /><path d="M12 9l3 3-3 3-3-3z" /></>,
-};
-function ServiceIcon({ need }) {
-  return <svg className="dtile-ic" viewBox="0 0 24 24" aria-hidden="true">{SERVICE_ICONS[need] || SERVICE_ICONS._}</svg>;
-}
-
-// One cabinet of the shelf: a label, a heading, a line, and the services as
-// tiles. Resting on a tile (or tabbing to it) swaps the line for that
-// service's one-line description, so the details are there without the wall
-// of text. Choosing a tile starts a brief with that need ticked.
+// The shelf is two printed bills of fare laid on the table: Design on cream
+// paper, Tools in green enamel. Each service reads like a dish, with a dotted
+// leader to its turnaround (and its price when prices are on). Resting on a
+// line swaps the card's footnote for that service's description; choosing a
+// line starts a brief with that need ticked.
 function Shelf({ lane, label, title, blurb, items, cta, onAddNeed }) {
   const [peek, setPeek] = React.useState(null);
-  const line = peek && peek.desc ? peek.desc : blurb;
+  const note = peek && peek.desc ? peek.desc : blurb;
   return (
-    <div className={'dhalf-sec dcab up' + (lane === 'automation' ? ' dauto' : '')}>
-      <span className="dk">{label}</span>
-      <h3 className="ddisplay">{title}</h3>
-      <p className={'dp dcab-line' + (peek && peek.desc ? ' peek' : '')} key={line}>{line}</p>
-      <ul className="dtiles">
-        {items.map((s, i) => (
-          <li key={s.title} style={{ '--i': i }}>
-            <a className="dtile" href="#brief"
-              onMouseEnter={() => setPeek(s)} onMouseLeave={() => setPeek(null)}
-              onFocus={() => setPeek(s)} onBlur={() => setPeek(null)}
-              onClick={(e) => { e.preventDefault(); onAddNeed(lane, s.need); }}>
-              <ServiceIcon need={s.need} />
-              <span className="dtile-t"><b>{s.title}</b>{s.sub && <small className="dtile-sub">{s.sub}</small>}</span>
-              <Turn s={s} lane={lane} />
-              {s.desc && <span className="dvh">{s.desc}</span>}
-            </a>
-          </li>
-        ))}
-      </ul>
-      <p className="dcab-cta">
-        <a className="p-btn ghost" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed(lane); }}>{cta}</a>
-      </p>
+    <div className={'dhalf-sec dmenu up' + (lane === 'automation' ? ' dauto' : '')}>
+      <div className="dmenu-in">
+        <img className="dmenu-crest" src="assets/antler.png" alt="" />
+        <h3 className="dmenu-h">{label}</h3>
+        <p className="dmenu-tag">{title}</p>
+        <span className="dmenu-orn" aria-hidden="true" />
+        <ul className="dmenu-list">
+          {items.map((s) => {
+            const price = SITE.showPrices && s.from;
+            const turn = lane === 'design' ? (s.turn || 'Quoted') : 'Quoted';
+            return (
+              <li key={s.title}>
+                <a href="#brief"
+                  onMouseEnter={() => setPeek(s)} onMouseLeave={() => setPeek(null)}
+                  onFocus={() => setPeek(s)} onBlur={() => setPeek(null)}
+                  onClick={(e) => { e.preventDefault(); onAddNeed(lane, s.need); }}>
+                  <span className="dmenu-name"><b>{s.title}</b>{s.sub && <small>{s.sub}</small>}</span>
+                  <span className="dmenu-dots" aria-hidden="true" />
+                  <span className="dmenu-turn">{price && <span className="dmenu-price">From {s.from}</span>}{turn}</span>
+                  {s.desc && <span className="dvh">{s.desc}</span>}
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+        <p className={'dmenu-note' + (peek && peek.desc ? ' peek' : '')} key={note}>{note}</p>
+        <p className="dmenu-cta">
+          <a className="dmenu-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed(lane); }}>{cta}</a>
+        </p>
+      </div>
     </div>
   );
 }
 
 function Make({ onAddNeed }) {
-  // On a phone one cabinet shows at a time, chosen with the Design | Tools switch.
+  // On a phone one card shows at a time, chosen with the Design | Tools switch.
   const [show, setShow] = React.useState('design');
   return (
     <section id="make" className="dsection dplain">
@@ -548,8 +536,6 @@ function Make({ onAddNeed }) {
           <Shelf lane="design" label="Design" title="What your customers see"
             blurb="Three directions, you pick one, I finish it."
             items={DESIGN_SERVICES} cta="Start a design brief" onAddNeed={onAddNeed} />
-          {/* the one person: both cabinets hang from the same crest */}
-          <div className="dseam" aria-hidden="true"><span className="dseam-medal"><img src="assets/antler.png" alt="" /></span></div>
           <Shelf lane="automation" label="Tools" title="What runs behind the scenes"
             blurb="Proven by hand first. Quoted after a short brief."
             items={TOOL_SERVICES} cta="Start a tools brief" onAddNeed={onAddNeed} />
