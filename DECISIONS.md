@@ -784,3 +784,14 @@ row on phones, each 84% wide so the next card peeks in from the edge. The
 Design | Tools switch follows the swipe and jumps to a card when tapped, and
 a hint line under the row ("Swipe for Tools" / "Swipe for Design") flips the
 card too. Desktop still shows both cards in two columns.
+
+### The swipe gets character (and loses its buttons)
+
+The Design | Tools buttons above the phone swipe are gone; two dots and the
+hint line below it (with a nudging arrow) show where you are and also jump to a
+card. As you swipe, the card coming in straightens, lifts and brightens while
+the one leaving tilts away and dims (driven by scroll position through a
+`--a` custom property); the new card's crest and name pop and its lines rise in
+one after another; the Tools card gets a lamp glow. Until someone swipes, the
+next card nudges in from the edge every few seconds. Reduced motion turns all
+of it off. Desktop is unchanged.

@@ -1579,12 +1579,13 @@ function Shelf({
   blurb,
   items,
   cta,
-  onAddNeed
+  onAddNeed,
+  active
 }) {
   const [peek, setPeek] = React.useState(null);
   const note = peek && peek.desc ? peek.desc : blurb;
   return React.createElement("div", {
-    className: 'dhalf-sec dmenu up' + (lane === 'automation' ? ' dauto' : '')
+    className: 'dhalf-sec dmenu up' + (lane === 'automation' ? ' dauto' : '') + (active ? ' on' : '')
   }, React.createElement("div", {
     className: "dmenu-in"
   }, React.createElement("img", {
@@ -1645,18 +1646,27 @@ function Make({
   onAddNeed
 }) {
   const [show, setShow] = React.useState('design');
+  const [touched, setTouched] = React.useState(false);
   const track = React.useRef(null);
+  const raf = React.useRef(0);
   const onScroll = () => {
-    const el = track.current;
-    if (!el || !el.children[1]) return;
-    const step = el.children[1].offsetLeft - el.children[0].offsetLeft;
-    const i = Math.round(el.scrollLeft / Math.max(step, 1));
-    setShow(i >= 1 ? 'automation' : 'design');
+    if (raf.current) return;
+    raf.current = requestAnimationFrame(() => {
+      raf.current = 0;
+      const el = track.current;
+      if (!el || !el.children[1]) return;
+      const step = Math.max(Math.min(el.children[1].offsetLeft - el.children[0].offsetLeft, el.scrollWidth - el.clientWidth), 1);
+      const p = Math.min(1, Math.max(0, el.scrollLeft / step));
+      el.children[0].style.setProperty('--a', (1 - p).toFixed(3));
+      el.children[1].style.setProperty('--a', p.toFixed(3));
+      setShow(p >= 0.5 ? 'automation' : 'design');
+      if (el.scrollLeft > 6) setTouched(true);
+    });
   };
   const go = v => {
     const el = track.current;
     if (!el) return;
-    setShow(v);
+    setTouched(true);
     const card = el.children[v === 'automation' ? 1 : 0];
     const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     el.scrollTo({
@@ -1674,24 +1684,14 @@ function Make({
   }, React.createElement("h2", {
     className: "ddisplay"
   }, "Two kinds of work, one person.")), React.createElement("div", {
-    className: "dmaketabs",
-    role: "tablist",
-    "aria-label": "Kind of work"
-  }, [['design', 'Design'], ['automation', 'Tools']].map(([v, label]) => React.createElement("button", {
-    key: v,
-    type: "button",
-    role: "tab",
-    "aria-selected": show === v,
-    className: 'dlane' + (show === v ? ' on' : '') + (v === 'automation' ? ' auto' : ''),
-    onClick: () => go(v)
-  }, label))), React.createElement("div", {
-    className: "dduo dmake",
+    className: 'dduo dmake' + (touched ? '' : ' beckon'),
     ref: track,
     onScroll: onScroll
   }, React.createElement(Shelf, {
     lane: "design",
     label: "Design",
     title: "What your customers see",
+    active: show === 'design',
     blurb: "Three directions, you pick one, I finish it.",
     items: DESIGN_SERVICES,
     cta: "Start a design brief",
@@ -1700,15 +1700,34 @@ function Make({
     lane: "automation",
     label: "Tools",
     title: "What runs behind the scenes",
+    active: show === 'automation',
     blurb: "Proven by hand first. Quoted after a short brief.",
     items: TOOL_SERVICES,
     cta: "Start a tools brief",
     onAddNeed: onAddNeed
-  })), React.createElement("button", {
+  })), React.createElement("div", {
+    className: "dswipenav"
+  }, React.createElement("div", {
+    className: "ddots",
+    role: "tablist",
+    "aria-label": "Kind of work"
+  }, [['design', 'Design'], ['automation', 'Tools']].map(([v, label]) => React.createElement("button", {
+    key: v,
+    type: "button",
+    role: "tab",
+    "aria-selected": show === v,
+    "aria-label": 'Show ' + label,
+    className: 'ddot' + (show === v ? ' on' : ''),
+    onClick: () => go(v)
+  }))), React.createElement("button", {
     type: "button",
     className: "dswipehint",
     onClick: () => go(show === 'design' ? 'automation' : 'design')
-  }, show === 'design' ? 'Swipe for Tools \u2192' : '\u2190 Swipe for Design'), React.createElement("p", {
+  }, show === 'design' ? React.createElement(React.Fragment, null, "Swipe for Tools ", React.createElement("i", {
+    className: "darrow"
+  }, '\u2192')) : React.createElement(React.Fragment, null, React.createElement("i", {
+    className: "darrow back"
+  }, '\u2190'), " Swipe for Design"))), React.createElement("p", {
     className: "dany up"
   }, "These are just examples. Have something else in mind? I can make that happen too."), WORK.length > 0 && React.createElement(React.Fragment, null, React.createElement("div", {
     className: "dworkhead"

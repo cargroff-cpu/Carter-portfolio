@@ -419,9 +419,8 @@ a:hover { color: var(--amber-lit); }
 .js .dmenu.dauto.up { transition-delay: .12s; }
 @keyframes dshelf-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 /* on a phone the two cards sit behind a Design | Tools switch */
-.dmaketabs, .dswipehint { display: none; }
+.dmaketabs, .dswipenav { display: none; }
 @media (max-width: 899px) {
-  .dmaketabs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); margin: -12px 0 24px; }
   .dmake .dhalf-sec { animation: dshelf-in .35s cubic-bezier(.16, 1, .3, 1); }
   .dmenu-name b { font-size: 20px; }
   .dmenu-turn { font-size: 15px; }
@@ -706,16 +705,53 @@ a:hover { color: var(--amber-lit); }
   .dsteplist p { padding: 0 0 18px calc(1em + 16px); }
 
   /* Two kinds of work: the card laid on the table with room around it */
-  /* a swipe row: both cards side by side, the next one peeking in from the edge */
-  .dmaketabs { margin: -8px 0 20px; }
-  .dmake { display: grid; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 84%; gap: 14px; align-items: stretch; margin: 0 -24px; padding: 8px 24px 40px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scroll-padding-inline: 24px; overscroll-behavior-x: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  /* a swipe row: both cards side by side, the next one peeking in from the edge.
+     --a is how far each card is "on top" (1 = centred, 0 = away); the card
+     tilts, shrinks and dims as it leaves, and straightens and lifts as it comes in */
+  .dmake { display: grid; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 84%; gap: 14px; align-items: stretch; margin: 0 -24px; padding: 14px 24px 36px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scroll-padding-inline: 24px; overscroll-behavior-x: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
   .dmake::-webkit-scrollbar { display: none; }
   .dmake .dhalf-sec { scroll-snap-align: start; animation: none; min-width: 0; }
-  .js .dmake .dmenu.up:not(.shown), .js .dmake .dmenu.dauto.up:not(.shown) { opacity: 1; transform: rotate(-.5deg); }
-  .dmenu, .dmenu.dauto { margin: 0; padding: 10px; transform: rotate(-.5deg); }
+  .dmake .dmenu:nth-child(1) { --a: 1; --tilt: -5deg; --rest: -.7deg; }
+  .dmake .dmenu:nth-child(2) { --a: 0; --tilt: 5deg; --rest: .8deg; }
+  .js .dmake .dmenu.up, .js .dmake .dmenu.up:not(.shown), .js .dmake .dmenu.dauto.up:not(.shown) {
+    opacity: calc(.6 + .4 * var(--a)); transition: box-shadow .5s ease;
+    transform: translateY(calc((1 - var(--a)) * 16px)) rotate(calc(var(--rest) + (1 - var(--a)) * var(--tilt))) scale(calc(.92 + .08 * var(--a)));
+  }
+  .dmake .dmenu, .dmake .dmenu.dauto { margin: 0; padding: 10px; }
   .dmenu-in { height: 100%; }
-  .dswipehint { display: block; margin: -22px auto 0; padding: 12px 16px; background: none; border: 0; cursor: pointer; font-family: var(--ui); font-size: 14px; font-weight: 500; color: var(--amber); }
+  /* the card on top wakes up: its crest and name pop, its lines rise in one after another */
+  .dmake .dmenu.on .dmenu-h { animation: dpop .7s cubic-bezier(.3, 1.6, .5, 1) both; }
+  .dmake .dmenu.on .dmenu-crest { animation: dcrest .9s cubic-bezier(.3, 1.4, .5, 1) both; }
+  .dmake .dmenu-list li { opacity: .45; transform: translateX(16px); transition: opacity .3s ease, transform .3s ease; }
+  .dmake .dmenu.on .dmenu-list li { opacity: 1; transform: none; transition: opacity .5s ease, transform .6s cubic-bezier(.2, .8, .3, 1); }
+  .dmake .dmenu.on .dmenu-list li:nth-child(1) { transition-delay: .10s; }
+  .dmake .dmenu.on .dmenu-list li:nth-child(2) { transition-delay: .17s; }
+  .dmake .dmenu.on .dmenu-list li:nth-child(3) { transition-delay: .24s; }
+  .dmake .dmenu.on .dmenu-list li:nth-child(4) { transition-delay: .31s; }
+  .dmake .dmenu.on .dmenu-list li:nth-child(5) { transition-delay: .38s; }
+  .dmake .dmenu.on .dmenu-list li:nth-child(n+6) { transition-delay: .45s; }
+  .dmake .dmenu.dauto.on { box-shadow: 0 24px 50px var(--vignette-1), 0 0 56px -8px rgba(217, 154, 61, .38); }
+  /* until someone swipes, the next card nudges in from the edge now and then */
+  .dmake.beckon .dhalf-sec:nth-child(2) { animation: dpeek 5s ease-in-out 1.4s infinite; }
+  @keyframes dpeek { 0%, 55%, 100% { translate: 0 0; } 64% { translate: -30px 0; } 72% { translate: -6px 0; } 80% { translate: -20px 0; } 90% { translate: 0 0; } }
+  @keyframes dpop { 0% { transform: scale(.82); opacity: .4; } 60% { transform: scale(1.06); opacity: 1; } 100% { transform: none; opacity: 1; } }
+  @keyframes dcrest { 0% { transform: rotate(-14deg) scale(.7); } 60% { transform: rotate(5deg) scale(1.12); } 100% { transform: none; } }
+  .dswipenav { display: grid; justify-items: center; gap: 2px; margin-top: -20px; }
+  .ddots { display: flex; gap: 8px; }
+  .ddot { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 4px; background: var(--ink-dim); cursor: pointer; transition: width .35s cubic-bezier(.2, .8, .3, 1), background-color .3s; position: relative; }
+  .ddot::after { content: ""; position: absolute; inset: -18px -8px; }
+  .ddot.on { width: 26px; background: var(--amber); }
+  .dswipehint { display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 12px 16px; background: none; border: 0; cursor: pointer; font-family: var(--ui); font-size: 14px; font-weight: 500; color: var(--amber); }
   .dswipehint:hover { color: var(--amber-lit); }
+  .darrow { font-style: normal; display: inline-block; animation: dnudge 1.8s ease-in-out infinite; }
+  .darrow.back { animation-name: dnudge-back; }
+  @keyframes dnudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(6px); } }
+  @keyframes dnudge-back { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-6px); } }
+  @media (prefers-reduced-motion: reduce) {
+    .dmake.beckon .dhalf-sec:nth-child(2), .dmake .dmenu.on .dmenu-h, .dmake .dmenu.on .dmenu-crest, .darrow { animation: none; }
+    .dmake .dmenu-list li, .dmake .dmenu.on .dmenu-list li { opacity: 1; transform: none; transition: none; }
+    .ddot { transition: none; }
+  }
   .dmenu-in { padding: 24px 16px 22px; }
   .dmenu-crest { width: 40px; }
   .dmenu-h { font-size: 36px; }
