@@ -1354,7 +1354,7 @@ function GasLamp({
     ry: "6",
     fill: "#000",
     opacity: "0.55"
-  })), out && onGlobeClick && React.createElement("ellipse", {
+  })), out && onGlobeClick && !variant && React.createElement("ellipse", {
     cx: "100",
     cy: "102",
     rx: "60",

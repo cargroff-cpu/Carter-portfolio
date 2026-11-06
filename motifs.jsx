@@ -291,7 +291,7 @@ function GasLamp({ height = 640, style = {}, out = false, onGlobeClick, variant 
       {/* Once snuffed, a faint slow-breathing ember hints the globe is still
           clickable (to relight) without giving away the easter egg upfront —
           only appears in the "out" state, after it's already been found. */}
-      {out && onGlobeClick && (
+      {out && onGlobeClick && !variant && (
         <ellipse cx="100" cy="102" rx="60" ry="78" fill="rgba(217,154,61,0.16)"
           style={{ filter: 'blur(9px)', pointerEvents: 'none' }}>
           <animate attributeName="opacity" values="0.5;1;0.5" dur="3.4s" repeatCount="indefinite" />
