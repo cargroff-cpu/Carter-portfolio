@@ -144,11 +144,26 @@ a:hover { color: var(--amber-lit); }
    sputter up to full light, short, timed to the row's own delay (the phone
    rules below do the same without the rise) */
 @media (min-width: 900px) {
-  .dhero-lamp { --fd: .9s; }
+  .dhero-lamp { --fd: .9s; --fs: 0s; --g: dlamp-glass; --h: dlamp-halo; --gd: 1.5s; }
   .dhero-lamp.far { --fd: 1.4s; } .dhero-lamp.mid { --fd: 1.9s; } .dhero-lamp.near { --fd: 2.4s; }
-  .dhero-lamp.r { --fs: .22s; }
-  .dhero-lamp path[fill="#1a1008"] { animation: dlamp-glass 1.5s ease-out calc(var(--fd) + var(--fs, 0s)) backwards; }
-  .dhero-lamp svg > g:first-of-type { animation: dlamp-halo 1.5s ease-out calc(var(--fd) + var(--fs, 0s)) backwards; }
+  /* no two posts catch alike: different stutter, length and a small offset each */
+  .dhero-lamp.back.l { --g: dlamp-glass-b; --h: dlamp-halo-b; --gd: 1.7s; --fs: .05s; }
+  .dhero-lamp.back.r { --g: dlamp-glass-c; --h: dlamp-halo-c; --gd: 1.3s; --fs: .3s; }
+  .dhero-lamp.far.l { --g: dlamp-glass-c; --h: dlamp-halo-c; --gd: 1.4s; --fs: .12s; }
+  .dhero-lamp.far.r { --g: dlamp-glass-d; --h: dlamp-halo-d; --gd: 1.8s; --fs: .4s; }
+  .dhero-lamp.mid.l { --g: dlamp-glass-d; --h: dlamp-halo-d; --gd: 1.7s; --fs: 0s; }
+  .dhero-lamp.mid.r { --g: dlamp-glass-b; --h: dlamp-halo-b; --gd: 1.6s; --fs: .26s; }
+  .dhero-lamp.near.l { --g: dlamp-glass-b; --h: dlamp-halo-b; --gd: 1.6s; --fs: .08s; }
+  .dhero-lamp.near.r { --g: dlamp-glass-c; --h: dlamp-halo-c; --gd: 1.3s; --fs: .34s; }
+  .dhero-lamp path[fill="#1a1008"] { animation: var(--g) var(--gd) ease-out calc(var(--fd) + var(--fs)) backwards; }
+  .dhero-lamp svg > g:first-of-type { animation: var(--h) var(--gd) ease-out calc(var(--fd) + var(--fs)) backwards; }
+}
+@keyframes dlamp-glass-b { 0% { opacity: 1; } 10% { opacity: .4; } 16% { opacity: 1; } 30% { opacity: .2; } 36% { opacity: .7; } 50% { opacity: .15; } 58% { opacity: .45; } 78% { opacity: .05; } 100% { opacity: 0; } }
+@keyframes dlamp-halo-b { 0% { opacity: 0; } 10% { opacity: .6; } 16% { opacity: 0; } 30% { opacity: .8; } 36% { opacity: .3; } 50% { opacity: .85; } 58% { opacity: .55; } 78% { opacity: .95; } 100% { opacity: 1; } }
+@keyframes dlamp-glass-c { 0% { opacity: 1; } 22% { opacity: .35; } 30% { opacity: .8; } 46% { opacity: .5; } 70% { opacity: .1; } 100% { opacity: 0; } }
+@keyframes dlamp-halo-c { 0% { opacity: 0; } 22% { opacity: .65; } 30% { opacity: .2; } 46% { opacity: .5; } 70% { opacity: .9; } 100% { opacity: 1; } }
+@keyframes dlamp-glass-d { 0% { opacity: 1; } 38% { opacity: 1; } 50% { opacity: .3; } 56% { opacity: .85; } 66% { opacity: .2; } 74% { opacity: .5; } 88% { opacity: .08; } 100% { opacity: 0; } }
+@keyframes dlamp-halo-d { 0% { opacity: 0; } 38% { opacity: 0; } 50% { opacity: .7; } 56% { opacity: .15; } 66% { opacity: .8; } 74% { opacity: .5; } 88% { opacity: .92; } 100% { opacity: 1; } }
 }
 .dhero .dhero-vignette { z-index: 8; }
 .dhero .dhero-in { z-index: 9; }
