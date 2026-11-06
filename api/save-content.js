@@ -1,11 +1,11 @@
 // api/save-content.js — the only thing allowed to write to Supabase.
-// Reached only after middleware.js's Basic Auth check has already passed,
+// Reached only after middleware.js's session check has already passed,
 // so no separate password check is needed here. Uses the service-role key
 // (server-side env var, never sent to the browser) to upsert the admin's
 // published payload into the site_content table: row 1 is the portfolio
 // (Admin.html), row 2 is the Scaffold page (?page=scaffold, from the Back
 // Room's Scaffold editor). Both rows are public-read; only this writes.
-const SUPABASE_URL = 'https://rodxrkzwpsgeeatmbwku.supabase.co';
+import { SUPABASE_URL } from '../lib/server.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

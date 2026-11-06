@@ -7,13 +7,18 @@
 // endpoint in the Stripe dashboard pointed at /api/stripe-webhook for the
 // checkout.session.completed event, and set STRIPE_WEBHOOK_SECRET in Vercel
 // to the signing secret it gives you.
+//
+// Once an invoice is marked paid, its Payment Link is switched off
+// (lib/stripe.js) so it can't be paid a second time.
 import crypto from 'node:crypto';
-import { sb, sendEmail, NOTIFY_EMAIL } from '../lib/server.js';
+import { sb, sendEmail, NOTIFY_EMAIL, SUPABASE_URL } from '../lib/server.js';
 import { renderEmail } from '../lib/mail.js';
+import { deactivateLink } from '../lib/stripe.js';
 
 export const config = { api: { bodyParser: false } };
 
-const SCAFFOLD_SUPABASE_URL = 'https://rodxrkzwpsgeeatmbwku.supabase.co';
+// Reject signatures older than this, so a captured request can't be replayed later.
+const TOLERANCE_S = 5 * 60;
 
 function readRawBody(req) {
   return new Promise((resolve, reject) => {
@@ -26,15 +31,17 @@ function readRawBody(req) {
 
 // Stripe's signature scheme: header is "t=<timestamp>,v1=<hex hmac>". The
 // signed payload is "<timestamp>.<raw body>", HMAC-SHA256 with the webhook
-// secret, compared with a constant-time check.
+// secret, compared with a constant-time check. Stripe may send several v1
+// signatures (while a secret is being rolled); any one matching is enough.
 function verifyStripeSignature(rawBody, sigHeader, secret) {
   if (!sigHeader) return false;
-  const parts = Object.fromEntries(sigHeader.split(',').map((p) => p.split('=')));
-  if (!parts.t || !parts.v1) return false;
-  const expected = crypto.createHmac('sha256', secret).update(`${parts.t}.${rawBody}`).digest('hex');
-  const a = Buffer.from(expected, 'hex');
-  const b = Buffer.from(parts.v1, 'hex');
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
+  const pairs = sigHeader.split(',').map((p) => { const i = p.indexOf('='); return [p.slice(0, i), p.slice(i + 1)]; });
+  const t = (pairs.find(([k]) => k === 't') || [])[1];
+  const sigs = pairs.filter(([k]) => k === 'v1').map(([, v]) => v);
+  if (!t || !/^\d+$/.test(t) || !sigs.length) return false;
+  if (Math.abs(Date.now() / 1000 - Number(t)) > TOLERANCE_S) return false;
+  const a = Buffer.from(crypto.createHmac('sha256', secret).update(`${t}.${rawBody}`).digest('hex'), 'hex');
+  return sigs.some((v) => { const b = Buffer.from(v, 'hex'); return a.length === b.length && crypto.timingSafeEqual(a, b); });
 }
 
 export default async function handler(req, res) {
@@ -68,7 +75,7 @@ export default async function handler(req, res) {
     if (paymentLinkId) {
       let paid = [];
       try {
-        const r = await fetch(`${SCAFFOLD_SUPABASE_URL}/rest/v1/invoices?stripe_payment_link_id=eq.${encodeURIComponent(paymentLinkId)}&status=neq.paid`, {
+        const r = await fetch(`${SUPABASE_URL}/rest/v1/invoices?stripe_payment_link_id=eq.${encodeURIComponent(paymentLinkId)}&status=neq.paid`, {
           method: 'PATCH',
           headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
           body: JSON.stringify({ status: 'paid', paid_at: new Date().toISOString(), stripe_payment_intent_id: session.payment_intent || null }),
@@ -82,6 +89,7 @@ export default async function handler(req, res) {
       // Workflow: note the payment on the job, tell Carter, and move the job
       // to "paid" once it is approved and nothing is left unpaid. Best effort:
       // the invoice is already marked paid above.
+      await deactivateLink(paymentLinkId);
       for (const inv of paid) {
         if (!inv.job_id) continue;
         try {
@@ -89,13 +97,14 @@ export default async function handler(req, res) {
           if (!job) continue;
           const amount = '$' + Number(inv.amount).toFixed(2);
           await sb('job_events', { method: 'POST', body: { job_id: job.id, kind: 'paid', who: 'client', body: `Paid ${inv.label || 'invoice'}: ${amount}` } });
-          const open = await sb(`invoices?job_id=eq.${job.id}&status=neq.paid&select=id`);
+          // Drafts were never sent, so they don't hold a job open.
+          const open = await sb(`invoices?job_id=eq.${job.id}&status=in.(sent,overdue)&select=id`);
           const done = !!job.approved_at && open.length === 0;
           await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { last_activity_at: new Date().toISOString(), ...(done ? { stage: 'paid' } : {}) } });
           const all = await sb(`invoices?job_id=eq.${job.id}&select=amount,status`).catch(() => []);
           const money0 = (n) => '$' + Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
           const paidSoFar = all.filter((i) => i.status === 'paid').reduce((s, i) => s + Number(i.amount || 0), 0);
-          const toCome = all.filter((i) => i.status !== 'paid' && i.status !== 'void').reduce((s, i) => s + Number(i.amount || 0), 0);
+          const toCome = all.filter((i) => i.status === 'sent' || i.status === 'overdue').reduce((s, i) => s + Number(i.amount || 0), 0);
           const first = String(job.name || 'Your client').split(' ')[0];
           const { html, text } = renderEmail({
             tone: 'internal', eyebrow: done ? 'Paid in full' : 'Payment received',

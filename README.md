@@ -57,7 +57,7 @@ The one build step: after editing `design.jsx`, run `npm install` (first
 time) and `npm run build:design`, and commit the regenerated `design.js`.
 
 Vercel's Hobby plan allows **12 serverless functions**; every file in
-`api/` counts. There are 11. Put shared code in `lib/`, not `api/`.
+`api/` counts. There are 10. Put shared code in `lib/`, not `api/`.
 
 ## Editing content
 
@@ -89,7 +89,7 @@ Variables — set directly there, never committed):
 | `NOTIFY_EMAIL` | `lib/server.js` | Optional. Where new briefs and failure alerts go (default car.groff@gmail.com) |
 | `ANTHROPIC_API_KEY` | `lib/brief-triage.js` | AI triage on incoming briefs. Without it, briefs still work and the Hub just shows "No AI triage yet" |
 | `TRIAGE_MODEL`, `TRIAGE_DAILY_CAP` | `lib/brief-triage.js` | Optional. Model override, and the daily cap on automatic triage (default 40) |
-| `STRIPE_SECRET_KEY` | `api/create-invoice-link.js` | Turns a draft invoice into a Stripe Payment Link |
+| `STRIPE_SECRET_KEY` | `lib/stripe.js` (from `api/job.js`, `api/stripe-webhook.js`, `api/scaffold-write.js`) | Makes a one-payment Stripe Payment Link when the client presses Pay, and switches it off once the invoice is paid |
 | `STRIPE_WEBHOOK_SECRET` | `api/stripe-webhook.js` | Set. The Stripe dashboard side (endpoint → `/api/stripe-webhook`, event `checkout.session.completed`) is still to do; until then use "Mark paid" |
 
 The Supabase project URL and the publishable (anon) key in `data.jsx` only

@@ -135,3 +135,9 @@ create table if not exists brief_events (
   ip text
 );
 alter table brief_events enable row level security;
+
+-- 2026-11-06 audit (supabase/migrations/20261106b_audit_fixes.sql):
+-- site_content allows ids 1 (portfolio) and 2 (the Scaffold page); the unused
+-- design_briefs columns ip_hash, details and triage_at were dropped; the
+-- jobs.brief_id, jobs.client_id and design_briefs.job_id foreign keys are
+-- indexed.

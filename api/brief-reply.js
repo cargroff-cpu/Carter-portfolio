@@ -8,7 +8,10 @@
 //                      the client from the verified domain, mark the brief
 //                      answered, log the reply on the lead's thread
 //   action 'reject'  — mark the brief answered with triage status
-//                      'rejected'; sends nothing
+//                      'rejected' and close its job (if it never got past
+//                      New), so it leaves the board; sends nothing
+// 'send' and 'reject' work with or without an AI triage (the Hub has a plain
+// reply box for briefs that have none).
 import { sb, sendEmail, parseBody, logEvent, NOTIFY_EMAIL, FROM_VERIFIED } from '../lib/server.js';
 import { triageAndSave } from '../lib/brief-triage.js';
 import { renderEmail, jobUrl } from '../lib/mail.js';
@@ -58,6 +61,18 @@ export default async function handler(req, res) {
     await sb(`design_briefs?id=eq.${brief.id}`, {
       method: 'PATCH', body: { status: 'answered', answered_at: now, triage: { ...triage, status: 'rejected', decided_at: now } },
     });
+    if (brief.job_id) {
+      try {
+        const closed = await sb(`jobs?id=eq.${brief.job_id}&stage=eq.new`, {
+          method: 'PATCH', prefer: 'return=representation', body: { stage: 'closed', updated_at: now, last_activity_at: now },
+        });
+        if (closed && closed.length) {
+          await sb('job_events', { method: 'POST', body: { job_id: brief.job_id, kind: 'note', who: 'me', body: 'No reply needed. Job closed.' } });
+        }
+      } catch (e) {
+        await logEvent({ kind: 'reject_close_job', ok: false, reference: brief.reference, detail: e.message.slice(0, 300) });
+      }
+    }
     await logEvent({ kind: 'reply_rejected', ok: true, reference: brief.reference });
     res.status(200).json({ ok: true });
     return;

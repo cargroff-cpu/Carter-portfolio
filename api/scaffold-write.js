@@ -5,7 +5,8 @@
 // Reached only after middleware.js's cookie check has already passed. Uses
 // the service-role key (server-side env var, never sent to the browser).
 // Whitelisted tables only.
-const SCAFFOLD_SUPABASE_URL = 'https://rodxrkzwpsgeeatmbwku.supabase.co';
+import { SUPABASE_URL as SCAFFOLD_SUPABASE_URL } from '../lib/server.js';
+import { deactivateLink } from '../lib/stripe.js';
 // Files, client actions and emails go through api/job.js; plain edits
 // (a job's title, billing or notes, the proposal's lines, a client, an
 // invoice, a Docket task) come through here.
@@ -64,6 +65,21 @@ export default async function handler(req, res) {
   try {
     // A row with an id updates that record; without one, inserts a new row.
     const isUpdate = !!row.id;
+
+    // An invoice whose amount changes can't keep a Payment Link made for the
+    // old amount: switch the old link off and clear it, so the client's next
+    // Pay makes a fresh one for the right amount.
+    if (table === 'invoices' && isUpdate && row.amount != null) {
+      const cur = await fetch(`${SCAFFOLD_SUPABASE_URL}/rest/v1/invoices?id=eq.${encodeURIComponent(row.id)}&select=amount,stripe_payment_link_id`, {
+        headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+      }).then((r) => (r.ok ? r.json() : [])).catch(() => []);
+      const old = cur && cur[0];
+      if (old && Number(old.amount) !== Number(row.amount) && old.stripe_payment_link_id) {
+        await deactivateLink(old.stripe_payment_link_id);
+        row.stripe_url = null;
+        row.stripe_payment_link_id = null;
+      }
+    }
     const url = isUpdate
       ? `${SCAFFOLD_SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(row.id)}`
       : `${SCAFFOLD_SUPABASE_URL}/rest/v1/${table}`;

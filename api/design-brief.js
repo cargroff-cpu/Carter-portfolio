@@ -6,7 +6,7 @@
 // lead:
 //   1. Spam checks: hidden honeypot field + per-IP rate limit.
 //   2. Email Carter the FULL brief first (with its reference number).
-//   3. Save the brief + a matching lead to Supabase, then any attached files.
+//   3. Save the brief + a job at "new" to Supabase, then any attached files.
 //   4. AI triage (lib/brief-triage.js): prepares a summary and draft reply
 //      for approval in the Business Hub. Never sends anything itself.
 //   5. Confirmation email to the client (only once RESEND_FROM is a verified
