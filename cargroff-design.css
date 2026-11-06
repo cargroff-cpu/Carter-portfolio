@@ -461,6 +461,11 @@ a:hover { color: var(--amber-lit); }
 .dfootlinks a:hover { color: var(--ink); }
 .dfootsub { color: var(--ink-mute); font-size: 16px; margin: 8px 0 0; font-style: italic; }
 
+/* The plain HTML inside #root (for search engines, link previews and no-JS) must not
+   flash up while React and design.js load. With JS on it stays invisible; if React has
+   not replaced it after 6 seconds (script blocked or offline) it fades in as a fallback. */
+.js #root > main.cgd { opacity: 0; animation: dfallback .4s ease 6s forwards; }
+@keyframes dfallback { to { opacity: 1; } }
 /* ── scroll reveal: hidden only once the page's script has set html.js ── */
 /* the drafts are dealt onto the sheet the first time it comes into view */
 .js .dsheet.up .dprint { transition: transform .8s cubic-bezier(.16, 1, .3, 1), opacity .5s ease, border-color .2s, box-shadow .2s; }
