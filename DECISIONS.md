@@ -746,3 +746,24 @@ behind the same login (middleware.js) and logout-on-close.
 
 - `lib/mail.js` now renders a dark card (warm near-black, cream type, amber accents): an amber band on top, a crest header with "The Scaffold, by Carter Groff", a large heading with an amber rule, an amber button, and a darker footer with the sign-off. It declares `color-scheme: dark` and uses `bgcolor` attributes so mail apps keep it dark.
 - All text is cream or soft tan on the dark surface (7:1 or better), links are lit amber and underlined. Still tables and inline styles only; everything typed is escaped. The Backroom's preview matches.
+
+## Scaffold on phones: the desktop page, fitted
+
+Carter found the phone page crowded and in your face. Four bigger rethinks
+(merged sections, chapters, a contents list) were turned down in favour of
+keeping the desktop page as it is and only fitting it to a phone. Phone-only
+rules (899px and under) in cargroff-design.css, desktop unchanged:
+
+- 24px side margins instead of 16px.
+- A slimmer header whose Start a brief is an outline, so the hero's is the
+  one filled button on screen. Section buttons are outlines on phones too.
+- The hero is sized to its content, not the screen, and the headline breaks
+  between its sentences ("Design that looks right." / "Tools that work
+  right."), one line each from 360px up. design.jsx wraps each sentence in a
+  span; desktop reads exactly as before.
+- Headings one size down, body text 16px.
+- The two halves of What each half looks like are split by a hairline; the
+  drafts sheet and the terminal are inset, with a smaller terminal font.
+- The dial sits above its steps (as it sits beside them on desktop), smaller.
+- The menu cards are inset from the edges with tighter type, so most rows fit
+  on one line; the portrait is capped at 320px.

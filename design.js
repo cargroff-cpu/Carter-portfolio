@@ -1162,7 +1162,11 @@ function Hero({
     className: "dhero-medal"
   }, React.createElement(Medallion, null)), React.createElement("h1", {
     className: "ddisplay"
-  }, SITE.headline), React.createElement("p", {
+  }, String(SITE.headline).split(/(?<=[.!?])\s+/).map((s, i, a) => React.createElement(React.Fragment, {
+    key: i
+  }, React.createElement("span", {
+    className: "dh1-line"
+  }, s), i < a.length - 1 ? ' ' : null))), React.createElement("p", {
     className: "ddeck"
   }, SITE.deck), React.createElement("div", {
     className: "dacts"

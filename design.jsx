@@ -230,7 +230,8 @@ function Hero({ onAddNeed }) {
       ))}
       <div className="dwrap dhero-in">
         <div className="dhero-medal"><Medallion /></div>
-        <h1 className="ddisplay">{SITE.headline}</h1>
+        {/* one span per sentence, so a phone breaks the headline between ideas, not mid-idea */}
+        <h1 className="ddisplay">{String(SITE.headline).split(/(?<=[.!?])\s+/).map((s, i, a) => <React.Fragment key={i}><span className="dh1-line">{s}</span>{i < a.length - 1 ? ' ' : null}</React.Fragment>)}</h1>
         <p className="ddeck">{SITE.deck}</p>
         <div className="dacts">
           <a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('design'); }}>Start a brief</a>

@@ -651,3 +651,78 @@ a:hover { color: var(--amber-lit); }
 #faq .dfaq summary { font-family: var(--ui); font-size: 15px; font-weight: 500; color: var(--ink-soft); }
 #faq .dfaq details[open] summary { color: var(--ink); }
 #faq .dfaq p { margin: 8px 0 2px; font-size: 14px; line-height: 1.6; color: var(--ink-mute); }
+
+/* ── Phones: the desktop page, fitted to a small screen ──
+   Same sections, order and look as desktop. Only the fit changes: wider side
+   margins, a quieter header, one size down on headings, the dial above its
+   steps and smaller, the cards and terminal inset so nothing runs edge to edge,
+   and section buttons as outlines so the hero's is the one filled button. */
+@media (max-width: 899px) {
+  .dwrap { padding: 0 24px; }
+  .dnavin { padding: 10px 24px; gap: 12px; }
+  .dbrand img { width: 24px; }
+  .dbrand b { font-size: 18px; }
+  .dsub { font-size: 12px; margin-top: 1px; }
+  .dnav .p-btn { min-height: 38px; padding: 0 14px; font-size: 14px; background: transparent; color: var(--ink); border-color: var(--rule-strong); }
+  .dnav .p-btn:hover { background: transparent; color: var(--amber-lit); border-color: var(--amber); }
+
+  .dhero { min-height: 0; padding: 56px 0 64px; }
+  .dhero-medal { width: 156px; margin-bottom: 28px; }
+  .dhero h1.ddisplay { font-size: clamp(31px, 8.6vw, 40px); line-height: 1.04; max-width: none; }
+  .dh1-line { display: block; }
+  .dh1-line + .dh1-line { margin-top: .12em; }
+  .dhero .ddeck { font-size: 16px; max-width: 21em; margin-top: 18px; }
+  .dhero .dacts { margin-top: 28px; }
+
+  .dsection h2.ddisplay { font-size: clamp(30px, 8.2vw, 36px); }
+  .dshead { margin-bottom: 32px; }
+  .dp, .dsteplist p { font-size: 16px; line-height: 1.65; }
+  .ddeck { font-size: 17px; }
+
+  /* What each half looks like: the two halves read as two stops, a hairline between */
+  .dduo { gap: 0; }
+  .ddoor { gap: 16px; }
+  .ddoor + .ddoor { margin-top: 48px; padding-top: 44px; border-top: 1px solid var(--rule); }
+  .ddoor h3.ddisplay { font-size: 26px; }
+  .dsheet { padding: 12px; margin: 0 4px; }
+  .dhv-drafts { gap: 8px; }
+  .dprint-n { font-size: 20px; padding: 6px 10px; }
+  .dhv-d { padding: 10px; }
+  .dsession { min-height: 0; margin: 0 4px; padding: 18px 16px; font-size: 12.5px; line-height: 1.85; }
+  .dcap { font-size: 14px; margin: 0; }
+  .ddoor .p-btn, #make .dmenu-btn { min-height: 44px; }
+  .ddoor .p-btn { background: transparent; color: var(--ink); border-color: var(--rule-strong); }
+  .ddoor .p-btn:hover { background: transparent; color: var(--amber-lit); border-color: var(--amber); }
+
+  /* How it works: the dial sits above its steps, as it sits beside them on desktop */
+  .ddialwrap { gap: 36px; }
+  .ddial { order: 0; width: min(76%, 280px); }
+  .dstep-t { font-size: 24px; }
+  .dstep-n { font-size: 22px; }
+  .dsteplist button { padding: 14px 0; gap: 16px; }
+  .dsteplist p { padding: 0 0 18px calc(1em + 16px); }
+
+  /* Two kinds of work: the card laid on the table with room around it */
+  .dmake { padding: 0; }
+  .dmaketabs { margin: -8px 0 28px; }
+  .dmenu, .dmenu.dauto { margin: 0 8px; padding: 10px; transform: rotate(-.5deg); }
+  .dmenu-in { padding: 24px 16px 22px; }
+  .dmenu-crest { width: 40px; }
+  .dmenu-h { font-size: 36px; }
+  .dmenu-tag { font-size: 15px; }
+  .dmenu-orn { margin: 16px auto 8px; }
+  .dmenu-list a { padding: 10px 0; gap: 6px; }
+  .dmenu-name b { font-size: 18px; }
+  .dmenu-name small { font-size: 13.5px; }
+  .dmenu-dots { flex-basis: 12px; min-width: 12px; }
+  .dmenu-turn { font-size: 13.5px; }
+  .dmenu-note { font-size: 15px; min-height: 0; }
+
+  /* I'm Carter: the portrait at a size that leaves room for the words */
+  .dwhyhead { gap: 32px; }
+  .dportrait { max-width: min(100%, 320px); }
+  .drules-k { margin-top: 28px; }
+
+  #brief h2.ddisplay { font-size: clamp(38px, 10vw, 44px); }
+  .dbriefhead { padding-top: 56px; }
+}
