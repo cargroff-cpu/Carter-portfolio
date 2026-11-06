@@ -799,3 +799,13 @@ of it off. Desktop is unchanged.
 Follow-up: the nudge was too much on repeat, so it plays once the first time
 the cards scroll into view (an IntersectionObserver in Make) and never again.
 Then softened again: one slow 12px ease out and back, no bounce.
+
+## 2026-11-06 — Business Hub: the ring is gone, Today is home
+
+Carter: the ring was an extra step. The Business Hub now opens straight on
+Today with the tool sidebar (bottom bar on phones) always showing. Removed the
+Ring launcher, its lamps, the fly-to-sidebar hand-off and the hidden "ghost"
+sidebar (business-hub.jsx), the ring/launch styles (mcc.css, motion.css), and
+motifs.jsx from Business Hub.html (only the ring's lamps used it there). The
+header's back link is "← Backroom" everywhere except a job page ("← Jobs"),
+and the header's Home link is now "Today". Old `#ring` links land on Today.
