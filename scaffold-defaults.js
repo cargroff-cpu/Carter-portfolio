@@ -112,6 +112,10 @@ window.SCAFFOLD_DEFAULTS = {
       "a": "Yes. Besides the pages people see, I build what runs behind them: logins, databases, payments, booking and contact forms that land somewhere useful, and the admin pages you run it from."
     },
     {
+      "q": "What if what I need isn’t listed?",
+      "a": "Ask anyway. The lists are where most people start, not where it ends. Describe what you want in the brief, under Something else, and I’ll tell you how I’d make it, or say so if someone else would do it better."
+    },
+    {
       "q": "Will I need new software?",
       "a": "Not usually. Where I can, I build on what you already use."
     },
