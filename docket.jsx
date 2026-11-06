@@ -211,9 +211,6 @@ function Docket() {
             <img src="assets/antler.png" alt="" />
             <div><b>The Docket</b><span>The Backroom</span></div>
           </a>
-          <nav className="topnav">
-            <a href="/backroom">Backroom</a>
-          </nav>
         </div>
       </header>
       <main>

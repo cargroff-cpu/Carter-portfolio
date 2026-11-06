@@ -1164,7 +1164,6 @@ function BusinessHub() {
           <nav className="topnav">
             <a className="navhome" href="#ring" onClick={(e) => { e.preventDefault(); go('ring'); }} style={tab === 'ring' ? { color: 'var(--text)' } : undefined}>Home</a>
             <a href="/docket">Docket</a>
-            <a href="/backroom">Backroom</a>
           </nav>
         </div>
       </header>
