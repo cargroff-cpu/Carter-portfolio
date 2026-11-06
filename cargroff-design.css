@@ -274,6 +274,7 @@ a:hover { color: var(--amber-lit); }
 .dsection > .dwrap { position: relative; z-index: 1; }
 .dsection.ddeep { background: var(--bg-deep); color: var(--ink); }
 .dshead { max-width: 640px; margin-bottom: clamp(36px, 5vw, 56px); }
+.dlede { font-family: var(--ui); font-size: clamp(16px, 1.6vw, 18px); line-height: 1.5; color: var(--ink-mute); margin: 14px 0 0; }
 .dsection h2.ddisplay { font-size: clamp(36px, 4.6vw, 56px); text-wrap: balance; }
 .dp { margin-top: 16px; font-size: 17px; line-height: 1.7; color: var(--ink-soft); }
 .dduo { display: grid; grid-template-columns: minmax(0, 1fr); gap: 56px; }
