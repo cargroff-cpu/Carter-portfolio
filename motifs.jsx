@@ -117,7 +117,7 @@ function GasLamp({ height = 640, style = {}, out = false, onGlobeClick, variant 
          blob on some Windows/GPU combinations (Opera in particular).
          Outer group fades the whole halo on/off; inner group keeps its flicker. */}
       <g style={halo}>
-      <g transform={variant ? 'translate(0 14)' : undefined}>
+      <g transform={variant ? 'translate(0 22.5)' : undefined}>
         <animate attributeName="opacity"
           values="0.95;0.95;0.6;0.95;0.95;0.7;0.95"
           keyTimes="0;0.45;0.52;0.6;0.82;0.88;1"
@@ -133,10 +133,12 @@ function GasLamp({ height = 640, style = {}, out = false, onGlobeClick, variant 
           {/* A rendered (3D) lamp: assets/lamps/<variant>-lit.webp and -out.webp, drawn
               into the same 200x900 frame as the vector lamp, so every page, halo and
               click target below work unchanged. The dark path is the ignition flicker. */}
-          <image href={`/assets/lamps/${variant}-out.webp`} x="0" y="0" width="200" height="900" preserveAspectRatio="none" />
-          <image href={`/assets/lamps/${variant}-lit.webp`} x="0" y="0" width="200" height="900" preserveAspectRatio="none"
+          {/* the render's plinth ends 8.5 units above its frame; shift it down so the base sits on the floor */}
+          <ellipse cx="100" cy="899" rx="88" ry="6" fill="#000" opacity="0.55" />
+          <image href={`/assets/lamps/${variant}-out.webp`} x="0" y="8.5" width="200" height="900" preserveAspectRatio="none" />
+          <image href={`/assets/lamps/${variant}-lit.webp`} x="0" y="8.5" width="200" height="900" preserveAspectRatio="none"
             style={{ opacity: out ? 0 : 1, transition: `opacity ${out ? 0.3 : 0.5}s ease` }} />
-          <path d="M 70 86 L 130 86 L 122 136 L 78 136 Z" fill="#1a1008" style={{ opacity: 0 }} />
+          <path d="M 70 94.5 L 130 94.5 L 122 144.5 L 78 144.5 Z" fill="#1a1008" style={{ opacity: 0 }} />
         </g>
       ) : (
       <React.Fragment>

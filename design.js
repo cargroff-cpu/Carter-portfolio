@@ -113,7 +113,7 @@ function GasLamp({
   }))), React.createElement("g", {
     style: halo
   }, React.createElement("g", {
-    transform: variant ? 'translate(0 14)' : undefined
+    transform: variant ? 'translate(0 22.5)' : undefined
   }, React.createElement("animate", {
     attributeName: "opacity",
     values: "0.95;0.95;0.6;0.95;0.95;0.7;0.95",
@@ -140,17 +140,24 @@ function GasLamp({
     ry: "150",
     fill: "url(#lamp-halo)",
     opacity: "0.6"
-  }))), variant ? React.createElement("g", null, React.createElement("image", {
+  }))), variant ? React.createElement("g", null, React.createElement("ellipse", {
+    cx: "100",
+    cy: "899",
+    rx: "88",
+    ry: "6",
+    fill: "#000",
+    opacity: "0.55"
+  }), React.createElement("image", {
     href: `/assets/lamps/${variant}-out.webp`,
     x: "0",
-    y: "0",
+    y: "8.5",
     width: "200",
     height: "900",
     preserveAspectRatio: "none"
   }), React.createElement("image", {
     href: `/assets/lamps/${variant}-lit.webp`,
     x: "0",
-    y: "0",
+    y: "8.5",
     width: "200",
     height: "900",
     preserveAspectRatio: "none",
@@ -159,7 +166,7 @@ function GasLamp({
       transition: `opacity ${out ? 0.3 : 0.5}s ease`
     }
   }), React.createElement("path", {
-    d: "M 70 86 L 130 86 L 122 136 L 78 136 Z",
+    d: "M 70 94.5 L 130 94.5 L 122 144.5 L 78 144.5 Z",
     fill: "#1a1008",
     style: {
       opacity: 0
