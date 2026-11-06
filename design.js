@@ -1645,6 +1645,25 @@ function Make({
   onAddNeed
 }) {
   const [show, setShow] = React.useState('design');
+  const track = React.useRef(null);
+  const onScroll = () => {
+    const el = track.current;
+    if (!el || !el.children[1]) return;
+    const step = el.children[1].offsetLeft - el.children[0].offsetLeft;
+    const i = Math.round(el.scrollLeft / Math.max(step, 1));
+    setShow(i >= 1 ? 'automation' : 'design');
+  };
+  const go = v => {
+    const el = track.current;
+    if (!el) return;
+    setShow(v);
+    const card = el.children[v === 'automation' ? 1 : 0];
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollTo({
+      left: card.offsetLeft - el.children[0].offsetLeft,
+      behavior: calm ? 'auto' : 'smooth'
+    });
+  };
   return React.createElement("section", {
     id: "make",
     className: "dsection dplain"
@@ -1664,9 +1683,11 @@ function Make({
     role: "tab",
     "aria-selected": show === v,
     className: 'dlane' + (show === v ? ' on' : '') + (v === 'automation' ? ' auto' : ''),
-    onClick: () => setShow(v)
+    onClick: () => go(v)
   }, label))), React.createElement("div", {
-    className: 'dduo dmake show-' + show
+    className: "dduo dmake",
+    ref: track,
+    onScroll: onScroll
   }, React.createElement(Shelf, {
     lane: "design",
     label: "Design",
@@ -1683,7 +1704,11 @@ function Make({
     items: TOOL_SERVICES,
     cta: "Start a tools brief",
     onAddNeed: onAddNeed
-  })), React.createElement("p", {
+  })), React.createElement("button", {
+    type: "button",
+    className: "dswipehint",
+    onClick: () => go(show === 'design' ? 'automation' : 'design')
+  }, show === 'design' ? 'Swipe for Tools \u2192' : '\u2190 Swipe for Design'), React.createElement("p", {
     className: "dany up"
   }, "These are just examples. Have something else in mind? I can make that happen too."), WORK.length > 0 && React.createElement(React.Fragment, null, React.createElement("div", {
     className: "dworkhead"

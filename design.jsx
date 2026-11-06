@@ -528,8 +528,24 @@ function Shelf({ lane, label, title, blurb, items, cta, onAddNeed }) {
 }
 
 function Make({ onAddNeed }) {
-  // On a phone one card shows at a time, chosen with the Design | Tools switch.
+  // On a phone the two cards sit side by side in a swipeable row (the next one
+  // peeks in from the edge). The Design | Tools switch follows the swipe and
+  // also jumps to a card when tapped.
   const [show, setShow] = React.useState('design');
+  const track = React.useRef(null);
+  const onScroll = () => {
+    const el = track.current; if (!el || !el.children[1]) return;
+    const step = el.children[1].offsetLeft - el.children[0].offsetLeft;
+    const i = Math.round(el.scrollLeft / Math.max(step, 1));
+    setShow(i >= 1 ? 'automation' : 'design');
+  };
+  const go = (v) => {
+    const el = track.current; if (!el) return;
+    setShow(v);
+    const card = el.children[v === 'automation' ? 1 : 0];
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollTo({ left: card.offsetLeft - el.children[0].offsetLeft, behavior: calm ? 'auto' : 'smooth' });
+  };
   return (
     <section id="make" className="dsection dplain">
       <div className="dwrap">
@@ -539,10 +555,10 @@ function Make({ onAddNeed }) {
         <div className="dmaketabs" role="tablist" aria-label="Kind of work">
           {[['design', 'Design'], ['automation', 'Tools']].map(([v, label]) => (
             <button key={v} type="button" role="tab" aria-selected={show === v}
-              className={'dlane' + (show === v ? ' on' : '') + (v === 'automation' ? ' auto' : '')} onClick={() => setShow(v)}>{label}</button>
+              className={'dlane' + (show === v ? ' on' : '') + (v === 'automation' ? ' auto' : '')} onClick={() => go(v)}>{label}</button>
           ))}
         </div>
-        <div className={'dduo dmake show-' + show}>
+        <div className="dduo dmake" ref={track} onScroll={onScroll}>
           <Shelf lane="design" label="Design" title="What your customers see"
             blurb="Three directions, you pick one, I finish it."
             items={DESIGN_SERVICES} cta="Start a design brief" onAddNeed={onAddNeed} />
@@ -550,6 +566,9 @@ function Make({ onAddNeed }) {
             blurb="Proven by hand first. Quoted after a short brief."
             items={TOOL_SERVICES} cta="Start a tools brief" onAddNeed={onAddNeed} />
         </div>
+        <button type="button" className="dswipehint" onClick={() => go(show === 'design' ? 'automation' : 'design')}>
+          {show === 'design' ? 'Swipe for Tools \u2192' : '\u2190 Swipe for Design'}
+        </button>
         <p className="dany up">These are just examples. Have something else in mind? I can make that happen too.</p>
         {WORK.length > 0 && (
           <React.Fragment>

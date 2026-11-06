@@ -419,12 +419,10 @@ a:hover { color: var(--amber-lit); }
 .js .dmenu.dauto.up { transition-delay: .12s; }
 @keyframes dshelf-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 /* on a phone the two cards sit behind a Design | Tools switch */
-.dmaketabs { display: none; }
+.dmaketabs, .dswipehint { display: none; }
 @media (max-width: 899px) {
   .dmaketabs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); margin: -12px 0 24px; }
-  .dmake.show-design .dhalf-sec.dauto, .dmake.show-automation .dhalf-sec:not(.dauto) { display: none; }
   .dmake .dhalf-sec { animation: dshelf-in .35s cubic-bezier(.16, 1, .3, 1); }
-  .dmenu, .dmenu.dauto { transform: rotate(-.6deg); }
   .dmenu-name b { font-size: 20px; }
   .dmenu-turn { font-size: 15px; }
 }
@@ -708,9 +706,16 @@ a:hover { color: var(--amber-lit); }
   .dsteplist p { padding: 0 0 18px calc(1em + 16px); }
 
   /* Two kinds of work: the card laid on the table with room around it */
-  .dmake { padding: 0; }
-  .dmaketabs { margin: -8px 0 28px; }
-  .dmenu, .dmenu.dauto { margin: 0 8px; padding: 10px; transform: rotate(-.5deg); }
+  /* a swipe row: both cards side by side, the next one peeking in from the edge */
+  .dmaketabs { margin: -8px 0 20px; }
+  .dmake { display: grid; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 84%; gap: 14px; align-items: stretch; margin: 0 -24px; padding: 8px 24px 40px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scroll-padding-inline: 24px; overscroll-behavior-x: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .dmake::-webkit-scrollbar { display: none; }
+  .dmake .dhalf-sec { scroll-snap-align: start; animation: none; min-width: 0; }
+  .js .dmake .dmenu.up:not(.shown), .js .dmake .dmenu.dauto.up:not(.shown) { opacity: 1; transform: rotate(-.5deg); }
+  .dmenu, .dmenu.dauto { margin: 0; padding: 10px; transform: rotate(-.5deg); }
+  .dmenu-in { height: 100%; }
+  .dswipehint { display: block; margin: -22px auto 0; padding: 12px 16px; background: none; border: 0; cursor: pointer; font-family: var(--ui); font-size: 14px; font-weight: 500; color: var(--amber); }
+  .dswipehint:hover { color: var(--amber-lit); }
   .dmenu-in { padding: 24px 16px 22px; }
   .dmenu-crest { width: 40px; }
   .dmenu-h { font-size: 36px; }

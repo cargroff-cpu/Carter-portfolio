@@ -776,3 +776,11 @@ behind you (a scroll check in Nav, phone CSS only), and "See the work" is a
 quiet text link. The buttons under each example and inside the menu card are
 hidden on phones (the card's rows and the header still open the brief).
 Desktop keeps every button.
+
+### Two kinds of work: a swipe on phones
+
+The two menu cards (Design, Tools) now sit side by side in a snap-scrolling
+row on phones, each 84% wide so the next card peeks in from the edge. The
+Design | Tools switch follows the swipe and jumps to a card when tapped, and
+a hint line under the row ("Swipe for Tools" / "Swipe for Design") flips the
+card too. Desktop still shows both cards in two columns.
