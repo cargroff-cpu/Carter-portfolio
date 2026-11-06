@@ -1309,9 +1309,37 @@ function sealArc(a, r) {
 const SEAL_TRACK = 2 * Math.PI * 128;
 function Dial() {
   const [at, setAt] = React.useState(0);
+  const [auto, setAuto] = React.useState(true);
+  const [seen, setSeen] = React.useState(false);
+  const [held, setHeld] = React.useState(false);
+  const box = React.useRef(null);
+  const pick = i => {
+    setAuto(false);
+    setAt(i);
+  };
+  React.useEffect(() => {
+    const el = box.current;
+    if (!el || !('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver(es => setSeen(es[0].isIntersecting), {
+      threshold: 0.4
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  React.useEffect(() => {
+    if (!auto || !seen || held) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const t = setInterval(() => setAt(a => (a + 1) % 4), 3600);
+    return () => clearInterval(t);
+  }, [auto, seen, held]);
   return React.createElement("section", {
     id: "how",
-    className: "dsection dwood dpanel"
+    ref: box,
+    className: "dsection dwood dpanel",
+    onMouseEnter: () => setHeld(true),
+    onMouseLeave: () => setHeld(false),
+    onFocus: () => setHeld(true),
+    onBlur: () => setHeld(false)
   }, React.createElement("div", {
     className: "dsec-candle",
     "aria-hidden": "true"
@@ -1345,21 +1373,26 @@ function Dial() {
   }), HOW_STEPS.map(([title], i) => React.createElement("g", {
     key: title,
     className: 'dseal-name' + (at === i ? ' on' : ''),
-    onClick: () => setAt(i)
+    onClick: () => pick(i)
   }, React.createElement("text", null, React.createElement("textPath", {
     href: '#dseal-' + i,
     startOffset: "50%",
     textAnchor: "middle"
-  }, title)))), [45, 135, 225, 315].map(a => {
+  }, title)))), React.createElement("g", {
+    className: "dseal-dots"
+  }, [45, 135, 225, 315].map((a, k) => {
     const [x, y] = sealPt(163, a);
     return React.createElement("circle", {
       key: a,
       className: "dseal-dot",
       cx: x,
       cy: y,
-      r: "2"
+      r: "2",
+      style: {
+        animationDelay: k * 0.9 + 's'
+      }
     });
-  }), React.createElement("circle", {
+  })), React.createElement("circle", {
     className: "dseal-track",
     cx: "200",
     cy: "200",
@@ -1378,7 +1411,7 @@ function Dial() {
     return React.createElement("g", {
       key: i,
       className: 'dseal-stop' + (i <= at ? ' done' : ''),
-      onClick: () => setAt(i)
+      onClick: () => pick(i)
     }, React.createElement("rect", {
       x: x - 5,
       y: y - 5,
@@ -1422,7 +1455,7 @@ function Dial() {
     type: "button",
     "aria-expanded": at === i,
     "aria-controls": 'dstep-' + i,
-    onClick: () => setAt(i)
+    onClick: () => pick(i)
   }, React.createElement("span", {
     className: "dstep-n"
   }, i + 1), React.createElement("span", {

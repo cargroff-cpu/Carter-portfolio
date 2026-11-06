@@ -1,7 +1,7 @@
 // scaffold-hub.jsx — The Scaffold's entry point, recreated in React from
 // the Scaffold Hub mock. The sconce stays as the room's light
-// (Wick itself is retired, so it is decoration only) and the page routes to the Portfolio Backend (Admin.html), the Scaffold
-// Backend (/backroom/scaffold), the Business Hub and the Docket.
+// (Wick itself is retired, so it is decoration only) and the page routes to the Business Hub first, one Website Backends door that asks
+// which site (Portfolio: Admin.html, Scaffold: /backroom/scaffold), and the Docket.
 const { fetchDocketTasks } = window.CC;
 
 function hail() {
@@ -57,6 +57,7 @@ function signOut() {
 }
 
 function ScaffoldHub() {
+  const [picking, setPicking] = React.useState(false);
   const [locked, setLocked] = React.useState(() => new URLSearchParams(location.search).get('lock') === '1');
   const [docketLine, setDocketLine] = React.useState('Open the board');
 
@@ -67,6 +68,13 @@ function ScaffoldHub() {
       if (open.length) setDocketLine(open.length + ' open' + (now ? ', ' + now + ' now' : ''));
     }).catch(() => {});
   }, []);
+
+  React.useEffect(() => {
+    if (!picking) return;
+    const onKey = (e) => { if (e.key === 'Escape') setPicking(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [picking]);
 
   React.useEffect(() => {
     if (!locked) return;
@@ -101,24 +109,18 @@ function ScaffoldHub() {
         <h1 className="greet">{hail()}, <em>Carter</em>.</h1>
 
         <div className="pair">
-          <a className="door" href="Admin.html">
-            <span className="no">01</span>
-            <h2>Portfolio<br />Backend</h2>
-            <p>Copy, work, resume, travel pins, everything cargroff.com reads from.</p>
-            <span className="arrow">→</span>
-          </a>
-          <a className="door" href="/backroom/scaffold">
-            <span className="no">02</span>
-            <h2>Scaffold<br />Backend</h2>
-            <p>Services, prices, How it works, questions and copy for scaffold.cargroff.com.</p>
-            <span className="arrow">→</span>
-          </a>
           <a className="door" href="/business">
-            <span className="no">03</span>
+            <span className="no">01</span>
             <h2>Business<br />Hub</h2>
             <p>Clients, leads, projects, invoices, notes, and the Design-briefs inbox.</p>
             <span className="arrow">→</span>
           </a>
+          <button type="button" className="door" onClick={() => setPicking(true)} aria-haspopup="dialog">
+            <span className="no">02</span>
+            <h2>Website<br />Backends</h2>
+            <p>Edit the copy and content for cargroff.com or scaffold.cargroff.com.</p>
+            <span className="arrow">→</span>
+          </button>
         </div>
 
         <div className="aside">
@@ -131,6 +133,28 @@ function ScaffoldHub() {
           <button onClick={signOut}>Sign out</button>
         </div>
       </div>
+      {picking && !locked && (
+        <div className="pick" role="dialog" aria-modal="true" aria-label="Which website?" onMouseDown={(e) => { if (e.target === e.currentTarget) setPicking(false); }}>
+          <div className="pickbox">
+            <div className="plaque" style={{ margin: 0, animation: 'none' }}>Which website?</div>
+            <div className="pickpair">
+              <a className="door" href="Admin.html" autoFocus>
+                <span className="no">cargroff.com</span>
+                <h2>Portfolio</h2>
+                <p>Copy, work, resume and travel pins.</p>
+                <span className="arrow">→</span>
+              </a>
+              <a className="door" href="/backroom/scaffold">
+                <span className="no">scaffold.cargroff.com</span>
+                <h2>Scaffold</h2>
+                <p>Services, prices, How it works, questions and copy.</p>
+                <span className="arrow">→</span>
+              </a>
+            </div>
+            <button type="button" className="pickx" onClick={() => setPicking(false)}>Close</button>
+          </div>
+        </div>
+      )}
       {locked && <LockScreen onUnlock={() => setLocked(false)} />}
     </React.Fragment>
   );

@@ -336,8 +336,26 @@ const SEAL_TRACK = 2 * Math.PI * 128;
 
 function Dial() {
   const [at, setAt] = React.useState(0);
+  const [auto, setAuto] = React.useState(true);   // the needle walks the steps until you take over
+  const [seen, setSeen] = React.useState(false);
+  const [held, setHeld] = React.useState(false);  // hovering or focusing inside pauses it
+  const box = React.useRef(null);
+  const pick = (i) => { setAuto(false); setAt(i); };
+  React.useEffect(() => {
+    const el = box.current;
+    if (!el || !('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver((es) => setSeen(es[0].isIntersecting), { threshold: 0.4 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  React.useEffect(() => {
+    if (!auto || !seen || held) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const t = setInterval(() => setAt((a) => (a + 1) % 4), 3600);
+    return () => clearInterval(t);
+  }, [auto, seen, held]);
   return (
-    <section id="how" className="dsection dwood dpanel">
+    <section id="how" ref={box} className="dsection dwood dpanel" onMouseEnter={() => setHeld(true)} onMouseLeave={() => setHeld(false)} onFocus={() => setHeld(true)} onBlur={() => setHeld(false)}>
       <div className="dsec-candle" aria-hidden="true" />
       <div className="dwrap ddialwrap">
         <div className="ddial up" aria-hidden="true">
@@ -349,14 +367,16 @@ function Dial() {
             <circle className="dseal-rule" cx="200" cy="200" r="184" />
             <circle className="dseal-rule" cx="200" cy="200" r="142" />
             {HOW_STEPS.map(([title], i) => (
-              <g key={title} className={'dseal-name' + (at === i ? ' on' : '')} onClick={() => setAt(i)}>
+              <g key={title} className={'dseal-name' + (at === i ? ' on' : '')} onClick={() => pick(i)}>
                 <text><textPath href={'#dseal-' + i} startOffset="50%" textAnchor="middle">{title}</textPath></text>
               </g>
             ))}
-            {[45, 135, 225, 315].map((a) => {
-              const [x, y] = sealPt(163, a);
-              return <circle key={a} className="dseal-dot" cx={x} cy={y} r="2" />;
-            })}
+            <g className="dseal-dots">
+              {[45, 135, 225, 315].map((a, k) => {
+                const [x, y] = sealPt(163, a);
+                return <circle key={a} className="dseal-dot" cx={x} cy={y} r="2" style={{ animationDelay: k * 0.9 + 's' }} />;
+              })}
+            </g>
             <circle className="dseal-track" cx="200" cy="200" r="128" />
             <circle className="dseal-done" cx="200" cy="200" r="128" transform="rotate(-90 200 200)"
               strokeDasharray={SEAL_TRACK} strokeDashoffset={SEAL_TRACK * (1 - at / 4)} />
@@ -364,7 +384,7 @@ function Dial() {
               const [x, y] = sealPt(128, i * 90);
               const [nx, ny] = sealPt(98, i * 90);
               return (
-                <g key={i} className={'dseal-stop' + (i <= at ? ' done' : '')} onClick={() => setAt(i)}>
+                <g key={i} className={'dseal-stop' + (i <= at ? ' done' : '')} onClick={() => pick(i)}>
                   <rect x={x - 5} y={y - 5} width="10" height="10" transform={'rotate(45 ' + x + ' ' + y + ')'} />
                   <text x={nx} y={ny} dy="0.35em" textAnchor="middle">{i + 1}</text>
                 </g>
@@ -383,7 +403,7 @@ function Dial() {
           <ol className="dsteplist">
             {HOW_STEPS.map(([title, body], i) => (
               <li key={title} className={at === i ? 'on' : ''}>
-                <button type="button" aria-expanded={at === i} aria-controls={'dstep-' + i} onClick={() => setAt(i)}>
+                <button type="button" aria-expanded={at === i} aria-controls={'dstep-' + i} onClick={() => pick(i)}>
                   <span className="dstep-n">{i + 1}</span><span className="dstep-t">{title}</span>
                 </button>
                 <p id={'dstep-' + i} hidden={at !== i}>{body}</p>

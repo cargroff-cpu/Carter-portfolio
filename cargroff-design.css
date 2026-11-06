@@ -291,12 +291,16 @@ a:hover { color: var(--amber-lit); }
 .ddial { width: min(100%, 500px); margin: 0 auto; }
 .ddial svg { display: block; width: 100%; height: auto; overflow: visible; }
 .dseal-rule { fill: none; stroke: var(--rule-strong); stroke-width: 1; }
-.dseal-dot { fill: var(--ink-dim); }
+.dseal-dots { transform-box: view-box; transform-origin: 50% 50%; animation: dseal-orbit 90s linear infinite; }
+.dseal-dot { fill: var(--amber); opacity: .35; animation: dseal-twinkle 3.6s ease-in-out infinite; }
+@keyframes dseal-orbit { to { transform: rotate(360deg); } }
+@keyframes dseal-twinkle { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
 .dseal-name { cursor: pointer; }
 .dseal-name text { font-family: var(--display); font-size: 21px; font-weight: 500; letter-spacing: 0; fill: var(--ink-mute); transition: fill .3s; }
 .dseal-name:hover text { fill: var(--ink); }
 .dseal-name.on text { fill: var(--amber-lit); }
-.dseal-track { fill: none; stroke: var(--rule-strong); stroke-width: 1; stroke-dasharray: 2 6; }
+.dseal-track { fill: none; stroke: var(--rule-strong); stroke-width: 1; stroke-dasharray: 2 6; animation: dseal-march 12s linear infinite; }
+@keyframes dseal-march { to { stroke-dashoffset: -64; } }
 .dseal-done { fill: none; stroke: var(--amber); stroke-width: 2; transition: stroke-dashoffset .8s cubic-bezier(.3,.7,.2,1); }
 .dseal-stop { cursor: pointer; }
 .dseal-stop rect { fill: var(--bg-warm); stroke: var(--ink-mute); stroke-width: 1; transition: fill .3s, stroke .3s; }
@@ -308,7 +312,10 @@ a:hover { color: var(--amber-lit); }
 .dseal-mark rect { fill: none; stroke: var(--amber-lit); stroke-width: 1.5; }
 .dseal-mark rect { animation: dseal-pulse 2.8s ease-in-out infinite; }
 @keyframes dseal-pulse { 0%, 100% { stroke-opacity: 1; } 50% { stroke-opacity: .35; } }
-.dseal-crest { opacity: .55; }
+.dseal-crest { opacity: .55; animation: dseal-breathe 5s ease-in-out infinite; }
+@keyframes dseal-breathe { 0%, 100% { opacity: .42; } 50% { opacity: .85; } }
+.dseal-name.on text { animation: dseal-glow 3.6s ease-in-out infinite; }
+@keyframes dseal-glow { 0%, 100% { filter: none; } 50% { filter: drop-shadow(0 0 5px rgba(245,205,106,.55)); } }
 .dsteplist { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
 .dsteplist li { border-bottom: 1px solid var(--rule); }
 .dsteplist button { display: flex; align-items: baseline; gap: 20px; width: 100%; padding: 16px 0; background: none; border: 0; cursor: pointer; text-align: left; color: var(--ink-soft); transition: color .2s; }
@@ -512,7 +519,7 @@ a:hover { color: var(--amber-lit); }
   .dcursor, .dmv, .dhero-fog, .dhero-candle, .dhero-wisp, .dhero-lamp, .dhero-lamp path[fill="#1a1008"], .dhero-lamp svg > g:first-of-type, .dhero-lamp .dhero-candle { animation: none; }
   .dsession li, .js .dsession li, .js .dsheet.up .dprint { opacity: 1; transform: none; transition: none; }
   .js .dsheet.up .dprint:not([aria-pressed="true"]) { opacity: .66; }
-  .dm-spin-in, .dm-spin, .dm-spin-back, .dm-ripple, .dm-sheen, .dm-rule.gold, .dm-ticks line.major, .dseal-mark rect, .dhalf-sec { animation: none; }
+  .dm-spin-in, .dm-spin, .dm-spin-back, .dm-ripple, .dm-sheen, .dm-rule.gold, .dm-ticks line.major, .dseal-mark rect, .dhalf-sec, .dseal-dots, .dseal-dot, .dseal-track, .dseal-crest, .dseal-name.on text { animation: none; }
   .dm-ripple { opacity: 0; }
   .dm-hour, .dm-wash, .dm-rays, .dm-ray { animation: none; }
   .dm-hour { opacity: .7; }
