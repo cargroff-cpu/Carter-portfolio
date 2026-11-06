@@ -238,12 +238,9 @@ a:hover { color: var(--amber-lit); }
   .dhero-lamp .dlamp-iron { display: none; }
   .dhero-lamp.mid, .dhero-lamp.far, .dhero-lamp.back { visibility: hidden; }
   .dhero-veil, .dhero-wisp, .dhero-path { display: none; }
-  /* phones: the posts rise like the desktop lane, then stand dark, then the gas catches: the
-     glass and its glow sputter up to full light, left lamp first */
-  .dhero-lamp { animation: dlamp-in 1.1s cubic-bezier(.22, .8, .3, 1) both; }
-  .dhero-lamp .lamp-lit { animation: dlamp-halo 1s ease-out .45s backwards; }
-  .dhero-lamp svg > g:first-of-type { animation: dlamp-halo 1s ease-out .45s backwards; }
-  .dhero-lamp .dhero-candle { animation: dlamp-halo 1.2s ease-out .5s both, dcandle 7s ease-in-out 1.7s infinite; }
+  /* phones: no entrance animation, the posts simply stand lit (the candle glow still flickers softly) */
+  .dhero-lamp { animation: none; }
+  .dhero-lamp .dhero-candle { animation: dcandle 7s ease-in-out infinite; }
   .dhero-lamp.l.near { left: max(-142px, calc(50% - 320px)); } .dhero-lamp.r.near { right: max(-142px, calc(50% - 320px)); }
   .dhero-candle { width: 300px; top: 77px; }
   .dhero-in { padding: 0 24px; }
