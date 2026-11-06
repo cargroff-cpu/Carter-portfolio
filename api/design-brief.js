@@ -19,6 +19,7 @@
 // keep-alive: one tiny query so the free-tier Supabase project never sits
 // idle long enough to pause. Hit by the Vercel Cron in vercel.json.
 import { sb, sbHeaders, sendEmail, esc, parseBody, logEvent, SUPABASE_URL, BRAND, BRAND_FULL, NOTIFY_EMAIL, FROM_VERIFIED } from '../lib/server.js';
+import { renderEmail } from '../lib/mail.js';
 import { clientIp, hit } from '../lib/rate-limit.js';
 import { triageAndSave } from '../lib/brief-triage.js';
 import { randomUUID } from 'node:crypto';
@@ -220,7 +221,16 @@ export default async function handler(req, res) {
       to: NOTIFY_EMAIL, replyTo: email,
       subject: `New ${lane} brief ${brief.reference}: ${brief.business || name}`,
       text: lines.join('\n'),
-      html: `<div style="font-family: Georgia, serif; max-width: 560px;">${lines.map((l) => (l ? `<p style="margin:0 0 6px">${esc(l)}</p>` : '<br>')).join('')}</div>`,
+      html: renderEmail({
+        tone: 'internal', eyebrow: `New ${lane} brief`, heading: brief.business || name, body: brief.about,
+        panels: [{ type: 'facts', rows: [
+          { k: 'Reference', v: brief.reference }, { k: 'From', v: `${name} <${email}>` },
+          ...(brief.need.length ? [{ k: 'Needs', v: brief.need.join(', ') }] : []),
+          ...(brief.budget ? [{ k: 'Budget', v: brief.budget }] : []),
+          ...(brief.when_date ? [{ k: 'Needed by', v: brief.when_date }] : []),
+        ] }],
+        button: { label: 'Open it in the Backroom', url: 'https://scaffold.cargroff.com/backroom' },
+      }).html,
     });
     emailed = true;
   } catch (e) {
@@ -292,13 +302,24 @@ export default async function handler(req, res) {
         from: FROM_VERIFIED, to: email, replyTo: NOTIFY_EMAIL,
         subject: `Got your brief — ${brief.reference}`,
         text: `Hi ${name},\n\nThanks, your brief reached me. Your reference is ${brief.reference}.\n\nWhat happens next: I read it properly and reply with a price and a delivery date, usually within one business day. If anything's missing, I'll ask for exactly that.\n\nHere's what you sent:\n\n${lines.slice(3).join('\n')}\n\nCarter\n${BRAND_FULL}`,
-        html: `<div style="font-family: Georgia, serif; max-width: 520px; color:#2a1c11">
-          <p>Hi ${esc(name)},</p>
-          <p>Thanks, your brief reached me. Your reference is <strong>${esc(brief.reference)}</strong>.</p>
-          <p><strong>What happens next:</strong> I read it properly and reply with a price and a delivery date, usually within one business day. If anything's missing, I'll ask for exactly that.</p>
-          <p style="color:#666;font-size:13px">${lines.slice(3).map(esc).join('<br>')}</p>
-          <p>Carter<br><span style="color:#666">${esc(BRAND_FULL)}</span></p>
-        </div>`,
+        html: renderEmail({
+          stage: 0, eyebrow: 'Brief received', heading: 'Your brief made it in. The lamps are on.',
+          preheader: `Got your brief, reference ${brief.reference}`,
+          body: `Hi ${name.split(' ')[0] || name},\n\nThanks. It's on my desk now, and I'll read it properly, not skim it.`,
+          panels: [
+            { type: 'ref', value: brief.reference },
+            { type: 'steps', title: 'What happens next', items: [
+              'I read every word of it.',
+              'You get a price and a delivery date, usually within one business day.',
+              "If anything's missing, I'll ask for exactly that, nothing more.",
+            ] },
+            { type: 'facts', title: 'What you sent', rows: [
+              ...(brief.need.length ? [{ k: 'Needs', v: brief.need.join(', ') }] : []),
+              ...(brief.budget ? [{ k: 'Budget', v: brief.budget }] : []),
+              ...(brief.when_date ? [{ k: 'Needed by', v: brief.when_date }] : []),
+            ] },
+          ],
+        }).html,
       });
     } catch (e) {
       await logEvent({ kind: 'client_confirmation', ok: false, reference: brief.reference, detail: e.message.slice(0, 500) });

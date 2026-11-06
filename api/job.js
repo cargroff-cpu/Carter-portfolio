@@ -59,8 +59,10 @@ async function event(job, kind, who, body, meta) {
 }
 async function tellCarter(job, subject, lines) {
   const { html, text } = renderEmail({
-    heading: subject,
-    body: [...lines, '', `Job: ${job.title} (${job.name}${job.business ? ', ' + job.business : ''})`, `Open it in the Backroom: https://scaffold.cargroff.com/business#job=${job.id}`].join('\n'),
+    tone: 'internal', eyebrow: `${job.name}${job.business ? ', ' + job.business : ''}`, heading: subject,
+    body: [...lines].filter((l) => l != null && l !== '').join('\n\n'),
+    panels: [{ type: 'facts', rows: [{ k: 'Job', v: job.title }, { k: 'Stage', v: job.stage || 'new' }] }],
+    button: { label: 'Open the job in the Backroom', url: `https://scaffold.cargroff.com/business#job=${job.id}` },
   });
   await sendEmail({ to: NOTIFY_EMAIL, from: FROM_INTERNAL, replyTo: job.email || undefined, subject: `${subject}: ${job.title}`, text, html }).catch(() => {});
 }
@@ -178,8 +180,62 @@ async function clientAction(req, res, body) {
 const STAGE_FOR = { proposal: 'proposed', drafts: 'drafts', final: 'final' };
 const ORDER = ['new', 'proposed', 'drafts', 'final', 'paid'];
 
+// What each kind of client email adds to the frame: the stage track, a short
+// "step N of 5" line, and one panel that puts the key fact up front (the price,
+// the amount due, the rounds left). Built from the job's own data.
+const STAGE_IX = { new: 0, proposed: 1, drafts: 2, final: 3, paid: 4 };
+const WAITING = { new: 'Your proposal is on its way', proposed: 'Accept the proposal', drafts: 'Pick a direction', final: 'Review the final', paid: 'Nothing, you are all done' };
+const SAMPLE_JOB = { id: 'sample', token: 'preview', name: 'Dana Reyes', title: 'Booking tool', stage: 'drafts', billing: 'split', revisions_included: 2, revisions_used: 0, sample: true };
+
+async function emailExtras(kind, job) {
+  let proposal = null, invoices = [];
+  if (job.sample) {
+    proposal = { total: 2000, billing: 'split' };
+    invoices = [{ label: 'Deposit (50%)', amount: 1000, status: 'sent' }];
+  } else {
+    try { [proposal] = await sb(`proposals?job_id=eq.${job.id}&select=total,billing&limit=1`); } catch (e) { proposal = null; }
+    try { invoices = await sb(`invoices?job_id=eq.${job.id}&select=label,amount,status&order=created_at`); } catch (e) { invoices = []; }
+  }
+  const url = jobUrl(job.token);
+  const ix = STAGE_IX[job.stage] ?? 0;
+  const left = Math.max(0, (job.revisions_included || 0) - (job.revisions_used || 0));
+  const total = proposal ? Number(proposal.total) || 0 : 0;
+  const billing = (proposal ? proposal.billing : job.billing) === 'end' ? 'Paid in full when you approve the final' : 'Half to start, half when you approve the final';
+  const due = invoices.find((i) => i.status === 'sent');
+  const paid = invoices.filter((i) => i.status === 'paid').reduce((s, i) => s + Number(i.amount || 0), 0);
+  const step = (n, name) => `Step ${n} of 5 · ${name}`;
+  if (kind === 'proposal') return { stage: 1, eyebrow: step(2, 'The proposal'), note: 'Questions first? Just reply. It comes straight to me.',
+    panels: [{ type: 'facts', rows: [{ k: 'Project', v: job.title }, { k: 'Total', v: money(total), big: true }, { k: 'Billing', v: billing }, { k: 'Next', v: 'Accept it on your page' }] }] };
+  if (kind === 'drafts') return { stage: 2, eyebrow: step(3, 'First directions'), note: 'Torn between two? Say so. I can blend them.',
+    panels: [{ type: 'steps', title: 'What I need from you', items: [{ t: 'Pick the one you like best', s: 'One click on your project page.' }, { t: 'Tell me anything you would change', s: 'Leave a note beside it, as rough as you like.' }] }] };
+  if (kind === 'final') return { stage: 3, eyebrow: step(4, 'The final'), button2: { label: 'Ask for changes', url }, note: 'Both open your project page. Nothing is final until you say so.',
+    panels: [{ type: 'pips', label: 'Rounds of changes left', on: left, total: job.revisions_included || left, text: `${left} round${left === 1 ? '' : 's'} left` }] };
+  if (kind === 'invoice') {
+    if (!due) return { stage: ix, eyebrow: `Invoice · ${job.title}` };
+    const after = Math.max(0, total - paid - Number(due.amount));
+    return { stage: ix, eyebrow: `Invoice · ${job.title}`, note: 'Paid through Stripe. A receipt lands in your inbox right after.',
+      panels: [{ type: 'amount', label: 'Amount due', value: money(due.amount), sub: due.label || '', meta: [{ k: 'Pay by', v: 'Card or bank transfer' }, ...(after > 0 ? [{ k: 'Balance after', v: `${money(after)}, when you approve the final` }] : [])] }] };
+  }
+  if (kind === 'reminder') return { stage: ix, eyebrow: `A quick nudge · ${job.title}`, note: 'Need more time, or has something changed? Just reply.',
+    panels: [{ type: 'waiting', value: WAITING[job.stage] || WAITING.new }] };
+  return { letter: true };
+}
+
 async function adminAction(req, res, body) {
   if (!(await verifySessionToken(cookie(req, SESSION_COOKIE)))) return res.status(401).json({ error: 'Not authenticated' });
+
+  // The email exactly as it will be sent (an iframe in the Composer and the Mail
+  // tab). With no job it shows made-up details.
+  if (body.action === 'preview') {
+    const job = isId(body.job_id) ? await loadJob(`id=eq.${body.job_id}`) : null;
+    const j = job || SAMPLE_JOB;
+    const kind = ['proposal', 'drafts', 'final', 'invoice', 'reminder', 'note'].includes(body.kind) ? body.kind : 'note';
+    const extra = await emailExtras(kind, j);
+    const button = body.button === false ? null : { label: str(body.button_label, 60) || 'Open your project page', url: jobUrl(j.token) };
+    const { html } = renderEmail({ heading: str(body.heading, 200), body: str(body.body, 8000), button, ...extra, button2: body.button === false ? null : extra.button2 });
+    return res.status(200).json({ ok: true, html });
+  }
+
   if (!isId(body.job_id)) return res.status(400).json({ error: 'Missing job.' });
   const job = await loadJob(`id=eq.${body.job_id}`);
   if (!job) return res.status(404).json({ error: 'Job not found.' });
@@ -197,7 +253,8 @@ async function adminAction(req, res, body) {
       if (!p || !(Number(p.total) > 0)) return res.status(409).json({ error: 'Write the proposal (with a price) before sending it.' });
     }
     const button = body.button === false ? null : { label: str(body.button_label, 60) || 'Open your project page', url: jobUrl(job.token) };
-    const { html, text: plain } = renderEmail({ heading, body: text, button, preheader: str(body.preheader, 140) || heading });
+    const extra = await emailExtras(kind, job);
+    const { html, text: plain } = renderEmail({ heading, body: text, button, preheader: str(body.preheader, 140) || heading, ...extra, button2: body.button === false ? null : extra.button2 });
     await sendEmail({
       from: test ? FROM_INTERNAL : FROM_VERIFIED, to: test ? NOTIFY_EMAIL : job.email, replyTo: NOTIFY_EMAIL,
       subject: test ? `[Test] ${subject}` : subject, html, text: plain,
@@ -263,7 +320,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
     const body = parseBody(req);
     if (!body) return res.status(400).json({ error: 'Invalid JSON body.' });
-    return body.job_id ? adminAction(req, res, body) : clientAction(req, res, body);
+    return (body.job_id || body.action === 'preview') ? adminAction(req, res, body) : clientAction(req, res, body);
   } catch (e) {
     console.error('job api', e.message);
     return res.status(500).json({ error: 'Something went wrong. Please try again, or reply to Carter’s email.' });

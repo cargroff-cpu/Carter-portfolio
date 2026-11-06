@@ -79,6 +79,7 @@ export default async function handler(req, res) {
   try {
     const { html, text } = renderEmail({
       heading: 'About your brief', body: reply, preheader: `Re: your brief ${brief.reference || ''}`.trim(),
+      stage: 0, eyebrow: brief.reference ? `Re: your brief · ${brief.reference}` : 'Re: your brief',
       button: job ? { label: 'Open your project page', url: jobUrl(job.token) } : null,
     });
     await sendEmail({

@@ -39,17 +39,17 @@ const sumItems = (items) => (items || []).reduce((s, i) => s + (Number(i.amount)
 // ── Mail templates. {fields} fill from the job; the email goes out in the
 // branded frame (lib/mail.js) with a button to the client's project page.
 const TEMPLATES = {
-  proposal: { when: 'When the proposal is written. Sending moves the job to Proposed.', label: 'Proposal', subject: 'Your proposal: {title}', heading: 'Your proposal',
-    body: 'Hi {first},\n\nThanks for the brief. Your proposal for {title} is ready: {total}, {billing}.\n\nOpen your project page to see what is included and the timeline, and accept it when you are happy. Any questions, just reply.\n\nCarter', button: 'See the proposal' },
-  drafts: { when: 'When the first directions are ready. Moves the job to Directions.', label: 'Directions ready', subject: 'Your directions are ready: {title}', heading: 'Your directions are ready',
-    body: 'Hi {first},\n\nThe first directions for {title} are ready. Have a look, pick the one you like best, and tell me anything you would change.\n\nCarter', button: 'Pick a direction' },
-  final: { when: 'When the finished work is ready to review. Moves the job to Final.', label: 'Final ready', subject: 'Your final is ready to review: {title}', heading: 'Your final is ready',
-    body: 'Hi {first},\n\nThe finished {title} is ready to review. Approve it, or ask for changes ({left} round{leftS} of changes left).\n\nCarter', button: 'Review the final' },
-  invoice: { when: 'When money is due and ready to pay on their page.', label: 'Invoice', subject: 'Your invoice: {title}', heading: 'Your invoice is ready',
-    body: 'Hi {first},\n\n{due} is ready to pay on your project page, by card or bank. Thank you.\n\nCarter', button: 'Pay now' },
-  reminder: { when: 'A gentle nudge for anything waiting on the client.', label: 'Reminder', subject: 'A quick nudge: {title}', heading: 'A quick nudge',
-    body: 'Hi {first},\n\nJust checking in on {title}. Everything is waiting on your project page whenever you are ready.\n\nCarter', button: 'Open your project page' },
-  note: { when: 'A blank message in the same frame.', label: 'Blank', subject: '{title}', heading: '', body: 'Hi {first},\n\n\n\nCarter', button: 'Open your project page' },
+  proposal: { when: 'When the proposal is written. Sending moves the job to Proposed.', label: 'Proposal', subject: 'Your proposal: {title}', heading: "Here's the plan for your {title}.",
+    body: "Hi {first},\n\nThanks for the brief. I've drawn it up properly: what's included, the timeline, and the price ({total}, {billing}). Have a look, and accept it on your project page when you're happy.", button: 'See the proposal' },
+  drafts: { when: 'When the first directions are ready. Moves the job to Directions.', label: 'Directions ready', subject: 'Your directions are ready: {title}', heading: 'The first directions are on the table.',
+    body: "Hi {first},\n\nThe early takes on {title} are ready. This is the fun part: nothing is locked in yet, so tell me what grabs you and what doesn't.", button: 'Pick a direction' },
+  final: { when: 'When the finished work is ready to review. Moves the job to Final.', label: 'Final ready', subject: 'Your final is ready to review: {title}', heading: "It's finished. Come and see it.",
+    body: "Hi {first},\n\nThe finished {title} is ready for you. Take your time with it. If it's right, approve it; if something is off, tell me and I'll fix it ({left} round{leftS} of changes left).", button: 'Review the final' },
+  invoice: { when: 'When money is due and ready to pay on their page.', label: 'Invoice', subject: 'Your invoice: {title}', heading: 'One small step, then the work begins.',
+    body: 'Hi {first},\n\n{due} is ready to pay on your project page, by card or bank. Thank you.', button: 'Pay now' },
+  reminder: { when: 'A gentle nudge for anything waiting on the client.', label: 'Reminder', subject: 'A quick nudge: {title}', heading: "I've kept a lamp lit for you.",
+    body: "Hi {first},\n\nJust checking in on {title}. Your project page is exactly as you left it, and it's ready whenever you are. No rush.", button: 'Pick up where you left off' },
+  note: { when: 'A blank message in the same frame.', label: 'Blank', subject: '{title}', heading: '', body: 'Hi {first},\n\n\n\n', button: 'Open your project page' },
 };
 
 // Made-up values so a template can be previewed without picking a job.
@@ -653,22 +653,26 @@ function Modal({ title, sub, onClose, children, foot, wide }) {
   );
 }
 
-// The email as the client will see it: the Scaffold's paper card (same colours
-// as lib/mail.js), so what you read here is what goes out.
-function EmailPreview({ heading, body, button, buttonLabel, subject }) {
-  const paras = String(body || '').trim().split(/\n\s*\n/).filter(Boolean);
+// The email exactly as it will be sent: the server renders it with the real
+// frame (lib/mail.js) and it shows here in an iframe. With no job it shows
+// made-up details.
+function EmailPreview({ jobId, kind, heading, body, button, buttonLabel, subject }) {
+  const [html, setHtml] = React.useState('');
+  const [err, setErr] = React.useState('');
+  React.useEffect(() => {
+    let live = true;
+    const t = setTimeout(() => {
+      jobAction(jobId || null, 'preview', { kind, heading, body, button: !!button, button_label: buttonLabel })
+        .then((r) => { if (live) { setHtml(r.html); setErr(''); } })
+        .catch((e) => { if (live) setErr(e.message); });
+    }, 250);
+    return () => { live = false; clearTimeout(t); };
+  }, [jobId, kind, heading, body, button, buttonLabel]);
   return (
     <div className="mail-prev" aria-label="Email preview">
       {subject != null && <div className="mp-subj"><span>Subject</span>{subject || '(no subject)'}</div>}
-      <div className="mp-card">
-        <div className="mp-top"><img src="/assets/scaffold-icon-180.png" alt="" /><div><b>The Scaffold</b><span>by Carter Groff</span></div></div>
-        <div className="mp-body">
-          {heading ? <h3>{heading}</h3> : null}
-          {paras.map((t, k) => <p key={k}>{t.split('\n').map((l, n) => <React.Fragment key={n}>{n ? <br /> : null}{l}</React.Fragment>)}</p>)}
-          {button && buttonLabel ? <span className="mp-btn">{buttonLabel}</span> : null}
-        </div>
-        <div className="mp-foot">Reply to this email and it reaches Carter directly.<i>The Scaffold, by Carter Groff</i></div>
-      </div>
+      {err ? <p className="sub" style={{ color: 'var(--warn)' }}>The preview did not load: {err}</p> : null}
+      <iframe title="Email preview" className="mp-frame" srcDoc={html} sandbox="" style={{ width: '100%', height: 760, border: 0, borderRadius: 6, background: '#0f0a06' }} />
     </div>
   );
 }
@@ -716,7 +720,7 @@ function Composer({ job, proposal, invoices, kind, onClose, onSent }) {
           {!job.email && <p className="sub" style={{ color: 'var(--warn)' }}>Add an email to this job to send. You can still send a test to yourself.</p>}
         </div>
         <div className={'cmp-prev' + (view === 'preview' ? ' show' : '')}>
-          <EmailPreview subject={m.subject} heading={m.heading} body={m.body} button={m.button} buttonLabel={m.button_label} />
+          <EmailPreview jobId={job.id} kind={k} subject={m.subject} heading={m.heading} body={m.body} button={m.button} buttonLabel={m.button_label} />
         </div>
       </div>
     </Modal>
@@ -870,7 +874,7 @@ function Mail({ data, open }) {
       {view && (() => { const t = TEMPLATES[view]; return (
         <Modal title={t.label} sub={t.when} onClose={() => setView(null)}
           foot={<span className="cmp-res">Shown with made-up details. On a job, your client's own details fill in.</span>}>
-          <EmailPreview subject={fill(t.subject, SAMPLE_FIELDS)} heading={fill(t.heading, SAMPLE_FIELDS)} body={fill(t.body, SAMPLE_FIELDS)} button buttonLabel={t.button} />
+          <EmailPreview kind={view} subject={fill(t.subject, SAMPLE_FIELDS)} heading={fill(t.heading, SAMPLE_FIELDS)} body={fill(t.body, SAMPLE_FIELDS)} button buttonLabel={t.button} />
           <details className="tpl-raw"><summary>The template text</summary><p>Subject: {t.subject}</p>{t.heading ? <p>Heading: {t.heading}</p> : null}<pre>{t.body}</pre></details>
         </Modal>); })()}
     </div>

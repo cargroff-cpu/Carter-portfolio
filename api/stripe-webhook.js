@@ -92,10 +92,21 @@ export default async function handler(req, res) {
           const open = await sb(`invoices?job_id=eq.${job.id}&status=neq.paid&select=id`);
           const done = !!job.approved_at && open.length === 0;
           await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { last_activity_at: new Date().toISOString(), ...(done ? { stage: 'paid' } : {}) } });
-          const lines = [`${job.name} paid ${inv.label || 'an invoice'}: ${amount}.`];
-          if (done) lines.push('Nothing is left to pay; the job is marked paid.');
-          lines.push('', `Open it in the Backroom: https://scaffold.cargroff.com/business#job=${job.id}`);
-          const { html, text } = renderEmail({ heading: done ? 'Job paid in full' : 'Payment received', body: lines.join('\n') });
+          const all = await sb(`invoices?job_id=eq.${job.id}&select=amount,status`).catch(() => []);
+          const money0 = (n) => '$' + Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
+          const paidSoFar = all.filter((i) => i.status === 'paid').reduce((s, i) => s + Number(i.amount || 0), 0);
+          const toCome = all.filter((i) => i.status !== 'paid' && i.status !== 'void').reduce((s, i) => s + Number(i.amount || 0), 0);
+          const first = String(job.name || 'Your client').split(' ')[0];
+          const { html, text } = renderEmail({
+            tone: 'internal', eyebrow: done ? 'Paid in full' : 'Payment received',
+            heading: `${first} paid ${money0(inv.amount)}.`,
+            body: `${job.name} paid ${inv.label || 'an invoice'}.${done ? ' Nothing is left to pay; the job is marked paid.' : ''}`,
+            panels: [
+              { type: 'stats', items: [{ k: 'This payment', v: money0(inv.amount), ok: true }, { k: 'Paid so far', v: money0(paidSoFar) }, { k: 'Still to come', v: money0(toCome) }] },
+              { type: 'facts', rows: [{ k: 'Invoice', v: inv.label || 'Invoice' }, { k: 'Job', v: job.title }, { k: 'Client', v: `${job.name}${job.business ? ', ' + job.business : ''}` }] },
+            ],
+            button: { label: 'Open the job in the Backroom', url: `https://scaffold.cargroff.com/business#job=${job.id}` },
+          });
           await sendEmail({ to: NOTIFY_EMAIL, subject: `${done ? 'Paid in full' : 'Payment received'}: ${job.title}`, html, text });
         } catch (e) {
           console.error('webhook job update', e.message);
