@@ -644,7 +644,7 @@ const DESIGN_SERVICES = [{
 }, {
   title: 'Websites',
   sub: 'front and back end',
-  desc: 'Designed, built and launched, then kept running: the pages people see and the logins, databases, payments and forms behind them.',
+  desc: 'Designed, built and kept running, with the logins, payments and forms behind it.',
   need: 'Website',
   from: '',
   turn: 'Quoted'
@@ -1556,6 +1556,121 @@ function Turn({
     className: "dprice"
   }, "From ", s.from), turn && React.createElement("span", null, turn));
 }
+const SERVICE_ICONS = {
+  'Social graphics': React.createElement(React.Fragment, null, React.createElement("rect", {
+    x: "5",
+    y: "3.5",
+    width: "14",
+    height: "17",
+    rx: "2"
+  }), React.createElement("circle", {
+    cx: "9.5",
+    cy: "9",
+    r: "1.6"
+  }), React.createElement("path", {
+    d: "M5.5 16.5l4.2-4 3 2.8 2.3-2 3.5 3.2"
+  })),
+  Website: React.createElement(React.Fragment, null, React.createElement("circle", {
+    cx: "12",
+    cy: "12",
+    r: "8.5"
+  }), React.createElement("ellipse", {
+    cx: "12",
+    cy: "12",
+    rx: "3.6",
+    ry: "8.5"
+  }), React.createElement("path", {
+    d: "M3.8 9h16.4M3.8 15h16.4"
+  })),
+  'Business card or print': React.createElement(React.Fragment, null, React.createElement("rect", {
+    x: "3",
+    y: "6.5",
+    width: "14",
+    height: "9",
+    rx: "1.2"
+  }), React.createElement("path", {
+    d: "M7 18.5h12.8a1.2 1.2 0 0 0 1.2-1.2V10"
+  }), React.createElement("path", {
+    d: "M6 10h5M6 12.5h3"
+  })),
+  'Document or report': React.createElement(React.Fragment, null, React.createElement("path", {
+    d: "M6 3h8l4 4v14H6z"
+  }), React.createElement("path", {
+    d: "M14 3v4h4"
+  }), React.createElement("path", {
+    d: "M9 11.5h6M9 14.5h6M9 17.5h4"
+  })),
+  'Presentation or deck': React.createElement(React.Fragment, null, React.createElement("rect", {
+    x: "3.5",
+    y: "4",
+    width: "17",
+    height: "11",
+    rx: "1"
+  }), React.createElement("path", {
+    d: "M12 15v3.5M8 21l4-2.5 4 2.5"
+  }), React.createElement("path", {
+    d: "M7.5 11.5l3-3 2 2 3.5-3.5"
+  })),
+  'Brand basics': React.createElement(React.Fragment, null, React.createElement("path", {
+    d: "M12 3l5.5 6.5L12 21 6.5 9.5z"
+  }), React.createElement("circle", {
+    cx: "12",
+    cy: "10.5",
+    r: "1.5"
+  }), React.createElement("path", {
+    d: "M12 12v9"
+  })),
+  'Inquiries and leads': React.createElement(React.Fragment, null, React.createElement("path", {
+    d: "M3.5 13.5l2.5-8h12l2.5 8v5h-17z"
+  }), React.createElement("path", {
+    d: "M3.5 13.5h5l1 2h5l1-2h5"
+  })),
+  'Quotes and invoices': React.createElement(React.Fragment, null, React.createElement("path", {
+    d: "M6 3h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5L6 21z"
+  }), React.createElement("path", {
+    d: "M9 8h6M9 11.5h6M9 15h3.5"
+  })),
+  'Scheduling and bookings': React.createElement(React.Fragment, null, React.createElement("rect", {
+    x: "3.5",
+    y: "5",
+    width: "17",
+    height: "15",
+    rx: "1.6"
+  }), React.createElement("path", {
+    d: "M3.5 9.5h17M8 3v4M16 3v4"
+  }), React.createElement("path", {
+    d: "M8.5 14l2.2 2.2 4.6-4.6"
+  })),
+  'Dashboards and reports': React.createElement(React.Fragment, null, React.createElement("path", {
+    d: "M4 20h16"
+  }), React.createElement("path", {
+    d: "M6.5 20v-6M11 20V9M15.5 20v-4M20 20V5"
+  })),
+  'Reminders and follow-ups': React.createElement(React.Fragment, null, React.createElement("path", {
+    d: "M6.5 16.5V11a5.5 5.5 0 0 1 11 0v5.5l1.5 1.5H5z"
+  }), React.createElement("path", {
+    d: "M10 20.5a2 2 0 0 0 4 0"
+  })),
+  'AI assistants': React.createElement(React.Fragment, null, React.createElement("path", {
+    d: "M4 5.5h16v11H11l-4.5 3.5v-3.5H4z"
+  }), React.createElement("path", {
+    d: "M12 7.8l.9 2.3 2.3.9-2.3.9-.9 2.3-.9-2.3-2.3-.9 2.3-.9z"
+  })),
+  _: React.createElement(React.Fragment, null, React.createElement("path", {
+    d: "M12 4l8 8-8 8-8-8z"
+  }), React.createElement("path", {
+    d: "M12 9l3 3-3 3-3-3z"
+  }))
+};
+function ServiceIcon({
+  need
+}) {
+  return React.createElement("svg", {
+    className: "dtile-ic",
+    viewBox: "0 0 24 24",
+    "aria-hidden": "true"
+  }, SERVICE_ICONS[need] || SERVICE_ICONS._);
+}
 function Shelf({
   lane,
   label,
@@ -1565,35 +1680,48 @@ function Shelf({
   cta,
   onAddNeed
 }) {
+  const [peek, setPeek] = React.useState(null);
+  const line = peek && peek.desc ? peek.desc : blurb;
   return React.createElement("div", {
-    className: 'dhalf-sec up' + (lane === 'automation' ? ' dauto' : '')
+    className: 'dhalf-sec dcab up' + (lane === 'automation' ? ' dauto' : '')
   }, React.createElement("span", {
     className: "dk"
   }, label), React.createElement("h3", {
     className: "ddisplay"
   }, title), React.createElement("p", {
-    className: "dp"
-  }, blurb), React.createElement("ul", {
-    className: "dlist"
-  }, items.map(s => React.createElement("li", {
-    key: s.title
+    className: 'dp dcab-line' + (peek && peek.desc ? ' peek' : ''),
+    key: line
+  }, line), React.createElement("ul", {
+    className: "dtiles"
+  }, items.map((s, i) => React.createElement("li", {
+    key: s.title,
+    style: {
+      '--i': i
+    }
   }, React.createElement("a", {
+    className: "dtile",
     href: "#brief",
+    onMouseEnter: () => setPeek(s),
+    onMouseLeave: () => setPeek(null),
+    onFocus: () => setPeek(s),
+    onBlur: () => setPeek(null),
     onClick: e => {
       e.preventDefault();
       onAddNeed(lane, s.need);
     }
-  }, React.createElement("span", {
-    className: "dlist-main"
-  }, React.createElement("b", null, s.title, s.sub && React.createElement("small", {
-    className: "dlist-sub"
-  }, s.sub))), React.createElement(Turn, {
+  }, React.createElement(ServiceIcon, {
+    need: s.need
+  }), React.createElement("span", {
+    className: "dtile-t"
+  }, React.createElement("b", null, s.title), s.sub && React.createElement("small", {
+    className: "dtile-sub"
+  }, s.sub)), React.createElement(Turn, {
     s: s,
     lane: lane
-  }))))), React.createElement("p", {
-    style: {
-      marginTop: 24
-    }
+  }), s.desc && React.createElement("span", {
+    className: "dvh"
+  }, s.desc))))), React.createElement("p", {
+    className: "dcab-cta"
   }, React.createElement("a", {
     className: "p-btn ghost",
     href: "#brief",
@@ -1637,7 +1765,15 @@ function Make({
     items: DESIGN_SERVICES,
     cta: "Start a design brief",
     onAddNeed: onAddNeed
-  }), React.createElement(Shelf, {
+  }), React.createElement("div", {
+    className: "dseam",
+    "aria-hidden": "true"
+  }, React.createElement("span", {
+    className: "dseam-medal"
+  }, React.createElement("img", {
+    src: "assets/antler.png",
+    alt: ""
+  }))), React.createElement(Shelf, {
     lane: "automation",
     label: "Tools",
     title: "What runs behind the scenes",
@@ -2291,11 +2427,13 @@ function applyScaffoldContent(o) {
     sub: scStr(d.sub),
     need: DESIGN_NEEDS.includes(d.need) ? d.need : 'Something else',
     from: scStr(d.from),
-    turn: scStr(d.turn) || 'Quoted'
+    turn: scStr(d.turn) || 'Quoted',
+    desc: scStr(d.desc) || (DESIGN_SERVICES.find(x => x.need === d.need) || {}).desc || ''
   })));
   if (Array.isArray(o.tools)) scFill(TOOL_SERVICES, o.tools.filter(t => t && scStr(t.title)).map(t => ({
     title: scStr(t.title),
-    need: TOOL_NEEDS.includes(t.need) ? t.need : 'Something else'
+    need: TOOL_NEEDS.includes(t.need) ? t.need : 'Something else',
+    desc: scStr(t.desc) || (TOOL_SERVICES.find(x => x.need === t.need) || {}).desc || ''
   })));
   if (Array.isArray(o.how) && o.how.length === 4 && o.how.every(h => h && scStr(h.title) && scStr(h.text))) {
     scFill(HOW_STEPS, o.how.map(h => [scStr(h.title), scStr(h.text)]));

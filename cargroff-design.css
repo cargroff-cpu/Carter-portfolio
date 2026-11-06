@@ -375,29 +375,65 @@ a:hover { color: var(--amber-lit); }
 .dsteplist li.on .dstep-n { color: var(--amber); }
 .dsteplist p { margin: 0; padding: 0 0 20px calc(1em + 20px); font-size: 17px; line-height: 1.65; color: var(--ink-soft); }
 
-/* ── the shelf ── */
-.dmake { align-items: start; }
-/* the two halves line up row for row: label, heading, blurb, list and button
-   share rows, so a blurb that wraps on one side doesn't push its list down */
+/* ── the shelf: two cabinets hung from one crest ──
+   Design is the warm, lamplit cabinet (what customers see); Tools is the green
+   enamel one (what runs behind the scenes). Each service is a tile with a small
+   line drawing; resting on one swaps the cabinet's line for its description. */
+.dmake { align-items: stretch; }
+.dcab { position: relative; padding: 32px 28px 32px; border: 1px solid var(--rule); border-radius: 4px; background: var(--bg-warm); background-image: radial-gradient(120% 70% at 50% 0%, var(--amber-wash), transparent 70%); }
+.dcab.dauto { border-color: var(--brass-edge); background: var(--enamel-lo); background-image: radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--enamel-hi) 55%, transparent), transparent 75%); }
+.dhalf-sec h3.ddisplay { font-size: clamp(28px, 3.2vw, 38px); margin: 8px 0 0; overflow-wrap: break-word; min-width: 0; }
+.dhalf-sec .dp { max-width: 44ch; }
+.dhalf-sec.dauto { --amber: var(--brass); --amber-lit: var(--brass-lit); }
+.dcab-line { margin: 12px 0 0; animation: dcab-line .35s ease both; }
+@media (min-width: 900px) { .dcab-line { min-height: 3.4em; } }
+.dcab-line.peek { color: var(--ink); }
+@keyframes dcab-line { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.dtiles { list-style: none; margin: 24px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.dtile { position: relative; display: grid; align-content: start; gap: 12px; height: 100%; min-height: 132px; padding: 16px 16px 16px; border: 1px solid var(--rule); border-radius: 4px; background: var(--well); color: var(--ink); text-decoration: none; transition: transform .3s cubic-bezier(.2, .8, .3, 1), border-color .25s ease, background-color .25s ease; }
+.dtile:hover, .dtile:focus-visible { transform: translateY(-3px); border-color: var(--amber); background-color: var(--amber-wash); }
+.dcab.dauto .dtile:hover, .dcab.dauto .dtile:focus-visible { background-color: var(--brass-wash); }
+.dtile:active { transform: translateY(-1px); }
+.dtile-ic { width: 30px; height: 30px; fill: none; stroke: var(--amber); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; transition: transform .35s cubic-bezier(.3, 1.6, .5, 1), stroke .25s ease; }
+.dtile:hover .dtile-ic, .dtile:focus-visible .dtile-ic { stroke: var(--amber-lit); transform: translateY(-2px) scale(1.1); }
+.dtile-t b { display: block; font-family: var(--display); font-size: 20px; font-weight: 500; line-height: 1.15; color: var(--ink); transition: color .25s ease; }
+.dtile:hover .dtile-t b, .dtile:focus-visible .dtile-t b { color: var(--amber-lit); }
+.dtile-sub { display: block; margin-top: 4px; font-family: var(--ui); font-size: 13px; color: var(--ink-mute); }
+.dtile .dturn { justify-items: start; text-align: left; font-size: 13px; margin-top: auto; }
+.dvh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.dcab-cta { margin: 24px 0 0; }
+/* the seam: one crest between the cabinets */
+.dseam { display: none; }
 @media (min-width: 900px) {
-  .dmake { grid-template-rows: repeat(5, auto); row-gap: 0; }
-  .dmake .dhalf-sec { display: grid; grid-row: span 5; grid-template-rows: subgrid; align-content: start; }
-  .dmake .dhalf-sec .dlist { align-self: start; }
+  .dmake { grid-template-columns: minmax(0, 1fr) 64px minmax(0, 1fr); grid-template-rows: repeat(5, auto); gap: 0; }
+  .dmake .dcab { display: grid; grid-row: 1 / span 5; grid-column: 1; grid-template-rows: subgrid; align-content: start; }
+  .dmake .dcab.dauto { grid-column: 3; }
+  .dmake .dcab .dtiles { align-self: start; }
+  .dseam { display: flex; grid-row: 1 / span 5; grid-column: 2; align-items: center; justify-content: center; position: relative; }
+  .dseam::before { content: ""; position: absolute; top: 24px; bottom: 24px; left: 50%; width: 1px; background: linear-gradient(var(--rule), var(--amber-tick) 50%, var(--rule)); }
+  .dseam-medal { position: relative; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--amber-tick); background: var(--bg); }
+  .dseam-medal img { width: 32px; height: auto; display: block; }
+  .dseam-medal::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 1px solid var(--amber-tick); opacity: 0; animation: dseam-ring 4.5s ease-out infinite; }
 }
-.dlist li a { min-height: 68px; }
-/* on a phone the two lists sit behind a Design | Tools switch */
+@keyframes dseam-ring { 0% { transform: scale(.9); opacity: .8; } 70%, 100% { transform: scale(1.5); opacity: 0; } }
+@media (min-width: 900px) and (max-width: 1179px) { .dtiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* tiles deal in as the cabinet comes into view */
+.js .dcab.up .dtiles li { transition: opacity .5s ease calc(.15s + var(--i) * .06s), transform .6s cubic-bezier(.16, 1, .3, 1) calc(.15s + var(--i) * .06s); }
+.js .dcab.up:not(.shown) .dtiles li { opacity: 0; transform: translateY(14px); }
+/* on a phone the two cabinets sit behind a Design | Tools switch */
 .dmaketabs { display: none; }
 @media (max-width: 899px) {
-  .dmaketabs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); margin: -12px 0 28px; }
+  .dmaketabs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); margin: -12px 0 20px; }
   .dmake.show-design .dhalf-sec.dauto, .dmake.show-automation .dhalf-sec:not(.dauto) { display: none; }
   .dmake .dhalf-sec { animation: dshelf-in .35s cubic-bezier(.16, 1, .3, 1); }
   .dmake .dhalf-sec .dk { display: none; }
   .dmake .dhalf-sec h3.ddisplay { margin-top: 0; }
+  .dcab { padding: 24px 20px 24px; }
+  .dtiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .dtile { min-height: 120px; padding: 16px 12px 12px; }
+  .dtile-t b { font-size: 18px; }
 }
 @keyframes dshelf-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-.dhalf-sec h3.ddisplay { font-size: clamp(28px, 3.2vw, 38px); margin: 8px 0 0; }
-.dhalf-sec .dp { max-width: 44ch; }
-.dhalf-sec.dauto { --amber: var(--brass); --amber-lit: var(--brass-lit); }
 .dlist { list-style: none; margin: 24px 0 0; padding: 0; border-top: 1px solid var(--rule); }
 .dlist li a { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 0; border-bottom: 1px solid var(--rule); }
 .dlist-main { min-width: 0; }
@@ -572,6 +608,9 @@ a:hover { color: var(--amber-lit); }
   .dm-ripple { opacity: 0; }
   .dm-hour, .dm-wash, .dm-rays, .dm-ray { animation: none; }
   .dm-hour { opacity: .7; }
-  .dwatch-hand, .dprint, .dlane, .dchip { transition: none; }
+  .dwatch-hand, .dprint, .dlane, .dchip, .dtile, .dtile-ic, .js .dcab.up .dtiles li { transition: none; }
+  .dcab-line, .dseam-medal::after { animation: none; }
+  .js .dcab.up:not(.shown) .dtiles li { opacity: 1; transform: none; }
+  .dtile:hover, .dtile:focus-visible { transform: none; }
   .ddial.in .dwatch-ticks line, .ddial.in .dseal-name, .ddial.in .dwatch-numg, .ddial.in .dwatch-rim, .ddial.in .dseal-crest, .ddial.in .dwatch-jewel { animation: none; }
 }
