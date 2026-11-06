@@ -328,11 +328,11 @@ a:hover { color: var(--amber-lit); }
 .dwatch-ticks { transform-box: view-box; transform-origin: 50% 50%; transform: rotate(var(--sc, 0deg)); }
 .dwatch-ticks line { stroke: var(--ink-dim); stroke-width: 1; }
 .dwatch-ticks line.major { stroke: var(--amber); stroke-width: 1.8; }
-.dwatch-numg { cursor: pointer; outline: none; transform-box: fill-box; transform-origin: 50% 50%; }
-.dwatch-hit { fill: transparent; stroke: transparent; stroke-width: 2; }
+.dwatch-numg { cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent; transform-box: fill-box; transform-origin: 50% 50%; }
+.dwatch-hit { fill: transparent; stroke: none; }
 .dwatch-numg:hover .dwatch-num { fill: var(--ink); }
-.cgd .dwatch-numg:focus-visible { outline: none; }
-.dwatch-numg:focus-visible .dwatch-hit { stroke: var(--amber-lit); stroke-width: 2.5; }
+.cgd .dwatch-numg:focus, .cgd .dwatch-numg:focus-visible { outline: none; }
+.dwatch-numg:focus-visible .dwatch-num { fill: var(--amber-lit); }
 .dwatch-num { font-family: var(--display); font-size: 34px; font-weight: 500; fill: var(--ink-mute); text-anchor: middle; dominant-baseline: central; transition: fill .4s ease; transform-box: fill-box; transform-origin: 50% 50%; }
 .dwatch-numg.on .dwatch-num { fill: var(--amber-lit); animation: dwatch-pop .7s cubic-bezier(.3, 1.7, .5, 1) both; }
 .dwatch-ping { fill: none; stroke: var(--amber-lit); stroke-width: 1.6; pointer-events: none; transform-box: fill-box; transform-origin: 50% 50%; animation: dwatch-ping 1.1s ease-out both; }
