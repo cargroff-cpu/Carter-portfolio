@@ -1308,14 +1308,16 @@ function sealArc(a, r) {
 }
 const SEAL_TRACK = 2 * Math.PI * 128;
 function Dial() {
-  const [at, setAt] = React.useState(0);
+  const [turn, setTurn] = React.useState(0);
+  const [snap, setSnap] = React.useState(false);
   const [auto, setAuto] = React.useState(true);
   const [seen, setSeen] = React.useState(false);
   const [held, setHeld] = React.useState(false);
   const box = React.useRef(null);
+  const at = turn % 4;
   const pick = i => {
     setAuto(false);
-    setAt(i);
+    setTurn(i);
   };
   React.useEffect(() => {
     const el = box.current;
@@ -1329,9 +1331,18 @@ function Dial() {
   React.useEffect(() => {
     if (!auto || !seen || held) return;
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const t = setInterval(() => setAt(a => (a + 1) % 4), 3600);
+    const t = setInterval(() => setTurn(a => a >= 4 ? 1 : a + 1), 3600);
     return () => clearInterval(t);
   }, [auto, seen, held]);
+  React.useEffect(() => {
+    if (turn !== 4) return;
+    const t = setTimeout(() => {
+      setSnap(true);
+      setTurn(0);
+      setTimeout(() => setSnap(false), 80);
+    }, 1100);
+    return () => clearTimeout(t);
+  }, [turn]);
   return React.createElement("section", {
     id: "how",
     ref: box,
@@ -1346,26 +1357,62 @@ function Dial() {
   }), React.createElement("div", {
     className: "dwrap ddialwrap"
   }, React.createElement("div", {
-    className: "ddial up",
+    className: 'ddial up' + (snap ? ' snap' : '') + (turn === 4 ? ' wrapping' : ''),
     "aria-hidden": "true"
   }, React.createElement("svg", {
     viewBox: "0 0 400 400",
-    role: "presentation"
+    role: "presentation",
+    style: {
+      '--lit': 0.22 + 0.16 * turn
+    }
   }, React.createElement("defs", null, HOW_STEPS.map((s, i) => React.createElement("path", {
     key: i,
     id: 'dseal-' + i,
     d: sealArc(i * 90, i === 2 ? 170 : 158)
+  })), React.createElement("radialGradient", {
+    id: "dseal-halo"
+  }, React.createElement("stop", {
+    className: "dseal-halo-0",
+    offset: "0"
+  }), React.createElement("stop", {
+    className: "dseal-halo-1",
+    offset: "1"
+  })), React.createElement("radialGradient", {
+    id: "dseal-core"
+  }, React.createElement("stop", {
+    className: "dseal-core-0",
+    offset: "0"
+  }), React.createElement("stop", {
+    className: "dseal-core-1",
+    offset: "1"
   }))), React.createElement("circle", {
+    className: "dseal-core",
+    cx: "200",
+    cy: "200",
+    r: "118",
+    fill: "url(#dseal-core)"
+  }), React.createElement("circle", {
     className: "dseal-rule",
     cx: "200",
     cy: "200",
     r: "190"
-  }), React.createElement("circle", {
-    className: "dseal-rule",
-    cx: "200",
-    cy: "200",
-    r: "184"
-  }), React.createElement("circle", {
+  }), React.createElement("g", {
+    className: "dseal-ticks"
+  }, Array.from({
+    length: 72
+  }, (_, k) => {
+    const major = k % 18 === 0;
+    const [x1, y1] = sealPt(major ? 180 : 184, k * 5);
+    const [x2, y2] = sealPt(189, k * 5);
+    return React.createElement("line", {
+      key: k,
+      className: major ? 'major' : '',
+      x1: x1,
+      y1: y1,
+      x2: x2,
+      y2: y2
+    });
+  })), React.createElement("circle", {
     className: "dseal-rule",
     cx: "200",
     cy: "200",
@@ -1381,7 +1428,7 @@ function Dial() {
   }, title)))), React.createElement("g", {
     className: "dseal-dots"
   }, [45, 135, 225, 315].map((a, k) => {
-    const [x, y] = sealPt(163, a);
+    const [x, y] = sealPt(150, a);
     return React.createElement("circle", {
       key: a,
       className: "dseal-dot",
@@ -1404,20 +1451,42 @@ function Dial() {
     r: "128",
     transform: "rotate(-90 200 200)",
     strokeDasharray: SEAL_TRACK,
-    strokeDashoffset: SEAL_TRACK * (1 - at / 4)
+    strokeDashoffset: SEAL_TRACK * (1 - turn / 4)
   }), HOW_STEPS.map((s, i) => {
     const [x, y] = sealPt(128, i * 90);
-    const [nx, ny] = sealPt(98, i * 90);
+    const [sx, sy] = sealPt(112, i * 90);
+    const [nx, ny] = sealPt(92, i * 90);
     return React.createElement("g", {
       key: i,
-      className: 'dseal-stop' + (i <= at ? ' done' : ''),
+      className: 'dseal-stop' + (i <= turn ? ' done' : '') + (i === at ? ' cur' : ''),
       onClick: () => pick(i)
-    }, React.createElement("rect", {
-      x: x - 5,
-      y: y - 5,
-      width: "10",
-      height: "10",
-      transform: 'rotate(45 ' + x + ' ' + y + ')'
+    }, React.createElement("circle", {
+      className: "dseal-pool",
+      cx: x,
+      cy: y,
+      r: "28",
+      fill: "url(#dseal-halo)"
+    }), React.createElement("circle", {
+      className: "dseal-ripple",
+      cx: x,
+      cy: y,
+      r: "9"
+    }), React.createElement("line", {
+      className: "dseal-stem",
+      x1: x,
+      y1: y,
+      x2: sx,
+      y2: sy
+    }), React.createElement("circle", {
+      className: "dseal-globe",
+      cx: x,
+      cy: y,
+      r: "8"
+    }), React.createElement("circle", {
+      className: "dseal-flame",
+      cx: x,
+      cy: y,
+      r: "3.4"
     }), React.createElement("text", {
       x: nx,
       y: ny,
@@ -1425,16 +1494,27 @@ function Dial() {
       textAnchor: "middle"
     }, i + 1));
   }), React.createElement("g", {
-    className: "dseal-mark",
+    className: "dseal-ember",
     style: {
-      transform: 'rotate(' + at * 90 + 'deg)'
+      transform: 'rotate(' + turn * 90 + 'deg)'
     }
-  }, React.createElement("rect", {
-    x: "191",
-    y: "63",
-    width: "18",
-    height: "18",
-    transform: "rotate(45 200 72)"
+  }, [[-6, 3.2, 0.5], [-12, 2.4, 0.3], [-18, 1.7, 0.16]].map(([a, r, o]) => {
+    const [x, y] = sealPt(128, a);
+    return React.createElement("circle", {
+      key: a,
+      className: "dseal-tail",
+      cx: x,
+      cy: y,
+      r: r,
+      style: {
+        opacity: o
+      }
+    });
+  }), React.createElement("circle", {
+    className: "dseal-spark",
+    cx: "200",
+    cy: "72",
+    r: "4.4"
   })), React.createElement("image", {
     href: "assets/antler.png",
     x: "152",
