@@ -1667,18 +1667,9 @@ function Make({
     items: TOOL_SERVICES,
     cta: "Start a tools brief",
     onAddNeed: onAddNeed
-  })), React.createElement("div", {
+  })), React.createElement("p", {
     className: "dany up"
-  }, React.createElement("p", {
-    className: "dany-h"
-  }, "Not on the list? If you can picture it, I can make it."), React.createElement("a", {
-    className: "dany-btn",
-    href: "#brief",
-    onClick: e => {
-      e.preventDefault();
-      onAddNeed('design', 'Something else');
-    }
-  }, "Tell me what you\u2019re picturing")), WORK.length > 0 && React.createElement(React.Fragment, null, React.createElement("div", {
+  }, "These are just examples. Have something else in mind? I can make that happen too."), WORK.length > 0 && React.createElement(React.Fragment, null, React.createElement("div", {
     className: "dworkhead"
   }, React.createElement("h3", null, "Recent work")), React.createElement("div", {
     className: "dsamples"

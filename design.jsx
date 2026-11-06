@@ -541,10 +541,7 @@ function Make({ onAddNeed }) {
             blurb="Proven by hand first. Quoted after a short brief."
             items={TOOL_SERVICES} cta="Start a tools brief" onAddNeed={onAddNeed} />
         </div>
-        <div className="dany up">
-          <p className="dany-h">Not on the list? If you can picture it, I can make it.</p>
-          <a className="dany-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('design', 'Something else'); }}>Tell me what you’re picturing</a>
-        </div>
+        <p className="dany up">These are just examples. Have something else in mind? I can make that happen too.</p>
         {WORK.length > 0 && (
           <React.Fragment>
             <div className="dworkhead"><h3>Recent work</h3></div>
