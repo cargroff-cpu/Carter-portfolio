@@ -67,16 +67,8 @@ const STEPS = [
 ];
 
 function Nav() {
-  // phones: the header's Start a brief appears only once the hero (which has its own) is behind you
-  const [past, setPast] = React.useState(false);
-  React.useEffect(() => {
-    const on = () => { const h = document.getElementById('top'); setPast(!!h && h.getBoundingClientRect().bottom < 72); };
-    on();
-    window.addEventListener('scroll', on, { passive: true });
-    return () => window.removeEventListener('scroll', on);
-  }, []);
   return (
-    <nav className={'dnav' + (past ? ' past' : '')}>
+    <nav className="dnav">
       <div className="dnavin">
         <a className="dbrand" href="#top">
           <img src="assets/antler.png" alt="" />
@@ -86,7 +78,6 @@ function Nav() {
           <a href="#make">What I make</a><a href="#how">How it works</a><a href="#faq">Questions</a>
           <a href="https://www.cargroff.com/">Portfolio</a>
         </div>
-        <a className="p-btn" href="#brief">Start a brief</a>
       </div>
     </nav>
   );
@@ -243,7 +234,6 @@ function Hero({ onAddNeed }) {
         <p className="ddeck">{SITE.deck}</p>
         <div className="dacts">
           <a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('design'); }}>Start a brief</a>
-          <a className="p-btn ghost" href="#doors">See the work</a>
         </div>
       </div>
     </header>
@@ -519,9 +509,6 @@ function Shelf({ lane, label, title, blurb, items, cta, onAddNeed, active }) {
           })}
         </ul>
         <p className={'dmenu-note' + (peek && peek.desc ? ' peek' : '')} key={note}>{note}</p>
-        <p className="dmenu-cta">
-          <a className="dmenu-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed(lane); }}>{cta}</a>
-        </p>
       </div>
     </div>
   );
