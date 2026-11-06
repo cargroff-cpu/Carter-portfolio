@@ -11,7 +11,9 @@
 //
 //   Carter, from the Backroom (needs the Backroom session cookie): send a
 //   branded email to the client (which also moves the job to its next stage),
-//   get an upload URL for a draft or final file, and record a file or link.
+//   mark a proposal sent without emailing it (shared another way), mark an
+//   invoice paid by hand, get an upload URL for a draft or final file, and
+//   record a file or link.
 //
 // Billing per job: 'split' = 50% deposit on accept, 50% on approval;
 // 'end' = one invoice on approval. Payment links are made when the client
@@ -22,7 +24,7 @@
 import { sb, SUPABASE_URL, sbHeaders, sendEmail, parseBody, NOTIFY_EMAIL, FROM_VERIFIED, FROM_INTERNAL } from '../lib/server.js';
 import { verifySessionToken, SESSION_COOKIE } from '../lib/session.js';
 import { renderEmail, jobUrl } from '../lib/mail.js';
-import { paymentLinkFor } from '../lib/stripe.js';
+import { paymentLinkFor, deactivateLink } from '../lib/stripe.js';
 import { clientIp, hit } from '../lib/rate-limit.js';
 
 const FILES_BUCKET = 'job-files';
@@ -146,7 +148,8 @@ async function clientAction(req, res, body) {
     if (job.stage !== 'final' || job.approved_at) return res.status(409).json({ error: 'There is nothing to approve right now.' });
     const [p] = await sb(`proposals?job_id=eq.${job.id}&select=total,billing`);
     const total = p ? Number(p.total) : 0;
-    const billed = (await sb(`invoices?job_id=eq.${job.id}&select=amount`)).reduce((s, i) => s + Number(i.amount || 0), 0);
+    // Only invoices actually issued count toward what is already billed.
+    const billed = (await sb(`invoices?job_id=eq.${job.id}&status=in.(sent,paid,overdue)&select=amount`)).reduce((s, i) => s + Number(i.amount || 0), 0);
     const rest = Math.round((total - billed) * 100) / 100;
     await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { approved_at: now(), updated_at: now() } });
     if (rest > 0) {
@@ -265,6 +268,37 @@ async function adminAction(req, res, body) {
     if (to && ORDER.indexOf(to) > ORDER.indexOf(job.stage)) await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { stage: to, updated_at: now() } });
     await event(job, 'email', 'me', `${subject}\n\n${text}`, { kind });
     return res.status(200).json({ ok: true });
+  }
+
+  // The proposal was shared some other way (in person, a text, your own
+  // inbox): make it visible and acceptable on the client's page without
+  // sending an email, and move the job to Proposed.
+  if (a === 'mark-sent') {
+    const [p] = await sb(`proposals?job_id=eq.${job.id}&select=id,total,status`);
+    if (!p || !(Number(p.total) > 0)) return res.status(409).json({ error: 'Write the proposal (with a price) first.' });
+    if (p.status === 'accepted') return res.status(409).json({ error: 'This proposal is already accepted.' });
+    await sb(`proposals?id=eq.${p.id}`, { method: 'PATCH', body: { status: 'sent', sent_at: now(), updated_at: now() } });
+    if (ORDER.indexOf('proposed') > ORDER.indexOf(job.stage)) await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { stage: 'proposed', updated_at: now() } });
+    await event(job, 'note', 'me', 'Proposal marked as sent (shared without the email).');
+    return res.status(200).json({ ok: true });
+  }
+
+  // Paid outside Stripe (cash, check, a transfer): mark the invoice paid,
+  // switch off its Payment Link so it can't be paid again, log it, and move
+  // the job to Paid once it is approved and nothing issued is left unpaid.
+  // Both "Mark paid" buttons in the Business Hub call this.
+  if (a === 'mark-paid') {
+    if (!isId(body.invoice_id)) return res.status(400).json({ error: 'Missing invoice.' });
+    const [inv] = await sb(`invoices?id=eq.${body.invoice_id}&job_id=eq.${job.id}&select=*`);
+    if (!inv) return res.status(404).json({ error: 'Invoice not found.' });
+    if (inv.status === 'paid') return res.status(200).json({ ok: true, already: true });
+    await sb(`invoices?id=eq.${inv.id}`, { method: 'PATCH', body: { status: 'paid', paid_at: now(), updated_at: now() } });
+    if (inv.stripe_payment_link_id) await deactivateLink(inv.stripe_payment_link_id);
+    await event(job, 'paid', 'me', `Marked ${inv.label || 'invoice'} paid by hand (${money(inv.amount)}).`);
+    const open = await sb(`invoices?job_id=eq.${job.id}&status=in.(sent,overdue)&select=id`);
+    const done = !!job.approved_at && open.length === 0 && job.stage !== 'closed';
+    if (done) await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { stage: 'paid', updated_at: now() } });
+    return res.status(200).json({ ok: true, job_paid: done });
   }
 
   if (a === 'upload-url') {

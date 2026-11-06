@@ -67,21 +67,32 @@ function fieldsFor(job, proposal, invoices) {
   };
 }
 
+// One "Mark paid" for the job page and the Money tab (api/job.js
+// 'mark-paid'): marks it paid, switches off its Stripe link, logs it on the
+// job, and moves the job to Paid when nothing issued is left unpaid.
+const markInvoicePaid = (i) => (i.job_id
+  ? jobAction(i.job_id, 'mark-paid', { invoice_id: i.id })
+  : saveInvoice({ id: i.id, status: 'paid', paid_at: new Date().toISOString() }));
+
 // ── Needs you: what is waiting on Carter, oldest first ─────────────────
 function needsYou(jobs, proposals, invoices, briefs, events) {
   const out = [];
   const briefOf = (j) => briefs.find((b) => b.id === j.brief_id);
   const propOf = (j) => proposals.find((p) => p.job_id === j.id);
   const lastClient = (j) => events.find((e) => e.job_id === j.id && e.who === 'client');
+  // Did Carter already send this kind of email after the client's last move?
+  // (Clears "send the directions" / "revise and resend" once that is done.)
+  const sentSince = (j, kind, after) => events.some((e) => e.job_id === j.id && e.kind === 'email' && e.meta && e.meta.kind === kind
+    && new Date(e.created_at) > new Date(after.created_at));
   for (const j of jobs) {
     if (j.stage === 'closed' || j.stage === 'paid') continue;
     const b = briefOf(j); const p = propOf(j); const lc = lastClient(j);
     if (j.stage === 'new' && b && b.status !== 'answered' && !p) out.push({ j, what: 'Reply to the brief', age: daysSince(j.created_at), hot: true });
     else if (j.stage === 'new' && (!p || p.status === 'draft')) out.push({ j, what: 'Write and send the proposal', age: daysSince(j.created_at), hot: daysSince(j.created_at) >= 2 });
     if (j.stage === 'proposed' && p && p.status === 'sent' && daysSince(p.sent_at) >= 5) out.push({ j, what: 'Proposal waiting ' + daysSince(p.sent_at) + ' days: nudge them', age: daysSince(p.sent_at) });
-    if (j.stage === 'drafts' && lc && lc.kind === 'accepted') out.push({ j, what: 'Proposal accepted: send the directions', age: daysSince(lc.created_at), hot: true });
+    if (j.stage === 'drafts' && lc && lc.kind === 'accepted' && !sentSince(j, 'drafts', lc)) out.push({ j, what: 'Proposal accepted: send the directions', age: daysSince(lc.created_at), hot: true });
     if (j.stage === 'drafts' && lc && lc.kind === 'picked') out.push({ j, what: 'Direction picked: make and send the final', age: daysSince(lc.created_at), hot: true });
-    if (j.stage === 'final' && lc && lc.kind === 'changes') out.push({ j, what: 'Changes asked for: revise and resend', age: daysSince(lc.created_at), hot: true });
+    if (j.stage === 'final' && lc && lc.kind === 'changes' && !sentSince(j, 'final', lc)) out.push({ j, what: 'Changes asked for: revise and resend', age: daysSince(lc.created_at), hot: true });
   }
   for (const i of invoices) {
     if (i.status === 'sent' && daysSince(i.sent_at) >= 14) {
@@ -332,7 +343,7 @@ function Today({ data, open, go }) {
     <div className="stack">
       <div className="dash-h">
         <div><h1 className="h1">{greeting()}, Carter.</h1><p className="sub">{today}</p></div>
-        <button className="btn" onClick={() => go('jobs')}>New job</button>
+        <button className="btn" onClick={() => go('jobs', { newJob: true })}>New job</button>
       </div>
       <div className="dkpis">
         <Kpi label="Needs you" value={needs.length} note={needs.length ? (hot ? hot + ' to do first' : 'Nothing urgent') : 'All clear'} tone={hot ? 'hot' : ''} onClick={() => document.getElementById('needs')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
@@ -387,8 +398,8 @@ function Today({ data, open, go }) {
 }
 
 // ── Jobs board ─────────────────────────────────────────────────────────
-function NewJobForm({ onCreated }) {
-  const [open, setOpen] = React.useState(false);
+function NewJobForm({ onCreated, startOpen }) {
+  const [open, setOpen] = React.useState(!!startOpen);
   const [f, setF] = React.useState({ title: '', name: '', email: '', business: '', lane: 'design' });
   const [err, setErr] = React.useState('');
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
@@ -415,7 +426,7 @@ function NewJobForm({ onCreated }) {
   );
 }
 
-function Jobs({ data, open, reload }) {
+function Jobs({ data, open, reload, startNew }) {
   const [showClosed, setShowClosed] = React.useState(false);
   const { jobs, proposals } = data;
   const propOf = (j) => proposals.find((p) => p.job_id === j.id);
@@ -426,7 +437,7 @@ function Jobs({ data, open, reload }) {
           <h2 className="h2">Jobs</h2>
           <label className="sub" style={{ display: 'flex', gap: 8, alignItems: 'center' }}><input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} /> Show closed</label>
         </div>
-        <div className="pad"><NewJobForm onCreated={(id) => { reload(); if (id) open(id); }} /></div>
+        <div className="pad"><NewJobForm startOpen={startNew} onCreated={(id) => { reload(); if (id) open(id); }} /></div>
       </section>
       <div className="jboard">
         {[...STAGES, ...(showClosed ? [['closed', 'Closed']] : [])].map(([id, label]) => {
@@ -491,43 +502,46 @@ function BriefPanel({ job, briefs, reload }) {
   );
 }
 
+// The reply to a brief. With an AI triage it starts from the draft reply;
+// without one (no ANTHROPIC_API_KEY, or the triage failed) Carter writes the
+// reply himself. Either way nothing goes out until he presses Send.
 function TriageCard({ b, reload }) {
-  const t = b.triage || null;
-  const [reply, setReply] = React.useState(t ? (t.sent_reply || t.draft_reply || '') : '');
+  const t = b.triage && b.triage.summary ? b.triage : null;
+  const st = (b.triage && b.triage.status) || null;
+  const first = firstName(b.name);
+  const starter = `Hi ${first},\n\nThanks for the brief. `;
+  const [reply, setReply] = React.useState(b.triage ? (b.triage.sent_reply || b.triage.draft_reply || starter) : starter);
   const [busy, setBusy] = React.useState('');
   const [msg, setMsg] = React.useState('');
-  React.useEffect(() => { if (t) setReply(t.sent_reply || t.draft_reply || ''); }, [b.triaged_at]);
+  React.useEffect(() => { if (b.triage) setReply(b.triage.sent_reply || b.triage.draft_reply || starter); }, [b.triaged_at, st]);
   const run = (action, extra) => {
+    if (action === 'reject' && !window.confirm('Mark this brief as needing no reply? Its job will be closed.')) return;
     setBusy(action); setMsg('');
     briefAction(b.id, action, extra)
-      .then(() => { setMsg(action === 'send' ? 'Sent.' : action === 'reject' ? 'Marked answered.' : 'Updated.'); reload(); })
+      .then(() => { setMsg(action === 'send' ? 'Sent.' : action === 'reject' ? 'Marked answered and closed the job.' : 'Updated.'); reload(); })
       .catch((e) => setMsg(e.message)).finally(() => setBusy(''));
   };
-  const decided = t && (t.status === 'sent' || t.status === 'rejected');
+  const decided = st === 'sent' || st === 'rejected' || b.status === 'answered';
   return (
     <div style={{ marginTop: 14, padding: '12px 14px', border: '1px solid var(--line)' }}>
-      {t ? (
+      <div className="between" style={{ gap: 8, flexWrap: 'wrap' }}>
+        <span className="lbl">{t ? 'AI summary · ' + t.scope + (t.suggested_price ? ' · ' + t.suggested_price : '') : 'Your reply'}</span>
+        {pill(st === 'sent' ? 'reply sent' : st === 'rejected' ? 'no reply' : t ? 'draft reply ready' : 'not answered', decided ? 'mute' : 'warn')}
+      </div>
+      {t && (
         <React.Fragment>
-          <div className="between" style={{ gap: 8, flexWrap: 'wrap' }}>
-            <span className="lbl">AI summary · {t.scope}{t.suggested_price ? ' · ' + t.suggested_price : ''}</span>
-            {pill(t.status === 'sent' ? 'reply sent' : t.status === 'rejected' ? 'no reply' : 'draft reply ready', t.status === 'pending' ? 'warn' : 'mute')}
-          </div>
           <p style={{ margin: '8px 0' }}>{t.summary}</p>
           {t.missing && t.missing.length ? <p className="sub">Missing: {t.missing.join('; ')}</p> : null}
           {t.red_flags && t.red_flags.length ? <p className="sub" style={{ color: 'var(--warn)' }}>Flags: {t.red_flags.join('; ')}</p> : null}
-          <textarea className="input" rows={5} style={{ width: '100%', marginTop: 8, resize: 'vertical' }} value={reply} onChange={(e) => setReply(e.target.value)} disabled={decided} />
-          {!decided && (
-            <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-              <button className="btn sm" disabled={!!busy} onClick={() => run('send', { reply })}>{busy === 'send' ? 'Sending…' : 'Send this reply'}</button>
-              <button className="btn ghost sm" disabled={!!busy} onClick={() => run('triage')}>{busy === 'triage' ? 'Working…' : 'Redo the summary'}</button>
-              <button className="btn quiet sm" disabled={!!busy} onClick={() => run('reject')}>No reply needed</button>
-            </div>
-          )}
         </React.Fragment>
-      ) : (
-        <div className="between" style={{ gap: 8 }}>
-          <span className="sub">No AI summary yet.</span>
-          <button className="btn ghost sm" disabled={!!busy} onClick={() => run('triage')}>{busy ? 'Working…' : 'Summarise the brief'}</button>
+      )}
+      <textarea className="input" rows={5} style={{ width: '100%', marginTop: 8, resize: 'vertical' }} value={reply} onChange={(e) => setReply(e.target.value)} disabled={decided}
+        aria-label="Reply to the brief" placeholder="Write your reply to the brief" />
+      {!decided && (
+        <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+          <button className="btn sm" disabled={!!busy || reply.trim().length < 10} onClick={() => run('send', { reply })}>{busy === 'send' ? 'Sending…' : 'Send this reply'}</button>
+          <button className="btn ghost sm" disabled={!!busy} onClick={() => run('triage')}>{busy === 'triage' ? 'Working…' : t ? 'Redo the summary' : 'Draft it with AI'}</button>
+          <button className="btn quiet sm" disabled={!!busy} onClick={() => run('reject')}>No reply needed</button>
         </div>
       )}
       {msg && <p className="sub" style={{ marginTop: 6 }}>{msg}</p>}
@@ -548,6 +562,12 @@ function ProposalPanel({ job, proposal, reload, compose }) {
     const row = { job_id: job.id, summary: p.summary, items, timeline: p.timeline, terms: p.terms, billing: p.billing, total: sumItems(items), updated_at: new Date().toISOString() };
     if (proposal) row.id = proposal.id;
     return saveProposal(row).then(() => saveJob({ id: job.id, billing: p.billing })).then(() => { setMsg('Saved.'); reload(); });
+  };
+  // For a proposal shared another way: no email, but the client's page shows
+  // it with the Accept button, and the job moves to Proposed.
+  const markSent = () => {
+    if (!window.confirm('Mark the proposal as sent without emailing it? It will show on their project page, ready to accept.')) return;
+    save().then(() => jobAction(job.id, 'mark-sent')).then(() => { setMsg('Marked as sent. Share their project link.'); reload(); }).catch((e) => setMsg(e.message));
   };
   return (
     <section className="tile">
@@ -575,6 +595,7 @@ function ProposalPanel({ job, proposal, reload, compose }) {
         <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
           <button className="btn ghost sm" onClick={() => save().catch((e) => setMsg(e.message))}>Save</button>
           <button className="btn sm" disabled={!(total > 0)} onClick={() => save().then(() => compose('proposal')).catch((e) => setMsg(e.message))}>{proposal && proposal.status === 'sent' ? 'Save and resend' : 'Save and email it'}</button>
+          {!(proposal && proposal.status === 'sent') && <button className="btn quiet sm" disabled={!(total > 0)} onClick={markSent} title="Shared it another way? Make it acceptable on their page without an email.">Mark as sent</button>}
           {msg && <span className="sub">{msg}</span>}
         </div>
       )}
@@ -746,10 +767,19 @@ function JobPage({ jobId, data, reload, back }) {
   const copy = () => { navigator.clipboard && navigator.clipboard.writeText(JOB_URL(job.token)).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }); };
   const addNote = () => { if (!note.trim()) return; saveJobEvent({ job_id: job.id, kind: 'note', who: 'me', body: note.trim() }).then(() => { setNote(''); loadMine(); }); };
   const setStage = (stage) => saveJob({ id: job.id, stage }).then(refresh);
-  const markPaid = (i) => saveInvoice({ id: i.id, status: 'paid', paid_at: new Date().toISOString() })
-    .then(() => saveJobEvent({ job_id: job.id, kind: 'paid', who: 'me', body: `Marked ${i.label || 'invoice'} paid by hand (${usd(i.amount)}).` }))
-    .then(() => { const left = invoices.filter((x) => x.id !== i.id && x.status !== 'paid'); return job.approved_at && !left.length ? saveJob({ id: job.id, stage: 'paid' }) : null; })
-    .then(refresh);
+  const markPaid = (i) => {
+    if (!window.confirm(`Mark ${i.label || 'this invoice'} (${usd(i.amount)}) as paid? Its Stripe payment link will be switched off.`)) return;
+    markInvoicePaid(i).then(refresh).catch((e) => alert(e.message));
+  };
+  // Clients are matched by id, or by email for jobs that came in as briefs.
+  const matchClient = data.clients.find((c) => c.id === job.client_id)
+    || (job.email ? data.clients.find((c) => c.email && c.email.toLowerCase() === job.email.toLowerCase()) : null);
+  const saveAsClient = () => {
+    const linkTo = matchClient
+      ? Promise.resolve({ row: matchClient })
+      : saveClient({ name: job.business || job.name, contact: job.business ? job.name : null, email: job.email || null, since: new Date().toISOString().slice(0, 10) });
+    linkTo.then((r) => saveJob({ id: job.id, client_id: r.row.id })).then(refresh).catch((e) => alert(e.message));
+  };
   return (
     <div className="stack">
       <section className="tile brief">
@@ -758,11 +788,12 @@ function JobPage({ jobId, data, reload, back }) {
           <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
             <button className="btn ghost sm" onClick={copy}>{copied ? 'Copied' : 'Copy client link'}</button>
             <a className="btn ghost sm" href={JOB_URL(job.token)} target="_blank" rel="noopener">See their page</a>
+            {!job.client_id && <button className="btn ghost sm" onClick={saveAsClient}>{matchClient ? 'Link to ' + matchClient.name : 'Save as client'}</button>}
             <button className="btn sm" onClick={() => setCompose('note')}>Email client</button>
           </div>
         </div>
         <h2 className="h2" style={{ marginTop: 12 }}>{job.title}</h2>
-        <p className="sub">{job.name}{job.business ? ', ' + job.business : ''}{job.email ? ' · ' + job.email : ''} · {job.lane === 'automation' ? 'Tools' : 'Design'}</p>
+        <p className="sub">{job.name}{job.business ? ', ' + job.business : ''}{job.email ? ' · ' + job.email : ''} · {job.lane === 'automation' ? 'Tools' : 'Design'}{job.client_id && matchClient ? ' · client: ' + matchClient.name : ''}</p>
         <div className="row stagetrack" style={{ gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
           {STAGES.map(([id, label]) => <span key={id}>{pill(label, id === job.stage ? stageKind(id) : 'mute')}</span>)}
           {job.stage === 'closed' && pill('Closed', 'bad')}
@@ -884,7 +915,10 @@ function Mail({ data, open }) {
 function Money({ data, open, reload }) {
   const jobOf = (id) => data.jobs.find((j) => j.id === id);
   const due = data.invoices.filter((i) => i.status === 'sent');
-  const markPaid = (i) => saveInvoice({ id: i.id, status: 'paid', paid_at: new Date().toISOString() }).then(reload);
+  const markPaid = (i) => {
+    if (!window.confirm(`Mark ${i.label || 'this invoice'} (${usd(i.amount)}) as paid? Its Stripe payment link will be switched off.`)) return;
+    markInvoicePaid(i).then(reload).catch((e) => alert(e.message));
+  };
   return (
     <div className="stack">
       <div className="hgrid">
@@ -983,7 +1017,7 @@ function Clients({ data, reload, open }) {
           </table></div>
         </div>
       ) : (
-        <p className="sub">{data.clients.length ? 'No client matches that search.' : 'No clients yet. Add one, or they appear as briefs turn into jobs.'}</p>
+        <p className="sub">{data.clients.length ? 'No client matches that search.' : 'No clients yet. Add one here, or press Save as client on a job.'}</p>
       )}
     </div>
   );
@@ -1111,7 +1145,8 @@ function BusinessHub() {
   const loading = [jobs, proposals, invoices, clients, briefs, events].some((r) => r === null);
   const reloadAll = () => { reloadJobs(); reloadProposals(); reloadInvoices(); reloadClients(); reloadBriefs(); reloadEvents(); };
   const data = loading ? null : { jobs, proposals, invoices, clients, briefs, events, needs: needsYou(jobs, proposals, invoices, briefs, events) };
-  const go = (t) => { setTab(t); setJobId(null); history.replaceState(null, '', '#' + t); };
+  const [startNew, setStartNew] = React.useState(false);
+  const go = (t, opts) => { setTab(t); setJobId(null); setStartNew(!!(opts && opts.newJob)); history.replaceState(null, '', '#' + t); };
   const open = (id) => { setTab('jobs'); setJobId(id); history.replaceState(null, '', '#job=' + id); window.scrollTo(0, 0); };
 
   return (
@@ -1142,7 +1177,7 @@ function BusinessHub() {
             <React.Fragment>
               {tab === 'ring' && <Ring go={go} data={data} />}
               {tab === 'today' && <Today data={data} open={open} go={go} />}
-              {tab === 'jobs' && (jobId ? <JobPage jobId={jobId} data={data} reload={reloadAll} back={() => go('jobs')} /> : <Jobs data={data} open={open} reload={reloadAll} />)}
+              {tab === 'jobs' && (jobId ? <JobPage jobId={jobId} data={data} reload={reloadAll} back={() => go('jobs')} /> : <Jobs data={data} open={open} reload={reloadAll} startNew={startNew} />)}
               {tab === 'proposals' && <Proposals data={data} open={open} />}
               {tab === 'mail' && <Mail data={data} open={open} />}
               {tab === 'money' && <Money data={data} open={open} reload={reloadAll} />}

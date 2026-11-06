@@ -28,8 +28,12 @@ function when(t) {
   return { txt: days(t.made, today()) + 'd old', cls: '' };
 }
 
-function Task({ t, onDragStart, onDragEnd, onClear, dragging }) {
+// The date label doubles as the due-date picker (a native date input laid
+// over it), and on touch screens a small menu moves the task between
+// columns, since phones don't do drag and drop. Neither clears the task.
+function Task({ t, onDragStart, onDragEnd, onClear, onSetDue, onMove, dragging }) {
   const w = when(t);
+  const stop = (e) => e.stopPropagation();
   return (
     <div className={'task' + (dragging ? ' dragging' : '')} draggable
       onDragStart={(e) => { e.dataTransfer.setData('text/plain', t.id); onDragStart(t.id); }}
@@ -37,7 +41,16 @@ function Task({ t, onDragStart, onDragEnd, onClear, dragging }) {
       onClick={onClear}
       title="Click to clear, drag to reorder or move column">
       <span className="t">{t.t}</span>
-      <span className={'when ' + w.cls}>{w.txt}</span>
+      <span className="side" onClick={stop}>
+        <label className={'when ' + w.cls} title={t.due ? 'Change or clear the due date' : 'Set a due date'}>
+          {t.due ? w.txt : <React.Fragment>{w.txt}<i className="setdue"> · due?</i></React.Fragment>}
+          <input type="date" className="duepick" value={t.due || ''} aria-label={'Due date for ' + t.t}
+            onChange={(e) => onSetDue(t.id, e.target.value || null)} />
+        </label>
+        <select className="mover" value={t.q} aria-label={'Move ' + t.t} onChange={(e) => onMove(t.id, e.target.value)}>
+          {QUADS.map(([q, label]) => <option key={q} value={q}>{label}</option>)}
+        </select>
+      </span>
     </div>
   );
 }
@@ -92,7 +105,7 @@ function Column({ q, label, axis, tasks, onAdd, onDragStart, onDragEnd, onDrop, 
             {gapIndex === i && <div className="gap" />}
             <Task t={t} dragging={draggingId === t.id}
               onDragStart={onDragStart} onDragEnd={onDragEnd}
-              onClear={() => onAdd.clear(t.id)} />
+              onClear={() => onAdd.clear(t.id)} onSetDue={onAdd.setDue} onMove={(id, qq) => onDrop(id, qq, null)} />
           </React.Fragment>
         ))}
         {gapIndex === tasks.length && <div className="gap" />}
@@ -110,10 +123,20 @@ function Docket() {
   const [tasks, setTasks] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [draggingId, setDraggingId] = React.useState(null);
+  const [saveErr, setSaveErr] = React.useState('');
+  // A task added a moment ago has a temporary id until Supabase answers;
+  // writes to it wait for the real one.
+  const pendingIds = React.useRef({});
+  const realId = (id) => pendingIds.current[id] || Promise.resolve(id);
 
   React.useEffect(() => {
-    fetchDocketTasks().then((rows) => setTasks(rows)).catch(() => {}).finally(() => setLoading(false));
+    fetchDocketTasks().then((rows) => setTasks(rows)).catch(() => setSaveErr('Could not load the Docket. Reload to try again.')).finally(() => setLoading(false));
   }, []);
+
+  // Every write goes through here, so a failed save is visible, not silent.
+  const persist = (id, changes) => realId(id)
+    .then((rid) => saveDocketTask({ id: rid, ...changes }))
+    .catch(() => setSaveErr('A change did not save. Reload to see what is stored.'));
 
   const open = tasks.filter((t) => !t.done);
   const done = tasks.filter((t) => t.done);
@@ -122,7 +145,7 @@ function Docket() {
 
   const clearTask = (id, doneVal) => {
     patch(id, { done: doneVal });
-    saveDocketTask({ id, done: doneVal }).catch(() => {});
+    persist(id, { done: doneVal });
   };
 
   const reindex = (q, list) => {
@@ -138,35 +161,45 @@ function Docket() {
       due: null, made: todayStr(), rank: -1, done: false,
     };
     setTasks((prev) => reindex(q, [newTask, ...prev]));
-    saveDocketTask({ brand: BRAND, q, t: text, due: null, made: todayStr(), rank: -1, done: false })
+    pendingIds.current[newTask.id] = saveDocketTask({ brand: BRAND, q, t: text, due: null, made: todayStr(), rank: -1, done: false })
       .then((res) => {
         // swap the optimistic local id for the real one from Supabase
-        if (res && res.row && res.row.id) {
-          setTasks((prev) => prev.map((t) => (t.id === newTask.id ? { ...t, id: res.row.id } : t)));
-        }
+        const rid = res && res.row && res.row.id;
+        if (!rid) throw new Error('no id');
+        setTasks((prev) => prev.map((t) => (t.id === newTask.id ? { ...t, id: rid } : t)));
+        return rid;
       })
-      .catch(() => {});
+      .catch((e) => { setSaveErr('That task did not save. Reload to see what is stored.'); throw e; });
+    pendingIds.current[newTask.id].catch(() => {});
   };
   addTask.clear = (id) => {
     const t = tasks.find((x) => x.id === id);
     if (t) clearTask(id, !t.done);
   };
+  addTask.setDue = (id, due) => {
+    patch(id, { due });
+    persist(id, { due });
+  };
 
+  // Moving one task re-ranks its whole column, so every task whose rank
+  // changed is saved, not just the one that moved; otherwise the order
+  // resets on reload.
   const onDrop = (id, q, gapIndex) => {
-    setTasks((prev) => {
-      const moving = prev.find((t) => t.id === id);
-      if (!moving) return prev;
-      let next = prev.map((t) => (t.id === id ? { ...t, q, done: false } : t));
-      const inQ = next.filter((t) => t.q === q && !t.done && t.id !== id).sort((a, b) => (a.rank || 0) - (b.rank || 0));
-      const idx = gapIndex == null ? inQ.length : Math.min(gapIndex, inQ.length);
-      inQ.splice(idx, 0, { ...moving, q });
-      const ranked = {};
-      inQ.forEach((t, i) => { ranked[t.id] = i; });
-      next = next.map((t) => (ranked[t.id] != null ? { ...t, rank: ranked[t.id] } : t));
-      const movedFinal = next.find((t) => t.id === id);
-      saveDocketTask({ id, q, done: false, rank: movedFinal.rank }).catch(() => {});
-      return next;
-    });
+    const prev = tasks;
+    const moving = prev.find((t) => t.id === id);
+    if (!moving) return;
+    let next = prev.map((t) => (t.id === id ? { ...t, q, done: false } : t));
+    const inQ = next.filter((t) => t.q === q && !t.done && t.id !== id).sort((a, b) => (a.rank || 0) - (b.rank || 0));
+    const idx = gapIndex == null ? inQ.length : Math.min(gapIndex, inQ.length);
+    inQ.splice(idx, 0, { ...moving, q });
+    const ranked = {};
+    inQ.forEach((t, i) => { ranked[t.id] = i; });
+    next = next.map((t) => (ranked[t.id] != null ? { ...t, rank: ranked[t.id] } : t));
+    setTasks(next);
+    persist(id, { q, done: false, rank: ranked[id] });
+    for (const t of prev) {
+      if (t.id !== id && ranked[t.id] != null && ranked[t.id] !== t.rank) persist(t.id, { rank: ranked[t.id] });
+    }
   };
 
   return (
@@ -184,6 +217,7 @@ function Docket() {
         </div>
       </header>
       <main>
+        {saveErr && <p className="saveerr" role="alert">{saveErr} <button type="button" onClick={() => setSaveErr('')}>Dismiss</button></p>}
         <div className="filterbar">
           <div className="tally">
             <span>Now<b className="hot">{open.filter((t) => t.q === 'q1').length}</b></span>
@@ -199,7 +233,7 @@ function Docket() {
               {QUADS.map(([q, label, axis]) => (
                 <Column key={q} q={q} label={label} axis={axis}
                   tasks={open.filter((t) => t.q === q).sort((a, b) => (a.rank || 0) - (b.rank || 0))}
-                  onAdd={Object.assign((qq, text) => addTask(qq, text), { clear: addTask.clear })}
+                  onAdd={Object.assign((qq, text) => addTask(qq, text), { clear: addTask.clear, setDue: addTask.setDue })}
                   onDragStart={setDraggingId} onDragEnd={() => setDraggingId(null)}
                   onDrop={onDrop} draggingId={draggingId} />
               ))}
@@ -219,6 +253,7 @@ function Docket() {
               <span>Drag between columns to change what it is worth</span>
               <span>Drag up or down to rank it</span>
               <span>Click a line to clear it</span>
+              <span>Click its date to set when it is due</span>
             </div>
           </React.Fragment>
         )}

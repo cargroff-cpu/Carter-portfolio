@@ -1,5 +1,46 @@
 # Decisions
 
+## 2026-11-06 operations audit: fixes before the first real client
+
+An end-to-end audit (code, Supabase, Vercel) found the workflow sound but
+never exercised, with a handful of places that would stall or mislead on the
+first paying job. Fixed here:
+
+- **Scaffold page editor could not publish.** `site_content` only allowed
+  `id = 1`; the editor writes id 2. Constraint is now `id in (1, 2)`
+  (`supabase/migrations/20261106b_audit_fixes.sql`, applied 2026-11-06, along
+  with dropping three unused `design_briefs` columns and indexing three
+  foreign keys).
+- **Briefs can be answered without AI.** The brief card always shows a reply
+  box; AI triage, when `ANTHROPIC_API_KEY` is set, only pre-fills it.
+- **"No reply needed" closes the brief's job** (if it never got past New), so
+  it no longer sits on the board asking for a proposal.
+- **Mark as sent** on a proposal makes it acceptable on the client's page
+  without the email, for proposals shared another way (`api/job.js`
+  `mark-sent`).
+- **One Mark paid.** Both buttons call `api/job.js` `mark-paid`: logs it,
+  switches off the Stripe link, moves the job to Paid when nothing issued is
+  left unpaid. Previously the Money tab's button did none of that.
+- **No double payments.** Payment Links take one payment
+  (`restrictions[completed_sessions][limit]=1`) and are deactivated when the
+  invoice is paid (webhook or by hand). An invoice whose amount is edited
+  drops its old link so Pay makes a fresh one.
+- **Webhook:** 5-minute timestamp tolerance; accepts any of several `v1`
+  signatures; draft invoices no longer keep a job from reaching Paid.
+- **Final invoice** counts only issued invoices (sent, paid, overdue) toward
+  what is already billed.
+- **Needs you** no longer keeps "send the directions" or "revise and resend"
+  after that email has gone out.
+- **Save as client** on a job creates (or links) a client; the Clients empty
+  state no longer claims this happens on its own.
+- **Docket:** every re-ranked task is saved (order no longer resets on
+  reload), failed saves show a message, the date label sets a due date, and
+  on touch screens a small menu moves a task between columns.
+
+Left as decisions for Carter, not changed: whether the deposit should gate
+the directions (today accepting moves straight to Drafts), and whether
+"Ask for changes" should stop once the included rounds are used.
+
 ## /design rebalanced: design and tools 50/50, broad not specific
 
 Carter's feedback on the tools-first version: too much weight on the tools
