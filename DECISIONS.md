@@ -798,3 +798,4 @@ of it off. Desktop is unchanged.
 
 Follow-up: the nudge was too much on repeat, so it plays once the first time
 the cards scroll into view (an IntersectionObserver in Make) and never again.
+Then softened again: one slow 12px ease out and back, no bounce.
