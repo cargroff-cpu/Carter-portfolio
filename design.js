@@ -1306,10 +1306,9 @@ function sealArc(a, r) {
   const [x2, y2] = sealPt(r, flip ? a - 58 : a + 58);
   return 'M' + x1 + ' ' + y1 + ' A' + r + ' ' + r + ' 0 0 ' + (flip ? 0 : 1) + ' ' + x2 + ' ' + y2;
 }
-const SEAL_TRACK = 2 * Math.PI * 128;
+const WATCH_ROMAN = ['I', 'II', 'III', 'IV'];
 function Dial() {
   const [turn, setTurn] = React.useState(0);
-  const [snap, setSnap] = React.useState(false);
   const [auto, setAuto] = React.useState(true);
   const [seen, setSeen] = React.useState(false);
   const [held, setHeld] = React.useState(false);
@@ -1317,7 +1316,11 @@ function Dial() {
   const at = turn % 4;
   const pick = i => {
     setAuto(false);
-    setTurn(i);
+    setTurn(t => {
+      let n = t;
+      while (n % 4 !== i) n++;
+      return n;
+    });
   };
   React.useEffect(() => {
     const el = box.current;
@@ -1331,18 +1334,11 @@ function Dial() {
   React.useEffect(() => {
     if (!auto || !seen || held) return;
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const t = setInterval(() => setTurn(a => a >= 4 ? 1 : a + 1), 3600);
+    const t = setInterval(() => setTurn(a => a + 1), 3800);
     return () => clearInterval(t);
   }, [auto, seen, held]);
-  React.useEffect(() => {
-    if (turn !== 4) return;
-    const t = setTimeout(() => {
-      setSnap(true);
-      setTurn(0);
-      setTimeout(() => setSnap(false), 80);
-    }, 1100);
-    return () => clearTimeout(t);
-  }, [turn]);
+  const [sw1x, sw1y] = sealPt(90, -76);
+  const [sw2x, sw2y] = sealPt(90, 0);
   return React.createElement("section", {
     id: "how",
     ref: box,
@@ -1357,53 +1353,45 @@ function Dial() {
   }), React.createElement("div", {
     className: "dwrap ddialwrap"
   }, React.createElement("div", {
-    className: 'ddial up' + (snap ? ' snap' : '') + (turn === 4 ? ' wrapping' : ''),
+    className: "ddial up",
     "aria-hidden": "true"
   }, React.createElement("svg", {
     viewBox: "0 0 400 400",
-    role: "presentation",
-    style: {
-      '--lit': 0.22 + 0.16 * turn
-    }
+    role: "presentation"
   }, React.createElement("defs", null, HOW_STEPS.map((s, i) => React.createElement("path", {
     key: i,
     id: 'dseal-' + i,
-    d: sealArc(i * 90, i === 2 ? 170 : 158)
-  })), React.createElement("radialGradient", {
-    id: "dseal-halo"
+    d: sealArc(i * 90, i === 2 ? 167 : 150)
+  })), React.createElement("linearGradient", {
+    id: "dwatch-sweep",
+    x1: "0",
+    x2: "1",
+    y1: "0",
+    y2: "0"
   }, React.createElement("stop", {
-    className: "dseal-halo-0",
+    className: "dwatch-sweep-0",
     offset: "0"
   }), React.createElement("stop", {
-    className: "dseal-halo-1",
-    offset: "1"
-  })), React.createElement("radialGradient", {
-    id: "dseal-core"
-  }, React.createElement("stop", {
-    className: "dseal-core-0",
-    offset: "0"
-  }), React.createElement("stop", {
-    className: "dseal-core-1",
+    className: "dwatch-sweep-1",
     offset: "1"
   }))), React.createElement("circle", {
-    className: "dseal-core",
+    className: "dseal-rule",
     cx: "200",
     cy: "200",
-    r: "118",
-    fill: "url(#dseal-core)"
+    r: "192"
   }), React.createElement("circle", {
     className: "dseal-rule",
     cx: "200",
     cy: "200",
-    r: "190"
+    r: "100"
   }), React.createElement("g", {
-    className: "dseal-ticks"
+    className: "dwatch-ticks"
   }, Array.from({
-    length: 72
+    length: 60
   }, (_, k) => {
-    const major = k % 18 === 0;
-    const [x1, y1] = sealPt(major ? 180 : 184, k * 5);
-    const [x2, y2] = sealPt(189, k * 5);
+    const major = k % 5 === 0;
+    const [x1, y1] = sealPt(major ? 172 : 178, k * 6);
+    const [x2, y2] = sealPt(188, k * 6);
     return React.createElement("line", {
       key: k,
       className: major ? 'major' : '',
@@ -1412,12 +1400,7 @@ function Dial() {
       x2: x2,
       y2: y2
     });
-  })), React.createElement("circle", {
-    className: "dseal-rule",
-    cx: "200",
-    cy: "200",
-    r: "142"
-  }), HOW_STEPS.map(([title], i) => React.createElement("g", {
+  })), HOW_STEPS.map(([title], i) => React.createElement("g", {
     key: title,
     className: 'dseal-name' + (at === i ? ' on' : ''),
     onClick: () => pick(i)
@@ -1425,103 +1408,49 @@ function Dial() {
     href: '#dseal-' + i,
     startOffset: "50%",
     textAnchor: "middle"
-  }, title)))), React.createElement("g", {
-    className: "dseal-dots"
-  }, [45, 135, 225, 315].map((a, k) => {
-    const [x, y] = sealPt(150, a);
-    return React.createElement("circle", {
-      key: a,
-      className: "dseal-dot",
-      cx: x,
-      cy: y,
-      r: "2",
-      style: {
-        animationDelay: k * 0.9 + 's'
-      }
-    });
-  })), React.createElement("circle", {
-    className: "dseal-track",
-    cx: "200",
-    cy: "200",
-    r: "128"
-  }), React.createElement("circle", {
-    className: "dseal-done",
-    cx: "200",
-    cy: "200",
-    r: "128",
-    transform: "rotate(-90 200 200)",
-    strokeDasharray: SEAL_TRACK,
-    strokeDashoffset: SEAL_TRACK * (1 - turn / 4)
-  }), HOW_STEPS.map((s, i) => {
-    const [x, y] = sealPt(128, i * 90);
-    const [sx, sy] = sealPt(112, i * 90);
-    const [nx, ny] = sealPt(92, i * 90);
-    return React.createElement("g", {
-      key: i,
-      className: 'dseal-stop' + (i <= turn ? ' done' : '') + (i === at ? ' cur' : ''),
+  }, title)))), WATCH_ROMAN.map((n, i) => {
+    const [x, y] = sealPt(122, i * 90);
+    return React.createElement("text", {
+      key: n,
+      className: 'dwatch-num' + (at === i ? ' on' : ''),
+      x: x,
+      y: y,
       onClick: () => pick(i)
-    }, React.createElement("circle", {
-      className: "dseal-pool",
-      cx: x,
-      cy: y,
-      r: "28",
-      fill: "url(#dseal-halo)"
-    }), React.createElement("circle", {
-      className: "dseal-ripple",
-      cx: x,
-      cy: y,
-      r: "9"
-    }), React.createElement("line", {
-      className: "dseal-stem",
-      x1: x,
-      y1: y,
-      x2: sx,
-      y2: sy
-    }), React.createElement("circle", {
-      className: "dseal-globe",
-      cx: x,
-      cy: y,
-      r: "8"
-    }), React.createElement("circle", {
-      className: "dseal-flame",
-      cx: x,
-      cy: y,
-      r: "3.4"
-    }), React.createElement("text", {
-      x: nx,
-      y: ny,
-      dy: "0.35em",
-      textAnchor: "middle"
-    }, i + 1));
+    }, n);
+  }), React.createElement("image", {
+    href: "assets/antler.png",
+    x: "174",
+    y: "238",
+    width: "52",
+    height: "40",
+    className: "dseal-crest"
   }), React.createElement("g", {
-    className: "dseal-ember",
+    className: "dwatch-hand",
     style: {
       transform: 'rotate(' + turn * 90 + 'deg)'
     }
-  }, [[-6, 3.2, 0.5], [-12, 2.4, 0.3], [-18, 1.7, 0.16]].map(([a, r, o]) => {
-    const [x, y] = sealPt(128, a);
-    return React.createElement("circle", {
-      key: a,
-      className: "dseal-tail",
-      cx: x,
-      cy: y,
-      r: r,
-      style: {
-        opacity: o
-      }
-    });
-  }), React.createElement("circle", {
-    className: "dseal-spark",
+  }, React.createElement("path", {
+    d: 'M200 200 L' + sw1x + ' ' + sw1y + ' A90 90 0 0 1 ' + sw2x + ' ' + sw2y + ' Z',
+    fill: "url(#dwatch-sweep)"
+  }), React.createElement("line", {
+    className: "stem",
+    x1: "200",
+    y1: "226",
+    x2: "200",
+    y2: "116"
+  }), React.createElement("path", {
+    className: "tip",
+    d: "M200 104 L206.5 120 L200 116 L193.5 120 Z"
+  })), React.createElement("circle", {
+    className: "dwatch-jewel",
     cx: "200",
-    cy: "72",
-    r: "4.4"
-  })), React.createElement("image", {
-    href: "assets/antler.png",
-    x: "152",
-    y: "164",
-    width: "96",
-    height: "73",
-    className: "dseal-crest"
+    cy: "200",
+    r: "7"
+  }), React.createElement("circle", {
+    className: "dwatch-pin",
+    cx: "200",
+    cy: "200",
+    r: "2.6"
   }))), React.createElement("div", null, React.createElement("div", {
     className: "dshead up"
   }, React.createElement("h2", {

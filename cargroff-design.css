@@ -320,48 +320,22 @@ a:hover { color: var(--amber-lit); }
 .ddial { width: min(100%, 500px); margin: 0 auto; }
 .ddial svg { display: block; width: 100%; height: auto; overflow: visible; }
 .dseal-rule { fill: none; stroke: var(--rule-strong); stroke-width: 1; }
-.dseal-dots { transform-box: view-box; transform-origin: 50% 50%; animation: dseal-orbit 90s linear infinite; }
-.dseal-dot { fill: var(--amber); opacity: .35; animation: dseal-twinkle 3.6s ease-in-out infinite; }
-@keyframes dseal-orbit { to { transform: rotate(360deg); } }
-@keyframes dseal-twinkle { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
 .dseal-name { cursor: pointer; }
 .dseal-name text { font-family: var(--display); font-size: 21px; font-weight: 500; letter-spacing: 0; fill: var(--ink-mute); transition: fill .3s; }
 .dseal-name:hover text { fill: var(--ink); }
 .dseal-name.on text { fill: var(--amber-lit); }
-.dseal-track { fill: none; stroke: var(--rule-strong); stroke-width: 1; stroke-dasharray: 2 6; animation: dseal-march 12s linear infinite; }
-@keyframes dseal-march { to { stroke-dashoffset: -64; } }
-.dseal-done { fill: none; stroke: var(--amber); stroke-width: 2; transition: stroke-dashoffset .8s cubic-bezier(.3,.7,.2,1); }
-/* the lit route: each stop is a gas lamp that catches as the ember reaches it */
-.dseal-core { opacity: var(--lit, .3); transition: opacity .8s ease; }
-.dseal-core-0 { stop-color: var(--amber); stop-opacity: .34; } .dseal-core-1 { stop-color: var(--amber); stop-opacity: 0; }
-.dseal-halo-0 { stop-color: var(--amber-lit); stop-opacity: .7; } .dseal-halo-1 { stop-color: var(--amber); stop-opacity: 0; }
-.dseal-ticks { transform-box: view-box; transform-origin: 50% 50%; animation: dseal-orbit 240s linear infinite; }
-.dseal-ticks line { stroke: var(--ink-dim); stroke-width: 1; }
-.dseal-ticks line.major { stroke: var(--amber); stroke-width: 1.6; }
-.dseal-stop { cursor: pointer; }
-.dseal-pool { opacity: 0; transition: opacity .6s ease; }
-.dseal-stem { stroke: var(--ink-dim); stroke-width: 1.4; stroke-linecap: round; transition: stroke .5s ease; }
-.dseal-globe { fill: var(--bg-warm); stroke: var(--ink-mute); stroke-width: 1.2; transition: fill .5s ease, stroke .5s ease; }
-.dseal-flame { fill: var(--amber-lit); opacity: 0; transition: opacity .5s ease; transform-box: fill-box; transform-origin: 50% 70%; }
-.dseal-ripple { fill: none; stroke: var(--amber-lit); stroke-width: 1.4; opacity: 0; transform-box: fill-box; transform-origin: 50% 50%; }
-.dseal-stop text { font-family: var(--display); font-size: 22px; font-weight: 500; fill: var(--ink-mute); transition: fill .3s; }
-.dseal-stop:hover text { fill: var(--ink); }
-.dseal-stop.done .dseal-pool { opacity: .55; }
-.dseal-stop.done .dseal-stem { stroke: var(--amber); }
-.dseal-stop.done .dseal-globe { fill: var(--amber); stroke: var(--amber-lit); }
-.dseal-stop.done .dseal-flame { opacity: .95; animation: dseal-flame 3.2s ease-in-out infinite; }
-.dseal-stop.done text { fill: var(--ink-soft); }
-.dseal-stop.cur .dseal-pool { opacity: 1; }
-.dseal-stop.cur text { fill: var(--amber-lit); }
-.dseal-stop.cur .dseal-ripple { animation: dseal-ripple 2.6s ease-out infinite; }
-.dseal-ember { transform-origin: 200px 200px; transition: transform .9s cubic-bezier(.3, .7, .2, 1); pointer-events: none; }
-.dseal-spark { fill: var(--amber-lit); filter: drop-shadow(0 0 6px var(--amber-lit)); animation: dseal-spark 1.8s ease-in-out infinite; }
-.dseal-tail { fill: var(--amber-lit); }
-.ddial.wrapping .dseal-done { opacity: 0; transition: stroke-dashoffset .9s cubic-bezier(.3,.7,.2,1), opacity .8s ease .2s; }
-.ddial.snap .dseal-done, .ddial.snap .dseal-ember, .ddial.snap .dseal-stop *, .ddial.snap .dseal-core { transition: none; }
-@keyframes dseal-ripple { 0% { transform: scale(1); opacity: .8; } 100% { transform: scale(3.2); opacity: 0; } }
-@keyframes dseal-flame { 0%, 100% { transform: scale(1); opacity: .95; } 35% { transform: scale(1.18, 1.3); opacity: 1; } 70% { transform: scale(.9, .85); opacity: .8; } }
-@keyframes dseal-spark { 0%, 100% { opacity: 1; } 50% { opacity: .65; } }
+/* the dial is a pocket-watch face: a hand ticks to each step, short of the numerals */
+.dwatch-ticks line { stroke: var(--ink-dim); stroke-width: 1; }
+.dwatch-ticks line.major { stroke: var(--amber); stroke-width: 1.8; }
+.dwatch-num { font-family: var(--display); font-size: 34px; font-weight: 500; fill: var(--ink-mute); text-anchor: middle; dominant-baseline: central; cursor: pointer; transition: fill .4s ease; }
+.dwatch-num:hover { fill: var(--ink); }
+.dwatch-num.on { fill: var(--amber-lit); }
+.dwatch-hand { transform-box: view-box; transform-origin: 50% 50%; transition: transform .8s cubic-bezier(.3, 1.55, .5, 1); pointer-events: none; }
+.dwatch-hand .stem { stroke: var(--amber-lit); stroke-width: 2.6; stroke-linecap: round; }
+.dwatch-hand .tip { fill: var(--amber-lit); }
+.dwatch-sweep-0 { stop-color: var(--amber); stop-opacity: 0; } .dwatch-sweep-1 { stop-color: var(--amber); stop-opacity: .5; }
+.dwatch-jewel { fill: var(--amber); stroke: var(--amber-lit); stroke-width: 1.4; }
+.dwatch-pin { fill: var(--bg-deep); }
 .dseal-crest { opacity: .55; animation: dseal-breathe 5s ease-in-out infinite; }
 @keyframes dseal-breathe { 0%, 100% { opacity: .42; } 50% { opacity: .85; } }
 .dseal-name.on text { animation: dseal-glow 3.6s ease-in-out infinite; }
@@ -569,9 +543,9 @@ a:hover { color: var(--amber-lit); }
   .dcursor, .dmv, .dhero-fog, .dhero-candle, .dhero-wisp, .dhero-lamp, .dhero-lamp path[fill="#1a1008"], .dhero-lamp svg > g:first-of-type, .dhero-lamp .dhero-candle, .dhero-lamp svg { animation: none; }
   .dsession li, .js .dsession li, .js .dsheet.up .dprint { opacity: 1; transform: none; transition: none; }
   .js .dsheet.up .dprint:not([aria-pressed="true"]) { opacity: .66; }
-  .dhero-lamp svg, .dm-spin-in, .dm-spin, .dm-spin-back, .dm-ripple, .dm-sheen, .dm-rule.gold, .dm-ticks line.major, .dhalf-sec, .dseal-ticks, .dseal-ripple, .dseal-flame, .dseal-spark, .dseal-dots, .dseal-dot, .dseal-track, .dseal-crest, .dseal-name.on text { animation: none; }
+  .dhero-lamp svg, .dm-spin-in, .dm-spin, .dm-spin-back, .dm-ripple, .dm-sheen, .dm-rule.gold, .dm-ticks line.major, .dhalf-sec, .dseal-crest, .dseal-name.on text { animation: none; }
   .dm-ripple { opacity: 0; }
   .dm-hour, .dm-wash, .dm-rays, .dm-ray { animation: none; }
   .dm-hour { opacity: .7; }
-  .dseal-done, .dseal-ember, .dseal-core, .dprint, .dlane, .dchip { transition: none; }
+  .dwatch-hand, .dprint, .dlane, .dchip { transition: none; }
 }
