@@ -239,13 +239,12 @@ a:hover { color: var(--amber-lit); }
   .dhero-lamp.mid, .dhero-lamp.far, .dhero-lamp.back { visibility: hidden; }
   .dhero-veil, .dhero-wisp, .dhero-path { display: none; }
   /* phones: the posts don't rise. They stand dark for a beat, then the gas
-     catches: glass and glow sputter up to full light, left lamp first */
+     catches in both at once, each with its own stutter like the desktop lane */
   .dhero-lamp { animation: none; }
-  .dhero-lamp .lamp-lit { animation: dlamp-halo 1s ease-out .3s backwards; }
-  .dhero-lamp svg > g:first-of-type { animation: dlamp-halo 1s ease-out .3s backwards; }
-  .dhero-lamp .dhero-candle { animation: dlamp-halo 1.2s ease-out .35s both, dcandle 7s ease-in-out 1.55s infinite; }
-  .dhero-lamp.r .lamp-lit, .dhero-lamp.r svg > g:first-of-type { animation-delay: .75s; }
-  .dhero-lamp.r .dhero-candle { animation-delay: .8s, 2s; }
+  .dhero-lamp.l .lamp-lit, .dhero-lamp.l svg > g:first-of-type { animation: dlamp-halo-b 1.6s ease-out .3s backwards; }
+  .dhero-lamp.r .lamp-lit, .dhero-lamp.r svg > g:first-of-type { animation: dlamp-halo-c 1.3s ease-out .3s backwards; }
+  .dhero-lamp.l .dhero-candle { animation: dlamp-halo-b 1.7s ease-out .35s both, dcandle 7s ease-in-out 2.05s infinite; }
+  .dhero-lamp.r .dhero-candle { animation: dlamp-halo-c 1.4s ease-out .35s both, dcandle 7s ease-in-out 1.75s infinite; }
   .dhero-lamp.l.near { left: max(-142px, calc(50% - 320px)); } .dhero-lamp.r.near { right: max(-142px, calc(50% - 320px)); }
   .dhero-candle { width: 300px; top: 77px; }
   .dhero-in { padding: 0 24px; }
