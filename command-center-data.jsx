@@ -66,6 +66,15 @@ async function uploadJobFile(jobId, file, { kind, round, label }) {
   return jobAction(jobId, 'add-file', { kind, round, label: label || file.name, storage_path: path, filename: file.name, content_type: file.type });
 }
 
+// ── Follow-up tasks ──────────────────────────────────────────────────
+// crm_tasks comes from supabase/migrations/20261108_crm_tasks_fields.sql. Until
+// that is run the read fails; this hands back an empty list flagged notReady
+// so the Hub shows a setup note and not an error.
+const fetchTasks = () => ccFetch('crm_tasks?select=*&order=due_on.asc.nullslast,created_at.desc')
+  .catch(() => { const a = []; a.notReady = true; return a; });
+const saveTask = (row) => ccWrite('crm_tasks', row);
+const deleteTask = (id) => ccDelete('crm_tasks', id);
+
 // ── Briefs ───────────────────────────────────────────────────────────
 const fetchDesignBriefs = () => ccFetch('design_briefs?select=*&order=created_at.desc');
 const saveDesignBrief = (row) => ccWrite('design_briefs', row);
@@ -79,5 +88,6 @@ window.CC = {
   fetchClients, saveClient, deleteClient, fetchInvoices, saveInvoice,
   fetchJobs, saveJob, fetchProposals, saveProposal, fetchJobFiles, fetchJobEvents, fetchAllEvents, saveJobEvent,
   jobAction, uploadJobFile,
+  fetchTasks, saveTask, deleteTask,
   fetchDesignBriefs, saveDesignBrief, fetchDesignBriefAttachments, briefAction,
 };

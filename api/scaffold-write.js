@@ -11,7 +11,7 @@ import { deactivateLink } from '../lib/stripe.js';
 // (a job's title, billing or notes, the proposal's lines, a client, an
 // invoice, a Docket task) come through here.
 const ALLOWED_TABLES = new Set([
-  'docket_tasks', 'clients', 'invoices', 'jobs', 'proposals', 'job_events', 'design_briefs',
+  'docket_tasks', 'clients', 'invoices', 'jobs', 'proposals', 'job_events', 'design_briefs', 'crm_tasks',
 ]);
 
 export default async function handler(req, res) {

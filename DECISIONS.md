@@ -838,6 +838,36 @@ mcc.css, is unchanged.
   reloading doesn't replay it, and closing and reopening does. Reduced motion
   never plays it.
 
+## 2026-11-06 — Leads tool in the Business Hub; polish pass
+
+- New **Leads** tool between Today and Jobs: the briefs coming in and the
+  jobs not yet won (New, Proposed, Directions, Final). It reads the data the
+  hub already loads, so there is no database change.
+- One focal number, the open pipeline value (proposal totals for jobs still
+  in play). Under the title a tab row: Overview (stage cards, Needs you, New
+  briefs), Pipeline (the existing jobs board), Contacts (the existing
+  Clients), Activity (every job event) and Reports (briefs per month, typical
+  time to reply, proposals accepted, average accepted proposal, design vs
+  automation briefs, jobs paid).
+- Tabs sit under the title on every screen size. On a phone the tools bar
+  already owns the bottom of the screen, so the tab row scrolls sideways
+  instead of adding a second bar. The last tab used is remembered for the
+  visit (sessionStorage); arrow keys move between tabs.
+- No ring: the ring stays out of the Business Hub, as decided in #50.
+- Polish, all in Business Hub.html's own styles, no behaviour change: header
+  links and list rows reach 44px, visible focus rings, tabular numbers,
+  balanced headings, a hover state on job cards. Docket and the rest of
+  mcc.css untouched.
+- Not changed: any API route, migration, or Stripe/session setting. The
+  remaining audit items (register the Stripe webhook, set SESSION_SECRET,
+  rotate the Backroom password, check the Resend domain) are dashboard steps.
+
+## 2026-11-07 — CRM tools in the Business Hub (from the crm-designer / custom-CRM skills)
+- Added: Tasks (own Leads tab, plus Follow-ups on every job and client; overdue job tasks feed Needs you), header search across clients/jobs/briefs ("/" focuses it), CSV export (jobs, clients, tasks; cells starting = + - @ are quoted against spreadsheet formulas), duplicate check on Add client plus a Possible duplicates panel with Merge, custom fields on clients, and Call/Meeting entries in a job's History.
+- Database: supabase/migrations/20261108_crm_tasks_fields.sql adds crm_tasks and clients.custom. NOT APPLIED. The Hub shows a setup note instead of failing until it is run. Duplicate detection is app-level on purpose: a unique email index would fail on any existing duplicates.
+- Notes reuse job_events (kind note, meta.type note/call/meeting), so no table for them.
+- Also fixed: Remove client threw a ReferenceError because deleteClient was never pulled from window.CC.
+
 ## 2026-11-06 — The Scaffold hero gets a black cat
 
 A small 3D black cat lives in the hero's lamp lane (`scaffold-cat.js`, model

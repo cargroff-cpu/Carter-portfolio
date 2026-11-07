@@ -14,7 +14,7 @@ import { SUPABASE_URL, sbHeaders } from '../lib/server.js';
 const ALLOWED_TABLES = new Set([
   'docket_tasks', 'clients', 'invoices',
   'jobs', 'proposals', 'job_files', 'job_events',
-  'design_briefs', 'design_brief_attachments', 'brief_events',
+  'design_briefs', 'design_brief_attachments', 'brief_events', 'crm_tasks',
 ]);
 
 export default async function handler(req, res) {
