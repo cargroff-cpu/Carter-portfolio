@@ -127,7 +127,8 @@ class Lane {
       r.Z = this.zOfY(r.y);
       r.half = (r.xr - r.xl) / 2 / r.ppm;            // post distance from the lane centre, metres
     }
-    this.Zmin = 0.4;
+    // keep the paws (and shadow) clear of the hero's bottom edge
+    this.Zmin = Math.max(0.4, 34 / (this.rows[0].ppm * SINP));
     this.Zmax = this.rows[3].Z - 0.3;
     this.lamps = [];
     for (const r of this.rows) for (const side of [-1, 1]) {
@@ -511,6 +512,7 @@ class Cat {
     this.toy = this.readToy();
     this.updateAttention(dt);
     this.brain.tick(dt);
+    this.unlayer();
     this.motor.update(dt);
 
     // move
@@ -552,10 +554,19 @@ class Cat {
     return null;
   }
 
+  // three's mixer only writes a bone or morph when the clip's value changes, so
+  // anything layered on top (head turn, blinks) must be taken back off before the
+  // next mixer update, or it piles up frame after frame (the head would spin).
+  unlayer() {
+    for (const b of Object.values(this.bones)) if (b && b.userData.animQ) b.quaternion.copy(b.userData.animQ);
+    for (const m of this.morphs) if (m.userData.animInf) for (let i = 0; i < 3; i++) m.morphTargetInfluences[i] = m.userData.animInf[i];
+  }
+
   // head and neck turn toward what the cat is attending to, layered on the clip
   applyGaze(dt) {
     const T = this.tmp, G = this.gaze, B = this.bones;
     if (!B.head || !B.neck_01 || !B.neck_02) return;
+    for (const b of Object.values(B)) (b.userData.animQ || (b.userData.animQ = b.quaternion.clone())).copy(b.quaternion);
     // idle glances: a lantern, the viewer, a spot on the ground
     this.nextGlance -= dt;
     if (this.nextGlance <= 0) {
@@ -627,6 +638,7 @@ class Cat {
     const ch = this.chatter > 0 ? 0.22 * (0.5 + 0.5 * Math.sin(this.time * 52)) * this.chatter : 0;
     for (const m of this.morphs) {
       const inf = m.morphTargetInfluences;
+      (m.userData.animInf || (m.userData.animInf = [0, 0, 0])).splice(0, 3, inf[0], inf[1], inf[2]);
       inf[0] = Math.min(1, inf[0] + blink);
       inf[1] = Math.min(1, inf[1] + this.earsBack);
       inf[2] = Math.min(1, inf[2] + ch);
@@ -994,6 +1006,12 @@ class Brain {
   }
   *swat(t) {
     const c = this.c, m = c.motor, T = c.tmp;
+    // face it first: a swat at something behind or beside it reads wrong
+    if (t.kind === 'ground' && c.distTo(t) > 0.12) {
+      const dy = wrap(c.headingTo(t) - c.yaw);
+      if (Math.abs(dy) > 50 * DEG) { yield* this.toStand(); yield* this.turnBy(dy); }
+      const u = c.toy; if (u) t = u;
+    }
     const p = c.toLocal(t.X, t.h, t.Z, T.v);
     const name = Math.abs(p.x) < 0.08 && t.h < 0.35 && chance(0.45) ? 'bat_play' : p.x >= 0 ? 'swat_L' : 'swat_R';
     c.earsWant = 0.25;
