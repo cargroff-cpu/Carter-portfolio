@@ -201,10 +201,10 @@ class Lane {
   inside(X, Z, margin = 0.55) {
     return Z >= this.Zmin - 1e-3 && Z <= this.Zmax + 1e-3 && Math.abs(X) <= this.halfW(Z) - margin + 1e-3;
   }
-  // a spot beside a post, a little in front of it and inward of the plinth
+  // a spot snug against a post: a little in front of it and just inward of the plinth
   spot(lamp) {
     const Z = clamp(lamp.Z - 0.35, this.Zmin, this.Zmax);
-    return { X: lamp.side * Math.max(0.3, this.halfW(Z) - 0.8), Z, lamp };
+    return { X: lamp.side * Math.max(0.3, this.halfW(Z) - 0.5), Z, lamp };
   }
   randomPoint() {
     const Z = lerp(this.Zmin, this.Zmax, Math.pow(Math.random(), 1.25));
@@ -355,6 +355,8 @@ class Cat {
     this.blink = { next: rnd(1.5, 4), t: -1, dbl: false, gap: 0 };
     this.chatter = 0; this.earsBack = 0;
     this.toyV = { X: 0, Z: 0, sp: 0 }; this.toyPrev = null;   // where a toy on the ground is heading
+    this.atLamp = null;                                // the post it last walked up to, while it is still there
+    this.lampSeen = new Map();                         // lamp -> when it last had a visit (a lamp never visited is missing)
     this.lockT = -9;                                   // when it last locked on (ear and tail flick)
     this.flickT = -9;                                  // when the cursor last whipped past its face
 
@@ -459,6 +461,19 @@ class Cat {
     if (before && !this.outside) { const c = this.lane.clampIn(this.X, this.Z, 0.45); this.X = c.X; this.Z = c.Z; }
   }
 
+  // The cat is one canvas between the near and mid posts, so it is always drawn over the mid,
+  // far and back posts. That is right when he is in front of a post and wrong when he is
+  // behind it (deeper in the lane): he would look pasted over it. A post nearer than he is
+  // never gets hidden: when his sprite would overlap its base on screen, he stays inward of it.
+  avoidPosts() {
+    const L = this.lane, s = L.toScreen(this.X, this.Z), cw = 0.2 * s.ppm * this.vis;
+    for (const l of L.lamps) {
+      if (l.row === 'near' || l.Z >= this.Z - 0.05) continue;     // the near posts are drawn over him already
+      const ls = L.toScreen(l.X, l.Z), keep = 0.4 * ls.ppm + cw + 6;
+      if ((s.x - ls.x) * l.side > -keep) this.X = (ls.x - l.side * keep - L.cAtY(s.y)) / s.ppm;
+    }
+  }
+
   // ── geometry helpers ──
   distTo(t) { return Math.hypot(t.X - this.X, t.Z - this.Z); }
   headingTo(t) { return Math.atan2(t.X - this.X, -(t.Z - this.Z)); }
@@ -476,6 +491,7 @@ class Cat {
     return this.lane.lamps.filter((l) => !lit || l.lit)
       .map((l) => ({ l, d: Math.hypot(l.X - this.X, l.Z - this.Z) })).sort((a, b) => a.d - b.d);
   }
+  lampHere() { return this.atLamp && this.distTo(this.lane.spot(this.atLamp)) < 0.8 ? this.atLamp : null; }
   nearLitLamp(r) { const n = this.nearestLamps(true)[0]; return n && n.d < r ? n.l : null; }
 
   // ── pointer ──
@@ -594,7 +610,7 @@ class Cat {
     this.X += Math.sin(this.yaw) * step; this.Z -= Math.cos(this.yaw) * step;
     const L = this.lane;
     if (this.outside) { if (L.inside(this.X, this.Z, 0.6)) this.outside = false; }
-    else { const c = L.clampIn(this.X, this.Z, 0.45); this.X = c.X; this.Z = c.Z; }
+    else { const c = L.clampIn(this.X, this.Z, 0.45); this.X = c.X; this.Z = c.Z; this.avoidPosts(); }
 
     const zMid = L.rows[1].Z, zBack = L.rows[3].Z;
     this.vis = lerp(1, 1.18, sm((this.Z - zMid) / (zBack - zMid)));   // a touch larger far away so it still reads
@@ -953,11 +969,15 @@ class Brain {
     const c = this.c, m = c.motor;
     if (c.posture !== 'SIT' && c.posture !== 'LOAF') {
       yield* this.toStand();
-      const want = rnd(-55, 55) * DEG, d = wrap(want - c.yaw);   // sit facing out into the room
+      // sit facing out into the room, or, at a post, facing the post
+      const L0 = c.lampHere();
+      const want = L0 ? c.headingTo({ X: L0.X, Z: L0.Z }) + rnd(-0.4, 0.4) : rnd(-55, 55) * DEG, d = wrap(want - c.yaw);
       if (Math.abs(d) > 40 * DEG) yield* this.turnBy(d);
       yield* this.once('stand_to_sit', 0.2);
     }
     c.relocate = false;
+    const here = c.lampHere();
+    if (here) { c.lampSeen.set(here, c.time); c.gazeOverride = { X: here.X, h: LANTERN_M, Z: here.Z, until: c.time + rnd(2, 3.2) }; }
     if (c.posture === 'SIT') yield* this.sitFor(rnd(6, 15));
     if (c.posture === 'LOAF' || (!c.relocate && chance(c.nearLitLamp(2.4) ? 0.6 : 0.3))) {
       if (c.posture !== 'LOAF') yield* this.once('sit_to_loaf', 0.2);
@@ -987,19 +1007,41 @@ class Brain {
   }
   *wander(o = {}) {
     const c = this.c, L = c.lane;
+    c.atLamp = null;
     const opts = [];
+    // Every post is somewhere to go. A post nobody has visited yet is by far the likeliest
+    // next stop, and the longer one has been left alone the likelier it is; unlit posts get
+    // visited too, just a little less eagerly.
+    const fresh = [];
     for (const l of L.lamps) {
-      const s = L.spot(l);
-      if (c.distTo(s) < 1.5) continue;
-      opts.push({ w: (l.lit ? 1.6 : 0.5) * (l.row === 'back' ? 0.9 : 1), t: s });
+      const s = L.spot(l), seen = c.lampSeen.get(l);
+      if (c.distTo(s) < (seen == null ? 0.7 : 1.5)) continue;
+      const since = seen == null ? 1e3 : c.time - seen;
+      const due = seen == null ? 8 : 1 + Math.min(4, since / 60);
+      const op = { w: (l.lit ? 1.6 : 1.1) * due, t: s };
+      opts.push(op);
+      if (seen == null) fresh.push(op);
     }
-    for (let i = 0; i < 4; i++) { const p = L.randomPoint(); if (c.distTo(p) > 1.5) opts.push({ w: 0.45, t: p }); }
+    for (let i = 0; i < 3; i++) { const p = L.randomPoint(); if (c.distTo(p) > 1.5) opts.push({ w: 0.3, t: p }); }
     if (o.away && c.toy) {   // walk off away from the toy that bored it
       for (const op of opts) if (Math.hypot(op.t.X - c.toy.X, op.t.Z - c.toy.Z) < 2) op.w *= 0.1;
     }
     if (!opts.length) { yield* this.wait(1); return; }
-    const dest = pick(opts).t, d = c.distTo(dest);
+    const dest = (fresh.length && chance(0.9) ? pick(fresh) : pick(opts)).t, d = c.distTo(dest);   // posts nobody has visited yet come first
     yield* this.walkTo(() => dest, { speed: d > 5 && chance(0.35) ? 0.5 : 0.27, stop: 0.12, bored: o.bored });
+    c.atLamp = dest.lamp && c.distTo(dest) < 0.6 ? dest.lamp : null;
+    if (c.atLamp && !o.bored) yield* this.visitLamp(c.atLamp);
+  }
+  // arrived at a post: turn to it, look up at the lantern, flick the tail
+  *visitLamp(l) {
+    const c = this.c;
+    c.lampSeen.set(l, c.time);
+    yield* this.toStand();
+    const want = c.headingTo({ X: l.X, Z: l.Z }) + rnd(-0.35, 0.35);
+    yield* this.turnBy(wrap(want - c.yaw));
+    c.gazeOverride = { X: l.X, h: LANTERN_M, Z: l.Z, until: c.time + rnd(2.4, 3.6) };
+    yield* this.hold('idle_stand', rnd(2.4, 3.6), 0.25);
+    if (chance(0.5)) yield* this.once('tail_flick', 0.2);
   }
   *pet() {
     const c = this.c;

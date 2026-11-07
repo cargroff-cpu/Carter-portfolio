@@ -59,6 +59,10 @@ const SCEN = [
   { name: 'woken from a loaf: a beat of looking, then plays', start: 'LOAF', secs: 8,
     ptr: `(t, c, L) => { const a = c.ahead(0.7); const s = L.toScreen(a.X + 0.12*Math.sin(t*8), a.Z + 0.08*Math.cos(t*6)); return [s.x, s.y]; }`,
     check: `r => [r.firstPlay >= 0 || 'never played', r.first('loaf_to_sit') - r.firstPlay >= 0.4 || 'got up with no hesitation', r.firstAny(['pounce','swat_L','swat_R','bat_play']) >= 0 && r.firstAny(['pounce','swat_L','swat_R','bat_play']) < 5.5 || 'no play move by 5.5 s']` },
+  // ── the posts ──
+  { name: 'life, no cursor, 15 min: every post gets a visit and he is never drawn over a nearer post', start: 'STAND', secs: 900, fast: true, runs: 2,
+    ptr: `(t, c, L) => [-500, -500]`,
+    check: `r => { const miss = r.lampNames.filter((n, i) => r.lampStay[i] < 2.4); return [miss.length === 0 || 'never settled at: ' + miss.join(', ') + ' (' + r.lampStay.map(v => v.toFixed(0)).join('/') + ' s)', r.hidden === 0 || 'drawn over a nearer post for ' + r.hidden + ' frames']; }` },
 ];
 
 (async () => {
@@ -67,7 +71,7 @@ const SCEN = [
   for (const sc of SCEN) {
     if (ONLY && !sc.name.includes(ONLY)) continue;
     if (process.env.TRACE) sc.trace = +process.env.TRACE;   // TRACE=<secs>: per-frame state dump
-    for (let run = 0; run < RUNS; run++) {
+    for (let run = 0; run < Math.min(RUNS, sc.runs || RUNS); run++) {
       const res = await page.evaluate(([sc, run]) => {
         const c = window.__cat, L = c.lane, T = c.T; c.manual = true;
         const fn = eval(sc.ptr), check = eval(sc.check);
@@ -76,13 +80,15 @@ const SCEN = [
         const X0 = [-1.0, 0.6, 1.4][run % 3], Z0 = [1.6, 2.6, 4.5][run % 3];
         c.X = X0; c.Z = Z0; c.yaw = [0.4, -2.2, 1.3][run % 3]; c.outside = false; c.interest = 0; c.cool = 0; c.glance = null; c.nextGlance = 999;
         c.gazeOverride = null; c.gaze.w = 0; c.ptr.cx = -1; c.ptr.speed = 0; c.ptr.mps = 0; c.anchor = null; c.X0 = X0; c.Z0 = Z0;
-        c.lockT = -9; c.flickT = -9; c.toyV = { X: 0, Z: 0, sp: 0 }; c.toyPrev = null; c.lastMiss = -1;
+        c.lampSeen = new Map(); c.atLamp = null; c.lockT = -9; c.flickT = -9; c.toyV = { X: 0, Z: 0, sp: 0 }; c.toyPrev = null; c.lastMiss = -1;
         const pose = { STAND: 'idle_stand', SIT: 'sit_idle', LOAF: 'loaf' }[sc.start];
         c.posture = sc.start; c.motor.play(pose, 0);
         for (let i = 0; i < 10; i++) c.update(1 / 30);
         c.ahead = (d) => ({ X: c.X0 + Math.sin(c.yaw0) * d, Z: c.Z0 - Math.cos(c.yaw0) * d }); c.yaw0 = c.yaw;
         c.brain.swap('life', c.brain.life(false));
-        const r = { dmAtPlay: 99, firstPlay: -1, playEnd: -1, clips: new Set(), firsts: {}, seq: [], trace: [], starts: [], misses: [], locks: [], maxGaze: 0, walkedToward: 0, dist: 0, headSpike: 0 };
+        const lampNames = L.lamps.map((l) => l.row + (l.side < 0 ? '-left' : '-right')), lampStay = L.lamps.map(() => 0);
+        const render0 = c.renderer.render; if (sc.fast) c.renderer.render = () => {};   // no drawing for the long runs
+        const r = { lampNames, lampStay, hidden: 0, dmAtPlay: 99, firstPlay: -1, playEnd: -1, clips: new Set(), firsts: {}, seq: [], trace: [], starts: [], misses: [], locks: [], maxGaze: 0, walkedToward: 0, dist: 0, headSpike: 0 };
         const rect = c.hero.getBoundingClientRect();
         let px = null, py = null, lx = c.X, lz = c.Z;
         const headBones = ['neck_01', 'neck_02', 'head'].map(n => c.model.getObjectByName(n));
@@ -112,12 +118,17 @@ const SCEN = [
           pt = ptm;
           if (playing) { r.clips.add(cur); if (!(cur in r.firsts)) r.firsts[cur] = +t.toFixed(2); }
           r.maxGaze = Math.max(r.maxGaze, c.gaze.w);
+          // time spent settled beside each post, and frames where a post nearer than he is would be hidden by his sprite
+          { const s0 = L.toScreen(c.X, c.Z), cw = 0.2 * s0.ppm * c.vis;
+            L.lamps.forEach((l, i) => { const sp = L.spot(l); if (c.posture !== 'WALK' && Math.hypot(sp.X - c.X, sp.Z - c.Z) < 1.0) r.lampStay[i] += 1 / 30; });
+            for (const l of L.lamps) { if (l.row === 'near' || c.Z <= l.Z + 0.1) continue; const ls = L.toScreen(l.X, l.Z); if (Math.abs(s0.x - ls.x) < cw + 0.4 * ls.ppm) { r.hidden++; break; } } }
           r.dist += Math.hypot(c.X - lx, c.Z - lz); lx = c.X; lz = c.Z;
           if (playing && c.toy && c.toy.kind === 'ground') { const d = Math.hypot(c.toy.X - c.X, c.toy.Z - c.Z); if (d0 == null) d0 = d; r.walkedToward = Math.max(r.walkedToward, d0 - d); }
           c.body.getWorldQuaternion(bq); bq.invert();
           headBones.forEach((b, i) => { b.getWorldQuaternion(q); q.premultiply(bq); if (!firstFrame) r.headSpike = Math.max(r.headSpike, 2 * Math.acos(Math.min(1, Math.abs(q.dot(prevQ[i])))) * 57.3); prevQ[i].copy(q); });
           firstFrame = false;
         }
+        c.renderer.render = render0;
         r.first = (n) => (n in r.firsts ? r.firsts[n] : -1);
         r.firstAny = (ns) => { const v = ns.map(r.first).filter(x => x >= 0); return v.length ? Math.min(...v) : -1; };
         const problems = check(r).filter(x => x !== true);

@@ -929,6 +929,19 @@ under makes it look up and move.
   light is 1.2 (was 2.8) and the fur's specular 0.15: on this model the old
   values lit the belly and inner legs violet in crouches and stretches. The
   suite is unchanged and passes with the new model.
+- **Every post is somewhere to go (2026-11-07).** The far posts were barely
+  visited (about 30 s each in 15 minutes, nearly all of it walking past) and he
+  sat a metre away from the post he had gone to, so it looked like a sprite laid
+  over the lane. Now a post nobody has visited yet is his next stop 9 times in
+  10, and after that the longest-neglected one is likeliest (unlit posts too).
+  He sits 0.5 m from the post (was 0.8), turns to face it, looks up at the
+  lantern and flicks his tail. The one canvas sits between the near and mid
+  posts, so it is always drawn over the mid, far and back posts; sitting closer
+  made it show at the wrong depth now and then (110 frames in 15 minutes by the
+  far posts). `avoidPosts()` keeps him inward of any post nearer than he is, so
+  its base is never hidden by his sprite. The suite has a 15-minute no-cursor
+  scenario (rendering off, about 20 s) that fails if any of the eight posts gets
+  no visit or if he is ever drawn over a nearer post.
 
 ## 2026-11-07 — Business Hub: one home per thing
 - Leads is a lens on work not yet won: Overview, Tasks, Activity, Reports. Its Pipeline and Contacts tabs are gone, since they were the Jobs board and the Clients page under a second name; Leads' stage cards now open Jobs.

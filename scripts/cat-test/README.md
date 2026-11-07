@@ -6,7 +6,9 @@ reaction time, what it does (chase / stalk / wiggle / pounce / swat), that it
 ignores far cursors, that play ends when the cursor stops or leaves, and that
 the head never snaps (> 30° in one frame), plus the newer behaviours: lock-on
 ear/tail flick, pounces that lead a moving cursor, the one-two swat at a flick,
-the "missed it" look around, and the pause before getting up from a loaf.
+the "missed it" look around, the pause before getting up from a loaf, and a 15-minute
+no-cursor run (rendering off) that checks every lamp post gets a visit and that his sprite
+is never drawn over a post that is nearer than he is.
 
     npm i -D playwright && npx playwright install chromium   # once
     npm run test:cat                                          # RUNS=5 VERBOSE=1 for more
