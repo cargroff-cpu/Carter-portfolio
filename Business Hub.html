@@ -211,6 +211,61 @@ th { font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--text
   .tools.on button[aria-current="true"] { background: none; }
   .tools.on button[aria-current="true"] .tname { color: var(--accent-lit); }
 }
+/* ── Leads (business-hub.jsx): the title with one focal number, a tab row, the stage cards ── */
+.lhead { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px 32px; flex-wrap: wrap; }
+.lhead .sub { margin-top: 4px; }
+.lfocus { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; }
+.lfocus-l { font-family: var(--ui); font-size: 14px; color: var(--text-2); }
+.lfocus-v { font-family: var(--display); font-size: 48px; line-height: 1; font-weight: 400; color: var(--accent-lit); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.lfocus-n { font-family: var(--ui); font-size: 13.5px; color: var(--text-3); }
+.ltabs { display: flex; gap: 28px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.ltabs::-webkit-scrollbar { display: none; }
+.ltabs button { flex: none; background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; border-radius: 0; color: var(--text-3); font-family: var(--ui); font-size: 15px; font-weight: 500; padding: 0 0 2px; min-height: 44px; white-space: nowrap; cursor: pointer; }
+.ltabs button:hover { color: var(--text); }
+.ltabs button.on { color: var(--accent-lit); border-bottom-color: var(--accent); }
+.ltabs button:focus-visible { outline: 2px solid var(--accent-lit); outline-offset: 2px; }
+.lbody { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; }
+.lstages { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.lstage { text-align: left; display: flex; flex-direction: column; gap: 2px; padding: 14px 14px 12px; min-width: 0; min-height: 44px; background: rgba(236,217,178,.025); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; color: var(--text); }
+.lstage:hover { border-color: rgba(217,154,61,.55); background: rgba(217,154,61,.07); }
+.lstage:focus-visible { outline: 2px solid var(--accent-lit); outline-offset: 2px; }
+.lstage.hot { border-color: rgba(217,154,61,.4); }
+.lstage-n { font-family: var(--ui); font-size: 14px; color: var(--text-2); }
+.lstage-c { font-family: var(--display); font-size: 36px; line-height: 1.05; font-weight: 400; font-variant-numeric: tabular-nums; }
+.lstage-m { font-family: var(--ui); font-size: 13.5px; color: var(--text-3); font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lstage-bar { display: block; height: 3px; margin-top: 10px; border-radius: 2px; background: rgba(236,217,178,.1); overflow: hidden; }
+.lstage-bar i { display: block; height: 100%; width: 100%; background: var(--accent); transform-origin: left; transform: scaleX(var(--w, 0)); }
+.lbrief .mval.hot { color: var(--accent-lit); }
+@media (prefers-reduced-motion: no-preference) {
+  .lbody { animation: m-up .45s var(--ease-out) both; }
+  .lstage { animation: m-up .5s var(--ease-out) calc(.05s + var(--i, 0) * .06s) backwards; }
+  .lstage-bar i { animation: l-grow .9s var(--ease-out) calc(.25s + var(--i, 0) * .06s) backwards; }
+  @keyframes l-grow { from { transform: scaleX(0); } }
+}
+@media (max-width: 1100px) { .lstages { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 560px) {
+  .lstages { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .lstages .lstage:last-child { grid-column: 1 / -1; }
+  .lstage { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; padding: 12px 12px 10px; }
+  .lstage-c { font-size: 30px; grid-column: 2; grid-row: 1; }
+  .lstage-n { grid-column: 1; grid-row: 1; }
+  .lstage-m, .lstage-bar { grid-column: 1 / -1; }
+  .lstage-bar { margin-top: 8px; }
+  .lhead { align-items: flex-start; }
+  .lfocus { align-items: flex-start; text-align: left; }
+  .lfocus-v { font-size: 40px; }
+  .ltabs { gap: 16px; margin: 0 -16px; padding: 0 16px; }
+  .ltabs button { font-size: 14px; }
+}
+/* ── Polish pass (interface-design): touch targets, focus, numbers, wrapping. No behaviour changes. ── */
+.mark, .backlink { min-height: 44px; display: inline-flex; align-items: center; }
+.mono, .mval, .pipe-c, .dkpi-v, td { font-variant-numeric: tabular-nums; }
+.h1, .h2 { text-wrap: balance; }
+.sub { text-wrap: pretty; }
+.minirow:focus-visible, .reclist:focus-visible, .lstage:focus-visible, .tools button:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent-lit); outline-offset: 2px; }
+.jcol .reclist:hover { background: rgba(217,154,61,.07); }
+.minirow { min-height: 44px; }
+@media (hover: none) { .minirow, .reclist { min-height: 48px; } }
 /* ── the opening (Intro in business-hub.jsx): once per visit ── */
 .intro { position: fixed; inset: 0; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px;
   background: radial-gradient(60% 50% at 50% 46%, #2a1c11, #120c07 70%); cursor: pointer; transition: opacity .5s ease .1s; }

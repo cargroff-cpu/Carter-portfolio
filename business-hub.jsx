@@ -108,6 +108,7 @@ function needsYou(jobs, proposals, invoices, briefs, events) {
 // plates used before is kept in assets/tool-*.png (the antler field below) for later.
 const TOOL_LIST = [
   { id: 'today', label: 'Today', glyph: 'today', antler: 'assets/tool-brief.png', desc: 'What needs you, what just happened, money in and out.' },
+  { id: 'leads', label: 'Leads', glyph: 'leads', antler: 'assets/tool-leads.png', desc: 'Briefs coming in and jobs not yet won.' },
   { id: 'jobs', label: 'Jobs', glyph: 'jobs', antler: 'assets/tool-work.png', desc: 'Every job from brief to paid, one column per stage.' },
   { id: 'proposals', label: 'Proposals', glyph: 'proposals', antler: 'assets/tool-vault.png', desc: 'Every proposal, where it stands, and what it is worth.' },
   { id: 'mail', label: 'Mail', glyph: 'mail', antler: 'assets/tool-leads.png', desc: 'Everything sent to clients, and the templates behind it.' },
@@ -116,6 +117,7 @@ const TOOL_LIST = [
 ];
 const GLYPHS = {
   today: <React.Fragment><circle cx="12" cy="12" r="4" /><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" /></React.Fragment>,
+  leads: <React.Fragment><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="1" /><path d="M12 1.8v3M12 19.2v3M1.8 12h3M19.2 12h3" /></React.Fragment>,
   jobs: <React.Fragment><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M9 7V5.2c0-.7.5-1.2 1.2-1.2h3.6c.7 0 1.2.5 1.2 1.2V7M3 12.5h18M11 12.5v2h2v-2" /></React.Fragment>,
   proposals: <React.Fragment><path d="M6 3h8.5L19 7.5V21H6z" /><path d="M14 3v5h5M9 12.5h7M9 16h7M9 9h3" /></React.Fragment>,
   mail: <React.Fragment><rect x="3" y="5.5" width="18" height="13" rx="2" /><path d="M3.5 7l8.5 6.2L20.5 7" /></React.Fragment>,
@@ -131,6 +133,7 @@ function ToolIcon({ name }) {
 }
 function toolMetaOf(id, d, short) {
   if (id === 'today') return d.needs.length ? d.needs.length + ' need you' : 'All clear';
+  if (id === 'leads') { const w = d.briefs.filter((b) => b.status !== 'answered').length; return w ? w + ' to answer' : d.jobs.filter((j) => j.stage === 'new' || j.stage === 'proposed').length + ' in play'; }
   if (id === 'jobs') return d.jobs.filter((j) => j.stage !== 'paid' && j.stage !== 'closed').length + ' open';
   if (id === 'proposals') return d.proposals.filter((p) => p.status === 'sent').length + ' out';
   if (id === 'mail') return d.events.filter((e) => e.kind === 'email').length + ' sent';
@@ -1055,6 +1058,188 @@ function ClientPage({ client, stats, data, open, reload, back, gone }) {
   );
 }
 
+// ── Leads ──────────────────────────────────────────────────────────────
+// Briefs coming in and jobs not yet won. Five views: Overview, Pipeline (the
+// jobs board), Contacts (clients), Activity (every event) and Reports.
+const LEAD_TABS = [['overview', 'Overview'], ['pipeline', 'Pipeline'], ['contacts', 'Contacts'], ['activity', 'Activity'], ['reports', 'Reports']];
+const LEAD_STAGES = [['new', 'New'], ['proposed', 'Proposed'], ['drafts', 'Directions'], ['final', 'Final'], ['paid', 'Paid']];
+const propValue = (proposals, j) => { const p = proposals.find((x) => x.job_id === j.id); return p ? Number(p.total || 0) : 0; };
+function span(ms) {
+  const m = ms / 6e4;
+  if (m < 60) return Math.max(1, Math.round(m)) + ' min';
+  const h = m / 60;
+  return h < 48 ? Math.round(h) + ' hr' : Math.round(h / 24) + ' days';
+}
+function median(a) { if (!a.length) return null; const b = [...a].sort((x, y) => x - y); const k = Math.floor(b.length / 2); return b.length % 2 ? b[k] : (b[k - 1] + b[k]) / 2; }
+function CountBars({ months }) {
+  const max = Math.max(1, ...months.map((m) => m.n));
+  const W = 320, H = 130, base = 104, bw = 30, gap = (W - months.length * bw) / (months.length + 1);
+  if (!months.some((m) => m.n > 0)) return <p className="sub" style={{ padding: '14px 0 6px' }}>No briefs yet. They show here as they come in.</p>;
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Briefs received by month, last six months" style={{ width: '100%', height: 'auto', display: 'block' }}>
+      <line x1="0" x2={W} y1={base} y2={base} stroke="rgba(236,217,178,.26)" />
+      {months.map((m, k) => {
+        const h = Math.max(m.n ? 3 : 0, (m.n / max) * (base - 22));
+        const x = gap + k * (bw + gap);
+        const last = k === months.length - 1;
+        return (
+          <g key={m.key}>
+            <rect className="mbar" x={x} y={base - h} width={bw} height={h} fill={last ? '#f5cd6a' : '#d99a3d'} opacity={last ? 1 : .62} />
+            {m.n > 0 && <text className="mlab" x={x + bw / 2} y={base - h - 6} textAnchor="middle" fontSize="11" fill="#ecd9b2">{m.n}</text>}
+            <text x={x + bw / 2} y={base + 17} textAnchor="middle" fontSize="12" fill="#ad9a74">{m.label}</text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+function Leads({ data, open, go, reload, reloadClients }) {
+  const { jobs, proposals, briefs, events, needs } = data;
+  const [sub, setSub] = React.useState(() => { try { const v = sessionStorage.getItem('leads-tab'); return LEAD_TABS.some((t) => t[0] === v) ? v : 'overview'; } catch (e) { return 'overview'; } });
+  const pick = (id) => { setSub(id); try { sessionStorage.setItem('leads-tab', id); } catch (e) {} };
+  const onKey = (e) => {
+    const k = LEAD_TABS.findIndex((t) => t[0] === sub);
+    const next = e.key === 'ArrowRight' ? k + 1 : e.key === 'ArrowLeft' ? k - 1 : null;
+    if (next == null) return;
+    e.preventDefault();
+    const id = LEAD_TABS[(next + LEAD_TABS.length) % LEAD_TABS.length][0];
+    pick(id);
+    const el = document.getElementById('ltab-' + id); if (el) el.focus();
+  };
+  const early = (j) => ['new', 'proposed', 'drafts', 'final'].includes(j.stage);
+  const inPlay = jobs.filter(early);
+  const pipeValue = inPlay.reduce((a, j) => a + propValue(proposals, j), 0);
+  const waiting = briefs.filter((b) => b.status !== 'answered').length;
+  const jobOf = (id) => jobs.find((j) => j.id === id);
+  return (
+    <div className="stack">
+      <div className="lhead">
+        <div>
+          <h1 className="h1">Leads</h1>
+          <p className="sub">{waiting ? waiting + (waiting === 1 ? ' brief is' : ' briefs are') + ' waiting for a reply.' : 'Every brief has an answer.'}</p>
+        </div>
+        <div className="lfocus" aria-label="Open pipeline value">
+          <span className="lfocus-l">Open pipeline</span>
+          <span className="lfocus-v mono"><CountUp value={usd(pipeValue)} /></span>
+          <span className="lfocus-n">{inPlay.length} {inPlay.length === 1 ? 'job' : 'jobs'} in play</span>
+        </div>
+      </div>
+      <div className="ltabs" role="tablist" aria-label="Leads views" onKeyDown={onKey}>
+        {LEAD_TABS.map(([id, label]) => (
+          <button key={id} id={'ltab-' + id} role="tab" aria-selected={sub === id} tabIndex={sub === id ? 0 : -1} className={sub === id ? 'on' : ''} onClick={() => pick(id)}>{label}</button>
+        ))}
+      </div>
+      <div className="lbody" key={sub} role="tabpanel" aria-labelledby={'ltab-' + sub}>
+        {sub === 'overview' && <LeadsOverview data={data} open={open} go={go} pick={pick} />}
+        {sub === 'pipeline' && <Jobs data={data} open={open} reload={reload} startNew={false} />}
+        {sub === 'contacts' && <Clients data={data} reload={reloadClients} open={open} />}
+        {sub === 'activity' && <LeadsActivity data={data} open={open} />}
+        {sub === 'reports' && <LeadsReports data={data} />}
+      </div>
+    </div>
+  );
+}
+function LeadsOverview({ data, open, go, pick }) {
+  const { jobs, proposals, briefs, needs } = data;
+  const counts = LEAD_STAGES.map(([id, label]) => {
+    const list = jobs.filter((j) => j.stage === id);
+    return { id, label, n: list.length, val: list.reduce((a, j) => a + propValue(proposals, j), 0) };
+  });
+  const max = Math.max(1, ...counts.map((c) => c.n));
+  const recent = briefs.slice(0, 5);
+  const jobForBrief = (b) => jobs.find((j) => j.brief_id === b.id);
+  const top = needs.slice(0, 5);
+  return (
+    <React.Fragment>
+      <div className="lstages">
+        {counts.map((c, k) => (
+          <button key={c.id} type="button" className={'lstage' + (c.id === 'new' && c.n ? ' hot' : '')} style={{ '--i': k }} onClick={() => pick('pipeline')}>
+            <span className="lstage-n">{c.label}</span>
+            <span className="lstage-c mono">{c.n}</span>
+            <span className="lstage-m mono">{c.val ? usd(c.val) : 'No value yet'}</span>
+            <span className="lstage-bar"><i style={{ '--w': c.n / max }} /></span>
+          </button>
+        ))}
+      </div>
+      <div className="dash-g">
+        <Widget title="Needs you" badge={needs.length ? needs.length + ' waiting' : 'All clear'}>
+          <div className="minirows">
+            {top.map((n, k) => (
+              <button key={k} className="minirow" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(n.j.id)}>
+                <span className="mtxt"><b>{n.j.title}</b> · {n.what}</span>
+                <span className={'mono mval' + (n.hot ? ' hot' : '')}>{n.age ? n.age + 'd' : 'today'}</span>
+              </button>
+            ))}
+            {!top.length && <p className="sub" style={{ padding: '10px 0' }}>Nothing is waiting on you.</p>}
+          </div>
+        </Widget>
+        <Widget title="New briefs" badge={recent.length ? 'latest' : null}>
+          <div className="minirows">
+            {recent.map((b) => {
+              const j = jobForBrief(b);
+              const wait = b.status !== 'answered';
+              return (
+                <button key={b.id} className="minirow lbrief" style={{ width: '100%', textAlign: 'left', cursor: j ? 'pointer' : 'default', background: 'none', border: 0 }} onClick={() => j && open(j.id)}>
+                  <span className="mtxt"><b>{b.business || b.name}</b> · {(b.need || []).slice(0, 2).join(', ') || (b.lane === 'automation' ? 'Automation' : 'Design')}{b.budget ? ' · ' + b.budget : ''}</span>
+                  <span className={'mono mval' + (wait ? ' hot' : '')}>{wait ? 'Waiting · ' : ''}{relTime(b.created_at)}</span>
+                </button>
+              );
+            })}
+            {!recent.length && <p className="sub" style={{ padding: '10px 0' }}>No briefs yet. They arrive from the design page.</p>}
+          </div>
+        </Widget>
+      </div>
+    </React.Fragment>
+  );
+}
+function LeadsActivity({ data, open }) {
+  const { jobs, events } = data;
+  const feed = events.filter((e) => EVENT_TEXT[e.kind]).slice(0, 40);
+  const jobOf = (id) => jobs.find((j) => j.id === id);
+  return (
+    <Widget title="Activity" badge={feed.length ? 'latest ' + feed.length : null}>
+      <div className="minirows">
+        {feed.map((e) => (
+          <button key={e.id} className="minirow plain" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(e.job_id)}>
+            <span className="mtxt"><b>{jobOf(e.job_id) ? jobOf(e.job_id).title : 'Job'}</b> · {EVENT_TEXT[e.kind]}</span>
+            <span className="mono mval">{relTime(e.created_at)}</span>
+          </button>
+        ))}
+        {!feed.length && <p className="sub" style={{ padding: '10px 0' }}>Nothing yet. Briefs, replies and payments show up here.</p>}
+      </div>
+    </Widget>
+  );
+}
+function LeadsReports({ data }) {
+  const { jobs, proposals, briefs } = data;
+  const now = new Date(); const months = [];
+  for (let k = 5; k >= 0; k--) { const d = new Date(now.getFullYear(), now.getMonth() - k, 1); months.push({ key: d.getFullYear() + '-' + d.getMonth(), label: d.toLocaleDateString('en-US', { month: 'short' }), n: 0 }); }
+  for (const b of briefs) { const d = new Date(b.created_at); const r = months.find((m) => m.key === d.getFullYear() + '-' + d.getMonth()); if (r) r.n += 1; }
+  const replies = briefs.filter((b) => b.answered_at).map((b) => new Date(b.answered_at) - new Date(b.created_at)).filter((x) => x >= 0);
+  const med = median(replies);
+  const decided = proposals.filter((p) => ['accepted', 'declined'].includes(p.status));
+  const accepted = proposals.filter((p) => p.status === 'accepted');
+  const rate = decided.length ? Math.round((accepted.length / decided.length) * 100) : null;
+  const avg = accepted.length ? accepted.reduce((a, p) => a + Number(p.total || 0), 0) / accepted.length : null;
+  const design = briefs.filter((b) => b.lane !== 'automation').length;
+  const auto = briefs.length - design;
+  const won = jobs.filter((j) => j.stage === 'paid').length;
+  return (
+    <div className="dash-g">
+      <Widget title="Briefs received" badge="last 6 months"><CountBars months={months} /></Widget>
+      <Widget title="The numbers" badge={briefs.length + ' briefs total'}>
+        <div className="minirows">
+          <div className="minirow plain"><span className="mtxt">Typical time to reply</span><span className="mono mval">{med == null ? 'No replies yet' : span(med)}</span></div>
+          <div className="minirow plain"><span className="mtxt">Proposals accepted</span><span className="mono mval">{rate == null ? 'None decided yet' : rate + '% of ' + decided.length}</span></div>
+          <div className="minirow plain"><span className="mtxt">Average accepted proposal</span><span className="mono mval">{avg == null ? '—' : usd(Math.round(avg))}</span></div>
+          <div className="minirow plain"><span className="mtxt">Design briefs / automation briefs</span><span className="mono mval">{design} / {auto}</span></div>
+          <div className="minirow plain"><span className="mtxt">Jobs paid in full</span><span className="mono mval">{won}</span></div>
+        </div>
+      </Widget>
+    </div>
+  );
+}
+
 // ── The opening ────────────────────────────────────────────────────────
 // Plays once per visit: sessionStorage lives as long as the tab or the
 // home-screen app is open, so moving between tools or reloading doesn't
@@ -1107,7 +1292,7 @@ function BusinessHub() {
   // The address holds the view (#jobs, #money, #job=<id>) so a reload or a
   // pasted link lands in the same place.
   // Today is home. (The old ring launcher is gone; an old #ring link lands on Today.)
-  const TABS = ['today', 'jobs', 'proposals', 'mail', 'money', 'clients'];
+  const TABS = ['today', 'leads', 'jobs', 'proposals', 'mail', 'money', 'clients'];
   const fromHash = () => {
     const id = (location.hash.match(/job=([0-9a-f-]{36})/) || [])[1] || null;
     const t = location.hash.slice(1);
@@ -1172,6 +1357,7 @@ function BusinessHub() {
           {data && (
             <React.Fragment>
               {tab === 'today' && <Today data={data} open={open} go={go} />}
+              {tab === 'leads' && <Leads data={data} open={open} go={go} reload={reloadAll} reloadClients={reloadClients} />}
               {tab === 'jobs' && (jobId ? <JobPage jobId={jobId} data={data} reload={reloadAll} back={() => go('jobs')} /> : <Jobs data={data} open={open} reload={reloadAll} startNew={startNew} />)}
               {tab === 'proposals' && <Proposals data={data} open={open} />}
               {tab === 'mail' && <Mail data={data} open={open} />}

@@ -837,3 +837,27 @@ mcc.css, is unchanged.
   lasts while the tab or home-screen app is open, so moving between tools or
   reloading doesn't replay it, and closing and reopening does. Reduced motion
   never plays it.
+
+## 2026-11-06 — Leads tool in the Business Hub; polish pass
+
+- New **Leads** tool between Today and Jobs: the briefs coming in and the
+  jobs not yet won (New, Proposed, Directions, Final). It reads the data the
+  hub already loads, so there is no database change.
+- One focal number, the open pipeline value (proposal totals for jobs still
+  in play). Under the title a tab row: Overview (stage cards, Needs you, New
+  briefs), Pipeline (the existing jobs board), Contacts (the existing
+  Clients), Activity (every job event) and Reports (briefs per month, typical
+  time to reply, proposals accepted, average accepted proposal, design vs
+  automation briefs, jobs paid).
+- Tabs sit under the title on every screen size. On a phone the tools bar
+  already owns the bottom of the screen, so the tab row scrolls sideways
+  instead of adding a second bar. The last tab used is remembered for the
+  visit (sessionStorage); arrow keys move between tabs.
+- No ring: the ring stays out of the Business Hub, as decided in #50.
+- Polish, all in Business Hub.html's own styles, no behaviour change: header
+  links and list rows reach 44px, visible focus rings, tabular numbers,
+  balanced headings, a hover state on job cards. Docket and the rest of
+  mcc.css untouched.
+- Not changed: any API route, migration, or Stripe/session setting. The
+  remaining audit items (register the Stripe webhook, set SESSION_SECRET,
+  rotate the Backroom password, check the Resend domain) are dashboard steps.
