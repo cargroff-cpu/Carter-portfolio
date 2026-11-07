@@ -4,6 +4,7 @@
 //   node scripts/cat-test/suite.cjs            (RUNS=5 for more repeats, VERBOSE=1 for clip lists)
 const { open } = require('./harness.cjs');
 const RUNS = +process.env.RUNS || 3;   // behaviour has randomness: repeat each scenario
+const ONLY = process.env.ONLY || '';     // run only scenarios whose name contains this
 
 const SCEN = [
   { name: 'wiggle at medium distance (~1.9 m): notices, walks over, pounces', start: 'STAND', secs: 12,
@@ -42,12 +43,30 @@ const SCEN = [
   { name: 'cursor left still on its body does not trigger play', start: 'STAND', secs: 8,
     ptr: `(t, c, L) => { const s = L.toScreen(c.X0, c.Z0); return [s.x, s.y - 0.2*s.ppm]; }`,
     check: `r => [r.firstPlay < 0 || 'played with a still cursor']` },
+  // ── newer behaviours ──
+  { name: 'locks on: ears and tail flick before the pounce', start: 'STAND', secs: 6,
+    ptr: `(t, c, L) => { const a = c.ahead(0.75); const s = L.toScreen(a.X + 0.12*Math.sin(t*8), a.Z + 0.08*Math.cos(t*6)); return [s.x, s.y]; }`,
+    check: `r => [r.locks.length > 0 || 'never locked on', r.first('pounce') < 0 || r.locks[0] <= r.first('pounce') || 'locked on only after pouncing']` },
+  { name: 'cursor gliding past in front: pounce leads it', start: 'STAND', secs: 12,
+    ptr: `(t, c, L) => { const u = -0.7 + ((t * 0.5) % 2.8 < 1.4 ? (t * 0.5) % 2.8 : 2.8 - (t * 0.5) % 2.8); const a = c.ahead(0.8), px = Math.cos(c.yaw0), pz = Math.sin(c.yaw0); const p = L.clampIn(a.X + px*u, a.Z + pz*u, 0.5); const s = L.toScreen(p.X, p.Z); return [s.x, s.y]; }`,
+    check: `r => [r.misses.length > 0 || 'never pounced', !r.misses.length || r.misses[0] < 0.25 || 'landed ' + r.misses[0].toFixed(2) + ' m off the cursor']` },
+  { name: 'pounce dodged: a quick "missed it" look around', start: 'STAND', secs: 8,
+    ptr: `(t, c, L) => { const st = c.anchor || (c.anchor = { a: c.ahead(0.75) }); if (!st.jump && c.motor.cur === 'pounce' && c.motor.time('pounce') > 0.2) st.jump = L.clampIn(st.a.X + Math.cos(c.yaw0)*0.9, st.a.Z + Math.sin(c.yaw0)*0.9, 0.5); const a = st.jump || st.a; const s = L.toScreen(a.X + 0.12*Math.sin(t*8), a.Z + 0.08*Math.cos(t*6)); return [s.x, s.y]; }`,
+    check: `r => [r.first('pounce') >= 0 || 'never pounced', r.first('idle_look_around') > r.first('pounce') && r.first('idle_look_around') - r.first('pounce') < 2 || 'no look-around after the dodge (' + r.first('idle_look_around') + ')']` },
+  { name: 'cursor flicked past its face: quick one-two swat', start: 'STAND', secs: 5,
+    ptr: `(t, c, L) => { const k = Math.floor(t), f = t - k, dir = k % 2 ? -1 : 1; const u = dir * (f < 0.22 ? -0.45 + 0.9 * (f / 0.22) : 0.45); const a = c.ahead(0.3), p = { X: a.X + Math.cos(c.yaw0)*u, Z: a.Z + Math.sin(c.yaw0)*u }; const s = L.toScreen(p.X, p.Z); return [s.x, s.y]; }`,
+    check: `r => { const sw = r.starts.filter(([n]) => /^swat_/.test(n)).map(([, t]) => t); let one2 = -1; for (let i = 1; i < sw.length; i++) if (sw[i] - sw[i-1] < 0.6) { one2 = sw[i-1]; break; } return [one2 >= 0 && one2 < 3 || 'no one-two swat by 3 s (' + sw.join(',') + ')', !r.clips.has('loco') || 'walked']; }` },
+  { name: 'woken from a loaf: a beat of looking, then plays', start: 'LOAF', secs: 8,
+    ptr: `(t, c, L) => { const a = c.ahead(0.7); const s = L.toScreen(a.X + 0.12*Math.sin(t*8), a.Z + 0.08*Math.cos(t*6)); return [s.x, s.y]; }`,
+    check: `r => [r.firstPlay >= 0 || 'never played', r.first('loaf_to_sit') - r.firstPlay >= 0.4 || 'got up with no hesitation', r.firstAny(['pounce','swat_L','swat_R','bat_play']) >= 0 && r.firstAny(['pounce','swat_L','swat_R','bat_play']) < 5.5 || 'no play move by 5.5 s']` },
 ];
 
 (async () => {
   const { page, close } = await open({ query: '?catdebug' });
   let fails = 0;
   for (const sc of SCEN) {
+    if (ONLY && !sc.name.includes(ONLY)) continue;
+    if (process.env.TRACE) sc.trace = +process.env.TRACE;   // TRACE=<secs>: per-frame state dump
     for (let run = 0; run < RUNS; run++) {
       const res = await page.evaluate(([sc, run]) => {
         const c = window.__cat, L = c.lane, T = c.T; c.manual = true;
@@ -57,17 +76,19 @@ const SCEN = [
         const X0 = [-1.0, 0.6, 1.4][run % 3], Z0 = [1.6, 2.6, 4.5][run % 3];
         c.X = X0; c.Z = Z0; c.yaw = [0.4, -2.2, 1.3][run % 3]; c.outside = false; c.interest = 0; c.cool = 0; c.glance = null; c.nextGlance = 999;
         c.gazeOverride = null; c.gaze.w = 0; c.ptr.cx = -1; c.ptr.speed = 0; c.ptr.mps = 0; c.anchor = null; c.X0 = X0; c.Z0 = Z0;
+        c.lockT = -9; c.flickT = -9; c.toyV = { X: 0, Z: 0, sp: 0 }; c.toyPrev = null; c.lastMiss = -1;
         const pose = { STAND: 'idle_stand', SIT: 'sit_idle', LOAF: 'loaf' }[sc.start];
         c.posture = sc.start; c.motor.play(pose, 0);
         for (let i = 0; i < 10; i++) c.update(1 / 30);
         c.ahead = (d) => ({ X: c.X0 + Math.sin(c.yaw0) * d, Z: c.Z0 - Math.cos(c.yaw0) * d }); c.yaw0 = c.yaw;
         c.brain.swap('life', c.brain.life(false));
-        const r = { firstPlay: -1, playEnd: -1, clips: new Set(), firsts: {}, maxGaze: 0, walkedToward: 0, dist: 0, headSpike: 0 };
+        const r = { firstPlay: -1, playEnd: -1, clips: new Set(), firsts: {}, seq: [], trace: [], starts: [], misses: [], locks: [], maxGaze: 0, walkedToward: 0, dist: 0, headSpike: 0 };
         const rect = c.hero.getBoundingClientRect();
         let px = null, py = null, lx = c.X, lz = c.Z;
         const headBones = ['neck_01', 'neck_02', 'head'].map(n => c.model.getObjectByName(n));
         const prevQ = headBones.map(() => new T.Quaternion()), q = new T.Quaternion(), bq = new T.Quaternion();
-        let firstFrame = true, d0 = null;
+        const trace = sc.trace || 0;
+        let firstFrame = true, d0 = null, lastCur = null, lastLock = c.lockT, pt = 0;
         for (let f = 0; f < sc.secs * 30; f++) {
           const t = f / 30;
           const [x, y] = fn(t, c, L);
@@ -78,6 +99,17 @@ const SCEN = [
           const playing = mode === 'play' && c.brain.note !== 'winddown';
           if (playing && r.firstPlay < 0) r.firstPlay = +t.toFixed(2);
           if (r.firstPlay >= 0 && !playing && r.playEnd < 0) r.playEnd = +t.toFixed(2);
+          const tag = cur + (c.brain.note ? '/' + c.brain.note : '');
+          if (!r.seq.length || r.seq[r.seq.length - 1][0] !== tag) r.seq.push([tag, +t.toFixed(2)]);
+          if (trace && f % 3 === 0 && t < trace) r.trace.push(`${t.toFixed(2)} ${mode}/${c.brain.note} ${cur} ${c.posture} toy=${c.toy ? c.toy.kind + ' dm' + c.toy.dm.toFixed(2) + ' h' + c.toy.h.toFixed(2) + (c.toy.moving ? ' mv' : '') : '-'} d=${c.toy ? Math.hypot(c.toy.X - c.X, c.toy.Z - c.Z).toFixed(2) : '-'} err=${c.toy ? (((Math.atan2(c.toy.X - c.X, -(c.toy.Z - c.Z)) - c.yaw + 9 * Math.PI) % (2 * Math.PI) - Math.PI) * 57.3).toFixed(0) : '-'} mps=${(c.ptr.mps || 0).toFixed(2)} int=${c.interest.toFixed(2)} flick=${(c.time - c.flickT).toFixed(2)}`);
+          if (playing && cur !== lastCur) r.starts.push([cur, +t.toFixed(2)]);
+          lastCur = cur;
+          if (c.lockT !== lastLock) { lastLock = c.lockT; if (playing) r.locks.push(+t.toFixed(2)); }
+          // where a pounce lands: the paws' spot (just ahead of the body) to the cursor on the ground
+          const ptm = cur === 'pounce' ? c.motor.time('pounce') : 0;
+          if (cur === 'pounce' && pt < c.POUNCE.end && ptm >= c.POUNCE.end && c.toy && c.toy.kind === 'ground')
+            r.misses.push(Math.hypot(c.toy.X - (c.X + Math.sin(c.yaw) * 0.14), c.toy.Z - (c.Z - Math.cos(c.yaw) * 0.14)));
+          pt = ptm;
           if (playing) { r.clips.add(cur); if (!(cur in r.firsts)) r.firsts[cur] = +t.toFixed(2); }
           r.maxGaze = Math.max(r.maxGaze, c.gaze.w);
           r.dist += Math.hypot(c.X - lx, c.Z - lz); lx = c.X; lz = c.Z;
@@ -90,11 +122,13 @@ const SCEN = [
         r.firstAny = (ns) => { const v = ns.map(r.first).filter(x => x >= 0); return v.length ? Math.min(...v) : -1; };
         const problems = check(r).filter(x => x !== true);
         if (r.headSpike > 30) problems.push('head snapped ' + r.headSpike.toFixed(0) + '°/frame');
-        return { problems, firstPlay: r.firstPlay, playEnd: r.playEnd, clips: [...r.clips].join(','), dist: r.dist.toFixed(2), head: r.headSpike.toFixed(0) };
+        return { problems, firstPlay: r.firstPlay, playEnd: r.playEnd, clips: [...r.clips].join(','), trace: r.trace.join('\n'), misses: r.misses.map(m => m.toFixed(2)).join(','), seq: r.seq.map(([n, t]) => n + '@' + t).join(' '), dist: r.dist.toFixed(2), head: r.headSpike.toFixed(0) };
       }, [sc, run]);
       const ok = res.problems.length === 0; if (!ok) fails++;
       console.log(`${ok ? 'PASS' : 'FAIL'}  ${sc.name} [run ${run + 1}]  play@${res.firstPlay} end@${res.playEnd} dist ${res.dist} head ${res.head}°  ${ok ? '' : '→ ' + res.problems.join('; ')}`);
       if (!ok || process.env.VERBOSE) console.log('      clips: ' + res.clips);
+      if (res.trace) console.log(res.trace);
+      if (process.env.VERBOSE) console.log('      seq: ' + res.seq + (res.misses ? '  pounce misses: ' + res.misses : ''));
     }
   }
   console.log(fails ? `${fails} FAILED` : 'ALL PASSED');

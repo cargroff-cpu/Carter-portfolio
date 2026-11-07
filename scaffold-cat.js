@@ -33,6 +33,8 @@ const DEG = Math.PI / 180;
 const ORG_Y = 0.74;            // where the cat's feet sit inside its canvas
 const CHASE_M = 2.6;           // beyond this (metres) a cursor isn't worth getting up for
 const HAZE_K = 0.6;            // share of each fog bank's haze laid on the cat
+const REACH_H = 1.5;           // an air toy higher than this (metres) is only watched, never played with
+const FLICK_MPS = 1.6;         // cursor speed (m/s at the cat's depth) that reads as a flick
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -350,6 +352,9 @@ class Cat {
     this.gazeOverride = null;
     this.blink = { next: rnd(1.5, 4), t: -1, dbl: false, gap: 0 };
     this.chatter = 0; this.earsBack = 0;
+    this.toyV = { X: 0, Z: 0, sp: 0 }; this.toyPrev = null;   // where a toy on the ground is heading
+    this.lockT = -9;                                   // when it last locked on (ear and tail flick)
+    this.flickT = -9;                                  // when the cursor last whipped past its face
 
     // ── model ──
     for (const c of gltf.animations) {                   // GLB keys start at Blender frame 1
@@ -370,6 +375,7 @@ class Cat {
     });
     this.bones = { neck_01: null, neck_02: null, head: null };
     for (const n of Object.keys(this.bones)) this.bones[n] = this.model.getObjectByName(n);
+    this.tail = ['tail_04', 'tail_05', 'tail_06', 'tail_07'].map((n) => this.model.getObjectByName(n)).filter(Boolean);
     this.gaze = { w: 0, yaw: 0, pitch: 0, ay: 0, ap: 0, inited: false, per: { neck_01: [0, 0], neck_02: [0, 0], head: [0, 0] } };
 
     // ── renderer ──
@@ -490,8 +496,17 @@ class Cat {
     // on or just over the cat means "on the cat", not a spot on the ground behind
     // it; while it's hunting something on the ground it takes more to change its mind
     const hunting = this.toy && this.toy.kind === 'ground' && (this.posture === 'CROUCH' || this.brain.note === 'chase' || this.brain.note === 'stalk');
-    const overCat = Math.abs(ax - this.X) < 0.5 && ah > (hunting ? 0.5 : 0.15) * this.vis && ah < 1.0;
-    const g = overCat ? null : this.lane.fromScreen(hp.x, hp.y);
+    let overCat = Math.abs(ax - this.X) < 0.5 && ah > (hunting ? 0.5 : 0.15) * this.vis && ah < 1.0;
+    // Low on the body is ambiguous in 2.5D: the same pixel is a spot on the ground
+    // just behind the cat. When that spot is behind it and close (under ~0.8 m deeper
+    // in the lane), it is the ground: the cat turns round for it instead of swatting
+    // the air over its back.
+    let g0 = null;
+    if (overCat && ah < 0.3 * this.vis && (g0 = this.lane.fromScreen(hp.x, hp.y))) {
+      const behind = this.toLocal(g0.X, 0, g0.Z, this.tmp.v2).z < 0;
+      if (behind && g0.Z - this.Z < 0.8) overCat = false;
+    }
+    const g = overCat ? null : g0 || this.lane.fromScreen(hp.x, hp.y);
     if (g && g.Z <= this.lane.Zmax + 0.6) {
       const c = this.lane.clampIn(g.X, g.Z, 0.5);
       return { kind: 'ground', X: c.X, Z: c.Z, h: 0.02, moving, dm: Math.hypot(c.X - this.X, c.Z - this.Z) };
@@ -502,12 +517,44 @@ class Cat {
   updateAttention(dt) {
     const p = this.ptr, toy = this.toy;
     p.speed = damp(p.speed, 0, 6, dt);
+    if (toy && (p.mps || 0) > FLICK_MPS && toy.dm < 0.6) this.flickT = this.time;
     if (!toy) { this.interest = Math.max(0, this.interest - dt * 0.8); return; }
     const prox = Math.exp(-toy.dm / 1.1);                 // 1 on the cat, ~0.4 a metre away, ~0.1 at chase range
     const act = clamp((p.mps || 0) / 0.5, 0, 1);
-    if (act > 0.3 && toy.dm < CHASE_M) this.interest += dt * 3.0 * act * (0.15 + prox);
+    const reach = toy.kind === 'ground' || toy.h < REACH_H;   // high over the lane: watch it, never get up for it
+    if (act > 0.3 && toy.dm < CHASE_M && reach) this.interest += dt * 3.0 * act * (0.15 + prox);
     else this.interest -= dt * 0.6;
     this.interest = clamp(this.interest, 0, 1.6);
+  }
+
+  // a toy on the ground: smoothed velocity, so a pounce can lead a moving cursor
+  trackToy(dt) {
+    const t = this.toy, v = this.toyV, p = this.toyPrev;
+    if (t && t.kind === 'ground' && p && dt > 0) {
+      let vx = (t.X - p.X) / dt, vz = (t.Z - p.Z) / dt;
+      const sp = Math.hypot(vx, vz);
+      // a flick on the ground is judged in ground metres: one that runs into the lane
+      // barely moves on screen (the lane is seen from just 13 degrees up)
+      if (sp > FLICK_MPS && t.dm < 0.6) this.flickT = this.time; if (sp > 2.5) { vx *= 2.5 / sp; vz *= 2.5 / sp; }
+      v.X = damp(v.X, vx, 4, dt); v.Z = damp(v.Z, vz, 4, dt); v.sp = damp(v.sp, Math.hypot(vx, vz), 4, dt);
+    } else { v.X = damp(v.X, 0, 8, dt); v.Z = damp(v.Z, 0, 8, dt); v.sp = damp(v.sp, 0, 8, dt); }
+    this.toyPrev = t && t.kind === 'ground' ? { X: t.X, Z: t.Z } : null;
+    // motion along the lane (toward or away from the viewer) hardly moves on screen,
+    // so a toy on the ground also counts as moving by its speed over the ground
+    if (t && t.kind === 'ground') {
+      this.ptr.mps = Math.max(this.ptr.mps, 0.6 * v.sp);
+      t.moving = t.moving || this.ptr.mps > 0.18;
+    }
+  }
+  // where a ground toy will be in `sec` seconds (at most half a metre ahead of it).
+  // Only a toy going somewhere is led: a jiggle averages out to no heading, so
+  // the lead is scaled by how steady the motion is (net velocity / mean speed).
+  lead(sec) {
+    const t = this.toy, v = this.toyV; if (!t || t.kind !== 'ground') return null;
+    const steady = v.sp > 0.05 ? Math.pow(clamp(Math.hypot(v.X, v.Z) / v.sp, 0, 1), 2) : 0;
+    let dx = v.X * sec * steady, dz = v.Z * sec * steady;
+    const d = Math.hypot(dx, dz); if (d > 0.5) { dx *= 0.5 / d; dz *= 0.5 / d; }
+    return this.lane.clampIn(t.X + dx, t.Z + dz, 0.5);
   }
 
   // ── per-frame ──
@@ -515,6 +562,7 @@ class Cat {
     this.time += dt;
     this.cool = Math.max(0, this.cool - dt);
     this.toy = this.readToy();
+    this.trackToy(dt);
     this.updateAttention(dt);
     this.brain.tick(dt);
     this.unlayer();
@@ -533,6 +581,7 @@ class Cat {
     this.body.scale.setScalar(this.vis);
     this.body.updateMatrixWorld(true);
     this.applyGaze(dt);
+    this.applyTail(dt);
     this.applyFace(dt);
     this.light(dt);
     this.place();
@@ -564,6 +613,7 @@ class Cat {
   // next mixer update, or it piles up frame after frame (the head would spin).
   unlayer() {
     for (const b of Object.values(this.bones)) if (b && b.userData.animQ) b.quaternion.copy(b.userData.animQ);
+    for (const b of this.tail) if (b.userData.animQ) b.quaternion.copy(b.userData.animQ);
     for (const m of this.morphs) if (m.userData.animInf) for (let i = 0; i < 3; i++) m.morphTargetInfluences[i] = m.userData.animInf[i];
   }
 
@@ -625,6 +675,25 @@ class Cat {
     }
   }
 
+  // locking on: the tail tip twitches side to side for a moment, layered on the clip
+  applyTail() {
+    const T = this.tmp, k = this.time - this.lockT;
+    for (const b of this.tail) (b.userData.animQ || (b.userData.animQ = b.quaternion.clone())).copy(b.quaternion);
+    if (k < 0 || k > 0.9) return;
+    const env = sm(k / 0.12) * (1 - sm((k - 0.45) / 0.45));
+    this.body.getWorldQuaternion(T.q3);
+    this.tail.forEach((b, i) => {
+      const a = 22 * DEG * env * (0.5 + 0.25 * i) * Math.sin(k * 26 - i * 0.7);
+      T.q.setFromAxisAngle(T.v2.set(0, 1, 0), a);                        // side to side, in cat space
+      T.q.premultiply(T.q3).multiply(T.q2.copy(T.q3).invert());
+      b.getWorldQuaternion(T.q2); T.q2.premultiply(T.q);
+      b.parent.getWorldQuaternion(T.qp);
+      b.quaternion.copy(T.qp.invert().multiply(T.q2));
+      b.updateMatrixWorld(true);
+    });
+  }
+  lockOn() { if (this.time - this.lockT > 1.2) this.lockT = this.time; }
+
   // blinks, ear flattening, the chatter a cat makes at something it can't reach
   applyFace(dt) {
     // close 0.06 s, hold 0.03 s, open 0.10 s; now and then a double blink
@@ -640,12 +709,15 @@ class Cat {
       if (t > 0.19) { b.t = -1; if (b.dbl) { b.dbl = false; b.gap = 0.09; } }
     }
     this.earsBack = damp(this.earsBack, this.earsWant || 0, 6, dt);
+    // locking on: two quick ear flicks
+    const lk = this.time - this.lockT;
+    const flick = lk >= 0 && lk < 0.5 ? 0.55 * Math.max(0, Math.sin(lk / 0.5 * 4 * Math.PI)) : 0;
     const ch = this.chatter > 0 ? 0.22 * (0.5 + 0.5 * Math.sin(this.time * 52)) * this.chatter : 0;
     for (const m of this.morphs) {
       const inf = m.morphTargetInfluences;
       (m.userData.animInf || (m.userData.animInf = [0, 0, 0])).splice(0, 3, inf[0], inf[1], inf[2]);
       inf[0] = Math.min(1, inf[0] + blink);
-      inf[1] = Math.min(1, inf[1] + this.earsBack);
+      inf[1] = Math.min(1, inf[1] + Math.max(this.earsBack, flick));
       inf[2] = Math.min(1, inf[2] + ch);
     }
   }
@@ -790,31 +862,33 @@ class Brain {
     const speed = o.speed || 0.27, stop = o.stop ?? 0.12;
     let t = getT(); if (!t) return;
     if (c.posture !== 'WALK') {
-      yield* this.toStand();
+      yield* this.toStand(o.hunt ? 1.6 : 1);
       t = getT(); if (!t || c.distTo(t) <= stop + 0.06) return;
+      // a hunting cat turns in place only for a big turn; smaller ones it takes into the first steps
       const dy = wrap(c.headingTo(t) - c.yaw);
-      if (Math.abs(dy) > 40 * DEG) yield* this.turnBy(dy, o.quick || 1);
+      if (Math.abs(dy) > (o.hunt ? 75 : 40) * DEG) yield* this.turnBy(dy, o.quick || 1);
       t = getT(); if (!t) return;
       L.v = 0.27;
-      yield* this.once(o.bored ? 'bored_walkaway_start' : 'idle_to_walk', 0.15, (dt) => c.steer(t, 45 * DEG, dt), o.quick || 1);
+      yield* this.once(o.bored ? 'bored_walkaway_start' : 'idle_to_walk', 0.15, (dt) => c.steer(t, (o.hunt ? 100 : 45) * DEG, dt), o.quick || 1);
       m.play('loco', 0.2); L.p = 0;
     } else if (m.cur !== 'loco') {
       yield* this.settle(); m.play('loco', 0.2); L.p = 0;
     }
     c.posture = 'WALK';
     let elapsed = 0, stopping = false;
+    const acc = o.hunt ? 1.4 : 0.6, dec = o.hunt ? 0.9 : 0.45;   // a hunting cat gets going and pulls up sharper
     while (true) {
       const dt = yield; elapsed += dt;
       t = getT();
       const d = t ? c.distTo(t) : 0;
       if (!t || (o.until && o.until(d)) || elapsed > 45) stopping = true;
       let vT = stopping ? 0.27 : speed;
-      if (t && !stopping) vT = Math.min(vT, Math.max(0.2, Math.sqrt(2 * 0.45 * Math.max(0, d - stop))));
-      L.v += clamp(vT - L.v, -0.9 * dt, 0.6 * dt);
+      if (t && !stopping) vT = Math.min(vT, Math.max(0.2, Math.sqrt(2 * dec * Math.max(0, d - stop))));
+      L.v += clamp(vT - L.v, -2 * dec * dt, acc * dt);
       if (t) c.steer(t, L.v < 0.36 ? 80 * DEG : L.v < 0.8 ? 115 * DEG : 150 * DEG, dt);
       if (t && !stopping && d <= stop + 0.2) stopping = true;
       if (stopping && o.toCrouch && c.toy && c.toy.kind === 'ground' && c.toy.dm < 1.2) {   // a hunting cat sinks straight from the walk into its stalk
-        m.play('stalk_crouch', 0.4, true, 1.15); c.posture = 'CROUCH'; return;
+        m.play('stalk_crouch', 0.4, true, 1.15); c.posture = 'CROUCH'; c.lockOn(); return;
       }
       if (stopping && L.wrapped && L.v < 0.36) break;
       if (stopping && elapsed > 60) break;
@@ -931,9 +1005,10 @@ class Brain {
     const started = c.time, maxT = rnd(30, 50);
     let calm = 0, sideT = 0;
     try {
+      if (c.posture === 'LOAF') yield* this.rouse();
       yield* this.toStand(1.6);
       // spotted from across the lane: a beat of alert first; up close, straight in
-      if (c.toy && c.toy.dm > 0.9 && c.posture === 'STAND') yield* this.once('notice', 0.12, null, 1.35);
+      if (c.toy && c.toy.dm > 0.9 && c.posture === 'STAND') yield* this.alert();
       while (true) {
         const dt = yield;
         const t = c.toy && c.toy.dm < CHASE_M + 0.3 ? c.toy : null;   // gone too far: let it go
@@ -950,9 +1025,10 @@ class Brain {
               const u = c.toy; if (!u || u.kind !== 'ground') return null;
               const dd = c.distTo(u), k = Math.max(0, dd - 0.62) / (dd || 1);
               return { X: c.X + (u.X - c.X) * k, Z: c.Z + (u.Z - c.Z) * k };
-            }, { speed: d > 1.7 ? 0.5 : 0.36, stop: 0.06, quick: 1.4, toCrouch: true,
-              until: () => !c.toy || c.toy.kind !== 'ground' || c.distTo(c.toy) < 0.8 || c.toy.dm > CHASE_M + 0.3 || c.interest < 0.2 });
-          } else if (d > 0.34) { this.note = 'stalk'; yield* this.stalk(); }
+            }, { speed: d > 1.7 ? Math.min(0.6, GAIT_SPEED[1]) : 0.45, stop: 0.06, quick: 1.8, hunt: true, toCrouch: true,
+              until: () => !c.toy || c.toy.kind !== 'ground' || c.distTo(c.toy) < 0.95 || c.toy.dm > CHASE_M + 0.3 || c.interest < 0.2 });
+          } else if (d < 0.55 && this.flicked(t)) { this.note = 'swat'; yield* this.swat(t); }
+          else if (d > 0.34) { this.note = 'stalk'; yield* this.stalk(); }
           else if (t.moving) { this.note = 'swat'; yield* this.swat(t); }
           else { this.note = 'sniff'; if (m.cur !== 'idle_stand') m.play('idle_stand', 0.25, false); }
         } else {
@@ -995,7 +1071,7 @@ class Brain {
       t = c.toy; if (!t || t.kind !== 'ground') return;
       const dy = wrap(c.headingTo(t) - c.yaw);
       if (Math.abs(dy) > 45 * DEG) yield* this.turnBy(dy, 1.5);
-      m.play('stalk_crouch', 0.25, true, 1.15); c.posture = 'CROUCH';
+      m.play('stalk_crouch', 0.25, true, 1.15); c.posture = 'CROUCH'; c.lockOn();
     }
     if (!t || t.kind !== 'ground') { yield* this.toStand(1.4); return; }
     let still = 0, tt = 0;
@@ -1009,32 +1085,78 @@ class Brain {
       c.creep = d > 0.62 && Math.abs(err) < 30 * DEG ? 0.06 : 0;
       still = t.moving ? 0 : still + dt;
       if (still > 3.5 && chance(dt * 0.5)) { c.creep = 0; c.interest *= 0.5; yield* this.toStand(); return; }
-      if (d <= 0.66 && Math.abs(err) < 22 * DEG && tt > 0.45) break;
+      if (d < 0.55 && this.flicked(t)) { c.creep = 0; yield* this.swat(t); return; }   // flicked past its face: bat at it
+      if (d <= 0.85 && Math.abs(err) < 22 * DEG && tt > 0.35) break;
     }
     c.creep = 0;
-    yield* this.once('butt_wiggle', 0.12, (dt) => {
-      const u = c.toy; if (u && u.kind === 'ground') c.yaw = wrap(c.yaw + clamp(wrap(c.headingTo(u) - c.yaw) * 3, -45 * DEG, 45 * DEG) * dt);
-    }, 1.3);
-    const u = c.toy && c.toy.kind === 'ground' ? c.toy : t;
-    m.pounceTravel = clamp(c.distTo(u) - 0.14, 0.2, 0.62);
-    yield* this.once('pounce', 0.1);
+    // wiggle and pounce at where the toy is going, not where it was
+    const WIG = 1.4, aim = (left) => c.lead(left) || (c.toy && c.toy.kind === 'ground' ? c.toy : t);
+    const face = (p, rate, dt) => { c.yaw = wrap(c.yaw + clamp(wrap(c.headingTo(p) - c.yaw) * 3, -rate, rate) * dt); };
+    yield* this.once('butt_wiggle', 0.12, (dt, tm, T) => face(aim((T - tm) / WIG + POUNCE.end), 45 * DEG, dt), WIG);
+    const u = c.toy;
+    if (u && u.kind === 'ground' && c.distTo(u) < 0.3) { yield* this.swat(u); return; }   // it came to its paws: pin it there
+    m.pounceTravel = clamp(c.distTo(aim(POUNCE.end)) - 0.14, 0.2, 0.72);
+    yield* this.once('pounce', 0.1, (dt, tm) => {
+      if (tm >= POUNCE.start) return;              // committed once airborne
+      const p = aim(POUNCE.end - tm); face(p, 120 * DEG, dt);
+      m.pounceTravel = clamp(c.distTo(p) - 0.14, 0.2, 0.72);
+    });
     m.play('idle_stand', 0.18); c.posture = 'STAND';
     c.interest = Math.max(0, c.interest - 0.2);
     const v = c.toy;
-    if (v && v.kind === 'ground' && c.distTo(v) < 0.55 && v.moving && chance(0.65)) yield* this.swat(v);
+    const mx = c.X + Math.sin(c.yaw) * 0.14, mz = c.Z - Math.cos(c.yaw) * 0.14;   // where its paws came down
+    c.lastMiss = v && v.kind === 'ground' ? Math.hypot(v.X - mx, v.Z - mz) : -1;
+    if (v && v.kind === 'ground' && c.lastMiss > 0.45 && v.dm < CHASE_M) yield* this.missed();
+    else if (v && v.kind === 'ground' && c.distTo(v) < 0.55 && v.moving && chance(0.65)) yield* this.swat(v);
+  }
+  // woken from a loaf: a beat of looking before it gets up (longer if the toy is far)
+  *rouse() {
+    const c = this.c;
+    c.blink.t = 0; c.lockT = c.time;
+    const far = c.toy && c.toy.dm > 1.2;
+    yield* this.hold('loaf', rnd(0.45, 0.75) + (far ? 0.35 : 0), 0.2, () => !c.toy);
+  }
+  // spotted from across the lane: head up, ears flick, then go (the clip is cut short)
+  *alert() {
+    const c = this.c, m = c.motor;
+    m.play('notice', 0.12, true, 1.5); c.posture = 'STAND'; c.lockOn();
+    let t = 0; while (t < 0.5 && !m.done('notice')) t += yield;
+  }
+  // the pounce came down on nothing: a quick look around, as if it meant to do that
+  *missed() {
+    const c = this.c, m = c.motor;
+    this.note = 'missed'; c.earsWant = 0.35;
+    m.play('idle_look_around', 0.2, true, 1.5); c.posture = 'STAND';
+    let t = 0; while (t < 1.1) t += yield;
+    c.earsWant = 0; m.play('idle_stand', 0.25);
+  }
+  // the cursor whipped past close in front of its face
+  flicked(t) {
+    const c = this.c;
+    if (!t || c.time - c.flickT > 0.35) return false;
+    if (t.kind === 'air') return t.h < 0.7 && Math.abs(t.X - c.X) < 0.55;
+    return Math.abs(wrap(c.headingTo(t) - c.yaw)) < 70 * DEG;
   }
   *swat(t) {
-    const c = this.c, m = c.motor, T = c.tmp;
+    const c = this.c, m = c.motor, T = c.tmp, dbl = this.flicked(t);
     // face it first: a swat at something behind or beside it reads wrong
     if (t.kind === 'ground' && c.distTo(t) > 0.12) {
       const dy = wrap(c.headingTo(t) - c.yaw);
-      if (Math.abs(dy) > 50 * DEG) { yield* this.toStand(1.4); yield* this.turnBy(dy, 1.5); }
+      if (Math.abs(dy) > (dbl ? 80 : 50) * DEG) { yield* this.toStand(1.4); yield* this.turnBy(dy, 1.5); }
       const u = c.toy; if (u) t = u;
     }
     const p = c.toLocal(t.X, t.h, t.Z, T.v);
-    const name = Math.abs(p.x) < 0.1 && t.h < 0.4 && chance(0.4) ? 'bat_play' : p.x >= 0 ? 'swat_L' : 'swat_R';
     c.earsWant = 0.25;
-    yield* this.once(name, 0.1, null, 1.15);
+    if (dbl) {
+      // a flick past its face gets a quick one-two: one paw, then the other before the first is down
+      const a = p.x >= 0 ? 'swat_L' : 'swat_R', b = a === 'swat_L' ? 'swat_R' : 'swat_L';
+      m.play(a, 0.08, true, 1.5); c.posture = 'STAND';
+      while (m.time(a) < 0.55 * m.dur(a)) yield;
+      yield* this.once(b, 0.12, null, 1.5);
+    } else {
+      const name = Math.abs(p.x) < 0.1 && t.h < 0.4 && chance(0.4) ? 'bat_play' : p.x >= 0 ? 'swat_L' : 'swat_R';
+      yield* this.once(name, 0.1, null, 1.15);
+    }
     c.earsWant = 0;
     m.play('idle_stand', 0.15); c.posture = 'STAND';
     c.interest = Math.max(0, c.interest - 0.1);
@@ -1061,7 +1183,7 @@ async function start(hero) {
   const lane = new Lane(hero);
   if (!lane.ok) return;
   const cat = new Cat(THREE, hero, gltf, lane);
-  if (DEBUG) { window.__cat = cat; if (/catdebug=lines/.test(location.search)) debugLayer(cat); }
+  if (DEBUG) { window.__cat = cat; cat.POUNCE = POUNCE; if (/catdebug=lines/.test(location.search)) debugLayer(cat); }
 
   let visible = true, last = performance.now(), raf = 0;
   const io = new IntersectionObserver((es) => { visible = es[0].isIntersecting; kick(); }, { threshold: 0.02 });
