@@ -898,3 +898,8 @@ under makes it look up and move.
   reduced motion. It pauses off screen and in background tabs. Under 1 ms of
   script and GPU per frame.
 - `?catdebug` exposes `window.__cat`; `?catdebug=lines` draws the measured lane.
+
+## 2026-11-07 — Business Hub: one home per thing
+- Leads is a lens on work not yet won: Overview, Tasks, Activity, Reports. Its Pipeline and Contacts tabs are gone, since they were the Jobs board and the Clients page under a second name; Leads' stage cards now open Jobs.
+- Jobs owns its CSV export. Tasks are follow-ups tied to a job or client; personal to-dos stay in the Docket (the Tasks tab says so and links there).
+- Touch: on phones every button, stage row and inline link is at least 44px. Checked at 360/390/1280 on every tool, a job page and a client page: no sideways scroll, no page errors.
