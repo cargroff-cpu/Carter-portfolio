@@ -375,6 +375,7 @@ function Jobs({ data, open, reload, startNew }) {
       <section className="card">
         <div className="pad between" style={{ borderBottom: '1px solid var(--line)', gap: 12, flexWrap: 'wrap' }}>
           <h2 className="h2">Jobs</h2>
+          <button className="btn quiet sm" onClick={() => exportJobs(data)} disabled={!jobs.length}>Export CSV</button>
           <label className="sub" style={{ display: 'flex', gap: 8, alignItems: 'center' }}><input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} /> Show closed</label>
         </div>
         <div className="pad"><NewJobForm startOpen={startNew} onCreated={(id) => { reload(); if (id) open(id); }} /></div>
@@ -1084,7 +1085,7 @@ function ClientPage({ client, stats, data, open, reload, reloadTasks, back, gone
 // ── Leads ──────────────────────────────────────────────────────────────
 // Briefs coming in and jobs not yet won. Five views: Overview, Pipeline (the
 // jobs board), Contacts (clients), Activity (every event) and Reports.
-const LEAD_TABS = [['overview', 'Overview'], ['pipeline', 'Pipeline'], ['contacts', 'Contacts'], ['tasks', 'Tasks'], ['activity', 'Activity'], ['reports', 'Reports']];
+const LEAD_TABS = [['overview', 'Overview'], ['tasks', 'Tasks'], ['activity', 'Activity'], ['reports', 'Reports']];
 const LEAD_STAGES = [['new', 'New'], ['proposed', 'Proposed'], ['drafts', 'Directions'], ['final', 'Final'], ['paid', 'Paid']];
 const propValue = (proposals, j) => { const p = proposals.find((x) => x.job_id === j.id); return p ? Number(p.total || 0) : 0; };
 function span(ms) {
@@ -1154,13 +1155,6 @@ function Leads({ data, open, go, reload, reloadClients, reloadTasks }) {
       </div>
       <div className="lbody" key={sub} role="tabpanel" aria-labelledby={'ltab-' + sub}>
         {sub === 'overview' && <LeadsOverview data={data} open={open} go={go} pick={pick} />}
-        {sub === 'pipeline' && (
-          <React.Fragment>
-            <div className="exportbar"><button className="btn quiet sm" onClick={() => exportJobs(data)}>Export jobs CSV</button></div>
-            <Jobs data={data} open={open} reload={reload} startNew={false} />
-          </React.Fragment>
-        )}
-        {sub === 'contacts' && <Clients data={data} reload={reloadClients} reloadAll={reload} reloadTasks={reloadTasks} open={open} />}
         {sub === 'tasks' && <Tasks data={data} open={open} reloadTasks={reloadTasks} />}
         {sub === 'activity' && <LeadsActivity data={data} open={open} />}
         {sub === 'reports' && <LeadsReports data={data} />}
@@ -1182,7 +1176,7 @@ function LeadsOverview({ data, open, go, pick }) {
     <React.Fragment>
       <div className="lstages">
         {counts.map((c, k) => (
-          <button key={c.id} type="button" className={'lstage' + (c.id === 'new' && c.n ? ' hot' : '')} style={{ '--i': k }} onClick={() => pick('pipeline')}>
+          <button key={c.id} type="button" className={'lstage' + (c.id === 'new' && c.n ? ' hot' : '')} style={{ '--i': k }} onClick={() => go('jobs')}>
             <span className="lstage-n">{c.label}</span>
             <span className="lstage-c mono">{c.n}</span>
             <span className="lstage-m mono">{c.val ? usd(c.val) : 'No value yet'}</span>
@@ -1310,7 +1304,7 @@ function TaskAdd({ jobId, clientId, jobs, onAdded }) {
     </form>
   );
 }
-function TaskRows({ list, jobs, open, reload }) {
+function TaskRows({ list, jobs, open, reload, hideJob }) {
   const toggle = (t) => saveTask({ id: t.id, done_at: t.done_at ? null : new Date().toISOString(), updated_at: new Date().toISOString() }).then(reload).catch((e) => alert(e.message));
   const del = (t) => deleteTask(t.id).then(reload).catch((e) => alert(e.message));
   const jobOf = (id) => jobs.find((j) => j.id === id);
@@ -1323,7 +1317,7 @@ function TaskRows({ list, jobs, open, reload }) {
             <b>{t.title}</b>
             <span className="sub">
               {' · '}<span className={!t.done_at && t.due_on && t.due_on < todayStr() ? 'late' : ''}>{dueLabel(t.due_on)}</span>
-              {jobOf(t.job_id) && <React.Fragment>{' · '}<button className="linkbtn" onClick={() => open(t.job_id)}>{jobOf(t.job_id).title}</button></React.Fragment>}
+              {!hideJob && jobOf(t.job_id) && <React.Fragment>{' · '}<button className="linkbtn" onClick={() => open(t.job_id)}>{jobOf(t.job_id).title}</button></React.Fragment>}
             </span>
           </span>
           <button className="btn quiet sm" onClick={() => del(t)} aria-label={'Delete ' + t.title}>Delete</button>
@@ -1362,7 +1356,7 @@ function Tasks({ data, open, reloadTasks }) {
   return (
     <div className="stack">
       <section className="widget">
-        <div className="widget-h"><h2 className="h2">Add a task</h2><button className="btn quiet sm" onClick={exportTasks} disabled={!tasks.length}>Export CSV</button></div>
+        <div className="widget-h"><div><h2 className="h2">Add a task</h2><p className="sub">Follow-ups tied to a job or client. Your own to-dos live in the <a className="linkbtn" href="/docket">Docket</a>.</p></div><button className="btn quiet sm" onClick={exportTasks} disabled={!tasks.length}>Export CSV</button></div>
         <TaskAdd jobs={jobs} onAdded={reloadTasks} />
       </section>
       {groups.map(([label, list]) => list.length > 0 && (
@@ -1388,7 +1382,7 @@ function ItemTasks({ data, jobId, clientId, open, reloadTasks }) {
     <section className="tile">
       <div className="tilehead"><h2 className="h2">Follow-ups</h2><span className="lbl">{list.filter((x) => !x.done_at).length} open</span></div>
       <TaskAdd jobId={jobId} clientId={clientId} onAdded={reloadTasks} />
-      <TaskRows list={list} jobs={data.jobs} open={open} reload={reloadTasks} />
+      <TaskRows list={list} jobs={data.jobs} open={open} reload={reloadTasks} hideJob={!!jobId} />
     </section>
   );
 }
