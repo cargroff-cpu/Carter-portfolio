@@ -15,7 +15,7 @@
 // Data: command-center-data.jsx (window.CC). Server: api/job.js,
 // api/brief-reply.js, api/scaffold-read.js / scaffold-write.js.
 const {
-  fetchClients, saveClient, deleteClient, fetchTasks, saveTask, deleteTask, fetchInvoices, saveInvoice,
+  fetchClients, saveClient, deleteClient, mergeClientsOnServer, fetchTasks, saveTask, deleteTask, fetchInvoices, saveInvoice,
   fetchJobs, saveJob, fetchProposals, saveProposal, fetchJobFiles, fetchJobEvents, fetchAllEvents, saveJobEvent,
   jobAction, uploadJobFile,
   fetchDesignBriefs, fetchDesignBriefAttachments, briefAction,
@@ -34,6 +34,7 @@ const pill = (txt, kind) => <span className={'pill ' + (kind || 'mute')}>{txt}</
 const stageKind = (s) => ({ new: 'warn', proposed: 'mute', drafts: 'mute', final: 'warn', paid: 'ok', closed: 'mute' }[s] || 'mute');
 const firstName = (n) => String(n || '').trim().split(/\s+/)[0] || 'there';
 const fill = (t, f) => String(t || '').replace(/\{(\w+)\}/g, (m, k) => (f[k] != null && f[k] !== '' ? String(f[k]) : m));
+const SOURCE_LABEL = { brief: 'Scaffold brief', referral: 'Referral', repeat: 'Repeat client', social: 'Social', search: 'Search', event: 'Event', other: 'Other' };
 const sumItems = (items) => (items || []).reduce((s, i) => s + (Number(i.amount) || 0), 0);
 
 // ── Mail templates. {fields} fill from the job; the email goes out in the
@@ -170,7 +171,7 @@ function useCollection(fetcher) {
 // came in. Scaffold only. Every card opens the place it counts.
 const EVENT_TEXT = {
   brief: 'Brief came in', accepted: 'Proposal accepted', picked: 'Direction picked', changes: 'Changes asked for',
-  approved: 'Final approved', paid: 'Payment received', email: 'Email sent', file: 'File added', note: 'Note', reply: 'Reply sent',
+  approved: 'Final approved', paid: 'Payment received', email: 'Email sent', file: 'File added', note: 'Note', reply: 'Reply sent', change: 'Edited', stage: 'Stage changed',
 };
 function relTime(s) {
   const m = Math.floor((Date.now() - new Date(s).getTime()) / 6e4);
@@ -708,7 +709,15 @@ function JobPage({ jobId, data, reload, reloadTasks, back }) {
   const refresh = () => { reload(); loadMine(); };
   const copy = () => { navigator.clipboard && navigator.clipboard.writeText(JOB_URL(job.token)).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }); };
   const addNote = () => { if (!note.trim()) return; saveJobEvent({ job_id: job.id, kind: 'note', who: 'me', body: note.trim(), meta: { type: noteType } }).then(() => { setNote(''); loadMine(); }); };
-  const setStage = (stage) => saveJob({ id: job.id, stage }).then(refresh);
+  const setStage = (stage) => {
+    const patch = { id: job.id, stage };
+    if (stage === 'closed') {
+      const why = window.prompt('Why is this job closed? (e.g. went quiet, too expensive, not a fit, did it themselves)', '');
+      if (why === null) return;
+      patch.close_reason = why.trim() || null;
+    }
+    saveJob(patch).then(refresh).catch((e) => alert(e.message));
+  };
   const markPaid = (i) => {
     if (!window.confirm(`Mark ${i.label || 'this invoice'} (${usd(i.amount)}) as paid? Its Stripe payment link will be switched off.`)) return;
     markInvoicePaid(i).then(refresh).catch((e) => alert(e.message));
@@ -719,7 +728,7 @@ function JobPage({ jobId, data, reload, reloadTasks, back }) {
   const saveAsClient = () => {
     const linkTo = matchClient
       ? Promise.resolve({ row: matchClient })
-      : saveClient({ name: job.business || job.name, contact: job.business ? job.name : null, email: job.email || null, since: new Date().toISOString().slice(0, 10) });
+      : saveClient({ name: job.business || job.name, contact: job.business ? job.name : null, email: job.email || null, since: new Date().toISOString().slice(0, 10), ...(job.brief_id ? { source: 'brief' } : {}) });
     linkTo.then((r) => saveJob({ id: job.id, client_id: r.row.id })).then(refresh).catch((e) => alert(e.message));
   };
   return (
@@ -739,6 +748,7 @@ function JobPage({ jobId, data, reload, reloadTasks, back }) {
         <div className="row stagetrack" style={{ gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
           {STAGES.map(([id, label]) => <span key={id}>{pill(label, id === job.stage ? stageKind(id) : 'mute')}</span>)}
           {job.stage === 'closed' && pill('Closed', 'bad')}
+          {job.stage === 'closed' && job.close_reason && <span className="sub">{job.close_reason}</span>}
         </div>
         <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
           <span className="sub">Move by hand:</span>
@@ -1027,6 +1037,12 @@ function ClientPage({ client, stats, data, open, reload, reloadTasks, back, gone
               </div>
             </Widget>
             <Widget title="Details">
+              <div className="vrow"><span className="lbl">Came from</span>
+                <select className="input" aria-label="Where this client came from" value={client.source || ''} onChange={(e) => saveClient({ id: client.id, source: e.target.value || null }).then(reload).catch((er) => alert(er.message))}>
+                  <option value="">Not set</option>
+                  {Object.entries(SOURCE_LABEL).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+                </select>
+              </div>
               <CustomFields client={client} reload={reload} />
             </Widget>
             <Widget title="Recent activity" badge={events.length ? 'latest' : null}>
@@ -1451,19 +1467,7 @@ function findDupes(clients) {
   return out;
 }
 // Merge: everything of the other client moves to the one kept, then it goes.
-async function mergeClients(keep, drop, data) {
-  for (const j of data.jobs.filter((x) => x.client_id === drop.id)) await saveJob({ id: j.id, client_id: keep.id });
-  for (const i of data.invoices.filter((x) => x.client_id === drop.id)) await saveInvoice({ id: i.id, client_id: keep.id });
-  for (const t of (data.tasks.notReady ? [] : data.tasks).filter((x) => x.client_id === drop.id)) await saveTask({ id: t.id, client_id: keep.id });
-  const patch = { id: keep.id };
-  const notes = [keep.notes, drop.notes].filter(Boolean);
-  if (drop.notes && keep.notes !== drop.notes) patch.notes = notes.join('\n\n');
-  if (!keep.email && drop.email) patch.email = drop.email;
-  if (!keep.contact && drop.contact) patch.contact = drop.contact;
-  if (keep.custom !== undefined) patch.custom = { ...(drop.custom || {}), ...(keep.custom || {}) };
-  if (Object.keys(patch).length > 1) await saveClient(patch);
-  await deleteClient(drop.id);
-}
+async function mergeClients(keep, drop) { await mergeClientsOnServer(drop.id, keep.id); }
 function Dupes({ data, reload }) {
   const dupes = React.useMemo(() => findDupes(data.clients), [data.clients]);
   const [busy, setBusy] = React.useState('');
@@ -1531,7 +1535,7 @@ function CustomFields({ client, reload }) {
 }
 
 function LeadsReports({ data }) {
-  const { jobs, proposals, briefs } = data;
+  const { jobs, proposals, briefs, clients, invoices } = data;
   const now = new Date(); const months = [];
   for (let k = 5; k >= 0; k--) { const d = new Date(now.getFullYear(), now.getMonth() - k, 1); months.push({ key: d.getFullYear() + '-' + d.getMonth(), label: d.toLocaleDateString('en-US', { month: 'short' }), n: 0 }); }
   for (const b of briefs) { const d = new Date(b.created_at); const r = months.find((m) => m.key === d.getFullYear() + '-' + d.getMonth()); if (r) r.n += 1; }
@@ -1544,9 +1548,33 @@ function LeadsReports({ data }) {
   const design = briefs.filter((b) => b.lane !== 'automation').length;
   const auto = briefs.length - design;
   const won = jobs.filter((j) => j.stage === 'paid').length;
+  const closed = jobs.filter((j) => j.stage === 'closed');
+  const reasons = Object.entries(closed.reduce((m, j) => { const k = j.close_reason || 'No reason given'; m[k] = (m[k] || 0) + 1; return m; }, {})).sort((a, b) => b[1] - a[1]);
+  const clientOf = (j) => clients.find((c) => c.id === j.client_id) || (j.email ? clients.find((c) => c.email && c.email.toLowerCase() === j.email.toLowerCase()) : null);
+  const bySource = Object.values(jobs.reduce((m, j) => {
+    const c = clientOf(j);
+    const key = c ? (c.source || 'unset') : 'noclient';
+    const row = (m[key] = m[key] || { key, label: c ? (SOURCE_LABEL[c.source] || 'Source not set') : 'Not a client yet', jobs: 0, paid: 0 });
+    row.jobs += 1;
+    row.paid += invoices.filter((i) => i.job_id === j.id && i.status === 'paid').reduce((a, i) => a + Number(i.amount || 0), 0);
+    return m;
+  }, {})).sort((a, b) => b.paid - a.paid || b.jobs - a.jobs);
   return (
     <div className="dash-g">
       <Widget title="Briefs received" badge="last 6 months"><CountBars months={months} /></Widget>
+      <Widget title="Where work comes from" badge={bySource.length ? 'by client source' : null}>
+        <div className="minirows">
+          {bySource.map((r) => <div key={r.key} className="minirow plain"><span className="mtxt">{r.label}<span className="sub"> · {r.jobs} job{r.jobs === 1 ? '' : 's'}</span></span><span className="mono mval">{usd(r.paid)}</span></div>)}
+          {!bySource.length && <p className="sub" style={{ padding: '10px 0' }}>No jobs yet.</p>}
+        </div>
+        {bySource.some((r) => r.key === 'unset') && <p className="sub" style={{ padding: '6px 0 2px' }}>Set “Came from” on a client to sharpen this.</p>}
+      </Widget>
+      <Widget title="Why jobs close" badge={closed.length ? closed.length + ' closed' : null}>
+        <div className="minirows">
+          {reasons.map(([why, n]) => <div key={why} className="minirow plain"><span className="mtxt">{why}</span><span className="mono mval">{n}</span></div>)}
+          {!reasons.length && <p className="sub" style={{ padding: '10px 0' }}>No closed jobs. When you close one, say why and it counts here.</p>}
+        </div>
+      </Widget>
       <Widget title="The numbers" badge={briefs.length + ' briefs total'}>
         <div className="minirows">
           <div className="minirow plain"><span className="mtxt">Typical time to reply</span><span className="mono mval">{med == null ? 'No replies yet' : span(med)}</span></div>

@@ -26,6 +26,7 @@ import { verifySessionToken, SESSION_COOKIE } from '../lib/session.js';
 import { renderEmail, jobUrl } from '../lib/mail.js';
 import { paymentLinkFor, deactivateLink } from '../lib/stripe.js';
 import { clientIp, hit } from '../lib/rate-limit.js';
+import { openTask, closeTasks, closeJobTasks, dueIn, KEYS } from '../lib/crm.js';
 
 const FILES_BUCKET = 'job-files';
 const RATE = { limit: 30, windowMs: 10 * 60 * 1000 };
@@ -116,8 +117,10 @@ async function clientAction(req, res, body) {
     await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: patch });
     if (p.billing === 'split' && Number(p.total) > 0) {
       const deposit = Math.round(Number(p.total) * 50) / 100;
-      await sb('invoices', { method: 'POST', body: { job_id: job.id, client_id: job.client_id, amount: deposit, label: 'Deposit (50%)', status: 'sent', sent_at: now() } });
+      const [dep] = await sb('invoices', { method: 'POST', prefer: 'return=representation', body: { job_id: job.id, client_id: job.client_id, amount: deposit, label: 'Deposit (50%)', status: 'sent', sent_at: now() } });
+      if (dep) await openTask(KEYS.invoice(dep.id), { t: `Chase the deposit: ${job.title}`, due: dueIn(7), job_id: job.id, client_id: job.client_id });
     }
+    await closeTasks(KEYS.proposal(job.id));
     await event(job, 'accepted', 'client', comment || 'Accepted the proposal.');
     await tellCarter(job, 'Proposal accepted', [`${job.name} accepted the proposal (${money(p.total)}, ${p.billing === 'split' ? '50% deposit now, 50% on approval' : 'paid at the end'}).`, comment ? `They wrote: ${comment}` : '']);
     return res.status(200).json({ ok: true });
@@ -129,6 +132,7 @@ async function clientAction(req, res, body) {
     const [f] = await sb(`job_files?id=eq.${body.file_id}&job_id=eq.${job.id}&kind=eq.draft&select=id,label,filename`);
     if (!f) return res.status(400).json({ error: 'Pick one of the directions.' });
     await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { picked_file_id: f.id, updated_at: now() } });
+    await closeTasks(KEYS.drafts(job.id));
     await event(job, 'picked', 'client', comment || null, { file_id: f.id, label: f.label || f.filename });
     await tellCarter(job, 'Direction picked', [`${job.name} picked "${f.label || f.filename}".`, comment ? `They wrote: ${comment}` : '']);
     return res.status(200).json({ ok: true });
@@ -138,6 +142,7 @@ async function clientAction(req, res, body) {
     if (job.stage !== 'final' || job.approved_at) return res.status(409).json({ error: 'There is nothing to review right now.' });
     if (!comment) return res.status(400).json({ error: 'Say what you would like changed.' });
     await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { revisions_used: job.revisions_used + 1, updated_at: now() } });
+    await closeTasks(KEYS.final(job.id));
     await event(job, 'changes', 'client', comment, { round: job.revisions_used + 1 });
     const over = job.revisions_used + 1 > job.revisions_included;
     await tellCarter(job, 'Changes requested', [`${job.name} asked for changes (round ${job.revisions_used + 1} of ${job.revisions_included} included${over ? ', past what is included' : ''}):`, comment]);
@@ -153,8 +158,10 @@ async function clientAction(req, res, body) {
     const rest = Math.round((total - billed) * 100) / 100;
     await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { approved_at: now(), updated_at: now() } });
     if (rest > 0) {
-      await sb('invoices', { method: 'POST', body: { job_id: job.id, client_id: job.client_id, amount: rest, label: billed > 0 ? 'Final (50%)' : 'Full payment', status: 'sent', sent_at: now() } });
+      const [fin] = await sb('invoices', { method: 'POST', prefer: 'return=representation', body: { job_id: job.id, client_id: job.client_id, amount: rest, label: billed > 0 ? 'Final (50%)' : 'Full payment', status: 'sent', sent_at: now() } });
+      if (fin) await openTask(KEYS.invoice(fin.id), { t: `Chase the final payment: ${job.title}`, due: dueIn(7), job_id: job.id, client_id: job.client_id });
     }
+    await closeTasks(KEYS.final(job.id));
     await event(job, 'approved', 'client', comment || 'Approved the final.');
     await tellCarter(job, 'Final approved', [`${job.name} approved the final.${rest > 0 ? ` The final invoice (${money(rest)}) is now on their page.` : ''}`, comment ? `They wrote: ${comment}` : '']);
     return res.status(200).json({ ok: true });
@@ -267,6 +274,11 @@ async function adminAction(req, res, body) {
     const to = STAGE_FOR[kind];
     if (to && ORDER.indexOf(to) > ORDER.indexOf(job.stage)) await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { stage: to, updated_at: now() } });
     await event(job, 'email', 'me', `${subject}\n\n${text}`, { kind });
+    // Follow-ups on the Docket: nudge a proposal, a direction pick or a final
+    // that goes quiet. Sending again reopens the same task with a new date.
+    const nudge = { proposal: ['proposal', 'Follow up on the proposal'], drafts: ['drafts', 'Follow up on the directions'], final: ['final', 'Check in on the final'] }[kind];
+    if (nudge) await openTask(KEYS[nudge[0]](job.id), { t: `${nudge[1]}: ${job.title}`, due: dueIn(3), job_id: job.id, client_id: job.client_id });
+    if (kind === 'proposal' || kind === 'reply') await closeTasks(KEYS.brief(job.id));
     return res.status(200).json({ ok: true });
   }
 
@@ -280,6 +292,8 @@ async function adminAction(req, res, body) {
     await sb(`proposals?id=eq.${p.id}`, { method: 'PATCH', body: { status: 'sent', sent_at: now(), updated_at: now() } });
     if (ORDER.indexOf('proposed') > ORDER.indexOf(job.stage)) await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { stage: 'proposed', updated_at: now() } });
     await event(job, 'note', 'me', 'Proposal marked as sent (shared without the email).');
+    await openTask(KEYS.proposal(job.id), { t: `Follow up on the proposal: ${job.title}`, due: dueIn(3), job_id: job.id, client_id: job.client_id });
+    await closeTasks(KEYS.brief(job.id));
     return res.status(200).json({ ok: true });
   }
 
@@ -294,10 +308,11 @@ async function adminAction(req, res, body) {
     if (inv.status === 'paid') return res.status(200).json({ ok: true, already: true });
     await sb(`invoices?id=eq.${inv.id}`, { method: 'PATCH', body: { status: 'paid', paid_at: now(), updated_at: now() } });
     if (inv.stripe_payment_link_id) await deactivateLink(inv.stripe_payment_link_id);
+    await closeTasks(KEYS.invoice(inv.id));
     await event(job, 'paid', 'me', `Marked ${inv.label || 'invoice'} paid by hand (${money(inv.amount)}).`);
     const open = await sb(`invoices?job_id=eq.${job.id}&status=in.(sent,overdue)&select=id`);
     const done = !!job.approved_at && open.length === 0 && job.stage !== 'closed';
-    if (done) await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { stage: 'paid', updated_at: now() } });
+    if (done) { await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { stage: 'paid', updated_at: now() } }); await closeJobTasks(job.id); }
     return res.status(200).json({ ok: true, job_paid: done });
   }
 

@@ -14,6 +14,7 @@ import crypto from 'node:crypto';
 import { sb, sendEmail, NOTIFY_EMAIL, SUPABASE_URL } from '../lib/server.js';
 import { renderEmail } from '../lib/mail.js';
 import { deactivateLink } from '../lib/stripe.js';
+import { closeTasks, closeJobTasks, KEYS } from '../lib/crm.js';
 
 export const config = { api: { bodyParser: false } };
 
@@ -91,6 +92,7 @@ export default async function handler(req, res) {
       // the invoice is already marked paid above.
       await deactivateLink(paymentLinkId);
       for (const inv of paid) {
+        await closeTasks(KEYS.invoice(inv.id));
         if (!inv.job_id) continue;
         try {
           const [job] = await sb(`jobs?id=eq.${inv.job_id}&select=*`);
@@ -101,6 +103,7 @@ export default async function handler(req, res) {
           const open = await sb(`invoices?job_id=eq.${job.id}&status=in.(sent,overdue)&select=id`);
           const done = !!job.approved_at && open.length === 0;
           await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { last_activity_at: new Date().toISOString(), ...(done ? { stage: 'paid' } : {}) } });
+          if (done) await closeJobTasks(job.id);
           const all = await sb(`invoices?job_id=eq.${job.id}&select=amount,status`).catch(() => []);
           const money0 = (n) => '$' + Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
           const paidSoFar = all.filter((i) => i.status === 'paid').reduce((s, i) => s + Number(i.amount || 0), 0);

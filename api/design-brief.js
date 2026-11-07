@@ -18,6 +18,7 @@
 // GET /api/design-brief (also /api/health via vercel.json) is the daily
 // keep-alive: one tiny query so the free-tier Supabase project never sits
 // idle long enough to pause. Hit by the Vercel Cron in vercel.json.
+import { openTask, dueIn, findClientByEmail, KEYS } from '../lib/crm.js';
 import { sb, sbHeaders, sendEmail, esc, parseBody, logEvent, SUPABASE_URL, BRAND, BRAND_FULL, NOTIFY_EMAIL, FROM_VERIFIED } from '../lib/server.js';
 import { renderEmail } from '../lib/mail.js';
 import { clientIp, hit } from '../lib/rate-limit.js';
@@ -256,6 +257,11 @@ export default async function handler(req, res) {
         },
       });
       await sb(`design_briefs?id=eq.${saved.id}`, { method: 'PATCH', body: { job_id: job.id } });
+      // A returning client: attach the job to the client already on the books
+      // (matched by email), and put "reply to the brief" on the Docket.
+      const known = await findClientByEmail(email);
+      if (known) await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { client_id: known.id } }).catch(() => {});
+      await openTask(KEYS.brief(job.id), { t: `Reply to the brief: ${job.title}`.slice(0, 200), due: dueIn(1), job_id: job.id, client_id: known ? known.id : null });
       await sb('job_events', { method: 'POST', body: { job_id: job.id, kind: 'brief', who: 'client', body: `Brief ${brief.reference} received.` } });
     } catch (e) {
       await logEvent({ kind: 'job_create', ok: false, reference: brief.reference, detail: e.message.slice(0, 500) });

@@ -44,6 +44,10 @@ const saveDocketTask = (row) => ccWrite('docket_tasks', row);
 const fetchClients = () => ccFetch('clients?select=*&order=name.asc');
 const saveClient = (row) => ccWrite('clients', row);
 const deleteClient = (id) => ccDelete('clients', id);
+// Fold one client into another on the server (api/scaffold-write.js): jobs,
+// invoices, history and tasks move across, then the old client goes. Emails
+// are unique, so this has to happen server-side in the right order.
+const mergeClientsOnServer = (from, into) => post('/api/scaffold-write', { mergeClients: { from, into } });
 const fetchInvoices = () => ccFetch('invoices?select=*&order=created_at.desc');
 const saveInvoice = (row) => ccWrite('invoices', row);
 
@@ -85,7 +89,7 @@ const briefAction = (id, action, extra = {}) => post('/api/brief-reply', { id, a
 
 window.CC = {
   fetchDocketTasks, saveDocketTask,
-  fetchClients, saveClient, deleteClient, fetchInvoices, saveInvoice,
+  fetchClients, saveClient, deleteClient, mergeClientsOnServer, fetchInvoices, saveInvoice,
   fetchJobs, saveJob, fetchProposals, saveProposal, fetchJobFiles, fetchJobEvents, fetchAllEvents, saveJobEvent,
   jobAction, uploadJobFile,
   fetchTasks, saveTask, deleteTask,

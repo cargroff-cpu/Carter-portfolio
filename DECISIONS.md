@@ -919,3 +919,34 @@ under makes it look up and move.
 - Leads is a lens on work not yet won: Overview, Tasks, Activity, Reports. Its Pipeline and Contacts tabs are gone, since they were the Jobs board and the Clients page under a second name; Leads' stage cards now open Jobs.
 - Jobs owns its CSV export. Tasks are follow-ups tied to a job or client; personal to-dos stay in the Docket (the Tasks tab says so and links there).
 - Touch: on phones every button, stage row and inline link is at least 44px. Checked at 360/390/1280 on every tool, a job page and a client page: no sideways scroll, no page errors.
+
+## 2026-11-07 — Backroom safety layer (validated writes, audit, auto follow-ups)
+
+Added on top of the Business Hub CRM tools above; the screens (Tasks, search,
+Possible duplicates, Leads reports) are that work, not duplicated.
+
+- **Writes are validated.** `api/scaffold-write.js` checks every row against
+  `lib/validate.js`: only the columns the screens edit, with types (including
+  `crm_tasks`, client custom fields and call/meeting notes). Tokens, Stripe
+  ids, approval times, revision counts and proposal status can no longer be
+  written from the browser. A paid invoice and an accepted proposal are
+  locked; a job's invoice can only be marked paid through `mark-paid` (it
+  switches off the Stripe link). Rows can be deleted only from `clients`,
+  `docket_tasks` and `crm_tasks`; close a job instead. `npm test` covers it.
+- **Audit trail.** Edits to jobs, clients, invoices and sent proposals are
+  written to `job_events` (kind `change` or `stage`) with old and new values.
+- **Automatic follow-ups.** The Backroom adds `crm_tasks` itself (reply to a
+  brief, follow up a proposal / directions / final after 3 days, chase an
+  invoice after 7) and clears them when the step happens. Each has an
+  `auto_key`, so re-sending reopens one task. Tasks Carter wrote are never
+  auto-closed. Needs `20261109_crm_autotasks.sql` (after `20261108`).
+- **Clients.** Emails are stored lower-case and unique (applied
+  2026-11-07), so the Hub's Merge now runs on the server
+  (`mergeClients` in `lib/crm.js`) in the order the unique index needs. A
+  brief from a known address attaches to that client. Clients have a
+  `source` ("Came from"); closing a job asks why (`close_reason`). Both show
+  in Leads > Reports.
+- Applied to the live database 2026-11-07: `job_events.client_id`, nullable
+  `job_events.job_id`, `jobs.close_reason/closed_at`, `clients.source`, the
+  unique email index. Also added, now unused: `docket_tasks.job_id/client_id/
+  auto_key` (harmless; the automation writes `crm_tasks` instead).
