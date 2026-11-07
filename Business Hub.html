@@ -266,6 +266,37 @@ th { font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--text
 .jcol .reclist:hover { background: rgba(217,154,61,.07); }
 .minirow { min-height: 44px; }
 @media (hover: none) { .minirow, .reclist { min-height: 48px; } }
+/* ── CRM tools: tasks, search, duplicates, export ── */
+.taskadd { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 4px 0 10px; }
+.taskadd .input { flex: 1 1 160px; min-width: 0; min-height: 44px; }
+.taskadd input[type=date] { flex: 0 1 160px; }
+.taskadd .btn { min-height: 44px; }
+.trow { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 4px; border-top: 1px solid var(--line); min-height: 52px; }
+.trow.done .mtxt b { color: var(--text-3); text-decoration: line-through; }
+.tcheck { width: 44px; height: 44px; background: none; border: 0; display: grid; place-items: center; cursor: pointer; padding: 0; }
+.tcheck i { width: 20px; height: 20px; border: 1.5px solid var(--line-2); display: grid; place-items: center; font-style: normal; font-size: 13px; line-height: 1; color: var(--bg); transition: background-color .15s, border-color .15s; }
+.tcheck[aria-checked=true] i { background: var(--accent); border-color: var(--accent); }
+.tcheck:hover i { border-color: var(--accent-lit); }
+.tcheck:focus-visible { outline: 2px solid var(--accent-lit); outline-offset: -4px; }
+.late { color: var(--warn); }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--accent-lit); font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.exportbar { display: flex; justify-content: flex-end; }
+.dupe { padding: 8px 0 4px; border-top: 1px solid var(--line); }
+.hsearch { position: relative; flex: 1 1 200px; max-width: 340px; min-width: 0; }
+.hsearch .input { width: 100%; min-height: 44px; }
+.hs-pop { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 60; background: var(--surface); border: 1px solid var(--line-2); border-top: 2px solid var(--accent); box-shadow: 0 20px 50px -18px rgba(0,0,0,.9); max-height: 60vh; overflow-y: auto; }
+.hs-pop button { display: flex; gap: 10px; align-items: baseline; width: 100%; min-height: 44px; padding: 10px 14px; text-align: left; background: none; border: 0; border-top: 1px solid var(--line); color: var(--text); font-family: var(--ui); font-size: 14px; cursor: pointer; }
+.hs-pop button:first-child { border-top: 0; }
+.hs-pop button:hover, .hs-pop button.on { background: rgba(236,217,178,.07); }
+.hs-k { flex: none; width: 48px; font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--text-3); }
+.hs-t { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 560px) {
+  .top .topin { flex-wrap: wrap; }
+  .hsearch { flex: 1 1 100%; max-width: none; order: 3; }
+  .trow { grid-template-columns: 44px minmax(0, 1fr); }
+  .trow > .btn { grid-column: 2; justify-self: start; }
+}
+@media (prefers-reduced-motion: reduce) { .tcheck i { transition: none; } }
 /* ── the opening (Intro in business-hub.jsx): once per visit ── */
 .intro { position: fixed; inset: 0; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px;
   background: radial-gradient(60% 50% at 50% 46%, #2a1c11, #120c07 70%); cursor: pointer; transition: opacity .5s ease .1s; }

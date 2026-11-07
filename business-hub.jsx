@@ -15,7 +15,7 @@
 // Data: command-center-data.jsx (window.CC). Server: api/job.js,
 // api/brief-reply.js, api/scaffold-read.js / scaffold-write.js.
 const {
-  fetchClients, saveClient, fetchInvoices, saveInvoice,
+  fetchClients, saveClient, deleteClient, fetchTasks, saveTask, deleteTask, fetchInvoices, saveInvoice,
   fetchJobs, saveJob, fetchProposals, saveProposal, fetchJobFiles, fetchJobEvents, fetchAllEvents, saveJobEvent,
   jobAction, uploadJobFile,
   fetchDesignBriefs, fetchDesignBriefAttachments, briefAction,
@@ -325,7 +325,7 @@ function Today({ data, open, go }) {
           <div className="minirows">
             {feed.map((e) => (
               <button key={e.id} className="minirow plain" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(e.job_id)}>
-                <span className="mtxt"><b>{jobOf(e.job_id) ? jobOf(e.job_id).title : 'Job'}</b> · {EVENT_TEXT[e.kind]}</span>
+                <span className="mtxt"><b>{jobOf(e.job_id) ? jobOf(e.job_id).title : 'Job'}</b> · {eventLabel(e)}</span>
                 <span className="mono mval">{relTime(e.created_at)}</span>
               </button>
             ))}
@@ -688,12 +688,13 @@ function Composer({ job, proposal, invoices, kind, onClose, onSent }) {
   );
 }
 
-function JobPage({ jobId, data, reload, back }) {
+function JobPage({ jobId, data, reload, reloadTasks, back }) {
   const job = data.jobs.find((j) => j.id === jobId);
   const [files, setFiles] = React.useState([]);
   const [events, setEvents] = React.useState([]);
   const [compose, setCompose] = React.useState(null);
   const [note, setNote] = React.useState('');
+  const [noteType, setNoteType] = React.useState('note');
   const [copied, setCopied] = React.useState(false);
   const loadMine = React.useCallback(() => {
     fetchJobFiles(jobId).then(setFiles).catch(() => {});
@@ -705,7 +706,7 @@ function JobPage({ jobId, data, reload, back }) {
   const invoices = data.invoices.filter((i) => i.job_id === job.id);
   const refresh = () => { reload(); loadMine(); };
   const copy = () => { navigator.clipboard && navigator.clipboard.writeText(JOB_URL(job.token)).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }); };
-  const addNote = () => { if (!note.trim()) return; saveJobEvent({ job_id: job.id, kind: 'note', who: 'me', body: note.trim() }).then(() => { setNote(''); loadMine(); }); };
+  const addNote = () => { if (!note.trim()) return; saveJobEvent({ job_id: job.id, kind: 'note', who: 'me', body: note.trim(), meta: { type: noteType } }).then(() => { setNote(''); loadMine(); }); };
   const setStage = (stage) => saveJob({ id: job.id, stage }).then(refresh);
   const markPaid = (i) => {
     if (!window.confirm(`Mark ${i.label || 'this invoice'} (${usd(i.amount)}) as paid? Its Stripe payment link will be switched off.`)) return;
@@ -763,16 +764,18 @@ function JobPage({ jobId, data, reload, back }) {
         </div>
         {invoices.some((i) => i.status === 'sent') && <button className="btn ghost sm" style={{ marginTop: 8 }} onClick={() => setCompose('invoice')}>Email: invoice ready</button>}
       </section>
+      <ItemTasks data={data} jobId={job.id} open={() => {}} reloadTasks={reloadTasks} />
       <section className="tile">
         <div className="tilehead"><h2 className="h2">History</h2></div>
         <div className="row" style={{ gap: 8, marginBottom: 10 }}>
-          <input className="input" style={{ flex: 1 }} placeholder="Add a note (only you see it)" value={note} onChange={(e) => setNote(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') addNote(); }} />
+          <select className="input" value={noteType} onChange={(e) => setNoteType(e.target.value)} aria-label="Kind of entry"><option value="note">Note</option><option value="call">Call</option><option value="meeting">Meeting</option></select>
+          <input className="input" style={{ flex: 1 }} placeholder="Add a note, call or meeting (only you see it)" value={note} onChange={(e) => setNote(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') addNote(); }} />
           <button className="btn ghost sm" onClick={addNote}>Add</button>
         </div>
         <div className="minirows">
           {events.map((e) => (
             <div className="minirow plain" key={e.id} style={{ alignItems: 'flex-start' }}>
-              <span className="mtxt" style={{ whiteSpace: 'pre-wrap' }}><b>{e.who === 'client' ? job.name.split(' ')[0] : e.who === 'me' ? 'You' : 'System'}</b> · {e.kind}{e.body ? ': ' + e.body.slice(0, 400) : ''}</span>
+              <span className="mtxt" style={{ whiteSpace: 'pre-wrap' }}><b>{e.who === 'client' ? job.name.split(' ')[0] : e.who === 'me' ? 'You' : 'System'}</b> · {e.kind === 'note' && e.meta && e.meta.type ? e.meta.type : e.kind}{e.body ? ': ' + e.body.slice(0, 400) : ''}</span>
               <span className="mono mval">{fdate(e.created_at)}</span>
             </div>
           ))}
@@ -887,8 +890,17 @@ function Money({ data, open, reload }) {
   );
 }
 
-function Clients({ data, reload, open }) {
-  const [sel, setSel] = React.useState(null);
+function exportClients(clients, statsOf) {
+  downloadCsv('clients', [
+    ['Name', (c) => c.name], ['Contact', (c) => c.contact || ''], ['Email', (c) => c.email || ''], ['Since', (c) => c.since || ''],
+    ['Jobs', (c) => statsOf(c).jobs.length], ['Paid', (c) => statsOf(c).paid], ['Owed', (c) => statsOf(c).due],
+    ['Notes', (c) => c.notes || ''], ['Custom fields', (c) => (c.custom ? Object.entries(c.custom).map(([k, v]) => k + ': ' + v).join('; ') : '')],
+  ], clients.map((c) => c));
+}
+function Clients({ data, reload, reloadAll, reloadTasks, open, startSel }) {
+  const [sel, setSel] = React.useState(startSel || null);
+  React.useEffect(() => { if (startSel) setSel(startSel); }, [startSel]);
+  const [dupOk, setDupOk] = React.useState(false);
   const [q, setQ] = React.useState('');
   const [adding, setAdding] = React.useState(false);
   const [f, setF] = React.useState({ name: '', email: '', notes: '' });
@@ -904,12 +916,15 @@ function Clients({ data, reload, open }) {
   };
   const create = () => {
     if (!f.name.trim()) { setErr('Add a name.'); return; }
+    const em = f.email.trim().toLowerCase(), nm = normName(f.name);
+    const twin = data.clients.find((c) => (em && c.email && c.email.trim().toLowerCase() === em) || normName(c.name) === nm);
+    if (twin && !dupOk) { setErr(`${twin.name} is already a client${twin.email ? ' (' + twin.email + ')' : ''}. Save again to add them anyway.`); setDupOk(true); return; }
     saveClient({ name: f.name.trim(), email: f.email.trim() || null, notes: f.notes.trim() || null, since: new Date().toISOString().slice(0, 10) })
-      .then(() => { setF({ name: '', email: '', notes: '' }); setAdding(false); setErr(''); reload(); })
+      .then(() => { setF({ name: '', email: '', notes: '' }); setAdding(false); setErr(''); setDupOk(false); reload(); })
       .catch((e) => setErr(e.message));
   };
   const client = data.clients.find((c) => c.id === sel);
-  if (client) return <ClientPage key={client.id} client={client} stats={statsOf(client)} data={data} open={open} reload={reload} back={() => setSel(null)} gone={() => { setSel(null); reload(); }} />;
+  if (client) return <ClientPage key={client.id} client={client} stats={statsOf(client)} data={data} open={open} reload={reload} reloadTasks={reloadTasks} back={() => setSel(null)} gone={() => { setSel(null); reload(); }} />;
 
   const rows = data.clients.map((c) => ({ c, s: statsOf(c) }))
     .filter(({ c }) => !q.trim() || (c.name + ' ' + (c.email || '')).toLowerCase().includes(q.trim().toLowerCase()));
@@ -919,8 +934,12 @@ function Clients({ data, reload, open }) {
     <div className="stack">
       <div className="dash-h">
         <div><h1 className="h1">Clients</h1><p className="sub">The people you work for, with their jobs and money in one place.</p></div>
-        <button className="btn" onClick={() => setAdding(!adding)}>{adding ? 'Close' : 'Add client'}</button>
+        <div className="row" style={{ gap: 8 }}>
+          <button className="btn ghost" onClick={() => exportClients(data.clients, statsOf)} disabled={!data.clients.length}>Export CSV</button>
+          <button className="btn" onClick={() => setAdding(!adding)}>{adding ? 'Close' : 'Add client'}</button>
+        </div>
       </div>
+      <Dupes data={data} reload={reloadAll || reload} />
       {adding && (
         <section className="widget">
           <div className="formgrid">
@@ -963,7 +982,7 @@ function Clients({ data, reload, open }) {
   );
 }
 
-function ClientPage({ client, stats, data, open, reload, back, gone }) {
+function ClientPage({ client, stats, data, open, reload, reloadTasks, back, gone }) {
   const [tab, setTab] = React.useState('overview');
   const [notes, setNotes] = React.useState(client.notes || '');
   const [saved, setSaved] = React.useState(false);
@@ -1006,9 +1025,12 @@ function ClientPage({ client, stats, data, open, reload, back, gone }) {
                 {saved && <span className="sub" role="status">Saved</span>}
               </div>
             </Widget>
+            <Widget title="Details">
+              <CustomFields client={client} reload={reload} />
+            </Widget>
             <Widget title="Recent activity" badge={events.length ? 'latest' : null}>
               <div className="minirows">
-                {events.slice(0, 5).map((e) => <div key={e.id} className="minirow"><span className="mtxt"><b>{titleOf(e.job_id)}</b> · {EVENT_TEXT[e.kind]}</span><span className="mono mval">{relTime(e.created_at)}</span></div>)}
+                {events.slice(0, 5).map((e) => <div key={e.id} className="minirow"><span className="mtxt"><b>{titleOf(e.job_id)}</b> · {eventLabel(e)}</span><span className="mono mval">{relTime(e.created_at)}</span></div>)}
                 {!events.length && <p className="sub" style={{ padding: '10px 0' }}>Nothing yet.</p>}
               </div>
             </Widget>
@@ -1043,12 +1065,13 @@ function ClientPage({ client, stats, data, open, reload, back, gone }) {
         {tab === 'activity' && (
           <div className="widget" style={{ padding: '4px 18px 6px' }}>
             <div className="minirows">
-              {events.map((e) => <div key={e.id} className="minirow"><span className="mtxt"><b>{titleOf(e.job_id)}</b> · {EVENT_TEXT[e.kind]}</span><span className="mono mval">{relTime(e.created_at)}</span></div>)}
+              {events.map((e) => <div key={e.id} className="minirow"><span className="mtxt"><b>{titleOf(e.job_id)}</b> · {eventLabel(e)}</span><span className="mono mval">{relTime(e.created_at)}</span></div>)}
               {!events.length && <p className="sub" style={{ padding: '12px 0' }}>Nothing yet.</p>}
             </div>
           </div>
         )}
       </div>
+      {tab === 'overview' && <ItemTasks data={data} clientId={client.id} open={open} reloadTasks={reloadTasks} />}
       <div style={{ paddingTop: 8 }}>
         {confirm
           ? <div className="row"><span className="sub">Remove {client.name}? Their jobs stay.</span><button className="btn sm ghost" onClick={remove}>Yes, remove</button><button className="btn sm quiet" onClick={() => setConfirm(false)}>Keep</button></div>
@@ -1061,7 +1084,7 @@ function ClientPage({ client, stats, data, open, reload, back, gone }) {
 // ── Leads ──────────────────────────────────────────────────────────────
 // Briefs coming in and jobs not yet won. Five views: Overview, Pipeline (the
 // jobs board), Contacts (clients), Activity (every event) and Reports.
-const LEAD_TABS = [['overview', 'Overview'], ['pipeline', 'Pipeline'], ['contacts', 'Contacts'], ['activity', 'Activity'], ['reports', 'Reports']];
+const LEAD_TABS = [['overview', 'Overview'], ['pipeline', 'Pipeline'], ['contacts', 'Contacts'], ['tasks', 'Tasks'], ['activity', 'Activity'], ['reports', 'Reports']];
 const LEAD_STAGES = [['new', 'New'], ['proposed', 'Proposed'], ['drafts', 'Directions'], ['final', 'Final'], ['paid', 'Paid']];
 const propValue = (proposals, j) => { const p = proposals.find((x) => x.job_id === j.id); return p ? Number(p.total || 0) : 0; };
 function span(ms) {
@@ -1093,7 +1116,7 @@ function CountBars({ months }) {
     </svg>
   );
 }
-function Leads({ data, open, go, reload, reloadClients }) {
+function Leads({ data, open, go, reload, reloadClients, reloadTasks }) {
   const { jobs, proposals, briefs, events, needs } = data;
   const [sub, setSub] = React.useState(() => { try { const v = sessionStorage.getItem('leads-tab'); return LEAD_TABS.some((t) => t[0] === v) ? v : 'overview'; } catch (e) { return 'overview'; } });
   const pick = (id) => { setSub(id); try { sessionStorage.setItem('leads-tab', id); } catch (e) {} };
@@ -1131,8 +1154,14 @@ function Leads({ data, open, go, reload, reloadClients }) {
       </div>
       <div className="lbody" key={sub} role="tabpanel" aria-labelledby={'ltab-' + sub}>
         {sub === 'overview' && <LeadsOverview data={data} open={open} go={go} pick={pick} />}
-        {sub === 'pipeline' && <Jobs data={data} open={open} reload={reload} startNew={false} />}
-        {sub === 'contacts' && <Clients data={data} reload={reloadClients} open={open} />}
+        {sub === 'pipeline' && (
+          <React.Fragment>
+            <div className="exportbar"><button className="btn quiet sm" onClick={() => exportJobs(data)}>Export jobs CSV</button></div>
+            <Jobs data={data} open={open} reload={reload} startNew={false} />
+          </React.Fragment>
+        )}
+        {sub === 'contacts' && <Clients data={data} reload={reloadClients} reloadAll={reload} reloadTasks={reloadTasks} open={open} />}
+        {sub === 'tasks' && <Tasks data={data} open={open} reloadTasks={reloadTasks} />}
         {sub === 'activity' && <LeadsActivity data={data} open={open} />}
         {sub === 'reports' && <LeadsReports data={data} />}
       </div>
@@ -1201,7 +1230,7 @@ function LeadsActivity({ data, open }) {
       <div className="minirows">
         {feed.map((e) => (
           <button key={e.id} className="minirow plain" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(e.job_id)}>
-            <span className="mtxt"><b>{jobOf(e.job_id) ? jobOf(e.job_id).title : 'Job'}</b> · {EVENT_TEXT[e.kind]}</span>
+            <span className="mtxt"><b>{jobOf(e.job_id) ? jobOf(e.job_id).title : 'Job'}</b> · {eventLabel(e)}</span>
             <span className="mono mval">{relTime(e.created_at)}</span>
           </button>
         ))}
@@ -1210,6 +1239,303 @@ function LeadsActivity({ data, open }) {
     </Widget>
   );
 }
+// ── CRM tools: export, tasks, search, duplicates, custom fields ────────
+// CSV cells that start with = + - @ are prefixed with a quote so a
+// spreadsheet never runs them as a formula.
+function csvCell(v) {
+  let s = v == null ? '' : String(v);
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function downloadCsv(name, cols, rows) {
+  const text = [cols.map((c) => csvCell(c[0])).join(','), ...rows.map((r) => cols.map((c) => csvCell(c[1](r))).join(','))].join('\r\n');
+  const url = URL.createObjectURL(new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = name + '-' + new Date().toISOString().slice(0, 10) + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+const todayStr = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const normName = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+function eventLabel(e) {
+  if (e.kind === 'note' && e.meta && e.meta.type === 'call') return 'Call logged';
+  if (e.kind === 'note' && e.meta && e.meta.type === 'meeting') return 'Meeting logged';
+  return EVENT_TEXT[e.kind];
+}
+// Open tasks that belong to a job also surface in Needs you.
+function taskNeeds(jobs, tasks) {
+  const t = todayStr();
+  return tasks.filter((x) => !x.done_at && x.job_id && x.due_on && x.due_on <= t).map((x) => {
+    const j = jobs.find((y) => y.id === x.job_id);
+    return j ? { j, what: (x.due_on < t ? 'Overdue: ' : 'Due today: ') + x.title, age: daysSince(x.due_on + 'T12:00:00'), hot: x.due_on < t } : null;
+  }).filter(Boolean);
+}
+function dueLabel(d) {
+  if (!d) return 'No date';
+  const t = todayStr();
+  if (d === t) return 'Today';
+  const diff = Math.round((new Date(d + 'T12:00:00') - new Date(t + 'T12:00:00')) / 864e5);
+  if (diff === 1) return 'Tomorrow';
+  if (diff === -1) return 'Yesterday';
+  return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function TaskAdd({ jobId, clientId, jobs, onAdded }) {
+  const [title, setTitle] = React.useState('');
+  const [due, setDue] = React.useState('');
+  const [job, setJob] = React.useState(jobId || '');
+  const [err, setErr] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
+  const add = (e) => {
+    e.preventDefault();
+    if (!title.trim()) { setErr('Add what needs doing.'); return; }
+    setBusy(true);
+    saveTask({ title: title.trim(), due_on: due || null, job_id: job || null, client_id: clientId || null })
+      .then(() => { setTitle(''); setDue(''); setErr(''); onAdded(); })
+      .catch((x) => setErr(x.message))
+      .then(() => setBusy(false));
+  };
+  return (
+    <form className="taskadd" onSubmit={add}>
+      <input className="input" placeholder="Follow up with…" value={title} onChange={(e) => setTitle(e.target.value)} aria-label="Task" />
+      <input className="input" type="date" value={due} onChange={(e) => setDue(e.target.value)} aria-label="Due date" />
+      {jobs && !jobId && (
+        <select className="input" value={job} onChange={(e) => setJob(e.target.value)} aria-label="Job">
+          <option value="">No job</option>
+          {jobs.filter((j) => j.stage !== 'paid' && j.stage !== 'closed').map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}
+        </select>
+      )}
+      <button className="btn sm" type="submit" disabled={busy}>Add task</button>
+      {err && <p className="sub" style={{ color: 'var(--warn)', flexBasis: '100%' }}>{err}</p>}
+    </form>
+  );
+}
+function TaskRows({ list, jobs, open, reload }) {
+  const toggle = (t) => saveTask({ id: t.id, done_at: t.done_at ? null : new Date().toISOString(), updated_at: new Date().toISOString() }).then(reload).catch((e) => alert(e.message));
+  const del = (t) => deleteTask(t.id).then(reload).catch((e) => alert(e.message));
+  const jobOf = (id) => jobs.find((j) => j.id === id);
+  return (
+    <div className="minirows">
+      {list.map((t) => (
+        <div key={t.id} className={'trow' + (t.done_at ? ' done' : '')}>
+          <button className="tcheck" role="checkbox" aria-checked={!!t.done_at} aria-label={(t.done_at ? 'Reopen ' : 'Complete ') + t.title} onClick={() => toggle(t)}><i aria-hidden="true">{t.done_at ? '✓' : ''}</i></button>
+          <span className="mtxt">
+            <b>{t.title}</b>
+            <span className="sub">
+              {' · '}<span className={!t.done_at && t.due_on && t.due_on < todayStr() ? 'late' : ''}>{dueLabel(t.due_on)}</span>
+              {jobOf(t.job_id) && <React.Fragment>{' · '}<button className="linkbtn" onClick={() => open(t.job_id)}>{jobOf(t.job_id).title}</button></React.Fragment>}
+            </span>
+          </span>
+          <button className="btn quiet sm" onClick={() => del(t)} aria-label={'Delete ' + t.title}>Delete</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+function exportJobs(data) {
+  const prop = (j) => data.proposals.find((p) => p.job_id === j.id);
+  downloadCsv('jobs', [
+    ['Title', (j) => j.title], ['Client', (j) => j.business || j.name], ['Email', (j) => j.email || ''], ['Lane', (j) => j.lane],
+    ['Stage', (j) => STAGE_LABEL[j.stage] || j.stage], ['Proposal total', (j) => (prop(j) ? prop(j).total : '')],
+    ['Created', (j) => (j.created_at || '').slice(0, 10)], ['Last activity', (j) => (j.last_activity_at || '').slice(0, 10)],
+  ], data.jobs);
+}
+function Tasks({ data, open, reloadTasks }) {
+  const { tasks, jobs } = data;
+  if (tasks.notReady) {
+    return (
+      <section className="widget">
+        <div className="widget-h"><h2 className="h2">Tasks need one setup step</h2></div>
+        <p className="sub" style={{ padding: '8px 0 12px' }}>The tasks table has not been created yet. Run <span className="mono">supabase/migrations/20261108_crm_tasks_fields.sql</span> in the Supabase SQL editor, then reload. Everything else keeps working.</p>
+      </section>
+    );
+  }
+  const t = todayStr();
+  const openT = tasks.filter((x) => !x.done_at), doneT = tasks.filter((x) => x.done_at).slice(0, 10);
+  const groups = [
+    ['Overdue', openT.filter((x) => x.due_on && x.due_on < t)],
+    ['Today', openT.filter((x) => x.due_on === t)],
+    ['Upcoming', openT.filter((x) => x.due_on && x.due_on > t)],
+    ['No date', openT.filter((x) => !x.due_on)],
+  ];
+  const exportTasks = () => downloadCsv('tasks', [['Task', (x) => x.title], ['Due', (x) => x.due_on || ''], ['Job', (x) => (jobs.find((j) => j.id === x.job_id) || {}).title || ''], ['Done', (x) => (x.done_at ? 'yes' : 'no')]], tasks);
+  return (
+    <div className="stack">
+      <section className="widget">
+        <div className="widget-h"><h2 className="h2">Add a task</h2><button className="btn quiet sm" onClick={exportTasks} disabled={!tasks.length}>Export CSV</button></div>
+        <TaskAdd jobs={jobs} onAdded={reloadTasks} />
+      </section>
+      {groups.map(([label, list]) => list.length > 0 && (
+        <section className="widget" key={label}>
+          <div className="widget-h"><h2 className="h2" style={label === 'Overdue' ? { color: 'var(--warn)' } : undefined}>{label}</h2><span className="sub mono">{list.length}</span></div>
+          <TaskRows list={list} jobs={jobs} open={open} reload={reloadTasks} />
+        </section>
+      ))}
+      {!openT.length && <p className="sub">Nothing to follow up. Add a task above, or from any job or client.</p>}
+      {doneT.length > 0 && (
+        <section className="widget">
+          <div className="widget-h"><h2 className="h2">Done lately</h2></div>
+          <TaskRows list={doneT} jobs={jobs} open={open} reload={reloadTasks} />
+        </section>
+      )}
+    </div>
+  );
+}
+function ItemTasks({ data, jobId, clientId, open, reloadTasks }) {
+  if (data.tasks.notReady) return null;
+  const list = data.tasks.filter((x) => (jobId && x.job_id === jobId) || (clientId && x.client_id === clientId));
+  return (
+    <section className="tile">
+      <div className="tilehead"><h2 className="h2">Follow-ups</h2><span className="lbl">{list.filter((x) => !x.done_at).length} open</span></div>
+      <TaskAdd jobId={jobId} clientId={clientId} onAdded={reloadTasks} />
+      <TaskRows list={list} jobs={data.jobs} open={open} reload={reloadTasks} />
+    </section>
+  );
+}
+
+// Search across clients, jobs and briefs from the header. "/" focuses it.
+function GlobalSearch({ data, open, openClient, go }) {
+  const [q, setQ] = React.useState('');
+  const [on, setOn] = React.useState(false);
+  const [cur, setCur] = React.useState(0);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    const k = (e) => {
+      const tag = (e.target.tagName || '').toLowerCase();
+      if (e.key === '/' && !['input', 'textarea', 'select'].includes(tag) && !e.target.isContentEditable) { e.preventDefault(); ref.current && ref.current.focus(); }
+    };
+    window.addEventListener('keydown', k);
+    return () => window.removeEventListener('keydown', k);
+  }, []);
+  const term = q.trim().toLowerCase();
+  const has = (...f) => f.some((v) => v && String(v).toLowerCase().includes(term));
+  const results = React.useMemo(() => {
+    if (!data || term.length < 2) return [];
+    const out = [];
+    data.clients.forEach((c) => { if (has(c.name, c.contact, c.email, c.notes, c.custom && Object.values(c.custom).join(' '))) out.push({ k: 'client:' + c.id, kind: 'Client', title: c.name, sub: c.email || '', run: () => openClient(c.id) }); });
+    data.jobs.forEach((j) => { if (has(j.title, j.name, j.business, j.email, j.notes)) out.push({ k: 'job:' + j.id, kind: 'Job', title: j.title, sub: (j.business || j.name) + ' · ' + STAGE_LABEL[j.stage], run: () => open(j.id) }); });
+    data.briefs.forEach((b) => { if (has(b.name, b.business, b.email, b.reference, b.about)) { const j = data.jobs.find((x) => x.brief_id === b.id); out.push({ k: 'brief:' + b.id, kind: 'Brief', title: (b.business || b.name) + (b.reference ? ' · ' + b.reference : ''), sub: b.email || '', run: () => (j ? open(j.id) : go('leads')) }); } });
+    return out.slice(0, 8);
+  }, [data, term]);
+  const choose = (r) => { r.run(); setOn(false); setQ(''); };
+  const onKey = (e) => {
+    if (e.key === 'Escape') { setOn(false); e.target.blur(); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); setCur((c) => Math.min(c + 1, results.length - 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setCur((c) => Math.max(c - 1, 0)); }
+    else if (e.key === 'Enter' && results[cur]) { e.preventDefault(); choose(results[cur]); }
+  };
+  React.useEffect(() => setCur(0), [term]);
+  return (
+    <div className="hsearch" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setOn(false); }}>
+      <input ref={ref} className="input" type="search" placeholder="Search  ( / )" aria-label="Search clients, jobs and briefs" value={q} onChange={(e) => { setQ(e.target.value); setOn(true); }} onFocus={() => setOn(true)} onKeyDown={onKey} role="combobox" aria-expanded={on && term.length >= 2} aria-controls="hs-list" autoComplete="off" />
+      {on && term.length >= 2 && (
+        <div className="hs-pop" id="hs-list" role="listbox">
+          {results.map((r, i) => (
+            <button key={r.k} role="option" aria-selected={i === cur} className={i === cur ? 'on' : ''} onMouseDown={(e) => e.preventDefault()} onClick={() => choose(r)}>
+              <span className="hs-k">{r.kind}</span><span className="hs-t"><b>{r.title}</b>{r.sub ? <span className="sub"> · {r.sub}</span> : null}</span>
+            </button>
+          ))}
+          {!results.length && <p className="sub" style={{ padding: '12px 14px' }}>Nothing matches “{q.trim()}”.</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Possible duplicates: same email, or the same name once punctuation and case go.
+function findDupes(clients) {
+  const groups = new Map();
+  const add = (key, c) => { if (!key) return; if (!groups.has(key)) groups.set(key, new Set()); groups.get(key).add(c); };
+  clients.forEach((c) => { add(c.email ? 'e:' + c.email.trim().toLowerCase() : null, c); add(normName(c.name) ? 'n:' + normName(c.name) : null, c); });
+  const seen = new Set(), out = [];
+  groups.forEach((set, key) => {
+    if (set.size < 2) return;
+    const ids = [...set].map((c) => c.id).sort().join('|');
+    if (seen.has(ids)) return; seen.add(ids);
+    out.push({ key, why: key[0] === 'e' ? 'Same email' : 'Same name', list: [...set] });
+  });
+  return out;
+}
+// Merge: everything of the other client moves to the one kept, then it goes.
+async function mergeClients(keep, drop, data) {
+  for (const j of data.jobs.filter((x) => x.client_id === drop.id)) await saveJob({ id: j.id, client_id: keep.id });
+  for (const i of data.invoices.filter((x) => x.client_id === drop.id)) await saveInvoice({ id: i.id, client_id: keep.id });
+  for (const t of (data.tasks.notReady ? [] : data.tasks).filter((x) => x.client_id === drop.id)) await saveTask({ id: t.id, client_id: keep.id });
+  const patch = { id: keep.id };
+  const notes = [keep.notes, drop.notes].filter(Boolean);
+  if (drop.notes && keep.notes !== drop.notes) patch.notes = notes.join('\n\n');
+  if (!keep.email && drop.email) patch.email = drop.email;
+  if (!keep.contact && drop.contact) patch.contact = drop.contact;
+  if (keep.custom !== undefined) patch.custom = { ...(drop.custom || {}), ...(keep.custom || {}) };
+  if (Object.keys(patch).length > 1) await saveClient(patch);
+  await deleteClient(drop.id);
+}
+function Dupes({ data, reload }) {
+  const dupes = React.useMemo(() => findDupes(data.clients), [data.clients]);
+  const [busy, setBusy] = React.useState('');
+  const [err, setErr] = React.useState('');
+  if (!dupes.length) return null;
+  const merge = (keep, drop) => {
+    if (!window.confirm(`Merge “${drop.name}” into “${keep.name}”? Their jobs, invoices and tasks move over, and “${drop.name}” is removed.`)) return;
+    setBusy(drop.id); setErr('');
+    mergeClients(keep, drop, data).then(reload).catch((e) => setErr(e.message)).then(() => setBusy(''));
+  };
+  return (
+    <section className="widget dupes" aria-label="Possible duplicate clients">
+      <div className="widget-h"><h2 className="h2">Possible duplicates</h2><span className="sub mono">{dupes.length}</span></div>
+      {dupes.map((d) => (
+        <div key={d.key} className="dupe">
+          <span className="lbl">{d.why}</span>
+          {d.list.map((c, i) => {
+            const other = d.list.find((x) => x.id !== c.id);
+            return (
+              <div key={c.id} className="minirow plain">
+                <span className="mtxt"><b>{c.name}</b><span className="sub"> · {c.email || 'No email'}</span></span>
+                {d.list.length === 2 && <button className="btn ghost sm" disabled={!!busy} onClick={() => merge(c, other)}>{busy === other.id ? 'Merging…' : 'Keep this one'}</button>}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+      {err && <p className="sub" style={{ color: 'var(--warn)', padding: '8px 0' }}>{err}</p>}
+    </section>
+  );
+}
+
+// Custom fields: your own labeled details on a client (needs clients.custom).
+function CustomFields({ client, reload }) {
+  const [fields, setFields] = React.useState(client.custom || {});
+  const [k, setK] = React.useState(''); const [v, setV] = React.useState('');
+  const [err, setErr] = React.useState('');
+  if (client.custom === undefined) {
+    return <p className="sub" style={{ padding: '10px 0' }}>Custom fields turn on once <span className="mono">20261108_crm_tasks_fields.sql</span> has been run.</p>;
+  }
+  const persist = (next) => saveClient({ id: client.id, custom: next }).then(() => { setFields(next); setErr(''); reload(); }).catch((e) => setErr(e.message));
+  const add = (e) => {
+    e.preventDefault();
+    const key = k.trim().slice(0, 40);
+    if (!key || !v.trim()) { setErr('Add a label and a value.'); return; }
+    persist({ ...fields, [key]: v.trim().slice(0, 300) }).then(() => { setK(''); setV(''); });
+  };
+  const drop = (key) => { const n = { ...fields }; delete n[key]; persist(n); };
+  return (
+    <div>
+      <div className="minirows">
+        {Object.entries(fields).map(([key, val]) => (
+          <div key={key} className="minirow plain"><span className="mtxt"><span className="lbl">{key}</span><br />{val}</span><button className="btn quiet sm" onClick={() => drop(key)} aria-label={'Remove ' + key}>Remove</button></div>
+        ))}
+        {!Object.keys(fields).length && <p className="sub" style={{ padding: '10px 0' }}>Nothing yet. Add things like an Instagram handle or a billing contact.</p>}
+      </div>
+      <form className="taskadd" onSubmit={add}>
+        <input className="input" placeholder="Label" value={k} onChange={(e) => setK(e.target.value)} aria-label="Field label" />
+        <input className="input" placeholder="Value" value={v} onChange={(e) => setV(e.target.value)} aria-label="Field value" />
+        <button className="btn sm" type="submit">Add field</button>
+        {err && <p className="sub" style={{ color: 'var(--warn)', flexBasis: '100%' }}>{err}</p>}
+      </form>
+    </div>
+  );
+}
+
 function LeadsReports({ data }) {
   const { jobs, proposals, briefs } = data;
   const now = new Date(); const months = [];
@@ -1295,13 +1621,15 @@ function BusinessHub() {
   const TABS = ['today', 'leads', 'jobs', 'proposals', 'mail', 'money', 'clients'];
   const fromHash = () => {
     const id = (location.hash.match(/job=([0-9a-f-]{36})/) || [])[1] || null;
+    const cid = (location.hash.match(/client=([0-9a-f-]{36})/) || [])[1] || null;
     const t = location.hash.slice(1);
-    return { tab: id ? 'jobs' : (TABS.includes(t) ? t : 'today'), id };
+    return { tab: id ? 'jobs' : cid ? 'clients' : (TABS.includes(t) ? t : 'today'), id, cid };
   };
   const [tab, setTab] = React.useState(() => fromHash().tab);
   const [jobId, setJobId] = React.useState(() => fromHash().id);
+  const [clientId, setClientId] = React.useState(() => fromHash().cid);
   React.useEffect(() => {
-    const on = () => { const h = fromHash(); setTab(h.tab); setJobId(h.id); };
+    const on = () => { const h = fromHash(); setTab(h.tab); setJobId(h.id); setClientId(h.cid); };
     window.addEventListener('hashchange', on);
     return () => window.removeEventListener('hashchange', on);
   }, []);
@@ -1311,10 +1639,11 @@ function BusinessHub() {
   const [clients, reloadClients, e4] = useCollection(fetchClients);
   const [briefs, reloadBriefs, e5] = useCollection(fetchDesignBriefs);
   const [events, reloadEvents, e6] = useCollection(fetchAllEvents);
+  const [tasks, reloadTasks] = useCollection(fetchTasks);
   const error = e1 || e2 || e3 || e4 || e5 || e6;
-  const loading = [jobs, proposals, invoices, clients, briefs, events].some((r) => r === null);
-  const reloadAll = () => { reloadJobs(); reloadProposals(); reloadInvoices(); reloadClients(); reloadBriefs(); reloadEvents(); };
-  const data = loading ? null : { jobs, proposals, invoices, clients, briefs, events, needs: needsYou(jobs, proposals, invoices, briefs, events) };
+  const loading = [jobs, proposals, invoices, clients, briefs, events, tasks].some((r) => r === null);
+  const reloadAll = () => { reloadJobs(); reloadProposals(); reloadInvoices(); reloadClients(); reloadBriefs(); reloadEvents(); reloadTasks(); };
+  const data = loading ? null : { jobs, proposals, invoices, clients, briefs, events, tasks, needs: [...taskNeeds(jobs, tasks), ...needsYou(jobs, proposals, invoices, briefs, events)] };
   const [startNew, setStartNew] = React.useState(false);
   const [intro, setIntro] = React.useState(introWanted);
   const endIntro = React.useCallback(() => setIntro(false), []);
@@ -1328,8 +1657,9 @@ function BusinessHub() {
     if (ro) ro.observe(el); else window.addEventListener('resize', set);
     return () => { if (ro) ro.disconnect(); else window.removeEventListener('resize', set); };
   }, []);
-  const go = (t, opts) => { setTab(t); setJobId(null); setStartNew(!!(opts && opts.newJob)); history.replaceState(null, '', '#' + t); };
-  const open = (id) => { setTab('jobs'); setJobId(id); history.replaceState(null, '', '#job=' + id); window.scrollTo(0, 0); };
+  const go = (t, opts) => { setTab(t); setJobId(null); setClientId(null); setStartNew(!!(opts && opts.newJob)); history.replaceState(null, '', '#' + t); };
+  const openClient = (id) => { setTab('clients'); setJobId(null); setClientId(id); history.replaceState(null, '', '#client=' + id); window.scrollTo(0, 0); };
+  const open = (id) => { setTab('jobs'); setJobId(id); setClientId(null); history.replaceState(null, '', '#job=' + id); window.scrollTo(0, 0); };
 
   return (
     <React.Fragment>
@@ -1344,6 +1674,7 @@ function BusinessHub() {
             ? <a className="backlink" href="#jobs" onClick={(e) => { e.preventDefault(); go('jobs'); }}><i aria-hidden="true">←</i> Jobs</a>
             : <a className="backlink" href="/backroom"><i aria-hidden="true">←</i> Backroom</a>}
           <a className="mark" href="/backroom"><img src="assets/antler.png" alt="" /><div><b>Business Hub</b><span>The Backroom</span></div></a>
+          {data && <GlobalSearch data={data} open={open} openClient={openClient} go={go} />}
           <nav className="topnav">
 <a href="/docket">Docket</a>
           </nav>
@@ -1351,18 +1682,18 @@ function BusinessHub() {
       </header>
       <div className="shell">
         {data && <ToolSidebar tab={tab} go={go} data={data} />}
-        <main id="app" key={tab + (jobId || '') + (intro ? '-intro' : '')}>
+        <main id="app" key={tab + (jobId || '') + (clientId || '') + (intro ? '-intro' : '')}>
           {error && <p className="sub" style={{ padding: '20px 2px', color: 'var(--warn)' }}>{error} If this is the first run, the workflow tables may not be set up yet.</p>}
           {!error && loading && <p className="sub" style={{ padding: '20px 2px' }}>Loading…</p>}
           {data && (
             <React.Fragment>
               {tab === 'today' && <Today data={data} open={open} go={go} />}
-              {tab === 'leads' && <Leads data={data} open={open} go={go} reload={reloadAll} reloadClients={reloadClients} />}
-              {tab === 'jobs' && (jobId ? <JobPage jobId={jobId} data={data} reload={reloadAll} back={() => go('jobs')} /> : <Jobs data={data} open={open} reload={reloadAll} startNew={startNew} />)}
+              {tab === 'leads' && <Leads data={data} open={open} go={go} reload={reloadAll} reloadClients={reloadClients} reloadTasks={reloadTasks} />}
+              {tab === 'jobs' && (jobId ? <JobPage jobId={jobId} data={data} reload={reloadAll} reloadTasks={reloadTasks} back={() => go('jobs')} /> : <Jobs data={data} open={open} reload={reloadAll} startNew={startNew} />)}
               {tab === 'proposals' && <Proposals data={data} open={open} />}
               {tab === 'mail' && <Mail data={data} open={open} />}
               {tab === 'money' && <Money data={data} open={open} reload={reloadAll} />}
-              {tab === 'clients' && <Clients data={data} reload={reloadClients} open={open} />}
+              {tab === 'clients' && <Clients data={data} reload={reloadClients} reloadAll={reloadAll} reloadTasks={reloadTasks} open={open} startSel={clientId} />}
             </React.Fragment>
           )}
         </main>

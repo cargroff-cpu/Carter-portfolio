@@ -861,3 +861,9 @@ mcc.css, is unchanged.
 - Not changed: any API route, migration, or Stripe/session setting. The
   remaining audit items (register the Stripe webhook, set SESSION_SECRET,
   rotate the Backroom password, check the Resend domain) are dashboard steps.
+
+## 2026-11-07 — CRM tools in the Business Hub (from the crm-designer / custom-CRM skills)
+- Added: Tasks (own Leads tab, plus Follow-ups on every job and client; overdue job tasks feed Needs you), header search across clients/jobs/briefs ("/" focuses it), CSV export (jobs, clients, tasks; cells starting = + - @ are quoted against spreadsheet formulas), duplicate check on Add client plus a Possible duplicates panel with Merge, custom fields on clients, and Call/Meeting entries in a job's History.
+- Database: supabase/migrations/20261108_crm_tasks_fields.sql adds crm_tasks and clients.custom. NOT APPLIED. The Hub shows a setup note instead of failing until it is run. Duplicate detection is app-level on purpose: a unique email index would fail on any existing duplicates.
+- Notes reuse job_events (kind note, meta.type note/call/meeting), so no table for them.
+- Also fixed: Remove client threw a ReferenceError because deleteClient was never pulled from window.CC.
