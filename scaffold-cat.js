@@ -369,7 +369,10 @@ class Cat {
       if (o.isMesh) { o.frustumCulled = false; if (o.morphTargetInfluences) this.morphs.push(o); }
       // tuned in the page's light: matte near-black fur, eyes that stay amber instead of blowing out
       const m = o.material;
-      if (m && m.name === 'cat_fur') { m.color.set(0x141219); m.roughness = 0.78; if ('specularIntensity' in m) m.specularIntensity = 0.5; }
+      if (m && m.name === 'cat_fur') {
+        m.color.set(0x141219); m.roughness = 0.78; if ('specularIntensity' in m) m.specularIntensity = 0.5;
+        if ('sheen' in m) m.sheen = 0;   // the model's fur sheen turns the underside pale under the amber lamps; the page's own rim light does that job
+      }
       if (m && m.name === 'cat_eye') m.emissiveIntensity = 1.4;
       if (o.isBone) o.matrixAutoUpdate = true;
     });

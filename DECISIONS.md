@@ -914,6 +914,17 @@ under makes it look up and move.
   swat; a dodged pounce gets a short "missed it" look around; woken from a
   loaf, it watches for a beat before getting up. Each has a scenario in
   `scripts/cat-test` (17 scenarios, all passing at RUNS=5).
+- **A new cat (v7, 2026-11-07).** The first model's back legs, bare skin and
+  floor clipping were replaced by a re-rig of "Bicolor Cat" by kenchoo (itself
+  based on "3d modelling my cat: Fripouille" by guillaume.bolis), CC BY 4.0.
+  Recoloured black, re-weighted to our bone names, morphs added, a fur texture
+  baked on four alpha shells, animated again with the same 29 clip names.
+  `cat-motion.json` is re-exported (trot is now 0.5625 m/s, the pounce flight
+  0.23–0.67 s). CC BY needs a visible credit, so the Scaffold footer carries it
+  (`.dfootcredit` in `design.jsx`); keep it as long as this model is used. The
+  site zeroes the model's fur sheen at load: under the amber lamps it turned the
+  underside pale and showed the old white markings. Eyes are the model's own,
+  solid white with no pupil. The suite is unchanged and passes with the new model.
 
 ## 2026-11-07 — Business Hub: one home per thing
 - Leads is a lens on work not yet won: Overview, Tasks, Activity, Reports. Its Pipeline and Contacts tabs are gone, since they were the Jobs board and the Clients page under a second name; Leads' stage cards now open Jobs.

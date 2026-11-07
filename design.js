@@ -2299,7 +2299,13 @@ function Footer() {
     }
   }, "The Scaffold"), React.createElement("p", {
     className: "dfootsub"
-  }, "Tools and design by Carter Groff. Harrisonburg, Virginia.")), React.createElement("div", {
+  }, "Tools and design by Carter Groff. Harrisonburg, Virginia."), React.createElement("p", {
+    className: "dfootcredit"
+  }, "Cat model: ", React.createElement("a", {
+    href: "https://sketchfab.com/3d-models/bicolor-cat-e623a618ca344a8393d7ba4d63ec23cf"
+  }, "\u201CBicolor Cat\u201D"), " by kenchoo, based on \u201C3d modelling my cat: Fripouille\u201D by guillaume.bolis, ", React.createElement("a", {
+    href: "https://creativecommons.org/licenses/by/4.0/"
+  }, "CC BY 4.0"), ". Modified: recoloured, re-rigged and animated.")), React.createElement("div", {
     className: "dfootlinks"
   }, React.createElement("a", {
     href: "https://www.cargroff.com/"

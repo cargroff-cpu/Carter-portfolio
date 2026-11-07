@@ -568,6 +568,9 @@ a:hover { color: var(--amber-lit); }
 .dfootlinks a, .dfootlinks span { font-family: var(--ui); font-size: 15px; font-weight: 500; color: var(--ink-mute); }
 .dfootlinks a:hover { color: var(--ink); }
 .dfootsub { color: var(--ink-mute); font-size: 16px; margin: 8px 0 0; font-style: italic; }
+.dfootcredit { color: var(--ink-mute); font-family: var(--ui); font-size: 12px; line-height: 1.5; margin: 10px 0 0; max-width: 62ch; opacity: .8; }
+.dfootcredit a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.dfootcredit a:hover { color: var(--ink); }
 
 /* The plain HTML inside #root (for search engines, link previews and no-JS) must not
    flash up while React and design.js load. With JS on it stays invisible; if React has
