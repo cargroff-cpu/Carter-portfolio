@@ -63,6 +63,15 @@ const ROOT = {
     0.0153, 0.0176, 0.0202, 0.023, 0.0262, 0.0297, 0.0333, 0.0371, 0.0396, 0.0425, 0.0456, 0.049, 0.0525],
 };
 const GAIT_SPEED = [0.2692, 0.6, 1.2857]; // walk, trot, run (m/s at 1x)
+const POUNCE = { start: 0.3, end: 0.7333 };  // seconds of the pounce clip the cat is airborne
+// assets/cat/cat-motion.json (written by the Blender export) overrides the numbers
+// above, so a re-animated model drops in without touching this file.
+function applyMotion(j) {
+  if (!j) return;
+  if (j.gait_speed_mps) ['walk', 'trot', 'run'].forEach((g, i) => { if (+j.gait_speed_mps[g] > 0) GAIT_SPEED[i] = +j.gait_speed_mps[g]; });
+  if (j.root_travel_m) for (const k of Object.keys(ROOT)) if (Array.isArray(j.root_travel_m[k]) && j.root_travel_m[k].length > 1) ROOT[k] = j.root_travel_m[k].map(Number);
+  if (j.pounce && +j.pounce.flight_end_s > +j.pounce.flight_start_s) { POUNCE.start = +j.pounce.flight_start_s; POUNCE.end = +j.pounce.flight_end_s; }
+}
 // How much the procedural head-turn may override each clip (1 = fully).
 const GAZE_ALLOW = {
   groom: 0, stretch: 0, pounce: 0.15, turn_L_90: 0.3, turn_R_90: 0.3, turn_180: 0.25, idle_look_around: 0.2,
@@ -70,11 +79,14 @@ const GAZE_ALLOW = {
   loco: 0.55, idle_to_walk: 0.5, walk_to_idle: 0.5, bored_walkaway_start: 0.2, sit_slow_blink: 0.8,
 };
 
+// speed bands follow the clips' own speeds, so each gait stays within ~0.65-1.35x
 function gaitWeights(v) {
-  if (v <= 0.33) return [1, 0, 0];
-  if (v < 0.45) { const t = sm((v - 0.33) / 0.12); return [1 - t, t, 0]; }
-  if (v <= 0.78) return [0, 1, 0];
-  if (v < 1.0) { const t = sm((v - 0.78) / 0.22); return [0, 1 - t, t]; }
+  const [w, t, r] = GAIT_SPEED;
+  const a0 = w * 1.22, a1 = Math.max(a0 + 0.04, t * 0.75), b0 = t * 1.3, b1 = Math.max(b0 + 0.05, r * 0.78);
+  if (v <= a0) return [1, 0, 0];
+  if (v < a1) { const k = sm((v - a0) / (a1 - a0)); return [1 - k, k, 0]; }
+  if (v <= b0) return [0, 1, 0];
+  if (v < b1) { const k = sm((v - b0) / (b1 - b0)); return [0, 1 - k, k]; }
   return [0, 0, 1];
 }
 
@@ -302,7 +314,7 @@ class Motor {
       const t = o.act.time;
       let d = 0;
       if (o.name === 'pounce') {
-        const f = (x) => this.pounceTravel * sm((x - 0.3) / 0.4333);
+        const f = (x) => this.pounceTravel * sm((x - POUNCE.start) / (POUNCE.end - POUNCE.start));
         d = f(t) - f(Math.min(o.prev, t));
       } else if (o.root) {
         if (!o.loop && t >= o.dur - 1e-3 && o.prev >= o.dur - 1e-3) d = o.endSlope * dt;
@@ -1003,7 +1015,10 @@ const idle = (ms) => new Promise((r) => ('requestIdleCallback' in window ? reque
 
 async function start(hero) {
   const [THREE, { GLTFLoader }] = await Promise.all([import('three'), import('three/addons/loaders/GLTFLoader.js')]);
-  const gltf = await new GLTFLoader().loadAsync(GLB);
+  const [gltf] = await Promise.all([
+    new GLTFLoader().loadAsync(GLB),
+    fetch(new URL('assets/cat/cat-motion.json', document.baseURI)).then((r) => (r.ok ? r.json() : null)).then(applyMotion).catch(() => {}),
+  ]);
   // let the lane finish coming in out of the fog before the cat arrives
   await new Promise((r) => setTimeout(r, Math.max(0, 4300 - performance.now())));
   const lane = new Lane(hero);
