@@ -838,35 +838,115 @@ mcc.css, is unchanged.
   reloading doesn't replay it, and closing and reopening does. Reduced motion
   never plays it.
 
-## 2026-11-07 — CRM upgrades for the Backroom
+## 2026-11-06 — Leads tool in the Business Hub; polish pass
 
-Borrowed from a generic custom-CRM guide, keeping only what a one-person
-studio needs (no roles, owners or custom-field tables).
+- New **Leads** tool between Today and Jobs: the briefs coming in and the
+  jobs not yet won (New, Proposed, Directions, Final). It reads the data the
+  hub already loads, so there is no database change.
+- One focal number, the open pipeline value (proposal totals for jobs still
+  in play). Under the title a tab row: Overview (stage cards, Needs you, New
+  briefs), Pipeline (the existing jobs board), Contacts (the existing
+  Clients), Activity (every job event) and Reports (briefs per month, typical
+  time to reply, proposals accepted, average accepted proposal, design vs
+  automation briefs, jobs paid).
+- Tabs sit under the title on every screen size. On a phone the tools bar
+  already owns the bottom of the screen, so the tab row scrolls sideways
+  instead of adding a second bar. The last tab used is remembered for the
+  visit (sessionStorage); arrow keys move between tabs.
+- No ring: the ring stays out of the Business Hub, as decided in #50.
+- Polish, all in Business Hub.html's own styles, no behaviour change: header
+  links and list rows reach 44px, visible focus rings, tabular numbers,
+  balanced headings, a hover state on job cards. Docket and the rest of
+  mcc.css untouched.
+- Not changed: any API route, migration, or Stripe/session setting. The
+  remaining audit items (register the Stripe webhook, set SESSION_SECRET,
+  rotate the Backroom password, check the Resend domain) are dashboard steps.
 
-- **Writes are validated.** `api/scaffold-write.js` now checks every row
-  against `lib/validate.js`: only the columns the screens edit, with types.
-  Tokens, Stripe ids, approval times, revision counts and proposal status
-  can no longer be written from the browser. A paid invoice and an accepted
-  proposal are locked; a job's invoice can only be marked paid through the
-  `mark-paid` action (it switches off the Stripe link). Rows can be deleted
-  only from `clients` and `docket_tasks`; close a job instead.
+## 2026-11-07 — CRM tools in the Business Hub (from the crm-designer / custom-CRM skills)
+- Added: Tasks (own Leads tab, plus Follow-ups on every job and client; overdue job tasks feed Needs you), header search across clients/jobs/briefs ("/" focuses it), CSV export (jobs, clients, tasks; cells starting = + - @ are quoted against spreadsheet formulas), duplicate check on Add client plus a Possible duplicates panel with Merge, custom fields on clients, and Call/Meeting entries in a job's History.
+- Database: supabase/migrations/20261108_crm_tasks_fields.sql adds crm_tasks and clients.custom. NOT APPLIED. The Hub shows a setup note instead of failing until it is run. Duplicate detection is app-level on purpose: a unique email index would fail on any existing duplicates.
+- Notes reuse job_events (kind note, meta.type note/call/meeting), so no table for them.
+- Also fixed: Remove client threw a ReferenceError because deleteClient was never pulled from window.CC.
+
+## 2026-11-06 — The Scaffold hero gets a black cat
+
+A small 3D black cat lives in the hero's lamp lane (`scaffold-cat.js`, model
+`assets/cat/scaffold-cat.glb` from the Blender pipeline, 29 clips). It walks in
+from the side, wanders between the posts, sits and loafs under the lit ones,
+walks back into the fog to the far lamps, and plays with the cursor: it watches
+it, chases a cursor on the ground, stalks, wiggles and pounces, swats at one
+hanging just over its head, chatters at one it can't reach, then gets bored and
+grooms. Clicking it makes it sit and slow-blink. Snuffing the lamp it's resting
+under makes it look up and move.
+
+- **Fits the lane, not a separate 3D scene.** The lane is DOM layers, so the
+  cat reads its ground from the lamp rows every frame: screen height, scale and
+  spread come from the measured rows; depth is integrated from them so walking
+  away moves the paws exactly as fast as they push the ground.
+- **One layer, own fog.** The canvas sits just behind the near posts (z 6).
+  The walkable ground never reaches the mid/far/back posts on screen, so the
+  cat doesn't need to slip under each CSS fog bank; the banks it's behind are
+  laid on it as haze (60% strength) that ramps across each row, plus the rows'
+  brightness/blur. Under the real banks a black cat vanished at the back.
+- **Smooth by construction.** Eased, normalised crossfades; walk/trot/run are
+  phase-synced and speed-blended; walks stop on the gait's phase 0 so
+  `walk_to_idle` starts from an identical pose; transition clips move the cat by
+  per-frame travel sampled from the GLB's planted paws; head and neck turn
+  toward what it's watching with damped, overlapping motion on top of the clip.
+- **Cheap and polite.** three.js r169 and the 1.4 MB model load only on
+  desktop (lane is hidden under 900px), after the page is idle, never for
+  reduced motion. It pauses off screen and in background tabs. Under 1 ms of
+  script and GPU per frame.
+- `?catdebug` exposes `window.__cat`; `?catdebug=lines` draws the measured lane.
+- **Cursor play, tightened (2026-11-07).** Medium-range hunts (1.2–2.6 m) now
+  land the pounce in about 5 s instead of 7–8: the notice beat is cut short, a
+  hunting cat takes turns under 75° into its first steps instead of turning in
+  place, trots in (capped at the trot's own 0.6 m/s), sinks into the crouch a
+  little farther out and pounces from up to 0.85 m. It doesn't creep faster:
+  `stalk_crouch` barely moves its paws, so faster creeping would slide.
+  A ground spot under 0.8 m behind the cat lands on the same pixels as its body,
+  so it counts as ground behind it (the cat turns round) instead of air over
+  its back. An air cursor higher than 1.5 m is only watched and never builds
+  play interest. New: pounces lead a cursor that is actually going somewhere
+  (smoothed ground velocity, scaled by how steady it is, so a jiggle isn't led);
+  ears flick twice and the tail tip twitches when it locks on (the tail layer is
+  undone in `unlayer()` like the head); a flick past its face gets a one-two
+  swat; a dodged pounce gets a short "missed it" look around; woken from a
+  loaf, it watches for a beat before getting up. Each has a scenario in
+  `scripts/cat-test` (17 scenarios, all passing at RUNS=5).
+
+## 2026-11-07 — Business Hub: one home per thing
+- Leads is a lens on work not yet won: Overview, Tasks, Activity, Reports. Its Pipeline and Contacts tabs are gone, since they were the Jobs board and the Clients page under a second name; Leads' stage cards now open Jobs.
+- Jobs owns its CSV export. Tasks are follow-ups tied to a job or client; personal to-dos stay in the Docket (the Tasks tab says so and links there).
+- Touch: on phones every button, stage row and inline link is at least 44px. Checked at 360/390/1280 on every tool, a job page and a client page: no sideways scroll, no page errors.
+
+## 2026-11-07 — Backroom safety layer (validated writes, audit, auto follow-ups)
+
+Added on top of the Business Hub CRM tools above; the screens (Tasks, search,
+Possible duplicates, Leads reports) are that work, not duplicated.
+
+- **Writes are validated.** `api/scaffold-write.js` checks every row against
+  `lib/validate.js`: only the columns the screens edit, with types (including
+  `crm_tasks`, client custom fields and call/meeting notes). Tokens, Stripe
+  ids, approval times, revision counts and proposal status can no longer be
+  written from the browser. A paid invoice and an accepted proposal are
+  locked; a job's invoice can only be marked paid through `mark-paid` (it
+  switches off the Stripe link). Rows can be deleted only from `clients`,
+  `docket_tasks` and `crm_tasks`; close a job instead. `npm test` covers it.
 - **Audit trail.** Edits to jobs, clients, invoices and sent proposals are
-  written to `job_events` (kind `change` or `stage`) with the old and new
-  values.
-- **Follow-up tasks.** The Backroom puts tasks on the Docket itself (reply to
-  a brief, follow up a proposal / directions / final, chase an invoice) and
-  clears them when the step happens. They carry `job_id` and an `auto_key`, so
-  re-sending reopens the same task. Tasks Carter wrote are never auto-closed.
-- **Activity on clients.** `job_events.client_id` (and `job_id` may be empty):
-  log calls, meetings and notes on a client with no job.
-- **One client per email.** Emails are stored lower-cased and unique. A brief
-  from a known address attaches to that client. Clients can be merged
-  (jobs, invoices, history and tasks move across).
-- **Win/loss and source.** Closing a job asks why (`close_reason`); clients
-  have a `source`. The new Reports tool shows the funnel, step timings, win
-  rate, close reasons, work by source and a chance-weighted forecast
-  (New 10%, Proposed 50%, Directions 75%, Final 90%). A search box (press /
-  or Ctrl/Cmd+K) finds clients, jobs and tasks.
-- Migration: `supabase/migrations/20261107b_crm_upgrades.sql`, not applied
-  yet. Apply it before deploying. The Docket's job link and the new columns
-  need it; the auto-tasks and audit lines fail quietly until then.
+  written to `job_events` (kind `change` or `stage`) with old and new values.
+- **Automatic follow-ups.** The Backroom adds `crm_tasks` itself (reply to a
+  brief, follow up a proposal / directions / final after 3 days, chase an
+  invoice after 7) and clears them when the step happens. Each has an
+  `auto_key`, so re-sending reopens one task. Tasks Carter wrote are never
+  auto-closed. Needs `20261109_crm_autotasks.sql` (after `20261108`).
+- **Clients.** Emails are stored lower-case and unique (applied
+  2026-11-07), so the Hub's Merge now runs on the server
+  (`mergeClients` in `lib/crm.js`) in the order the unique index needs. A
+  brief from a known address attaches to that client. Clients have a
+  `source` ("Came from"); closing a job asks why (`close_reason`). Both show
+  in Leads > Reports.
+- Applied to the live database 2026-11-07: `job_events.client_id`, nullable
+  `job_events.job_id`, `jobs.close_reason/closed_at`, `clients.source`, the
+  unique email index. Also added, now unused: `docket_tasks.job_id/client_id/
+  auto_key` (harmless; the automation writes `crm_tasks` instead).

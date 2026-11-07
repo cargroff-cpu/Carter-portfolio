@@ -118,7 +118,7 @@ async function clientAction(req, res, body) {
     if (p.billing === 'split' && Number(p.total) > 0) {
       const deposit = Math.round(Number(p.total) * 50) / 100;
       const [dep] = await sb('invoices', { method: 'POST', prefer: 'return=representation', body: { job_id: job.id, client_id: job.client_id, amount: deposit, label: 'Deposit (50%)', status: 'sent', sent_at: now() } });
-      if (dep) await openTask(KEYS.invoice(dep.id), { t: `Chase the deposit: ${job.title}`, q: 'q2', due: dueIn(7), job_id: job.id, client_id: job.client_id });
+      if (dep) await openTask(KEYS.invoice(dep.id), { t: `Chase the deposit: ${job.title}`, due: dueIn(7), job_id: job.id, client_id: job.client_id });
     }
     await closeTasks(KEYS.proposal(job.id));
     await event(job, 'accepted', 'client', comment || 'Accepted the proposal.');
@@ -159,7 +159,7 @@ async function clientAction(req, res, body) {
     await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { approved_at: now(), updated_at: now() } });
     if (rest > 0) {
       const [fin] = await sb('invoices', { method: 'POST', prefer: 'return=representation', body: { job_id: job.id, client_id: job.client_id, amount: rest, label: billed > 0 ? 'Final (50%)' : 'Full payment', status: 'sent', sent_at: now() } });
-      if (fin) await openTask(KEYS.invoice(fin.id), { t: `Chase the final payment: ${job.title}`, q: 'q2', due: dueIn(7), job_id: job.id, client_id: job.client_id });
+      if (fin) await openTask(KEYS.invoice(fin.id), { t: `Chase the final payment: ${job.title}`, due: dueIn(7), job_id: job.id, client_id: job.client_id });
     }
     await closeTasks(KEYS.final(job.id));
     await event(job, 'approved', 'client', comment || 'Approved the final.');
@@ -277,7 +277,7 @@ async function adminAction(req, res, body) {
     // Follow-ups on the Docket: nudge a proposal, a direction pick or a final
     // that goes quiet. Sending again reopens the same task with a new date.
     const nudge = { proposal: ['proposal', 'Follow up on the proposal'], drafts: ['drafts', 'Follow up on the directions'], final: ['final', 'Check in on the final'] }[kind];
-    if (nudge) await openTask(KEYS[nudge[0]](job.id), { t: `${nudge[1]}: ${job.title}`, q: 'q3', due: dueIn(3), job_id: job.id, client_id: job.client_id });
+    if (nudge) await openTask(KEYS[nudge[0]](job.id), { t: `${nudge[1]}: ${job.title}`, due: dueIn(3), job_id: job.id, client_id: job.client_id });
     if (kind === 'proposal' || kind === 'reply') await closeTasks(KEYS.brief(job.id));
     return res.status(200).json({ ok: true });
   }
@@ -292,7 +292,7 @@ async function adminAction(req, res, body) {
     await sb(`proposals?id=eq.${p.id}`, { method: 'PATCH', body: { status: 'sent', sent_at: now(), updated_at: now() } });
     if (ORDER.indexOf('proposed') > ORDER.indexOf(job.stage)) await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { stage: 'proposed', updated_at: now() } });
     await event(job, 'note', 'me', 'Proposal marked as sent (shared without the email).');
-    await openTask(KEYS.proposal(job.id), { t: `Follow up on the proposal: ${job.title}`, q: 'q3', due: dueIn(3), job_id: job.id, client_id: job.client_id });
+    await openTask(KEYS.proposal(job.id), { t: `Follow up on the proposal: ${job.title}`, due: dueIn(3), job_id: job.id, client_id: job.client_id });
     await closeTasks(KEYS.brief(job.id));
     return res.status(200).json({ ok: true });
   }

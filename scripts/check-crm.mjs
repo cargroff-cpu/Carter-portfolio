@@ -50,6 +50,16 @@ assert.deepEqual(Object.keys(ch), ['stage']);
 assert.equal(describeChanges(ch), 'stage: new → drafts');
 assert.deepEqual(diffRows({ a: null }, { a: undefined }), {});
 
+// The Hub's follow-up tasks, client custom fields and call/meeting notes.
+assert.equal(ok('crm_tasks', { title: 'Call Dana', due_on: '2026-11-12', job_id: ID, client_id: null }).title, 'Call Dana');
+assert.equal(ok('crm_tasks', { id: ID, done_at: '2026-11-07T10:00:00Z', updated_at: '2026-11-07T10:00:00Z' }, { isUpdate: true }).done_at, '2026-11-07T10:00:00.000Z');
+assert.equal(ok('crm_tasks', { id: ID, done_at: null }, { isUpdate: true }).done_at, null);
+bad('crm_tasks', { id: ID, auto_key: 'x' }, { isUpdate: true }, /auto_key/);
+bad('crm_tasks', { title: '' }, {}, /title/);
+assert.deepEqual(ok('clients', { id: ID, custom: { Instagram: '@dana' } }, { isUpdate: true }).custom, { Instagram: '@dana' });
+bad('clients', { id: ID, custom: 'x' }, { isUpdate: true }, /custom/);
+assert.deepEqual(ok('job_events', { job_id: ID, kind: 'note', who: 'me', body: 'Rang', meta: { type: 'call' } }).meta, { type: 'call' });
+
 assert.ok(!DELETABLE_TABLES.has('jobs') && !DELETABLE_TABLES.has('invoices') && DELETABLE_TABLES.has('clients'));
 assert.ok(WRITABLE_TABLES.has('docket_tasks'));
 console.log('check-crm: all good');

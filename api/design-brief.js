@@ -261,7 +261,7 @@ export default async function handler(req, res) {
       // (matched by email), and put "reply to the brief" on the Docket.
       const known = await findClientByEmail(email);
       if (known) await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { client_id: known.id } }).catch(() => {});
-      await openTask(KEYS.brief(job.id), { t: `Reply to the brief: ${job.title}`.slice(0, 200), q: 'q1', due: dueIn(1), job_id: job.id, client_id: known ? known.id : null });
+      await openTask(KEYS.brief(job.id), { t: `Reply to the brief: ${job.title}`.slice(0, 200), due: dueIn(1), job_id: job.id, client_id: known ? known.id : null });
       await sb('job_events', { method: 'POST', body: { job_id: job.id, kind: 'brief', who: 'client', body: `Brief ${brief.reference} received.` } });
     } catch (e) {
       await logEvent({ kind: 'job_create', ok: false, reference: brief.reference, detail: e.message.slice(0, 500) });

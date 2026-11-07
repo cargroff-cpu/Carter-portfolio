@@ -15,11 +15,10 @@
 // Data: command-center-data.jsx (window.CC). Server: api/job.js,
 // api/brief-reply.js, api/scaffold-read.js / scaffold-write.js.
 const {
-  fetchClients, saveClient, fetchInvoices, saveInvoice,
+  fetchClients, saveClient, deleteClient, mergeClientsOnServer, fetchTasks, saveTask, deleteTask, fetchInvoices, saveInvoice,
   fetchJobs, saveJob, fetchProposals, saveProposal, fetchJobFiles, fetchJobEvents, fetchAllEvents, saveJobEvent,
   jobAction, uploadJobFile,
   fetchDesignBriefs, fetchDesignBriefAttachments, briefAction,
-  fetchDocketTasks, saveDocketTask, mergeClients, fetchClientEvents,
 } = window.CC;
 
 const STAGES = [
@@ -35,23 +34,8 @@ const pill = (txt, kind) => <span className={'pill ' + (kind || 'mute')}>{txt}</
 const stageKind = (s) => ({ new: 'warn', proposed: 'mute', drafts: 'mute', final: 'warn', paid: 'ok', closed: 'mute' }[s] || 'mute');
 const firstName = (n) => String(n || '').trim().split(/\s+/)[0] || 'there';
 const fill = (t, f) => String(t || '').replace(/\{(\w+)\}/g, (m, k) => (f[k] != null && f[k] !== '' ? String(f[k]) : m));
-const sumItems = (items) => (items || []).reduce((s, i) => s + (Number(i.amount) || 0), 0);
-const todayStr = () => new Date().toLocaleDateString('en-CA');
-const normName = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-
-// Chance a job in each stage ends up paid. Forecast = proposal total x chance.
-// (New: a brief with no promise yet. Proposed: a price is out. Drafts: they
-// accepted. Final: only the sign-off and payment are left.)
-const STAGE_PROB = { new: 0.1, proposed: 0.5, drafts: 0.75, final: 0.9 };
 const SOURCE_LABEL = { brief: 'Scaffold brief', referral: 'Referral', repeat: 'Repeat client', social: 'Social', search: 'Search', event: 'Event', other: 'Other' };
-const jobValue = (j, proposals) => { const p = proposals.find((x) => x.job_id === j.id); return p ? Number(p.total || 0) : 0; };
-const forecastOf = (jobs, proposals) => jobs.reduce((a, j) => a + (STAGE_PROB[j.stage] || 0) * jobValue(j, proposals), 0);
-// A due date as words: "3d late", "today", "in 2d".
-function dueWords(due) {
-  if (!due) return { txt: 'no date', late: false };
-  const d = Math.round((new Date(due + 'T12:00:00') - new Date(todayStr() + 'T12:00:00')) / 864e5);
-  return d < 0 ? { txt: Math.abs(d) + 'd late', late: true } : d === 0 ? { txt: 'today', late: true } : { txt: 'in ' + d + 'd', late: false };
-}
+const sumItems = (items) => (items || []).reduce((s, i) => s + (Number(i.amount) || 0), 0);
 
 // ── Mail templates. {fields} fill from the job; the email goes out in the
 // branded frame (lib/mail.js) with a button to the client's project page.
@@ -125,20 +109,20 @@ function needsYou(jobs, proposals, invoices, briefs, events) {
 // plates used before is kept in assets/tool-*.png (the antler field below) for later.
 const TOOL_LIST = [
   { id: 'today', label: 'Today', glyph: 'today', antler: 'assets/tool-brief.png', desc: 'What needs you, what just happened, money in and out.' },
+  { id: 'leads', label: 'Leads', glyph: 'leads', antler: 'assets/tool-leads.png', desc: 'Briefs coming in and jobs not yet won.' },
   { id: 'jobs', label: 'Jobs', glyph: 'jobs', antler: 'assets/tool-work.png', desc: 'Every job from brief to paid, one column per stage.' },
   { id: 'proposals', label: 'Proposals', glyph: 'proposals', antler: 'assets/tool-vault.png', desc: 'Every proposal, where it stands, and what it is worth.' },
   { id: 'mail', label: 'Mail', glyph: 'mail', antler: 'assets/tool-leads.png', desc: 'Everything sent to clients, and the templates behind it.' },
   { id: 'money', label: 'Money', glyph: 'money', antler: 'assets/tool-money.png', desc: 'Deposits and finals: due, paid, and what to chase.' },
   { id: 'clients', label: 'Clients', glyph: 'clients', antler: 'assets/tool-acquire.png', desc: 'Who you work for and everything you have done for them.' },
-  { id: 'reports', label: 'Reports', glyph: 'reports', antler: 'assets/tool-vault.png', desc: 'Funnel, speed, win rate, where work comes from, forecast.' },
 ];
 const GLYPHS = {
   today: <React.Fragment><circle cx="12" cy="12" r="4" /><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" /></React.Fragment>,
+  leads: <React.Fragment><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="1" /><path d="M12 1.8v3M12 19.2v3M1.8 12h3M19.2 12h3" /></React.Fragment>,
   jobs: <React.Fragment><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M9 7V5.2c0-.7.5-1.2 1.2-1.2h3.6c.7 0 1.2.5 1.2 1.2V7M3 12.5h18M11 12.5v2h2v-2" /></React.Fragment>,
   proposals: <React.Fragment><path d="M6 3h8.5L19 7.5V21H6z" /><path d="M14 3v5h5M9 12.5h7M9 16h7M9 9h3" /></React.Fragment>,
   mail: <React.Fragment><rect x="3" y="5.5" width="18" height="13" rx="2" /><path d="M3.5 7l8.5 6.2L20.5 7" /></React.Fragment>,
   money: <path d="M12 3v18M16.6 7.6C16 6 14.3 5 12 5 9.5 5 7.5 6.3 7.5 8.3S9.5 11.4 12 12s4.5 1.6 4.5 3.7S14.5 19 12 19c-2.3 0-4.1-1-4.7-2.7" />,
-  reports: <path d="M4 20V11M10 20V4M16 20v-7M21 20H3" />,
   clients: <React.Fragment><circle cx="9" cy="8.5" r="3.2" /><path d="M3 20c0-3.4 2.7-6 6-6s6 2.6 6 6" /><circle cx="17" cy="9" r="2.5" /><path d="M16.2 14.1c2.8.3 4.8 2.6 4.8 5.9" /></React.Fragment>,
 };
 function ToolIcon({ name }) {
@@ -150,11 +134,11 @@ function ToolIcon({ name }) {
 }
 function toolMetaOf(id, d, short) {
   if (id === 'today') return d.needs.length ? d.needs.length + ' need you' : 'All clear';
+  if (id === 'leads') { const w = d.briefs.filter((b) => b.status !== 'answered').length; return w ? w + ' to answer' : d.jobs.filter((j) => j.stage === 'new' || j.stage === 'proposed').length + ' in play'; }
   if (id === 'jobs') return d.jobs.filter((j) => j.stage !== 'paid' && j.stage !== 'closed').length + ' open';
   if (id === 'proposals') return d.proposals.filter((p) => p.status === 'sent').length + ' out';
   if (id === 'mail') return d.events.filter((e) => e.kind === 'email').length + ' sent';
   if (id === 'money') return usd(d.invoices.filter((i) => i.status === 'sent').reduce((a, i) => a + Number(i.amount || 0), 0)) + ' due';
-  if (id === 'reports') return usd(forecastOf(d.jobs, d.proposals)) + ' forecast';
   if (id === 'clients') return d.clients.length + (short ? (d.clients.length === 1 ? ' client' : ' clients') : ' on the books');
   return '';
 }
@@ -187,11 +171,8 @@ function useCollection(fetcher) {
 // came in. Scaffold only. Every card opens the place it counts.
 const EVENT_TEXT = {
   brief: 'Brief came in', accepted: 'Proposal accepted', picked: 'Direction picked', changes: 'Changes asked for',
-  approved: 'Final approved', paid: 'Payment received', email: 'Email sent', file: 'File added', note: 'Note', reply: 'Reply sent',
-  change: 'Edited', stage: 'Stage changed', call: 'Call', meeting: 'Meeting',
+  approved: 'Final approved', paid: 'Payment received', email: 'Email sent', file: 'File added', note: 'Note', reply: 'Reply sent', change: 'Edited', stage: 'Stage changed',
 };
-// One line for the feeds: the label, plus the words for kinds that carry them.
-const evLine = (e) => EVENT_TEXT[e.kind] + (['note', 'call', 'meeting', 'change', 'stage'].includes(e.kind) && e.body ? ': ' + e.body.slice(0, 200) : '');
 function relTime(s) {
   const m = Math.floor((Date.now() - new Date(s).getTime()) / 6e4);
   if (m < 1) return 'now';
@@ -279,8 +260,8 @@ function MonthBars({ months }) {
   );
 }
 
-function Today({ data, open, go, reload }) {
-  const { needs, invoices, events, jobs, proposals, tasks } = data;
+function Today({ data, open, go }) {
+  const { needs, invoices, events, jobs, proposals } = data;
   const jobOf = (id) => jobs.find((j) => j.id === id);
   const isOpen = (j) => j.stage !== 'paid' && j.stage !== 'closed';
   const openJobs = jobs.filter(isOpen);
@@ -297,10 +278,7 @@ function Today({ data, open, go, reload }) {
   const STAGE_ROWS = [['new', 'New'], ['proposed', 'Proposed'], ['drafts', 'Directions'], ['final', 'Final']];
   const maxStage = Math.max(1, ...STAGE_ROWS.map(([id]) => jobs.filter((j) => j.stage === id).length));
   const paidJobs = jobs.filter((j) => j.stage === 'paid').length;
-  const feed = events.filter((e) => e.job_id && EVENT_TEXT[e.kind]).slice(0, 8);
-  const forecast = forecastOf(jobs, proposals);
-  const todo = tasks.filter((t) => !t.done).sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999')).slice(0, 6);
-  const finishTask = (t) => saveDocketTask({ id: t.id, done: true }).then(reload).catch((e) => alert(e.message));
+  const feed = events.filter((e) => EVENT_TEXT[e.kind]).slice(0, 8);
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   return (
     <div className="stack">
@@ -327,21 +305,6 @@ function Today({ data, open, go, reload }) {
             {!needs.length && <p className="sub" style={{ padding: '10px 0' }}>Nothing is waiting on you.</p>}
           </div>
         </Widget>
-        <Widget title="Follow-ups" badge={todo.length ? tasks.filter((t) => !t.done).length + ' open' : 'None'}>
-          <div className="minirows">
-            {todo.map((t) => {
-              const w = dueWords(t.due);
-              return (
-                <div key={t.id} className="minirow plain">
-                  <button type="button" className="taskcheck" aria-label={'Mark done: ' + t.t} title="Mark done" onClick={() => finishTask(t)} />
-                  <button type="button" className="mtxt tasklink" onClick={() => (t.job_id ? open(t.job_id) : go('clients'))}>{t.t}</button>
-                  <span className={'mono mval' + (w.late ? ' hot' : '')}>{w.txt}</span>
-                </div>
-              );
-            })}
-            {!todo.length && <p className="sub" style={{ padding: '10px 0' }}>Nothing to follow up. The Backroom adds tasks here when you send a proposal, an invoice or a final.</p>}
-          </div>
-        </Widget>
         <Widget title="Paid by month" badge="last 6 months"><MonthBars months={months} /></Widget>
         <Widget title="Pipeline" badge={openJobs.length + ' open'}>
           <div className="pipe">
@@ -356,7 +319,6 @@ function Today({ data, open, go, reload }) {
                 </button>
               );
             })}
-            <div className="pipe-r static" title="Each open job's proposal total times its stage's chance of being paid: New 10%, Proposed 50%, Directions 75%, Final 90%."><span className="pipe-n">Forecast</span><span className="pipe-bar" /><span className="pipe-c mono">{usd(forecast)}</span></div>
             <div className="pipe-r static"><span className="pipe-n">Paid</span><span className="pipe-bar" /><span className="pipe-c mono">{paidJobs}</span></div>
           </div>
         </Widget>
@@ -364,7 +326,7 @@ function Today({ data, open, go, reload }) {
           <div className="minirows">
             {feed.map((e) => (
               <button key={e.id} className="minirow plain" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(e.job_id)}>
-                <span className="mtxt"><b>{jobOf(e.job_id) ? jobOf(e.job_id).title : 'Job'}</b> · {evLine(e)}</span>
+                <span className="mtxt"><b>{jobOf(e.job_id) ? jobOf(e.job_id).title : 'Job'}</b> · {eventLabel(e)}</span>
                 <span className="mono mval">{relTime(e.created_at)}</span>
               </button>
             ))}
@@ -377,15 +339,14 @@ function Today({ data, open, go, reload }) {
 }
 
 // ── Jobs board ─────────────────────────────────────────────────────────
-function NewJobForm({ onCreated, startOpen, clients }) {
+function NewJobForm({ onCreated, startOpen }) {
   const [open, setOpen] = React.useState(!!startOpen);
   const [f, setF] = React.useState({ title: '', name: '', email: '', business: '', lane: 'design' });
   const [err, setErr] = React.useState('');
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
   const create = () => {
     if (!f.title.trim() || !f.name.trim()) { setErr('A title and the client’s name are needed.'); return; }
-    const known = f.email.trim() ? (clients || []).find((c) => c.email && c.email.toLowerCase() === f.email.trim().toLowerCase()) : null;
-    saveJob({ title: f.title.trim(), name: f.name.trim(), email: f.email.trim() || null, business: f.business.trim() || null, lane: f.lane, ...(known ? { client_id: known.id } : {}) })
+    saveJob({ title: f.title.trim(), name: f.name.trim(), email: f.email.trim() || null, business: f.business.trim() || null, lane: f.lane })
       .then((r) => { setOpen(false); setF({ title: '', name: '', email: '', business: '', lane: 'design' }); onCreated(r.row && r.row.id); })
       .catch((e) => setErr(e.message));
   };
@@ -415,9 +376,10 @@ function Jobs({ data, open, reload, startNew }) {
       <section className="card">
         <div className="pad between" style={{ borderBottom: '1px solid var(--line)', gap: 12, flexWrap: 'wrap' }}>
           <h2 className="h2">Jobs</h2>
+          <button className="btn quiet sm" onClick={() => exportJobs(data)} disabled={!jobs.length}>Export CSV</button>
           <label className="sub" style={{ display: 'flex', gap: 8, alignItems: 'center' }}><input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} /> Show closed</label>
         </div>
-        <div className="pad"><NewJobForm startOpen={startNew} clients={data.clients} onCreated={(id) => { reload(); if (id) open(id); }} /></div>
+        <div className="pad"><NewJobForm startOpen={startNew} onCreated={(id) => { reload(); if (id) open(id); }} /></div>
       </section>
       <div className="jboard">
         {[...STAGES, ...(showClosed ? [['closed', 'Closed']] : [])].map(([id, label]) => {
@@ -450,46 +412,6 @@ function Jobs({ data, open, reload, startNew }) {
 }
 
 // ── One job ────────────────────────────────────────────────────────────
-// Tasks tied to a job or client (the Docket's table). The Backroom adds some
-// itself, marked "auto" (follow up on a proposal, chase an invoice); add your
-// own here. `link` is { job_id } or { client_id } for new ones.
-function TaskList({ tasks, reload, link }) {
-  const [text, setText] = React.useState('');
-  const [due, setDue] = React.useState('');
-  const [err, setErr] = React.useState('');
-  const open = tasks.filter((t) => !t.done).sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999'));
-  const doneCount = tasks.length - open.length;
-  const add = () => {
-    if (!text.trim()) return;
-    saveDocketTask({ brand: 'me', q: 'q3', t: text.trim(), due: due || null, made: todayStr(), rank: -1, done: false, ...link })
-      .then(() => { setText(''); setDue(''); setErr(''); reload(); }).catch((e) => setErr(e.message));
-  };
-  const finish = (t) => saveDocketTask({ id: t.id, done: true }).then(reload).catch((e) => setErr(e.message));
-  return (
-    <div>
-      <div className="minirows">
-        {open.map((t) => {
-          const w = dueWords(t.due);
-          return (
-            <div key={t.id} className="minirow plain">
-              <button type="button" className="taskcheck" aria-label={'Mark done: ' + t.t} title="Mark done" onClick={() => finish(t)} />
-              <span className="mtxt">{t.t}{t.auto_key ? <span className="sub"> · auto</span> : null}</span>
-              <span className={'mono mval' + (w.late ? ' hot' : '')}>{w.txt}</span>
-            </div>
-          );
-        })}
-        {!open.length && <p className="sub" style={{ padding: '8px 0' }}>{doneCount ? 'All ' + doneCount + ' done.' : 'No tasks yet.'}</p>}
-      </div>
-      <div className="row taskadd" style={{ gap: 8, marginTop: 8 }}>
-        <input className="input" style={{ flex: 1, minWidth: 0 }} placeholder="Add a task" aria-label="New task" value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') add(); }} />
-        <input className="input" type="date" aria-label="Due date" value={due} onChange={(e) => setDue(e.target.value)} />
-        <button className="btn ghost sm" onClick={add}>Add</button>
-      </div>
-      {err && <p className="sub" style={{ color: 'var(--warn)' }}>{err}</p>}
-    </div>
-  );
-}
-
 function Field({ label, children }) {
   return <label style={{ display: 'block', marginBottom: 10 }}><span className="lbl" style={{ display: 'block', marginBottom: 5 }}>{label}</span>{children}</label>;
 }
@@ -768,12 +690,13 @@ function Composer({ job, proposal, invoices, kind, onClose, onSent }) {
   );
 }
 
-function JobPage({ jobId, data, reload, back }) {
+function JobPage({ jobId, data, reload, reloadTasks, back }) {
   const job = data.jobs.find((j) => j.id === jobId);
   const [files, setFiles] = React.useState([]);
   const [events, setEvents] = React.useState([]);
   const [compose, setCompose] = React.useState(null);
   const [note, setNote] = React.useState('');
+  const [noteType, setNoteType] = React.useState('note');
   const [copied, setCopied] = React.useState(false);
   const loadMine = React.useCallback(() => {
     fetchJobFiles(jobId).then(setFiles).catch(() => {});
@@ -785,7 +708,7 @@ function JobPage({ jobId, data, reload, back }) {
   const invoices = data.invoices.filter((i) => i.job_id === job.id);
   const refresh = () => { reload(); loadMine(); };
   const copy = () => { navigator.clipboard && navigator.clipboard.writeText(JOB_URL(job.token)).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }); };
-  const addNote = () => { if (!note.trim()) return; saveJobEvent({ job_id: job.id, kind: 'note', who: 'me', body: note.trim() }).then(() => { setNote(''); loadMine(); }); };
+  const addNote = () => { if (!note.trim()) return; saveJobEvent({ job_id: job.id, kind: 'note', who: 'me', body: note.trim(), meta: { type: noteType } }).then(() => { setNote(''); loadMine(); }); };
   const setStage = (stage) => {
     const patch = { id: job.id, stage };
     if (stage === 'closed') {
@@ -852,20 +775,18 @@ function JobPage({ jobId, data, reload, back }) {
         </div>
         {invoices.some((i) => i.status === 'sent') && <button className="btn ghost sm" style={{ marginTop: 8 }} onClick={() => setCompose('invoice')}>Email: invoice ready</button>}
       </section>
-      <section className="tile">
-        <div className="tilehead"><h2 className="h2">Follow-ups</h2><span className="lbl">{data.tasks.filter((t) => t.job_id === job.id && !t.done).length} open</span></div>
-        <TaskList tasks={data.tasks.filter((t) => t.job_id === job.id)} reload={refresh} link={{ job_id: job.id, ...(job.client_id ? { client_id: job.client_id } : {}) }} />
-      </section>
+      <ItemTasks data={data} jobId={job.id} open={() => {}} reloadTasks={reloadTasks} />
       <section className="tile">
         <div className="tilehead"><h2 className="h2">History</h2></div>
         <div className="row" style={{ gap: 8, marginBottom: 10 }}>
-          <input className="input" style={{ flex: 1 }} placeholder="Add a note (only you see it)" value={note} onChange={(e) => setNote(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') addNote(); }} />
+          <select className="input" value={noteType} onChange={(e) => setNoteType(e.target.value)} aria-label="Kind of entry"><option value="note">Note</option><option value="call">Call</option><option value="meeting">Meeting</option></select>
+          <input className="input" style={{ flex: 1 }} placeholder="Add a note, call or meeting (only you see it)" value={note} onChange={(e) => setNote(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') addNote(); }} />
           <button className="btn ghost sm" onClick={addNote}>Add</button>
         </div>
         <div className="minirows">
           {events.map((e) => (
             <div className="minirow plain" key={e.id} style={{ alignItems: 'flex-start' }}>
-              <span className="mtxt" style={{ whiteSpace: 'pre-wrap' }}><b>{e.who === 'client' ? job.name.split(' ')[0] : e.who === 'me' ? 'You' : 'System'}</b> · {e.kind}{e.body ? ': ' + e.body.slice(0, 400) : ''}</span>
+              <span className="mtxt" style={{ whiteSpace: 'pre-wrap' }}><b>{e.who === 'client' ? job.name.split(' ')[0] : e.who === 'me' ? 'You' : 'System'}</b> · {e.kind === 'note' && e.meta && e.meta.type ? e.meta.type : e.kind}{e.body ? ': ' + e.body.slice(0, 400) : ''}</span>
               <span className="mono mval">{fdate(e.created_at)}</span>
             </div>
           ))}
@@ -980,101 +901,17 @@ function Money({ data, open, reload }) {
   );
 }
 
-// ── Reports: how the studio is doing ────────────────────────────────────
-// Everything here is worked out from the jobs, proposals and invoices already
-// on the books: the funnel from brief to paid, how long each step takes, why
-// jobs close, where paying work comes from, and the weighted forecast.
-const avgOf = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : null);
-const daysBetween = (a, b) => (new Date(b) - new Date(a)) / 864e5;
-const fmtDays = (n) => (n == null ? '—' : n < 1 ? 'under a day' : (Math.round(n * 10) / 10) + ' days');
-const pct = (a, b) => (b ? Math.round((a / b) * 100) + '%' : '—');
-
-function Reports({ data, open }) {
-  const { jobs, proposals, invoices, clients } = data;
-  const sentP = proposals.filter((p) => p.sent_at);
-  const accepted = proposals.filter((p) => p.status === 'accepted');
-  const paid = jobs.filter((j) => j.stage === 'paid');
-  const closed = jobs.filter((j) => j.stage === 'closed');
-  const funnel = [['Jobs started', jobs.length], ['Proposal sent', sentP.length], ['Accepted', accepted.length], ['Paid', paid.length]];
-  const jobById = (id) => jobs.find((j) => j.id === id);
-  const toSent = sentP.map((p) => { const j = jobById(p.job_id); return j ? daysBetween(j.created_at, p.sent_at) : null; }).filter((n) => n != null && n >= 0);
-  const toAccept = accepted.filter((p) => p.sent_at && p.accepted_at).map((p) => daysBetween(p.sent_at, p.accepted_at)).filter((n) => n >= 0);
-  const toPaid = paid.map((j) => {
-    const p = proposals.find((x) => x.job_id === j.id);
-    const last = invoices.filter((i) => i.job_id === j.id && i.paid_at).map((i) => i.paid_at).sort().pop();
-    return p && p.accepted_at && last ? daysBetween(p.accepted_at, last) : null;
-  }).filter((n) => n != null && n >= 0);
-  const reasons = Object.entries(closed.reduce((m, j) => { const k = j.close_reason || 'No reason given'; m[k] = (m[k] || 0) + 1; return m; }, {})).sort((a, b) => b[1] - a[1]);
-  const clientOf = (j) => clients.find((c) => c.id === j.client_id) || (j.email ? clients.find((c) => c.email && c.email.toLowerCase() === j.email.toLowerCase()) : null);
-  const bySource = Object.values(jobs.reduce((m, j) => {
-    const c = clientOf(j);
-    const key = c ? (c.source || 'unset') : 'noclient';
-    const row = (m[key] = m[key] || { key, label: c ? (SOURCE_LABEL[c.source] || 'Not set') : 'Not a client yet', jobs: 0, paid: 0 });
-    row.jobs += 1;
-    row.paid += invoices.filter((i) => i.job_id === j.id && i.status === 'paid').reduce((a, i) => a + Number(i.amount || 0), 0);
-    return m;
-  }, {})).sort((a, b) => b.paid - a.paid || b.jobs - a.jobs);
-  const stageRows = [['new', 'New'], ['proposed', 'Proposed'], ['drafts', 'Directions'], ['final', 'Final']].map(([id, label]) => {
-    const list = jobs.filter((j) => j.stage === id);
-    const value = list.reduce((a, j) => a + jobValue(j, proposals), 0);
-    return { id, label, n: list.length, value, prob: STAGE_PROB[id], weighted: value * STAGE_PROB[id] };
-  });
-  const forecast = stageRows.reduce((a, r) => a + r.weighted, 0);
-  const paidTotal = invoices.filter((i) => i.status === 'paid').reduce((a, i) => a + Number(i.amount || 0), 0);
-  const avgJob = paid.length ? paidTotal / paid.length : null;
-  const top = Math.max(1, funnel[0][1]);
-  return (
-    <div className="stack">
-      <div className="dash-h"><div><h1 className="h1">Reports</h1><p className="sub">How the studio is doing, worked out from your jobs, proposals and invoices.</p></div></div>
-      <div className="dkpis four">
-        <div className="dkpi static"><span className="dkpi-l">Win rate</span><span className="dkpi-v mono">{pct(paid.length, paid.length + closed.length)}</span><span className="dkpi-n">paid vs dropped</span></div>
-        <div className="dkpi static"><span className="dkpi-l">Proposal accepted</span><span className="dkpi-v mono">{pct(accepted.length, sentP.length)}</span><span className="dkpi-n">of proposals sent</span></div>
-        <div className="dkpi static"><span className="dkpi-l">Average job</span><span className="dkpi-v mono">{avgJob == null ? '—' : usd(avgJob)}</span><span className="dkpi-n">paid per finished job</span></div>
-        <div className="dkpi static"><span className="dkpi-l">Forecast</span><span className="dkpi-v mono">{usd(forecast)}</span><span className="dkpi-n">chance-weighted</span></div>
-      </div>
-      <div className="dash-g">
-        <Widget title="Funnel" badge="brief to paid">
-          <div className="pipe">
-            {funnel.map(([label, n], k) => (
-              <div key={label} className="pipe-r static">
-                <span className="pipe-n">{label}</span>
-                <span className="pipe-bar"><i style={{ width: (n / top) * 100 + '%' }} /></span>
-                <span className="pipe-c mono">{n}{k > 0 ? ' · ' + pct(n, funnel[k - 1][1]) : ''}</span>
-              </div>
-            ))}
-          </div>
-        </Widget>
-        <Widget title="How long it takes" badge="averages">
-          <div className="vrow"><span className="lbl">Job to proposal sent</span><span className="mono">{fmtDays(avgOf(toSent))}</span></div>
-          <div className="vrow"><span className="lbl">Proposal to accepted</span><span className="mono">{fmtDays(avgOf(toAccept))}</span></div>
-          <div className="vrow"><span className="lbl">Accepted to paid</span><span className="mono">{fmtDays(avgOf(toPaid))}</span></div>
-          <p className="sub" style={{ padding: '8px 0 2px' }}>Measured from the dates on each job’s proposal and invoices.</p>
-        </Widget>
-        <Widget title="Where work comes from" badge={clients.length ? 'by client source' : null}>
-          <div className="minirows">
-            {bySource.map((r) => <div key={r.key} className="minirow plain"><span className="mtxt">{r.label}<span className="sub"> · {r.jobs} job{r.jobs === 1 ? '' : 's'}</span></span><span className="mono mval">{usd(r.paid)}</span></div>)}
-            {!bySource.length && <p className="sub" style={{ padding: '10px 0' }}>No jobs yet.</p>}
-          </div>
-          {bySource.some((r) => r.key === 'unset') && <p className="sub" style={{ padding: '6px 0 2px' }}>Set “Came from” on a client to sharpen this.</p>}
-        </Widget>
-        <Widget title="Why jobs close" badge={closed.length ? closed.length + ' closed' : null}>
-          <div className="minirows">
-            {reasons.map(([why, n]) => <div key={why} className="minirow plain"><span className="mtxt">{why}</span><span className="mono mval">{n}</span></div>)}
-            {!reasons.length && <p className="sub" style={{ padding: '10px 0' }}>No closed jobs. When you close one, say why and it counts here.</p>}
-          </div>
-        </Widget>
-        <Widget title="Forecast by stage" badge={usd(forecast)}>
-          <div className="scroll-x"><table className="ctable">
-            <thead><tr><th>Stage</th><th>Jobs</th><th>Value</th><th>Chance</th><th>Weighted</th></tr></thead>
-            <tbody>{stageRows.map((r) => <tr key={r.id}><td>{r.label}</td><td className="mono">{r.n}</td><td className="mono">{usd(r.value)}</td><td className="mono">{Math.round(r.prob * 100)}%</td><td className="mono">{usd(r.weighted)}</td></tr>)}</tbody>
-          </table></div>
-        </Widget>
-      </div>
-    </div>
-  );
+function exportClients(clients, statsOf) {
+  downloadCsv('clients', [
+    ['Name', (c) => c.name], ['Contact', (c) => c.contact || ''], ['Email', (c) => c.email || ''], ['Since', (c) => c.since || ''],
+    ['Jobs', (c) => statsOf(c).jobs.length], ['Paid', (c) => statsOf(c).paid], ['Owed', (c) => statsOf(c).due],
+    ['Notes', (c) => c.notes || ''], ['Custom fields', (c) => (c.custom ? Object.entries(c.custom).map(([k, v]) => k + ': ' + v).join('; ') : '')],
+  ], clients.map((c) => c));
 }
-
-function Clients({ data, reload, open, sel, setSel }) {
+function Clients({ data, reload, reloadAll, reloadTasks, open, startSel }) {
+  const [sel, setSel] = React.useState(startSel || null);
+  React.useEffect(() => { if (startSel) setSel(startSel); }, [startSel]);
+  const [dupOk, setDupOk] = React.useState(false);
   const [q, setQ] = React.useState('');
   const [adding, setAdding] = React.useState(false);
   const [f, setF] = React.useState({ name: '', email: '', notes: '' });
@@ -1090,16 +927,15 @@ function Clients({ data, reload, open, sel, setSel }) {
   };
   const create = () => {
     if (!f.name.trim()) { setErr('Add a name.'); return; }
-    const twin = f.email.trim() && data.clients.find((c) => c.email && c.email.toLowerCase() === f.email.trim().toLowerCase());
-    if (twin) { setErr(twin.name + ' already has that email.'); return; }
+    const em = f.email.trim().toLowerCase(), nm = normName(f.name);
+    const twin = data.clients.find((c) => (em && c.email && c.email.trim().toLowerCase() === em) || normName(c.name) === nm);
+    if (twin && !dupOk) { setErr(`${twin.name} is already a client${twin.email ? ' (' + twin.email + ')' : ''}. Save again to add them anyway.`); setDupOk(true); return; }
     saveClient({ name: f.name.trim(), email: f.email.trim() || null, notes: f.notes.trim() || null, since: new Date().toISOString().slice(0, 10) })
-      .then(() => { setF({ name: '', email: '', notes: '' }); setAdding(false); setErr(''); reload(); })
+      .then(() => { setF({ name: '', email: '', notes: '' }); setAdding(false); setErr(''); setDupOk(false); reload(); })
       .catch((e) => setErr(e.message));
   };
   const client = data.clients.find((c) => c.id === sel);
-  if (client) return <ClientPage key={client.id} client={client} stats={statsOf(client)} data={data} open={open} reload={reload} goto={setSel} back={() => setSel(null)} gone={() => { setSel(null); reload(); }} />;
-  // Same name twice (or a name that is another's business) is probably one person.
-  const twins = Object.values(data.clients.reduce((m, c) => { const k = normName(c.name); if (k) (m[k] = m[k] || []).push(c); return m; }, {})).filter((g) => g.length > 1);
+  if (client) return <ClientPage key={client.id} client={client} stats={statsOf(client)} data={data} open={open} reload={reload} reloadTasks={reloadTasks} back={() => setSel(null)} gone={() => { setSel(null); reload(); }} />;
 
   const rows = data.clients.map((c) => ({ c, s: statsOf(c) }))
     .filter(({ c }) => !q.trim() || (c.name + ' ' + (c.email || '')).toLowerCase().includes(q.trim().toLowerCase()));
@@ -1109,8 +945,12 @@ function Clients({ data, reload, open, sel, setSel }) {
     <div className="stack">
       <div className="dash-h">
         <div><h1 className="h1">Clients</h1><p className="sub">The people you work for, with their jobs and money in one place.</p></div>
-        <button className="btn" onClick={() => setAdding(!adding)}>{adding ? 'Close' : 'Add client'}</button>
+        <div className="row" style={{ gap: 8 }}>
+          <button className="btn ghost" onClick={() => exportClients(data.clients, statsOf)} disabled={!data.clients.length}>Export CSV</button>
+          <button className="btn" onClick={() => setAdding(!adding)}>{adding ? 'Close' : 'Add client'}</button>
+        </div>
       </div>
+      <Dupes data={data} reload={reloadAll || reload} />
       {adding && (
         <section className="widget">
           <div className="formgrid">
@@ -1128,12 +968,6 @@ function Clients({ data, reload, open, sel, setSel }) {
         <div className="dkpi static"><span className="dkpi-l">Paid, all time</span><span className="dkpi-v mono">{usd(total)}</span><span className="dkpi-n">no card fees</span></div>
         <div className="dkpi static"><span className="dkpi-l">Owed to you</span><span className="dkpi-v mono">{usd(owed)}</span><span className="dkpi-n">invoices sent</span></div>
       </div>
-      {twins.length > 0 && (
-        <section className="widget dupes" role="status">
-          <div className="widget-h"><h2 className="h2">Possible duplicates</h2><span className="widget-b">{twins.length}</span></div>
-          {twins.map((g) => <div key={g[0].id} className="minirow plain"><span className="mtxt">{g.length} clients named “{g[0].name}”{g.map((c) => c.email).filter(Boolean).length ? ' (' + g.map((c) => c.email).filter(Boolean).join(', ') + ')' : ''}</span><button className="btn quiet sm" onClick={() => setSel(g[0].id)}>Review and merge</button></div>)}
-        </section>
-      )}
       {data.clients.length > 0 && <input className="input" placeholder="Search clients" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search clients" style={{ maxWidth: 360 }} />}
       {rows.length > 0 ? (
         <div className="widget" style={{ padding: '4px 18px 6px' }}>
@@ -1159,7 +993,7 @@ function Clients({ data, reload, open, sel, setSel }) {
   );
 }
 
-function ClientPage({ client, stats, data, open, reload, back, gone, goto }) {
+function ClientPage({ client, stats, data, open, reload, reloadTasks, back, gone }) {
   const [tab, setTab] = React.useState('overview');
   const [notes, setNotes] = React.useState(client.notes || '');
   const [saved, setSaved] = React.useState(false);
@@ -1167,28 +1001,8 @@ function ClientPage({ client, stats, data, open, reload, back, gone, goto }) {
   const [compose, setCompose] = React.useState(false);
   const latest = stats.jobs[0];
   const ids = new Set(stats.jobs.map((j) => j.id));
-  // History: calls, meetings and notes logged on the client, plus every job's events.
-  const [cEvents, setCEvents] = React.useState([]);
-  const loadEvents = React.useCallback(() => { fetchClientEvents(client.id).then(setCEvents).catch(() => {}); }, [client.id]);
-  React.useEffect(() => { loadEvents(); }, [loadEvents]);
-  const timeline = [...cEvents, ...data.events.filter((e) => ids.has(e.job_id) && EVENT_TEXT[e.kind])]
-    .filter((e) => EVENT_TEXT[e.kind]).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  const events = timeline.slice(0, 60);
-  const [kind, setKind] = React.useState('note');
-  const [entry, setEntry] = React.useState('');
-  const logEntry = () => { if (!entry.trim()) return; saveJobEvent({ client_id: client.id, kind, who: 'me', body: entry.trim() }).then(() => { setEntry(''); loadEvents(); }).catch((e) => alert(e.message)); };
-  const tasks = data.tasks.filter((t) => t.client_id === client.id || ids.has(t.job_id));
-  // Merge: fold this client into another (same person entered twice).
-  const others = data.clients.filter((c) => c.id !== client.id);
-  const twin = others.find((c) => normName(c.name) === normName(client.name));
-  const [mergeTo, setMergeTo] = React.useState(twin ? twin.id : '');
-  const doMerge = () => {
-    const into = others.find((c) => c.id === mergeTo);
-    if (!into) return;
-    if (!window.confirm(`Merge ${client.name} into ${into.name}? Their jobs, invoices, history and tasks move to ${into.name}, and ${client.name} is removed. This cannot be undone.`)) return;
-    mergeClients(client.id, into.id).then(() => { reload(); goto(into.id); }).catch((e) => alert(e.message));
-  };
-  const titleOf = (id) => (id ? (stats.jobs.find((j) => j.id === id) || {}).title || 'Job' : 'Client');
+  const events = data.events.filter((e) => ids.has(e.job_id) && EVENT_TEXT[e.kind]).slice(0, 12);
+  const titleOf = (id) => (stats.jobs.find((j) => j.id === id) || {}).title || 'Job';
   const saveNotes = () => saveClient({ id: client.id, notes: notes.trim() || null }).then(() => { setSaved(true); reload(); setTimeout(() => setSaved(false), 2000); }).catch(() => {});
   const remove = () => deleteClient(client.id).then(gone).catch(() => setConfirm(false));
   const TABS = [['overview', 'Overview'], ['jobs', 'Jobs (' + stats.jobs.length + ')'], ['money', 'Money'], ['activity', 'Activity']];
@@ -1222,12 +1036,6 @@ function ClientPage({ client, stats, data, open, reload, back, gone, goto }) {
                 {saved && <span className="sub" role="status">Saved</span>}
               </div>
             </Widget>
-            <Widget title="Recent activity" badge={events.length ? 'latest' : null}>
-              <div className="minirows">
-                {events.slice(0, 5).map((e) => <div key={e.id} className="minirow"><span className="mtxt"><b>{titleOf(e.job_id)}</b> · {evLine(e)}</span><span className="mono mval">{relTime(e.created_at)}</span></div>)}
-                {!events.length && <p className="sub" style={{ padding: '10px 0' }}>Nothing yet.</p>}
-              </div>
-            </Widget>
             <Widget title="Details">
               <div className="vrow"><span className="lbl">Came from</span>
                 <select className="input" aria-label="Where this client came from" value={client.source || ''} onChange={(e) => saveClient({ id: client.id, source: e.target.value || null }).then(reload).catch((er) => alert(er.message))}>
@@ -1235,9 +1043,13 @@ function ClientPage({ client, stats, data, open, reload, back, gone, goto }) {
                   {Object.entries(SOURCE_LABEL).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
                 </select>
               </div>
+              <CustomFields client={client} reload={reload} />
             </Widget>
-            <Widget title="Follow-ups" badge={tasks.filter((t) => !t.done).length ? tasks.filter((t) => !t.done).length + ' open' : null}>
-              <TaskList tasks={tasks} reload={reload} link={{ client_id: client.id }} />
+            <Widget title="Recent activity" badge={events.length ? 'latest' : null}>
+              <div className="minirows">
+                {events.slice(0, 5).map((e) => <div key={e.id} className="minirow"><span className="mtxt"><b>{titleOf(e.job_id)}</b> · {eventLabel(e)}</span><span className="mono mval">{relTime(e.created_at)}</span></div>)}
+                {!events.length && <p className="sub" style={{ padding: '10px 0' }}>Nothing yet.</p>}
+              </div>
             </Widget>
             <Widget title="Open jobs">
               <div className="minirows">
@@ -1269,31 +1081,14 @@ function ClientPage({ client, stats, data, open, reload, back, gone, goto }) {
         )}
         {tab === 'activity' && (
           <div className="widget" style={{ padding: '4px 18px 6px' }}>
-            <div className="row" style={{ gap: 8, padding: '12px 0' }}>
-              <select className="input" aria-label="Kind of entry" value={kind} onChange={(e) => setKind(e.target.value)}><option value="note">Note</option><option value="call">Call</option><option value="meeting">Meeting</option></select>
-              <input className="input" style={{ flex: 1, minWidth: 0 }} placeholder="Log a call, a meeting or a note" aria-label="Log an entry" value={entry} onChange={(e) => setEntry(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') logEntry(); }} />
-              <button className="btn ghost sm" onClick={logEntry}>Log</button>
-            </div>
             <div className="minirows">
-              {events.map((e) => <div key={e.id} className="minirow"><span className="mtxt" style={{ whiteSpace: 'pre-wrap' }}><b>{titleOf(e.job_id)}</b> · {evLine(e)}</span><span className="mono mval">{relTime(e.created_at)}</span></div>)}
+              {events.map((e) => <div key={e.id} className="minirow"><span className="mtxt"><b>{titleOf(e.job_id)}</b> · {eventLabel(e)}</span><span className="mono mval">{relTime(e.created_at)}</span></div>)}
               {!events.length && <p className="sub" style={{ padding: '12px 0' }}>Nothing yet.</p>}
             </div>
           </div>
         )}
       </div>
-      {others.length > 0 && (
-        <section className="widget">
-          <div className="widget-h"><h2 className="h2">Merge</h2></div>
-          <p className="sub" style={{ padding: '6px 0' }}>{twin ? twin.name + ' looks like the same client. ' : ''}Entered twice? Fold {client.name} into another client; everything moves across.</p>
-          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
-            <select className="input" aria-label="Merge into" value={mergeTo} onChange={(e) => setMergeTo(e.target.value)}>
-              <option value="">Merge {client.name} into…</option>
-              {others.map((c) => <option key={c.id} value={c.id}>{c.name}{c.email ? ' · ' + c.email : ''}</option>)}
-            </select>
-            <button className="btn ghost sm" disabled={!mergeTo} onClick={doMerge}>Merge</button>
-          </div>
-        </section>
-      )}
+      {tab === 'overview' && <ItemTasks data={data} clientId={client.id} open={open} reloadTasks={reloadTasks} />}
       <div style={{ paddingTop: 8 }}>
         {confirm
           ? <div className="row"><span className="sub">Remove {client.name}? Their jobs stay.</span><button className="btn sm ghost" onClick={remove}>Yes, remove</button><button className="btn sm quiet" onClick={() => setConfirm(false)}>Keep</button></div>
@@ -1303,42 +1098,492 @@ function ClientPage({ client, stats, data, open, reload, back, gone, goto }) {
   );
 }
 
-// ── Search: clients, jobs and tasks in one box. Press / or Ctrl/Cmd+K. ────
-function SearchBar({ data, open, openClient }) {
+// ── Leads ──────────────────────────────────────────────────────────────
+// Briefs coming in and jobs not yet won. Five views: Overview, Pipeline (the
+// jobs board), Contacts (clients), Activity (every event) and Reports.
+const LEAD_TABS = [['overview', 'Overview'], ['tasks', 'Tasks'], ['activity', 'Activity'], ['reports', 'Reports']];
+const LEAD_STAGES = [['new', 'New'], ['proposed', 'Proposed'], ['drafts', 'Directions'], ['final', 'Final'], ['paid', 'Paid']];
+const propValue = (proposals, j) => { const p = proposals.find((x) => x.job_id === j.id); return p ? Number(p.total || 0) : 0; };
+function span(ms) {
+  const m = ms / 6e4;
+  if (m < 60) return Math.max(1, Math.round(m)) + ' min';
+  const h = m / 60;
+  return h < 48 ? Math.round(h) + ' hr' : Math.round(h / 24) + ' days';
+}
+function median(a) { if (!a.length) return null; const b = [...a].sort((x, y) => x - y); const k = Math.floor(b.length / 2); return b.length % 2 ? b[k] : (b[k - 1] + b[k]) / 2; }
+function CountBars({ months }) {
+  const max = Math.max(1, ...months.map((m) => m.n));
+  const W = 320, H = 130, base = 104, bw = 30, gap = (W - months.length * bw) / (months.length + 1);
+  if (!months.some((m) => m.n > 0)) return <p className="sub" style={{ padding: '14px 0 6px' }}>No briefs yet. They show here as they come in.</p>;
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Briefs received by month, last six months" style={{ width: '100%', height: 'auto', display: 'block' }}>
+      <line x1="0" x2={W} y1={base} y2={base} stroke="rgba(236,217,178,.26)" />
+      {months.map((m, k) => {
+        const h = Math.max(m.n ? 3 : 0, (m.n / max) * (base - 22));
+        const x = gap + k * (bw + gap);
+        const last = k === months.length - 1;
+        return (
+          <g key={m.key}>
+            <rect className="mbar" x={x} y={base - h} width={bw} height={h} fill={last ? '#f5cd6a' : '#d99a3d'} opacity={last ? 1 : .62} />
+            {m.n > 0 && <text className="mlab" x={x + bw / 2} y={base - h - 6} textAnchor="middle" fontSize="11" fill="#ecd9b2">{m.n}</text>}
+            <text x={x + bw / 2} y={base + 17} textAnchor="middle" fontSize="12" fill="#ad9a74">{m.label}</text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+function Leads({ data, open, go, reload, reloadClients, reloadTasks }) {
+  const { jobs, proposals, briefs, events, needs } = data;
+  const [sub, setSub] = React.useState(() => { try { const v = sessionStorage.getItem('leads-tab'); return LEAD_TABS.some((t) => t[0] === v) ? v : 'overview'; } catch (e) { return 'overview'; } });
+  const pick = (id) => { setSub(id); try { sessionStorage.setItem('leads-tab', id); } catch (e) {} };
+  const onKey = (e) => {
+    const k = LEAD_TABS.findIndex((t) => t[0] === sub);
+    const next = e.key === 'ArrowRight' ? k + 1 : e.key === 'ArrowLeft' ? k - 1 : null;
+    if (next == null) return;
+    e.preventDefault();
+    const id = LEAD_TABS[(next + LEAD_TABS.length) % LEAD_TABS.length][0];
+    pick(id);
+    const el = document.getElementById('ltab-' + id); if (el) el.focus();
+  };
+  const early = (j) => ['new', 'proposed', 'drafts', 'final'].includes(j.stage);
+  const inPlay = jobs.filter(early);
+  const pipeValue = inPlay.reduce((a, j) => a + propValue(proposals, j), 0);
+  const waiting = briefs.filter((b) => b.status !== 'answered').length;
+  const jobOf = (id) => jobs.find((j) => j.id === id);
+  return (
+    <div className="stack">
+      <div className="lhead">
+        <div>
+          <h1 className="h1">Leads</h1>
+          <p className="sub">{waiting ? waiting + (waiting === 1 ? ' brief is' : ' briefs are') + ' waiting for a reply.' : 'Every brief has an answer.'}</p>
+        </div>
+        <div className="lfocus" aria-label="Open pipeline value">
+          <span className="lfocus-l">Open pipeline</span>
+          <span className="lfocus-v mono"><CountUp value={usd(pipeValue)} /></span>
+          <span className="lfocus-n">{inPlay.length} {inPlay.length === 1 ? 'job' : 'jobs'} in play</span>
+        </div>
+      </div>
+      <div className="ltabs" role="tablist" aria-label="Leads views" onKeyDown={onKey}>
+        {LEAD_TABS.map(([id, label]) => (
+          <button key={id} id={'ltab-' + id} role="tab" aria-selected={sub === id} tabIndex={sub === id ? 0 : -1} className={sub === id ? 'on' : ''} onClick={() => pick(id)}>{label}</button>
+        ))}
+      </div>
+      <div className="lbody" key={sub} role="tabpanel" aria-labelledby={'ltab-' + sub}>
+        {sub === 'overview' && <LeadsOverview data={data} open={open} go={go} pick={pick} />}
+        {sub === 'tasks' && <Tasks data={data} open={open} reloadTasks={reloadTasks} />}
+        {sub === 'activity' && <LeadsActivity data={data} open={open} />}
+        {sub === 'reports' && <LeadsReports data={data} />}
+      </div>
+    </div>
+  );
+}
+function LeadsOverview({ data, open, go, pick }) {
+  const { jobs, proposals, briefs, needs } = data;
+  const counts = LEAD_STAGES.map(([id, label]) => {
+    const list = jobs.filter((j) => j.stage === id);
+    return { id, label, n: list.length, val: list.reduce((a, j) => a + propValue(proposals, j), 0) };
+  });
+  const max = Math.max(1, ...counts.map((c) => c.n));
+  const recent = briefs.slice(0, 5);
+  const jobForBrief = (b) => jobs.find((j) => j.brief_id === b.id);
+  const top = needs.slice(0, 5);
+  return (
+    <React.Fragment>
+      <div className="lstages">
+        {counts.map((c, k) => (
+          <button key={c.id} type="button" className={'lstage' + (c.id === 'new' && c.n ? ' hot' : '')} style={{ '--i': k }} onClick={() => go('jobs')}>
+            <span className="lstage-n">{c.label}</span>
+            <span className="lstage-c mono">{c.n}</span>
+            <span className="lstage-m mono">{c.val ? usd(c.val) : 'No value yet'}</span>
+            <span className="lstage-bar"><i style={{ '--w': c.n / max }} /></span>
+          </button>
+        ))}
+      </div>
+      <div className="dash-g">
+        <Widget title="Needs you" badge={needs.length ? needs.length + ' waiting' : 'All clear'}>
+          <div className="minirows">
+            {top.map((n, k) => (
+              <button key={k} className="minirow" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(n.j.id)}>
+                <span className="mtxt"><b>{n.j.title}</b> · {n.what}</span>
+                <span className={'mono mval' + (n.hot ? ' hot' : '')}>{n.age ? n.age + 'd' : 'today'}</span>
+              </button>
+            ))}
+            {!top.length && <p className="sub" style={{ padding: '10px 0' }}>Nothing is waiting on you.</p>}
+          </div>
+        </Widget>
+        <Widget title="New briefs" badge={recent.length ? 'latest' : null}>
+          <div className="minirows">
+            {recent.map((b) => {
+              const j = jobForBrief(b);
+              const wait = b.status !== 'answered';
+              return (
+                <button key={b.id} className="minirow lbrief" style={{ width: '100%', textAlign: 'left', cursor: j ? 'pointer' : 'default', background: 'none', border: 0 }} onClick={() => j && open(j.id)}>
+                  <span className="mtxt"><b>{b.business || b.name}</b> · {(b.need || []).slice(0, 2).join(', ') || (b.lane === 'automation' ? 'Automation' : 'Design')}{b.budget ? ' · ' + b.budget : ''}</span>
+                  <span className={'mono mval' + (wait ? ' hot' : '')}>{wait ? 'Waiting · ' : ''}{relTime(b.created_at)}</span>
+                </button>
+              );
+            })}
+            {!recent.length && <p className="sub" style={{ padding: '10px 0' }}>No briefs yet. They arrive from the design page.</p>}
+          </div>
+        </Widget>
+      </div>
+    </React.Fragment>
+  );
+}
+function LeadsActivity({ data, open }) {
+  const { jobs, events } = data;
+  const feed = events.filter((e) => EVENT_TEXT[e.kind]).slice(0, 40);
+  const jobOf = (id) => jobs.find((j) => j.id === id);
+  return (
+    <Widget title="Activity" badge={feed.length ? 'latest ' + feed.length : null}>
+      <div className="minirows">
+        {feed.map((e) => (
+          <button key={e.id} className="minirow plain" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(e.job_id)}>
+            <span className="mtxt"><b>{jobOf(e.job_id) ? jobOf(e.job_id).title : 'Job'}</b> · {eventLabel(e)}</span>
+            <span className="mono mval">{relTime(e.created_at)}</span>
+          </button>
+        ))}
+        {!feed.length && <p className="sub" style={{ padding: '10px 0' }}>Nothing yet. Briefs, replies and payments show up here.</p>}
+      </div>
+    </Widget>
+  );
+}
+// ── CRM tools: export, tasks, search, duplicates, custom fields ────────
+// CSV cells that start with = + - @ are prefixed with a quote so a
+// spreadsheet never runs them as a formula.
+function csvCell(v) {
+  let s = v == null ? '' : String(v);
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function downloadCsv(name, cols, rows) {
+  const text = [cols.map((c) => csvCell(c[0])).join(','), ...rows.map((r) => cols.map((c) => csvCell(c[1](r))).join(','))].join('\r\n');
+  const url = URL.createObjectURL(new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = name + '-' + new Date().toISOString().slice(0, 10) + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+const todayStr = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const normName = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+function eventLabel(e) {
+  if (e.kind === 'note' && e.meta && e.meta.type === 'call') return 'Call logged';
+  if (e.kind === 'note' && e.meta && e.meta.type === 'meeting') return 'Meeting logged';
+  return EVENT_TEXT[e.kind];
+}
+// Open tasks that belong to a job also surface in Needs you.
+function taskNeeds(jobs, tasks) {
+  const t = todayStr();
+  return tasks.filter((x) => !x.done_at && x.job_id && x.due_on && x.due_on <= t).map((x) => {
+    const j = jobs.find((y) => y.id === x.job_id);
+    return j ? { j, what: (x.due_on < t ? 'Overdue: ' : 'Due today: ') + x.title, age: daysSince(x.due_on + 'T12:00:00'), hot: x.due_on < t } : null;
+  }).filter(Boolean);
+}
+function dueLabel(d) {
+  if (!d) return 'No date';
+  const t = todayStr();
+  if (d === t) return 'Today';
+  const diff = Math.round((new Date(d + 'T12:00:00') - new Date(t + 'T12:00:00')) / 864e5);
+  if (diff === 1) return 'Tomorrow';
+  if (diff === -1) return 'Yesterday';
+  return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function TaskAdd({ jobId, clientId, jobs, onAdded }) {
+  const [title, setTitle] = React.useState('');
+  const [due, setDue] = React.useState('');
+  const [job, setJob] = React.useState(jobId || '');
+  const [err, setErr] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
+  const add = (e) => {
+    e.preventDefault();
+    if (!title.trim()) { setErr('Add what needs doing.'); return; }
+    setBusy(true);
+    saveTask({ title: title.trim(), due_on: due || null, job_id: job || null, client_id: clientId || null })
+      .then(() => { setTitle(''); setDue(''); setErr(''); onAdded(); })
+      .catch((x) => setErr(x.message))
+      .then(() => setBusy(false));
+  };
+  return (
+    <form className="taskadd" onSubmit={add}>
+      <input className="input" placeholder="Follow up with…" value={title} onChange={(e) => setTitle(e.target.value)} aria-label="Task" />
+      <input className="input" type="date" value={due} onChange={(e) => setDue(e.target.value)} aria-label="Due date" />
+      {jobs && !jobId && (
+        <select className="input" value={job} onChange={(e) => setJob(e.target.value)} aria-label="Job">
+          <option value="">No job</option>
+          {jobs.filter((j) => j.stage !== 'paid' && j.stage !== 'closed').map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}
+        </select>
+      )}
+      <button className="btn sm" type="submit" disabled={busy}>Add task</button>
+      {err && <p className="sub" style={{ color: 'var(--warn)', flexBasis: '100%' }}>{err}</p>}
+    </form>
+  );
+}
+function TaskRows({ list, jobs, open, reload, hideJob }) {
+  const toggle = (t) => saveTask({ id: t.id, done_at: t.done_at ? null : new Date().toISOString(), updated_at: new Date().toISOString() }).then(reload).catch((e) => alert(e.message));
+  const del = (t) => deleteTask(t.id).then(reload).catch((e) => alert(e.message));
+  const jobOf = (id) => jobs.find((j) => j.id === id);
+  return (
+    <div className="minirows">
+      {list.map((t) => (
+        <div key={t.id} className={'trow' + (t.done_at ? ' done' : '')}>
+          <button className="tcheck" role="checkbox" aria-checked={!!t.done_at} aria-label={(t.done_at ? 'Reopen ' : 'Complete ') + t.title} onClick={() => toggle(t)}><i aria-hidden="true">{t.done_at ? '✓' : ''}</i></button>
+          <span className="mtxt">
+            <b>{t.title}</b>
+            <span className="sub">
+              {' · '}<span className={!t.done_at && t.due_on && t.due_on < todayStr() ? 'late' : ''}>{dueLabel(t.due_on)}</span>
+              {!hideJob && jobOf(t.job_id) && <React.Fragment>{' · '}<button className="linkbtn" onClick={() => open(t.job_id)}>{jobOf(t.job_id).title}</button></React.Fragment>}
+            </span>
+          </span>
+          <button className="btn quiet sm" onClick={() => del(t)} aria-label={'Delete ' + t.title}>Delete</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+function exportJobs(data) {
+  const prop = (j) => data.proposals.find((p) => p.job_id === j.id);
+  downloadCsv('jobs', [
+    ['Title', (j) => j.title], ['Client', (j) => j.business || j.name], ['Email', (j) => j.email || ''], ['Lane', (j) => j.lane],
+    ['Stage', (j) => STAGE_LABEL[j.stage] || j.stage], ['Proposal total', (j) => (prop(j) ? prop(j).total : '')],
+    ['Created', (j) => (j.created_at || '').slice(0, 10)], ['Last activity', (j) => (j.last_activity_at || '').slice(0, 10)],
+  ], data.jobs);
+}
+function Tasks({ data, open, reloadTasks }) {
+  const { tasks, jobs } = data;
+  if (tasks.notReady) {
+    return (
+      <section className="widget">
+        <div className="widget-h"><h2 className="h2">Tasks need one setup step</h2></div>
+        <p className="sub" style={{ padding: '8px 0 12px' }}>The tasks table has not been created yet. Run <span className="mono">supabase/migrations/20261108_crm_tasks_fields.sql</span> in the Supabase SQL editor, then reload. Everything else keeps working.</p>
+      </section>
+    );
+  }
+  const t = todayStr();
+  const openT = tasks.filter((x) => !x.done_at), doneT = tasks.filter((x) => x.done_at).slice(0, 10);
+  const groups = [
+    ['Overdue', openT.filter((x) => x.due_on && x.due_on < t)],
+    ['Today', openT.filter((x) => x.due_on === t)],
+    ['Upcoming', openT.filter((x) => x.due_on && x.due_on > t)],
+    ['No date', openT.filter((x) => !x.due_on)],
+  ];
+  const exportTasks = () => downloadCsv('tasks', [['Task', (x) => x.title], ['Due', (x) => x.due_on || ''], ['Job', (x) => (jobs.find((j) => j.id === x.job_id) || {}).title || ''], ['Done', (x) => (x.done_at ? 'yes' : 'no')]], tasks);
+  return (
+    <div className="stack">
+      <section className="widget">
+        <div className="widget-h"><div><h2 className="h2">Add a task</h2><p className="sub">Follow-ups tied to a job or client. Your own to-dos live in the <a className="linkbtn" href="/docket">Docket</a>.</p></div><button className="btn quiet sm" onClick={exportTasks} disabled={!tasks.length}>Export CSV</button></div>
+        <TaskAdd jobs={jobs} onAdded={reloadTasks} />
+      </section>
+      {groups.map(([label, list]) => list.length > 0 && (
+        <section className="widget" key={label}>
+          <div className="widget-h"><h2 className="h2" style={label === 'Overdue' ? { color: 'var(--warn)' } : undefined}>{label}</h2><span className="sub mono">{list.length}</span></div>
+          <TaskRows list={list} jobs={jobs} open={open} reload={reloadTasks} />
+        </section>
+      ))}
+      {!openT.length && <p className="sub">Nothing to follow up. Add a task above, or from any job or client.</p>}
+      {doneT.length > 0 && (
+        <section className="widget">
+          <div className="widget-h"><h2 className="h2">Done lately</h2></div>
+          <TaskRows list={doneT} jobs={jobs} open={open} reload={reloadTasks} />
+        </section>
+      )}
+    </div>
+  );
+}
+function ItemTasks({ data, jobId, clientId, open, reloadTasks }) {
+  if (data.tasks.notReady) return null;
+  const list = data.tasks.filter((x) => (jobId && x.job_id === jobId) || (clientId && x.client_id === clientId));
+  return (
+    <section className="tile">
+      <div className="tilehead"><h2 className="h2">Follow-ups</h2><span className="lbl">{list.filter((x) => !x.done_at).length} open</span></div>
+      <TaskAdd jobId={jobId} clientId={clientId} onAdded={reloadTasks} />
+      <TaskRows list={list} jobs={data.jobs} open={open} reload={reloadTasks} hideJob={!!jobId} />
+    </section>
+  );
+}
+
+// Search across clients, jobs and briefs from the header. "/" focuses it.
+function GlobalSearch({ data, open, openClient, go }) {
   const [q, setQ] = React.useState('');
   const [on, setOn] = React.useState(false);
+  const [cur, setCur] = React.useState(0);
   const ref = React.useRef(null);
   React.useEffect(() => {
-    const key = (e) => {
-      const t = e.target;
-      const typing = t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName);
-      if (((e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !typing)) { e.preventDefault(); if (ref.current) ref.current.focus(); }
+    const k = (e) => {
+      const tag = (e.target.tagName || '').toLowerCase();
+      if (e.key === '/' && !['input', 'textarea', 'select'].includes(tag) && !e.target.isContentEditable) { e.preventDefault(); ref.current && ref.current.focus(); }
     };
-    window.addEventListener('keydown', key);
-    return () => window.removeEventListener('keydown', key);
+    window.addEventListener('keydown', k);
+    return () => window.removeEventListener('keydown', k);
   }, []);
-  const needle = q.trim().toLowerCase();
-  const has = (...parts) => parts.filter(Boolean).join(' ').toLowerCase().includes(needle);
-  const hits = !needle || !data ? [] : [
-    ...data.clients.filter((c) => has(c.name, c.email, c.contact)).slice(0, 5)
-      .map((c) => ({ key: 'c' + c.id, label: c.name, sub: 'Client' + (c.email ? ' · ' + c.email : ''), go: () => openClient(c.id) })),
-    ...data.jobs.filter((j) => has(j.title, j.name, j.business, j.email)).slice(0, 6)
-      .map((j) => ({ key: 'j' + j.id, label: j.title, sub: STAGE_LABEL[j.stage] + ' · ' + j.name, go: () => open(j.id) })),
-    ...data.tasks.filter((t) => !t.done && has(t.t)).slice(0, 4)
-      .map((t) => ({ key: 't' + t.id, label: t.t, sub: 'Task · ' + dueWords(t.due).txt, go: () => (t.job_id ? open(t.job_id) : (location.href = '/docket')) })),
-  ];
-  const pick = (h) => { h.go(); setQ(''); setOn(false); if (ref.current) ref.current.blur(); };
+  const term = q.trim().toLowerCase();
+  const has = (...f) => f.some((v) => v && String(v).toLowerCase().includes(term));
+  const results = React.useMemo(() => {
+    if (!data || term.length < 2) return [];
+    const out = [];
+    data.clients.forEach((c) => { if (has(c.name, c.contact, c.email, c.notes, c.custom && Object.values(c.custom).join(' '))) out.push({ k: 'client:' + c.id, kind: 'Client', title: c.name, sub: c.email || '', run: () => openClient(c.id) }); });
+    data.jobs.forEach((j) => { if (has(j.title, j.name, j.business, j.email, j.notes)) out.push({ k: 'job:' + j.id, kind: 'Job', title: j.title, sub: (j.business || j.name) + ' · ' + STAGE_LABEL[j.stage], run: () => open(j.id) }); });
+    data.briefs.forEach((b) => { if (has(b.name, b.business, b.email, b.reference, b.about)) { const j = data.jobs.find((x) => x.brief_id === b.id); out.push({ k: 'brief:' + b.id, kind: 'Brief', title: (b.business || b.name) + (b.reference ? ' · ' + b.reference : ''), sub: b.email || '', run: () => (j ? open(j.id) : go('leads')) }); } });
+    return out.slice(0, 8);
+  }, [data, term]);
+  const choose = (r) => { r.run(); setOn(false); setQ(''); };
+  const onKey = (e) => {
+    if (e.key === 'Escape') { setOn(false); e.target.blur(); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); setCur((c) => Math.min(c + 1, results.length - 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setCur((c) => Math.max(c - 1, 0)); }
+    else if (e.key === 'Enter' && results[cur]) { e.preventDefault(); choose(results[cur]); }
+  };
+  React.useEffect(() => setCur(0), [term]);
   return (
-    <div className="hsearch">
-      <input ref={ref} className="input" type="search" placeholder="Search ( / )" aria-label="Search clients, jobs and tasks" value={q}
-        onChange={(e) => setQ(e.target.value)} onFocus={() => setOn(true)} onBlur={() => setTimeout(() => setOn(false), 150)}
-        onKeyDown={(e) => { if (e.key === 'Enter' && hits[0]) pick(hits[0]); if (e.key === 'Escape') { setQ(''); e.target.blur(); } }} />
-      {on && needle && (
-        <div className="hsearch-r" role="listbox" aria-label="Search results">
-          {hits.map((h) => <button key={h.key} type="button" role="option" onMouseDown={(e) => e.preventDefault()} onClick={() => pick(h)}><b>{h.label}</b><span className="sub">{h.sub}</span></button>)}
-          {!hits.length && <p className="sub">No match.</p>}
+    <div className="hsearch" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setOn(false); }}>
+      <input ref={ref} className="input" type="search" placeholder="Search  ( / )" aria-label="Search clients, jobs and briefs" value={q} onChange={(e) => { setQ(e.target.value); setOn(true); }} onFocus={() => setOn(true)} onKeyDown={onKey} role="combobox" aria-expanded={on && term.length >= 2} aria-controls="hs-list" autoComplete="off" />
+      {on && term.length >= 2 && (
+        <div className="hs-pop" id="hs-list" role="listbox">
+          {results.map((r, i) => (
+            <button key={r.k} role="option" aria-selected={i === cur} className={i === cur ? 'on' : ''} onMouseDown={(e) => e.preventDefault()} onClick={() => choose(r)}>
+              <span className="hs-k">{r.kind}</span><span className="hs-t"><b>{r.title}</b>{r.sub ? <span className="sub"> · {r.sub}</span> : null}</span>
+            </button>
+          ))}
+          {!results.length && <p className="sub" style={{ padding: '12px 14px' }}>Nothing matches “{q.trim()}”.</p>}
         </div>
       )}
+    </div>
+  );
+}
+
+// Possible duplicates: same email, or the same name once punctuation and case go.
+function findDupes(clients) {
+  const groups = new Map();
+  const add = (key, c) => { if (!key) return; if (!groups.has(key)) groups.set(key, new Set()); groups.get(key).add(c); };
+  clients.forEach((c) => { add(c.email ? 'e:' + c.email.trim().toLowerCase() : null, c); add(normName(c.name) ? 'n:' + normName(c.name) : null, c); });
+  const seen = new Set(), out = [];
+  groups.forEach((set, key) => {
+    if (set.size < 2) return;
+    const ids = [...set].map((c) => c.id).sort().join('|');
+    if (seen.has(ids)) return; seen.add(ids);
+    out.push({ key, why: key[0] === 'e' ? 'Same email' : 'Same name', list: [...set] });
+  });
+  return out;
+}
+// Merge: everything of the other client moves to the one kept, then it goes.
+async function mergeClients(keep, drop) { await mergeClientsOnServer(drop.id, keep.id); }
+function Dupes({ data, reload }) {
+  const dupes = React.useMemo(() => findDupes(data.clients), [data.clients]);
+  const [busy, setBusy] = React.useState('');
+  const [err, setErr] = React.useState('');
+  if (!dupes.length) return null;
+  const merge = (keep, drop) => {
+    if (!window.confirm(`Merge “${drop.name}” into “${keep.name}”? Their jobs, invoices and tasks move over, and “${drop.name}” is removed.`)) return;
+    setBusy(drop.id); setErr('');
+    mergeClients(keep, drop, data).then(reload).catch((e) => setErr(e.message)).then(() => setBusy(''));
+  };
+  return (
+    <section className="widget dupes" aria-label="Possible duplicate clients">
+      <div className="widget-h"><h2 className="h2">Possible duplicates</h2><span className="sub mono">{dupes.length}</span></div>
+      {dupes.map((d) => (
+        <div key={d.key} className="dupe">
+          <span className="lbl">{d.why}</span>
+          {d.list.map((c, i) => {
+            const other = d.list.find((x) => x.id !== c.id);
+            return (
+              <div key={c.id} className="minirow plain">
+                <span className="mtxt"><b>{c.name}</b><span className="sub"> · {c.email || 'No email'}</span></span>
+                {d.list.length === 2 && <button className="btn ghost sm" disabled={!!busy} onClick={() => merge(c, other)}>{busy === other.id ? 'Merging…' : 'Keep this one'}</button>}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+      {err && <p className="sub" style={{ color: 'var(--warn)', padding: '8px 0' }}>{err}</p>}
+    </section>
+  );
+}
+
+// Custom fields: your own labeled details on a client (needs clients.custom).
+function CustomFields({ client, reload }) {
+  const [fields, setFields] = React.useState(client.custom || {});
+  const [k, setK] = React.useState(''); const [v, setV] = React.useState('');
+  const [err, setErr] = React.useState('');
+  if (client.custom === undefined) {
+    return <p className="sub" style={{ padding: '10px 0' }}>Custom fields turn on once <span className="mono">20261108_crm_tasks_fields.sql</span> has been run.</p>;
+  }
+  const persist = (next) => saveClient({ id: client.id, custom: next }).then(() => { setFields(next); setErr(''); reload(); }).catch((e) => setErr(e.message));
+  const add = (e) => {
+    e.preventDefault();
+    const key = k.trim().slice(0, 40);
+    if (!key || !v.trim()) { setErr('Add a label and a value.'); return; }
+    persist({ ...fields, [key]: v.trim().slice(0, 300) }).then(() => { setK(''); setV(''); });
+  };
+  const drop = (key) => { const n = { ...fields }; delete n[key]; persist(n); };
+  return (
+    <div>
+      <div className="minirows">
+        {Object.entries(fields).map(([key, val]) => (
+          <div key={key} className="minirow plain"><span className="mtxt"><span className="lbl">{key}</span><br />{val}</span><button className="btn quiet sm" onClick={() => drop(key)} aria-label={'Remove ' + key}>Remove</button></div>
+        ))}
+        {!Object.keys(fields).length && <p className="sub" style={{ padding: '10px 0' }}>Nothing yet. Add things like an Instagram handle or a billing contact.</p>}
+      </div>
+      <form className="taskadd" onSubmit={add}>
+        <input className="input" placeholder="Label" value={k} onChange={(e) => setK(e.target.value)} aria-label="Field label" />
+        <input className="input" placeholder="Value" value={v} onChange={(e) => setV(e.target.value)} aria-label="Field value" />
+        <button className="btn sm" type="submit">Add field</button>
+        {err && <p className="sub" style={{ color: 'var(--warn)', flexBasis: '100%' }}>{err}</p>}
+      </form>
+    </div>
+  );
+}
+
+function LeadsReports({ data }) {
+  const { jobs, proposals, briefs, clients, invoices } = data;
+  const now = new Date(); const months = [];
+  for (let k = 5; k >= 0; k--) { const d = new Date(now.getFullYear(), now.getMonth() - k, 1); months.push({ key: d.getFullYear() + '-' + d.getMonth(), label: d.toLocaleDateString('en-US', { month: 'short' }), n: 0 }); }
+  for (const b of briefs) { const d = new Date(b.created_at); const r = months.find((m) => m.key === d.getFullYear() + '-' + d.getMonth()); if (r) r.n += 1; }
+  const replies = briefs.filter((b) => b.answered_at).map((b) => new Date(b.answered_at) - new Date(b.created_at)).filter((x) => x >= 0);
+  const med = median(replies);
+  const decided = proposals.filter((p) => ['accepted', 'declined'].includes(p.status));
+  const accepted = proposals.filter((p) => p.status === 'accepted');
+  const rate = decided.length ? Math.round((accepted.length / decided.length) * 100) : null;
+  const avg = accepted.length ? accepted.reduce((a, p) => a + Number(p.total || 0), 0) / accepted.length : null;
+  const design = briefs.filter((b) => b.lane !== 'automation').length;
+  const auto = briefs.length - design;
+  const won = jobs.filter((j) => j.stage === 'paid').length;
+  const closed = jobs.filter((j) => j.stage === 'closed');
+  const reasons = Object.entries(closed.reduce((m, j) => { const k = j.close_reason || 'No reason given'; m[k] = (m[k] || 0) + 1; return m; }, {})).sort((a, b) => b[1] - a[1]);
+  const clientOf = (j) => clients.find((c) => c.id === j.client_id) || (j.email ? clients.find((c) => c.email && c.email.toLowerCase() === j.email.toLowerCase()) : null);
+  const bySource = Object.values(jobs.reduce((m, j) => {
+    const c = clientOf(j);
+    const key = c ? (c.source || 'unset') : 'noclient';
+    const row = (m[key] = m[key] || { key, label: c ? (SOURCE_LABEL[c.source] || 'Source not set') : 'Not a client yet', jobs: 0, paid: 0 });
+    row.jobs += 1;
+    row.paid += invoices.filter((i) => i.job_id === j.id && i.status === 'paid').reduce((a, i) => a + Number(i.amount || 0), 0);
+    return m;
+  }, {})).sort((a, b) => b.paid - a.paid || b.jobs - a.jobs);
+  return (
+    <div className="dash-g">
+      <Widget title="Briefs received" badge="last 6 months"><CountBars months={months} /></Widget>
+      <Widget title="Where work comes from" badge={bySource.length ? 'by client source' : null}>
+        <div className="minirows">
+          {bySource.map((r) => <div key={r.key} className="minirow plain"><span className="mtxt">{r.label}<span className="sub"> · {r.jobs} job{r.jobs === 1 ? '' : 's'}</span></span><span className="mono mval">{usd(r.paid)}</span></div>)}
+          {!bySource.length && <p className="sub" style={{ padding: '10px 0' }}>No jobs yet.</p>}
+        </div>
+        {bySource.some((r) => r.key === 'unset') && <p className="sub" style={{ padding: '6px 0 2px' }}>Set “Came from” on a client to sharpen this.</p>}
+      </Widget>
+      <Widget title="Why jobs close" badge={closed.length ? closed.length + ' closed' : null}>
+        <div className="minirows">
+          {reasons.map(([why, n]) => <div key={why} className="minirow plain"><span className="mtxt">{why}</span><span className="mono mval">{n}</span></div>)}
+          {!reasons.length && <p className="sub" style={{ padding: '10px 0' }}>No closed jobs. When you close one, say why and it counts here.</p>}
+        </div>
+      </Widget>
+      <Widget title="The numbers" badge={briefs.length + ' briefs total'}>
+        <div className="minirows">
+          <div className="minirow plain"><span className="mtxt">Typical time to reply</span><span className="mono mval">{med == null ? 'No replies yet' : span(med)}</span></div>
+          <div className="minirow plain"><span className="mtxt">Proposals accepted</span><span className="mono mval">{rate == null ? 'None decided yet' : rate + '% of ' + decided.length}</span></div>
+          <div className="minirow plain"><span className="mtxt">Average accepted proposal</span><span className="mono mval">{avg == null ? '—' : usd(Math.round(avg))}</span></div>
+          <div className="minirow plain"><span className="mtxt">Design briefs / automation briefs</span><span className="mono mval">{design} / {auto}</span></div>
+          <div className="minirow plain"><span className="mtxt">Jobs paid in full</span><span className="mono mval">{won}</span></div>
+        </div>
+      </Widget>
     </div>
   );
 }
@@ -1395,7 +1640,7 @@ function BusinessHub() {
   // The address holds the view (#jobs, #money, #job=<id>) so a reload or a
   // pasted link lands in the same place.
   // Today is home. (The old ring launcher is gone; an old #ring link lands on Today.)
-  const TABS = ['today', 'jobs', 'proposals', 'mail', 'money', 'clients', 'reports'];
+  const TABS = ['today', 'leads', 'jobs', 'proposals', 'mail', 'money', 'clients'];
   const fromHash = () => {
     const id = (location.hash.match(/job=([0-9a-f-]{36})/) || [])[1] || null;
     const cid = (location.hash.match(/client=([0-9a-f-]{36})/) || [])[1] || null;
@@ -1416,11 +1661,11 @@ function BusinessHub() {
   const [clients, reloadClients, e4] = useCollection(fetchClients);
   const [briefs, reloadBriefs, e5] = useCollection(fetchDesignBriefs);
   const [events, reloadEvents, e6] = useCollection(fetchAllEvents);
-  const [tasks, reloadTasks, e7] = useCollection(fetchDocketTasks);
-  const error = e1 || e2 || e3 || e4 || e5 || e6 || e7;
+  const [tasks, reloadTasks] = useCollection(fetchTasks);
+  const error = e1 || e2 || e3 || e4 || e5 || e6;
   const loading = [jobs, proposals, invoices, clients, briefs, events, tasks].some((r) => r === null);
   const reloadAll = () => { reloadJobs(); reloadProposals(); reloadInvoices(); reloadClients(); reloadBriefs(); reloadEvents(); reloadTasks(); };
-  const data = loading ? null : { jobs, proposals, invoices, clients, briefs, events, tasks, needs: needsYou(jobs, proposals, invoices, briefs, events) };
+  const data = loading ? null : { jobs, proposals, invoices, clients, briefs, events, tasks, needs: [...taskNeeds(jobs, tasks), ...needsYou(jobs, proposals, invoices, briefs, events)] };
   const [startNew, setStartNew] = React.useState(false);
   const [intro, setIntro] = React.useState(introWanted);
   const endIntro = React.useCallback(() => setIntro(false), []);
@@ -1435,8 +1680,8 @@ function BusinessHub() {
     return () => { if (ro) ro.disconnect(); else window.removeEventListener('resize', set); };
   }, []);
   const go = (t, opts) => { setTab(t); setJobId(null); setClientId(null); setStartNew(!!(opts && opts.newJob)); history.replaceState(null, '', '#' + t); };
-  const open = (id) => { setTab('jobs'); setJobId(id); setClientId(null); history.replaceState(null, '', '#job=' + id); window.scrollTo(0, 0); };
   const openClient = (id) => { setTab('clients'); setJobId(null); setClientId(id); history.replaceState(null, '', '#client=' + id); window.scrollTo(0, 0); };
+  const open = (id) => { setTab('jobs'); setJobId(id); setClientId(null); history.replaceState(null, '', '#job=' + id); window.scrollTo(0, 0); };
 
   return (
     <React.Fragment>
@@ -1451,7 +1696,7 @@ function BusinessHub() {
             ? <a className="backlink" href="#jobs" onClick={(e) => { e.preventDefault(); go('jobs'); }}><i aria-hidden="true">←</i> Jobs</a>
             : <a className="backlink" href="/backroom"><i aria-hidden="true">←</i> Backroom</a>}
           <a className="mark" href="/backroom"><img src="assets/antler.png" alt="" /><div><b>Business Hub</b><span>The Backroom</span></div></a>
-          <SearchBar data={data} open={open} openClient={openClient} />
+          {data && <GlobalSearch data={data} open={open} openClient={openClient} go={go} />}
           <nav className="topnav">
 <a href="/docket">Docket</a>
           </nav>
@@ -1459,18 +1704,18 @@ function BusinessHub() {
       </header>
       <div className="shell">
         {data && <ToolSidebar tab={tab} go={go} data={data} />}
-        <main id="app" key={tab + (jobId || '') + (intro ? '-intro' : '')}>
+        <main id="app" key={tab + (jobId || '') + (clientId || '') + (intro ? '-intro' : '')}>
           {error && <p className="sub" style={{ padding: '20px 2px', color: 'var(--warn)' }}>{error} If this is the first run, the workflow tables may not be set up yet.</p>}
           {!error && loading && <p className="sub" style={{ padding: '20px 2px' }}>Loading…</p>}
           {data && (
             <React.Fragment>
-              {tab === 'today' && <Today data={data} open={open} go={go} reload={reloadAll} />}
-              {tab === 'jobs' && (jobId ? <JobPage jobId={jobId} data={data} reload={reloadAll} back={() => go('jobs')} /> : <Jobs data={data} open={open} reload={reloadAll} startNew={startNew} />)}
+              {tab === 'today' && <Today data={data} open={open} go={go} />}
+              {tab === 'leads' && <Leads data={data} open={open} go={go} reload={reloadAll} reloadClients={reloadClients} reloadTasks={reloadTasks} />}
+              {tab === 'jobs' && (jobId ? <JobPage jobId={jobId} data={data} reload={reloadAll} reloadTasks={reloadTasks} back={() => go('jobs')} /> : <Jobs data={data} open={open} reload={reloadAll} startNew={startNew} />)}
               {tab === 'proposals' && <Proposals data={data} open={open} />}
               {tab === 'mail' && <Mail data={data} open={open} />}
               {tab === 'money' && <Money data={data} open={open} reload={reloadAll} />}
-              {tab === 'clients' && <Clients data={data} reload={reloadAll} open={open} sel={clientId} setSel={(id) => (id ? openClient(id) : go('clients'))} />}
-              {tab === 'reports' && <Reports data={data} open={open} />}
+              {tab === 'clients' && <Clients data={data} reload={reloadClients} reloadAll={reloadAll} reloadTasks={reloadTasks} open={open} startSel={clientId} />}
             </React.Fragment>
           )}
         </main>

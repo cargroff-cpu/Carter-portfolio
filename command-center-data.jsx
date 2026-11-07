@@ -44,11 +44,10 @@ const saveDocketTask = (row) => ccWrite('docket_tasks', row);
 const fetchClients = () => ccFetch('clients?select=*&order=name.asc');
 const saveClient = (row) => ccWrite('clients', row);
 const deleteClient = (id) => ccDelete('clients', id);
-// Fold one client into another: their jobs, invoices, history and tasks move
-// across, then the old record goes (api/scaffold-write.js).
-const mergeClients = (from, into) => post('/api/scaffold-write', { mergeClients: { from, into } });
-// A call, meeting or note on a client (it need not have a job).
-const fetchClientEvents = (clientId) => ccFetch(`job_events?select=*&client_id=eq.${clientId}&order=created_at.desc`);
+// Fold one client into another on the server (api/scaffold-write.js): jobs,
+// invoices, history and tasks move across, then the old client goes. Emails
+// are unique, so this has to happen server-side in the right order.
+const mergeClientsOnServer = (from, into) => post('/api/scaffold-write', { mergeClients: { from, into } });
 const fetchInvoices = () => ccFetch('invoices?select=*&order=created_at.desc');
 const saveInvoice = (row) => ccWrite('invoices', row);
 
@@ -71,6 +70,15 @@ async function uploadJobFile(jobId, file, { kind, round, label }) {
   return jobAction(jobId, 'add-file', { kind, round, label: label || file.name, storage_path: path, filename: file.name, content_type: file.type });
 }
 
+// ── Follow-up tasks ──────────────────────────────────────────────────
+// crm_tasks comes from supabase/migrations/20261108_crm_tasks_fields.sql. Until
+// that is run the read fails; this hands back an empty list flagged notReady
+// so the Hub shows a setup note and not an error.
+const fetchTasks = () => ccFetch('crm_tasks?select=*&order=due_on.asc.nullslast,created_at.desc')
+  .catch(() => { const a = []; a.notReady = true; return a; });
+const saveTask = (row) => ccWrite('crm_tasks', row);
+const deleteTask = (id) => ccDelete('crm_tasks', id);
+
 // ── Briefs ───────────────────────────────────────────────────────────
 const fetchDesignBriefs = () => ccFetch('design_briefs?select=*&order=created_at.desc');
 const saveDesignBrief = (row) => ccWrite('design_briefs', row);
@@ -81,8 +89,9 @@ const briefAction = (id, action, extra = {}) => post('/api/brief-reply', { id, a
 
 window.CC = {
   fetchDocketTasks, saveDocketTask,
-  fetchClients, saveClient, deleteClient, mergeClients, fetchClientEvents, fetchInvoices, saveInvoice,
+  fetchClients, saveClient, deleteClient, mergeClientsOnServer, fetchInvoices, saveInvoice,
   fetchJobs, saveJob, fetchProposals, saveProposal, fetchJobFiles, fetchJobEvents, fetchAllEvents, saveJobEvent,
   jobAction, uploadJobFile,
+  fetchTasks, saveTask, deleteTask,
   fetchDesignBriefs, saveDesignBrief, fetchDesignBriefAttachments, briefAction,
 };
