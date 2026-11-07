@@ -41,6 +41,7 @@ function Task({ t, onDragStart, onDragEnd, onClear, onSetDue, onMove, dragging }
       onClick={onClear}
       title="Click to clear, drag to reorder or move column">
       <span className="t">{t.t}</span>
+      {t.job_id && <a className="tjob" href={'/business#job=' + t.job_id} onClick={stop} title="Open this job in the Business Hub">job</a>}
       <span className="side" onClick={stop}>
         <label className={'when ' + w.cls} title={t.due ? 'Change or clear the due date' : 'Set a due date'}>
           {t.due ? w.txt : <React.Fragment>{w.txt}<i className="setdue"> · due?</i></React.Fragment>}

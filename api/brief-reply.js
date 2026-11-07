@@ -13,6 +13,7 @@
 // 'send' and 'reject' work with or without an AI triage (the Hub has a plain
 // reply box for briefs that have none).
 import { sb, sendEmail, parseBody, logEvent, NOTIFY_EMAIL, FROM_VERIFIED } from '../lib/server.js';
+import { closeTasks, closeJobTasks, KEYS } from '../lib/crm.js';
 import { triageAndSave } from '../lib/brief-triage.js';
 import { renderEmail, jobUrl } from '../lib/mail.js';
 
@@ -68,11 +69,14 @@ export default async function handler(req, res) {
         });
         if (closed && closed.length) {
           await sb('job_events', { method: 'POST', body: { job_id: brief.job_id, kind: 'note', who: 'me', body: 'No reply needed. Job closed.' } });
+          // Why it closed, for the win/loss report (columns from 20261107b_crm_upgrades.sql).
+          await sb(`jobs?id=eq.${brief.job_id}`, { method: 'PATCH', body: { closed_at: now, close_reason: 'Brief declined' } }).catch(() => {});
         }
       } catch (e) {
         await logEvent({ kind: 'reject_close_job', ok: false, reference: brief.reference, detail: e.message.slice(0, 300) });
       }
     }
+    if (brief.job_id) await closeJobTasks(brief.job_id);
     await logEvent({ kind: 'reply_rejected', ok: true, reference: brief.reference });
     res.status(200).json({ ok: true });
     return;
@@ -114,6 +118,7 @@ export default async function handler(req, res) {
   if (job) {
     await sb('job_events', { method: 'POST', body: { job_id: job.id, kind: 'email', who: 'me', body: reply, meta: { kind: 'reply' } } }).catch(() => {});
     await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { last_activity_at: now } }).catch(() => {});
+    await closeTasks(KEYS.brief(job.id));
   }
   await logEvent({ kind: 'reply_sent', ok: true, reference: brief.reference });
   res.status(200).json({ ok: true });

@@ -837,3 +837,36 @@ mcc.css, is unchanged.
   lasts while the tab or home-screen app is open, so moving between tools or
   reloading doesn't replay it, and closing and reopening does. Reduced motion
   never plays it.
+
+## 2026-11-07 — CRM upgrades for the Backroom
+
+Borrowed from a generic custom-CRM guide, keeping only what a one-person
+studio needs (no roles, owners or custom-field tables).
+
+- **Writes are validated.** `api/scaffold-write.js` now checks every row
+  against `lib/validate.js`: only the columns the screens edit, with types.
+  Tokens, Stripe ids, approval times, revision counts and proposal status
+  can no longer be written from the browser. A paid invoice and an accepted
+  proposal are locked; a job's invoice can only be marked paid through the
+  `mark-paid` action (it switches off the Stripe link). Rows can be deleted
+  only from `clients` and `docket_tasks`; close a job instead.
+- **Audit trail.** Edits to jobs, clients, invoices and sent proposals are
+  written to `job_events` (kind `change` or `stage`) with the old and new
+  values.
+- **Follow-up tasks.** The Backroom puts tasks on the Docket itself (reply to
+  a brief, follow up a proposal / directions / final, chase an invoice) and
+  clears them when the step happens. They carry `job_id` and an `auto_key`, so
+  re-sending reopens the same task. Tasks Carter wrote are never auto-closed.
+- **Activity on clients.** `job_events.client_id` (and `job_id` may be empty):
+  log calls, meetings and notes on a client with no job.
+- **One client per email.** Emails are stored lower-cased and unique. A brief
+  from a known address attaches to that client. Clients can be merged
+  (jobs, invoices, history and tasks move across).
+- **Win/loss and source.** Closing a job asks why (`close_reason`); clients
+  have a `source`. The new Reports tool shows the funnel, step timings, win
+  rate, close reasons, work by source and a chance-weighted forecast
+  (New 10%, Proposed 50%, Directions 75%, Final 90%). A search box (press /
+  or Ctrl/Cmd+K) finds clients, jobs and tasks.
+- Migration: `supabase/migrations/20261107b_crm_upgrades.sql`, not applied
+  yet. Apply it before deploying. The Docket's job link and the new columns
+  need it; the auto-tasks and audit lines fail quietly until then.

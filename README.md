@@ -35,7 +35,8 @@ command-center-data.jsx   Backroom data layer: reads via /api/scaffold-read, wri
 
 api/design-brief.js       Public brief endpoint (email first, then DB, uploads, AI triage, client confirmation, event log). GET = health check / keep-alive
 api/brief-reply.js        Backroom only: re-run triage, approve & send a reply, or reject
-lib/                      Server helpers: session tokens, rate limiting, Supabase/Resend helpers, AI triage
+lib/                      Server helpers: session tokens, rate limiting, Supabase/Resend helpers, AI triage, write validation (validate.js), CRM follow-up tasks / audit trail / client merge (crm.js)
+scripts/check-crm.mjs     `npm test`: checks the write validation and audit diff (no network)
 supabase-schema.sql       Record of the live schema
 supabase/migrations/      Changes still to apply, in order (see the top of each file)
 ```

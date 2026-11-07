@@ -44,6 +44,11 @@ const saveDocketTask = (row) => ccWrite('docket_tasks', row);
 const fetchClients = () => ccFetch('clients?select=*&order=name.asc');
 const saveClient = (row) => ccWrite('clients', row);
 const deleteClient = (id) => ccDelete('clients', id);
+// Fold one client into another: their jobs, invoices, history and tasks move
+// across, then the old record goes (api/scaffold-write.js).
+const mergeClients = (from, into) => post('/api/scaffold-write', { mergeClients: { from, into } });
+// A call, meeting or note on a client (it need not have a job).
+const fetchClientEvents = (clientId) => ccFetch(`job_events?select=*&client_id=eq.${clientId}&order=created_at.desc`);
 const fetchInvoices = () => ccFetch('invoices?select=*&order=created_at.desc');
 const saveInvoice = (row) => ccWrite('invoices', row);
 
@@ -76,7 +81,7 @@ const briefAction = (id, action, extra = {}) => post('/api/brief-reply', { id, a
 
 window.CC = {
   fetchDocketTasks, saveDocketTask,
-  fetchClients, saveClient, deleteClient, fetchInvoices, saveInvoice,
+  fetchClients, saveClient, deleteClient, mergeClients, fetchClientEvents, fetchInvoices, saveInvoice,
   fetchJobs, saveJob, fetchProposals, saveProposal, fetchJobFiles, fetchJobEvents, fetchAllEvents, saveJobEvent,
   jobAction, uploadJobFile,
   fetchDesignBriefs, saveDesignBrief, fetchDesignBriefAttachments, briefAction,

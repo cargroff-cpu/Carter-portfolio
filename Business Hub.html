@@ -237,6 +237,23 @@ th { font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--text
 @keyframes in-crest { 0% { opacity: 0; transform: scale(.82); } 60% { opacity: 1; filter: drop-shadow(0 0 26px rgba(245,205,106,.7)); } 100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 12px rgba(245,205,106,.35)); } }
 @keyframes in-rise { to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .intro { display: none; } }
+/* CRM upgrades: follow-up tasks, search, duplicate banner */
+.taskcheck { flex: none; width: 22px; height: 22px; margin-right: 12px; border: 1.5px solid var(--text-3); border-radius: 50%; background: none; cursor: pointer; padding: 0; }
+.taskcheck:hover, .taskcheck:focus-visible { border-color: var(--accent-lit); background: rgba(245,205,106,.14); outline: none; }
+.minirow .taskcheck + .mtxt { flex: 1; min-width: 0; }
+.tasklink { background: none; border: 0; padding: 0; text-align: left; color: var(--text); cursor: pointer; font: inherit; }
+.tasklink:hover { color: var(--accent-lit); text-decoration: underline; }
+.taskadd .input[type=date] { width: 150px; flex: none; }
+.dupes { border-color: rgba(245,205,106,.32); }
+.hsearch { position: relative; flex: 1 1 200px; max-width: 320px; min-width: 150px; margin-left: auto; }
+.hsearch .input { width: 100%; }
+.hsearch-r { position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 60; background: #1a120b; border: 1px solid var(--line-2, var(--line)); box-shadow: 0 12px 32px rgba(0,0,0,.5); max-height: 70vh; overflow: auto; padding: 4px; }
+.hsearch-r button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; padding: 10px 12px; min-height: 44px; background: none; border: 0; text-align: left; color: var(--text); cursor: pointer; font: inherit; }
+.hsearch-r button:hover, .hsearch-r button:focus-visible { background: rgba(236,217,178,.09); outline: none; }
+.hsearch-r p { padding: 10px 12px; }
+.hsearch + .topnav { margin-left: 0; }
+@media (max-width: 760px) { .tools.on .tname { font-size: 10.5px; letter-spacing: 0; } .tools.on button { padding: 6px 0; } }
+@media (max-width: 640px) { .hsearch { flex-basis: 100%; max-width: none; order: 5; } .taskadd { flex-wrap: wrap; } .taskadd .input[type=date] { width: 100%; } }
 </style>
 </head>
 <body>

@@ -19,6 +19,7 @@ const {
   fetchJobs, saveJob, fetchProposals, saveProposal, fetchJobFiles, fetchJobEvents, fetchAllEvents, saveJobEvent,
   jobAction, uploadJobFile,
   fetchDesignBriefs, fetchDesignBriefAttachments, briefAction,
+  fetchDocketTasks, saveDocketTask, mergeClients, fetchClientEvents,
 } = window.CC;
 
 const STAGES = [
@@ -35,6 +36,22 @@ const stageKind = (s) => ({ new: 'warn', proposed: 'mute', drafts: 'mute', final
 const firstName = (n) => String(n || '').trim().split(/\s+/)[0] || 'there';
 const fill = (t, f) => String(t || '').replace(/\{(\w+)\}/g, (m, k) => (f[k] != null && f[k] !== '' ? String(f[k]) : m));
 const sumItems = (items) => (items || []).reduce((s, i) => s + (Number(i.amount) || 0), 0);
+const todayStr = () => new Date().toLocaleDateString('en-CA');
+const normName = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+// Chance a job in each stage ends up paid. Forecast = proposal total x chance.
+// (New: a brief with no promise yet. Proposed: a price is out. Drafts: they
+// accepted. Final: only the sign-off and payment are left.)
+const STAGE_PROB = { new: 0.1, proposed: 0.5, drafts: 0.75, final: 0.9 };
+const SOURCE_LABEL = { brief: 'Scaffold brief', referral: 'Referral', repeat: 'Repeat client', social: 'Social', search: 'Search', event: 'Event', other: 'Other' };
+const jobValue = (j, proposals) => { const p = proposals.find((x) => x.job_id === j.id); return p ? Number(p.total || 0) : 0; };
+const forecastOf = (jobs, proposals) => jobs.reduce((a, j) => a + (STAGE_PROB[j.stage] || 0) * jobValue(j, proposals), 0);
+// A due date as words: "3d late", "today", "in 2d".
+function dueWords(due) {
+  if (!due) return { txt: 'no date', late: false };
+  const d = Math.round((new Date(due + 'T12:00:00') - new Date(todayStr() + 'T12:00:00')) / 864e5);
+  return d < 0 ? { txt: Math.abs(d) + 'd late', late: true } : d === 0 ? { txt: 'today', late: true } : { txt: 'in ' + d + 'd', late: false };
+}
 
 // ── Mail templates. {fields} fill from the job; the email goes out in the
 // branded frame (lib/mail.js) with a button to the client's project page.
@@ -113,6 +130,7 @@ const TOOL_LIST = [
   { id: 'mail', label: 'Mail', glyph: 'mail', antler: 'assets/tool-leads.png', desc: 'Everything sent to clients, and the templates behind it.' },
   { id: 'money', label: 'Money', glyph: 'money', antler: 'assets/tool-money.png', desc: 'Deposits and finals: due, paid, and what to chase.' },
   { id: 'clients', label: 'Clients', glyph: 'clients', antler: 'assets/tool-acquire.png', desc: 'Who you work for and everything you have done for them.' },
+  { id: 'reports', label: 'Reports', glyph: 'reports', antler: 'assets/tool-vault.png', desc: 'Funnel, speed, win rate, where work comes from, forecast.' },
 ];
 const GLYPHS = {
   today: <React.Fragment><circle cx="12" cy="12" r="4" /><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" /></React.Fragment>,
@@ -120,6 +138,7 @@ const GLYPHS = {
   proposals: <React.Fragment><path d="M6 3h8.5L19 7.5V21H6z" /><path d="M14 3v5h5M9 12.5h7M9 16h7M9 9h3" /></React.Fragment>,
   mail: <React.Fragment><rect x="3" y="5.5" width="18" height="13" rx="2" /><path d="M3.5 7l8.5 6.2L20.5 7" /></React.Fragment>,
   money: <path d="M12 3v18M16.6 7.6C16 6 14.3 5 12 5 9.5 5 7.5 6.3 7.5 8.3S9.5 11.4 12 12s4.5 1.6 4.5 3.7S14.5 19 12 19c-2.3 0-4.1-1-4.7-2.7" />,
+  reports: <path d="M4 20V11M10 20V4M16 20v-7M21 20H3" />,
   clients: <React.Fragment><circle cx="9" cy="8.5" r="3.2" /><path d="M3 20c0-3.4 2.7-6 6-6s6 2.6 6 6" /><circle cx="17" cy="9" r="2.5" /><path d="M16.2 14.1c2.8.3 4.8 2.6 4.8 5.9" /></React.Fragment>,
 };
 function ToolIcon({ name }) {
@@ -135,6 +154,7 @@ function toolMetaOf(id, d, short) {
   if (id === 'proposals') return d.proposals.filter((p) => p.status === 'sent').length + ' out';
   if (id === 'mail') return d.events.filter((e) => e.kind === 'email').length + ' sent';
   if (id === 'money') return usd(d.invoices.filter((i) => i.status === 'sent').reduce((a, i) => a + Number(i.amount || 0), 0)) + ' due';
+  if (id === 'reports') return usd(forecastOf(d.jobs, d.proposals)) + ' forecast';
   if (id === 'clients') return d.clients.length + (short ? (d.clients.length === 1 ? ' client' : ' clients') : ' on the books');
   return '';
 }
@@ -168,7 +188,10 @@ function useCollection(fetcher) {
 const EVENT_TEXT = {
   brief: 'Brief came in', accepted: 'Proposal accepted', picked: 'Direction picked', changes: 'Changes asked for',
   approved: 'Final approved', paid: 'Payment received', email: 'Email sent', file: 'File added', note: 'Note', reply: 'Reply sent',
+  change: 'Edited', stage: 'Stage changed', call: 'Call', meeting: 'Meeting',
 };
+// One line for the feeds: the label, plus the words for kinds that carry them.
+const evLine = (e) => EVENT_TEXT[e.kind] + (['note', 'call', 'meeting', 'change', 'stage'].includes(e.kind) && e.body ? ': ' + e.body.slice(0, 200) : '');
 function relTime(s) {
   const m = Math.floor((Date.now() - new Date(s).getTime()) / 6e4);
   if (m < 1) return 'now';
@@ -256,8 +279,8 @@ function MonthBars({ months }) {
   );
 }
 
-function Today({ data, open, go }) {
-  const { needs, invoices, events, jobs, proposals } = data;
+function Today({ data, open, go, reload }) {
+  const { needs, invoices, events, jobs, proposals, tasks } = data;
   const jobOf = (id) => jobs.find((j) => j.id === id);
   const isOpen = (j) => j.stage !== 'paid' && j.stage !== 'closed';
   const openJobs = jobs.filter(isOpen);
@@ -274,7 +297,10 @@ function Today({ data, open, go }) {
   const STAGE_ROWS = [['new', 'New'], ['proposed', 'Proposed'], ['drafts', 'Directions'], ['final', 'Final']];
   const maxStage = Math.max(1, ...STAGE_ROWS.map(([id]) => jobs.filter((j) => j.stage === id).length));
   const paidJobs = jobs.filter((j) => j.stage === 'paid').length;
-  const feed = events.filter((e) => EVENT_TEXT[e.kind]).slice(0, 8);
+  const feed = events.filter((e) => e.job_id && EVENT_TEXT[e.kind]).slice(0, 8);
+  const forecast = forecastOf(jobs, proposals);
+  const todo = tasks.filter((t) => !t.done).sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999')).slice(0, 6);
+  const finishTask = (t) => saveDocketTask({ id: t.id, done: true }).then(reload).catch((e) => alert(e.message));
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   return (
     <div className="stack">
@@ -301,6 +327,21 @@ function Today({ data, open, go }) {
             {!needs.length && <p className="sub" style={{ padding: '10px 0' }}>Nothing is waiting on you.</p>}
           </div>
         </Widget>
+        <Widget title="Follow-ups" badge={todo.length ? tasks.filter((t) => !t.done).length + ' open' : 'None'}>
+          <div className="minirows">
+            {todo.map((t) => {
+              const w = dueWords(t.due);
+              return (
+                <div key={t.id} className="minirow plain">
+                  <button type="button" className="taskcheck" aria-label={'Mark done: ' + t.t} title="Mark done" onClick={() => finishTask(t)} />
+                  <button type="button" className="mtxt tasklink" onClick={() => (t.job_id ? open(t.job_id) : go('clients'))}>{t.t}</button>
+                  <span className={'mono mval' + (w.late ? ' hot' : '')}>{w.txt}</span>
+                </div>
+              );
+            })}
+            {!todo.length && <p className="sub" style={{ padding: '10px 0' }}>Nothing to follow up. The Backroom adds tasks here when you send a proposal, an invoice or a final.</p>}
+          </div>
+        </Widget>
         <Widget title="Paid by month" badge="last 6 months"><MonthBars months={months} /></Widget>
         <Widget title="Pipeline" badge={openJobs.length + ' open'}>
           <div className="pipe">
@@ -315,6 +356,7 @@ function Today({ data, open, go }) {
                 </button>
               );
             })}
+            <div className="pipe-r static" title="Each open job's proposal total times its stage's chance of being paid: New 10%, Proposed 50%, Directions 75%, Final 90%."><span className="pipe-n">Forecast</span><span className="pipe-bar" /><span className="pipe-c mono">{usd(forecast)}</span></div>
             <div className="pipe-r static"><span className="pipe-n">Paid</span><span className="pipe-bar" /><span className="pipe-c mono">{paidJobs}</span></div>
           </div>
         </Widget>
@@ -322,7 +364,7 @@ function Today({ data, open, go }) {
           <div className="minirows">
             {feed.map((e) => (
               <button key={e.id} className="minirow plain" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(e.job_id)}>
-                <span className="mtxt"><b>{jobOf(e.job_id) ? jobOf(e.job_id).title : 'Job'}</b> · {EVENT_TEXT[e.kind]}</span>
+                <span className="mtxt"><b>{jobOf(e.job_id) ? jobOf(e.job_id).title : 'Job'}</b> · {evLine(e)}</span>
                 <span className="mono mval">{relTime(e.created_at)}</span>
               </button>
             ))}
@@ -335,14 +377,15 @@ function Today({ data, open, go }) {
 }
 
 // ── Jobs board ─────────────────────────────────────────────────────────
-function NewJobForm({ onCreated, startOpen }) {
+function NewJobForm({ onCreated, startOpen, clients }) {
   const [open, setOpen] = React.useState(!!startOpen);
   const [f, setF] = React.useState({ title: '', name: '', email: '', business: '', lane: 'design' });
   const [err, setErr] = React.useState('');
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
   const create = () => {
     if (!f.title.trim() || !f.name.trim()) { setErr('A title and the client’s name are needed.'); return; }
-    saveJob({ title: f.title.trim(), name: f.name.trim(), email: f.email.trim() || null, business: f.business.trim() || null, lane: f.lane })
+    const known = f.email.trim() ? (clients || []).find((c) => c.email && c.email.toLowerCase() === f.email.trim().toLowerCase()) : null;
+    saveJob({ title: f.title.trim(), name: f.name.trim(), email: f.email.trim() || null, business: f.business.trim() || null, lane: f.lane, ...(known ? { client_id: known.id } : {}) })
       .then((r) => { setOpen(false); setF({ title: '', name: '', email: '', business: '', lane: 'design' }); onCreated(r.row && r.row.id); })
       .catch((e) => setErr(e.message));
   };
@@ -374,7 +417,7 @@ function Jobs({ data, open, reload, startNew }) {
           <h2 className="h2">Jobs</h2>
           <label className="sub" style={{ display: 'flex', gap: 8, alignItems: 'center' }}><input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} /> Show closed</label>
         </div>
-        <div className="pad"><NewJobForm startOpen={startNew} onCreated={(id) => { reload(); if (id) open(id); }} /></div>
+        <div className="pad"><NewJobForm startOpen={startNew} clients={data.clients} onCreated={(id) => { reload(); if (id) open(id); }} /></div>
       </section>
       <div className="jboard">
         {[...STAGES, ...(showClosed ? [['closed', 'Closed']] : [])].map(([id, label]) => {
@@ -407,6 +450,46 @@ function Jobs({ data, open, reload, startNew }) {
 }
 
 // ── One job ────────────────────────────────────────────────────────────
+// Tasks tied to a job or client (the Docket's table). The Backroom adds some
+// itself, marked "auto" (follow up on a proposal, chase an invoice); add your
+// own here. `link` is { job_id } or { client_id } for new ones.
+function TaskList({ tasks, reload, link }) {
+  const [text, setText] = React.useState('');
+  const [due, setDue] = React.useState('');
+  const [err, setErr] = React.useState('');
+  const open = tasks.filter((t) => !t.done).sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999'));
+  const doneCount = tasks.length - open.length;
+  const add = () => {
+    if (!text.trim()) return;
+    saveDocketTask({ brand: 'me', q: 'q3', t: text.trim(), due: due || null, made: todayStr(), rank: -1, done: false, ...link })
+      .then(() => { setText(''); setDue(''); setErr(''); reload(); }).catch((e) => setErr(e.message));
+  };
+  const finish = (t) => saveDocketTask({ id: t.id, done: true }).then(reload).catch((e) => setErr(e.message));
+  return (
+    <div>
+      <div className="minirows">
+        {open.map((t) => {
+          const w = dueWords(t.due);
+          return (
+            <div key={t.id} className="minirow plain">
+              <button type="button" className="taskcheck" aria-label={'Mark done: ' + t.t} title="Mark done" onClick={() => finish(t)} />
+              <span className="mtxt">{t.t}{t.auto_key ? <span className="sub"> · auto</span> : null}</span>
+              <span className={'mono mval' + (w.late ? ' hot' : '')}>{w.txt}</span>
+            </div>
+          );
+        })}
+        {!open.length && <p className="sub" style={{ padding: '8px 0' }}>{doneCount ? 'All ' + doneCount + ' done.' : 'No tasks yet.'}</p>}
+      </div>
+      <div className="row taskadd" style={{ gap: 8, marginTop: 8 }}>
+        <input className="input" style={{ flex: 1, minWidth: 0 }} placeholder="Add a task" aria-label="New task" value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') add(); }} />
+        <input className="input" type="date" aria-label="Due date" value={due} onChange={(e) => setDue(e.target.value)} />
+        <button className="btn ghost sm" onClick={add}>Add</button>
+      </div>
+      {err && <p className="sub" style={{ color: 'var(--warn)' }}>{err}</p>}
+    </div>
+  );
+}
+
 function Field({ label, children }) {
   return <label style={{ display: 'block', marginBottom: 10 }}><span className="lbl" style={{ display: 'block', marginBottom: 5 }}>{label}</span>{children}</label>;
 }
@@ -703,7 +786,15 @@ function JobPage({ jobId, data, reload, back }) {
   const refresh = () => { reload(); loadMine(); };
   const copy = () => { navigator.clipboard && navigator.clipboard.writeText(JOB_URL(job.token)).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }); };
   const addNote = () => { if (!note.trim()) return; saveJobEvent({ job_id: job.id, kind: 'note', who: 'me', body: note.trim() }).then(() => { setNote(''); loadMine(); }); };
-  const setStage = (stage) => saveJob({ id: job.id, stage }).then(refresh);
+  const setStage = (stage) => {
+    const patch = { id: job.id, stage };
+    if (stage === 'closed') {
+      const why = window.prompt('Why is this job closed? (e.g. went quiet, too expensive, not a fit, did it themselves)', '');
+      if (why === null) return;
+      patch.close_reason = why.trim() || null;
+    }
+    saveJob(patch).then(refresh).catch((e) => alert(e.message));
+  };
   const markPaid = (i) => {
     if (!window.confirm(`Mark ${i.label || 'this invoice'} (${usd(i.amount)}) as paid? Its Stripe payment link will be switched off.`)) return;
     markInvoicePaid(i).then(refresh).catch((e) => alert(e.message));
@@ -714,7 +805,7 @@ function JobPage({ jobId, data, reload, back }) {
   const saveAsClient = () => {
     const linkTo = matchClient
       ? Promise.resolve({ row: matchClient })
-      : saveClient({ name: job.business || job.name, contact: job.business ? job.name : null, email: job.email || null, since: new Date().toISOString().slice(0, 10) });
+      : saveClient({ name: job.business || job.name, contact: job.business ? job.name : null, email: job.email || null, since: new Date().toISOString().slice(0, 10), ...(job.brief_id ? { source: 'brief' } : {}) });
     linkTo.then((r) => saveJob({ id: job.id, client_id: r.row.id })).then(refresh).catch((e) => alert(e.message));
   };
   return (
@@ -734,6 +825,7 @@ function JobPage({ jobId, data, reload, back }) {
         <div className="row stagetrack" style={{ gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
           {STAGES.map(([id, label]) => <span key={id}>{pill(label, id === job.stage ? stageKind(id) : 'mute')}</span>)}
           {job.stage === 'closed' && pill('Closed', 'bad')}
+          {job.stage === 'closed' && job.close_reason && <span className="sub">{job.close_reason}</span>}
         </div>
         <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
           <span className="sub">Move by hand:</span>
@@ -759,6 +851,10 @@ function JobPage({ jobId, data, reload, back }) {
           {!invoices.length && <p className="sub">Invoices appear here when the client accepts (the deposit) and approves (the rest).</p>}
         </div>
         {invoices.some((i) => i.status === 'sent') && <button className="btn ghost sm" style={{ marginTop: 8 }} onClick={() => setCompose('invoice')}>Email: invoice ready</button>}
+      </section>
+      <section className="tile">
+        <div className="tilehead"><h2 className="h2">Follow-ups</h2><span className="lbl">{data.tasks.filter((t) => t.job_id === job.id && !t.done).length} open</span></div>
+        <TaskList tasks={data.tasks.filter((t) => t.job_id === job.id)} reload={refresh} link={{ job_id: job.id, ...(job.client_id ? { client_id: job.client_id } : {}) }} />
       </section>
       <section className="tile">
         <div className="tilehead"><h2 className="h2">History</h2></div>
@@ -884,8 +980,101 @@ function Money({ data, open, reload }) {
   );
 }
 
-function Clients({ data, reload, open }) {
-  const [sel, setSel] = React.useState(null);
+// ── Reports: how the studio is doing ────────────────────────────────────
+// Everything here is worked out from the jobs, proposals and invoices already
+// on the books: the funnel from brief to paid, how long each step takes, why
+// jobs close, where paying work comes from, and the weighted forecast.
+const avgOf = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : null);
+const daysBetween = (a, b) => (new Date(b) - new Date(a)) / 864e5;
+const fmtDays = (n) => (n == null ? '—' : n < 1 ? 'under a day' : (Math.round(n * 10) / 10) + ' days');
+const pct = (a, b) => (b ? Math.round((a / b) * 100) + '%' : '—');
+
+function Reports({ data, open }) {
+  const { jobs, proposals, invoices, clients } = data;
+  const sentP = proposals.filter((p) => p.sent_at);
+  const accepted = proposals.filter((p) => p.status === 'accepted');
+  const paid = jobs.filter((j) => j.stage === 'paid');
+  const closed = jobs.filter((j) => j.stage === 'closed');
+  const funnel = [['Jobs started', jobs.length], ['Proposal sent', sentP.length], ['Accepted', accepted.length], ['Paid', paid.length]];
+  const jobById = (id) => jobs.find((j) => j.id === id);
+  const toSent = sentP.map((p) => { const j = jobById(p.job_id); return j ? daysBetween(j.created_at, p.sent_at) : null; }).filter((n) => n != null && n >= 0);
+  const toAccept = accepted.filter((p) => p.sent_at && p.accepted_at).map((p) => daysBetween(p.sent_at, p.accepted_at)).filter((n) => n >= 0);
+  const toPaid = paid.map((j) => {
+    const p = proposals.find((x) => x.job_id === j.id);
+    const last = invoices.filter((i) => i.job_id === j.id && i.paid_at).map((i) => i.paid_at).sort().pop();
+    return p && p.accepted_at && last ? daysBetween(p.accepted_at, last) : null;
+  }).filter((n) => n != null && n >= 0);
+  const reasons = Object.entries(closed.reduce((m, j) => { const k = j.close_reason || 'No reason given'; m[k] = (m[k] || 0) + 1; return m; }, {})).sort((a, b) => b[1] - a[1]);
+  const clientOf = (j) => clients.find((c) => c.id === j.client_id) || (j.email ? clients.find((c) => c.email && c.email.toLowerCase() === j.email.toLowerCase()) : null);
+  const bySource = Object.values(jobs.reduce((m, j) => {
+    const c = clientOf(j);
+    const key = c ? (c.source || 'unset') : 'noclient';
+    const row = (m[key] = m[key] || { key, label: c ? (SOURCE_LABEL[c.source] || 'Not set') : 'Not a client yet', jobs: 0, paid: 0 });
+    row.jobs += 1;
+    row.paid += invoices.filter((i) => i.job_id === j.id && i.status === 'paid').reduce((a, i) => a + Number(i.amount || 0), 0);
+    return m;
+  }, {})).sort((a, b) => b.paid - a.paid || b.jobs - a.jobs);
+  const stageRows = [['new', 'New'], ['proposed', 'Proposed'], ['drafts', 'Directions'], ['final', 'Final']].map(([id, label]) => {
+    const list = jobs.filter((j) => j.stage === id);
+    const value = list.reduce((a, j) => a + jobValue(j, proposals), 0);
+    return { id, label, n: list.length, value, prob: STAGE_PROB[id], weighted: value * STAGE_PROB[id] };
+  });
+  const forecast = stageRows.reduce((a, r) => a + r.weighted, 0);
+  const paidTotal = invoices.filter((i) => i.status === 'paid').reduce((a, i) => a + Number(i.amount || 0), 0);
+  const avgJob = paid.length ? paidTotal / paid.length : null;
+  const top = Math.max(1, funnel[0][1]);
+  return (
+    <div className="stack">
+      <div className="dash-h"><div><h1 className="h1">Reports</h1><p className="sub">How the studio is doing, worked out from your jobs, proposals and invoices.</p></div></div>
+      <div className="dkpis four">
+        <div className="dkpi static"><span className="dkpi-l">Win rate</span><span className="dkpi-v mono">{pct(paid.length, paid.length + closed.length)}</span><span className="dkpi-n">paid vs dropped</span></div>
+        <div className="dkpi static"><span className="dkpi-l">Proposal accepted</span><span className="dkpi-v mono">{pct(accepted.length, sentP.length)}</span><span className="dkpi-n">of proposals sent</span></div>
+        <div className="dkpi static"><span className="dkpi-l">Average job</span><span className="dkpi-v mono">{avgJob == null ? '—' : usd(avgJob)}</span><span className="dkpi-n">paid per finished job</span></div>
+        <div className="dkpi static"><span className="dkpi-l">Forecast</span><span className="dkpi-v mono">{usd(forecast)}</span><span className="dkpi-n">chance-weighted</span></div>
+      </div>
+      <div className="dash-g">
+        <Widget title="Funnel" badge="brief to paid">
+          <div className="pipe">
+            {funnel.map(([label, n], k) => (
+              <div key={label} className="pipe-r static">
+                <span className="pipe-n">{label}</span>
+                <span className="pipe-bar"><i style={{ width: (n / top) * 100 + '%' }} /></span>
+                <span className="pipe-c mono">{n}{k > 0 ? ' · ' + pct(n, funnel[k - 1][1]) : ''}</span>
+              </div>
+            ))}
+          </div>
+        </Widget>
+        <Widget title="How long it takes" badge="averages">
+          <div className="vrow"><span className="lbl">Job to proposal sent</span><span className="mono">{fmtDays(avgOf(toSent))}</span></div>
+          <div className="vrow"><span className="lbl">Proposal to accepted</span><span className="mono">{fmtDays(avgOf(toAccept))}</span></div>
+          <div className="vrow"><span className="lbl">Accepted to paid</span><span className="mono">{fmtDays(avgOf(toPaid))}</span></div>
+          <p className="sub" style={{ padding: '8px 0 2px' }}>Measured from the dates on each job’s proposal and invoices.</p>
+        </Widget>
+        <Widget title="Where work comes from" badge={clients.length ? 'by client source' : null}>
+          <div className="minirows">
+            {bySource.map((r) => <div key={r.key} className="minirow plain"><span className="mtxt">{r.label}<span className="sub"> · {r.jobs} job{r.jobs === 1 ? '' : 's'}</span></span><span className="mono mval">{usd(r.paid)}</span></div>)}
+            {!bySource.length && <p className="sub" style={{ padding: '10px 0' }}>No jobs yet.</p>}
+          </div>
+          {bySource.some((r) => r.key === 'unset') && <p className="sub" style={{ padding: '6px 0 2px' }}>Set “Came from” on a client to sharpen this.</p>}
+        </Widget>
+        <Widget title="Why jobs close" badge={closed.length ? closed.length + ' closed' : null}>
+          <div className="minirows">
+            {reasons.map(([why, n]) => <div key={why} className="minirow plain"><span className="mtxt">{why}</span><span className="mono mval">{n}</span></div>)}
+            {!reasons.length && <p className="sub" style={{ padding: '10px 0' }}>No closed jobs. When you close one, say why and it counts here.</p>}
+          </div>
+        </Widget>
+        <Widget title="Forecast by stage" badge={usd(forecast)}>
+          <div className="scroll-x"><table className="ctable">
+            <thead><tr><th>Stage</th><th>Jobs</th><th>Value</th><th>Chance</th><th>Weighted</th></tr></thead>
+            <tbody>{stageRows.map((r) => <tr key={r.id}><td>{r.label}</td><td className="mono">{r.n}</td><td className="mono">{usd(r.value)}</td><td className="mono">{Math.round(r.prob * 100)}%</td><td className="mono">{usd(r.weighted)}</td></tr>)}</tbody>
+          </table></div>
+        </Widget>
+      </div>
+    </div>
+  );
+}
+
+function Clients({ data, reload, open, sel, setSel }) {
   const [q, setQ] = React.useState('');
   const [adding, setAdding] = React.useState(false);
   const [f, setF] = React.useState({ name: '', email: '', notes: '' });
@@ -901,12 +1090,16 @@ function Clients({ data, reload, open }) {
   };
   const create = () => {
     if (!f.name.trim()) { setErr('Add a name.'); return; }
+    const twin = f.email.trim() && data.clients.find((c) => c.email && c.email.toLowerCase() === f.email.trim().toLowerCase());
+    if (twin) { setErr(twin.name + ' already has that email.'); return; }
     saveClient({ name: f.name.trim(), email: f.email.trim() || null, notes: f.notes.trim() || null, since: new Date().toISOString().slice(0, 10) })
       .then(() => { setF({ name: '', email: '', notes: '' }); setAdding(false); setErr(''); reload(); })
       .catch((e) => setErr(e.message));
   };
   const client = data.clients.find((c) => c.id === sel);
-  if (client) return <ClientPage key={client.id} client={client} stats={statsOf(client)} data={data} open={open} reload={reload} back={() => setSel(null)} gone={() => { setSel(null); reload(); }} />;
+  if (client) return <ClientPage key={client.id} client={client} stats={statsOf(client)} data={data} open={open} reload={reload} goto={setSel} back={() => setSel(null)} gone={() => { setSel(null); reload(); }} />;
+  // Same name twice (or a name that is another's business) is probably one person.
+  const twins = Object.values(data.clients.reduce((m, c) => { const k = normName(c.name); if (k) (m[k] = m[k] || []).push(c); return m; }, {})).filter((g) => g.length > 1);
 
   const rows = data.clients.map((c) => ({ c, s: statsOf(c) }))
     .filter(({ c }) => !q.trim() || (c.name + ' ' + (c.email || '')).toLowerCase().includes(q.trim().toLowerCase()));
@@ -935,6 +1128,12 @@ function Clients({ data, reload, open }) {
         <div className="dkpi static"><span className="dkpi-l">Paid, all time</span><span className="dkpi-v mono">{usd(total)}</span><span className="dkpi-n">no card fees</span></div>
         <div className="dkpi static"><span className="dkpi-l">Owed to you</span><span className="dkpi-v mono">{usd(owed)}</span><span className="dkpi-n">invoices sent</span></div>
       </div>
+      {twins.length > 0 && (
+        <section className="widget dupes" role="status">
+          <div className="widget-h"><h2 className="h2">Possible duplicates</h2><span className="widget-b">{twins.length}</span></div>
+          {twins.map((g) => <div key={g[0].id} className="minirow plain"><span className="mtxt">{g.length} clients named “{g[0].name}”{g.map((c) => c.email).filter(Boolean).length ? ' (' + g.map((c) => c.email).filter(Boolean).join(', ') + ')' : ''}</span><button className="btn quiet sm" onClick={() => setSel(g[0].id)}>Review and merge</button></div>)}
+        </section>
+      )}
       {data.clients.length > 0 && <input className="input" placeholder="Search clients" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search clients" style={{ maxWidth: 360 }} />}
       {rows.length > 0 ? (
         <div className="widget" style={{ padding: '4px 18px 6px' }}>
@@ -960,7 +1159,7 @@ function Clients({ data, reload, open }) {
   );
 }
 
-function ClientPage({ client, stats, data, open, reload, back, gone }) {
+function ClientPage({ client, stats, data, open, reload, back, gone, goto }) {
   const [tab, setTab] = React.useState('overview');
   const [notes, setNotes] = React.useState(client.notes || '');
   const [saved, setSaved] = React.useState(false);
@@ -968,8 +1167,28 @@ function ClientPage({ client, stats, data, open, reload, back, gone }) {
   const [compose, setCompose] = React.useState(false);
   const latest = stats.jobs[0];
   const ids = new Set(stats.jobs.map((j) => j.id));
-  const events = data.events.filter((e) => ids.has(e.job_id) && EVENT_TEXT[e.kind]).slice(0, 12);
-  const titleOf = (id) => (stats.jobs.find((j) => j.id === id) || {}).title || 'Job';
+  // History: calls, meetings and notes logged on the client, plus every job's events.
+  const [cEvents, setCEvents] = React.useState([]);
+  const loadEvents = React.useCallback(() => { fetchClientEvents(client.id).then(setCEvents).catch(() => {}); }, [client.id]);
+  React.useEffect(() => { loadEvents(); }, [loadEvents]);
+  const timeline = [...cEvents, ...data.events.filter((e) => ids.has(e.job_id) && EVENT_TEXT[e.kind])]
+    .filter((e) => EVENT_TEXT[e.kind]).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const events = timeline.slice(0, 60);
+  const [kind, setKind] = React.useState('note');
+  const [entry, setEntry] = React.useState('');
+  const logEntry = () => { if (!entry.trim()) return; saveJobEvent({ client_id: client.id, kind, who: 'me', body: entry.trim() }).then(() => { setEntry(''); loadEvents(); }).catch((e) => alert(e.message)); };
+  const tasks = data.tasks.filter((t) => t.client_id === client.id || ids.has(t.job_id));
+  // Merge: fold this client into another (same person entered twice).
+  const others = data.clients.filter((c) => c.id !== client.id);
+  const twin = others.find((c) => normName(c.name) === normName(client.name));
+  const [mergeTo, setMergeTo] = React.useState(twin ? twin.id : '');
+  const doMerge = () => {
+    const into = others.find((c) => c.id === mergeTo);
+    if (!into) return;
+    if (!window.confirm(`Merge ${client.name} into ${into.name}? Their jobs, invoices, history and tasks move to ${into.name}, and ${client.name} is removed. This cannot be undone.`)) return;
+    mergeClients(client.id, into.id).then(() => { reload(); goto(into.id); }).catch((e) => alert(e.message));
+  };
+  const titleOf = (id) => (id ? (stats.jobs.find((j) => j.id === id) || {}).title || 'Job' : 'Client');
   const saveNotes = () => saveClient({ id: client.id, notes: notes.trim() || null }).then(() => { setSaved(true); reload(); setTimeout(() => setSaved(false), 2000); }).catch(() => {});
   const remove = () => deleteClient(client.id).then(gone).catch(() => setConfirm(false));
   const TABS = [['overview', 'Overview'], ['jobs', 'Jobs (' + stats.jobs.length + ')'], ['money', 'Money'], ['activity', 'Activity']];
@@ -1005,9 +1224,20 @@ function ClientPage({ client, stats, data, open, reload, back, gone }) {
             </Widget>
             <Widget title="Recent activity" badge={events.length ? 'latest' : null}>
               <div className="minirows">
-                {events.slice(0, 5).map((e) => <div key={e.id} className="minirow"><span className="mtxt"><b>{titleOf(e.job_id)}</b> · {EVENT_TEXT[e.kind]}</span><span className="mono mval">{relTime(e.created_at)}</span></div>)}
+                {events.slice(0, 5).map((e) => <div key={e.id} className="minirow"><span className="mtxt"><b>{titleOf(e.job_id)}</b> · {evLine(e)}</span><span className="mono mval">{relTime(e.created_at)}</span></div>)}
                 {!events.length && <p className="sub" style={{ padding: '10px 0' }}>Nothing yet.</p>}
               </div>
+            </Widget>
+            <Widget title="Details">
+              <div className="vrow"><span className="lbl">Came from</span>
+                <select className="input" aria-label="Where this client came from" value={client.source || ''} onChange={(e) => saveClient({ id: client.id, source: e.target.value || null }).then(reload).catch((er) => alert(er.message))}>
+                  <option value="">Not set</option>
+                  {Object.entries(SOURCE_LABEL).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+                </select>
+              </div>
+            </Widget>
+            <Widget title="Follow-ups" badge={tasks.filter((t) => !t.done).length ? tasks.filter((t) => !t.done).length + ' open' : null}>
+              <TaskList tasks={tasks} reload={reload} link={{ client_id: client.id }} />
             </Widget>
             <Widget title="Open jobs">
               <div className="minirows">
@@ -1039,18 +1269,76 @@ function ClientPage({ client, stats, data, open, reload, back, gone }) {
         )}
         {tab === 'activity' && (
           <div className="widget" style={{ padding: '4px 18px 6px' }}>
+            <div className="row" style={{ gap: 8, padding: '12px 0' }}>
+              <select className="input" aria-label="Kind of entry" value={kind} onChange={(e) => setKind(e.target.value)}><option value="note">Note</option><option value="call">Call</option><option value="meeting">Meeting</option></select>
+              <input className="input" style={{ flex: 1, minWidth: 0 }} placeholder="Log a call, a meeting or a note" aria-label="Log an entry" value={entry} onChange={(e) => setEntry(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') logEntry(); }} />
+              <button className="btn ghost sm" onClick={logEntry}>Log</button>
+            </div>
             <div className="minirows">
-              {events.map((e) => <div key={e.id} className="minirow"><span className="mtxt"><b>{titleOf(e.job_id)}</b> · {EVENT_TEXT[e.kind]}</span><span className="mono mval">{relTime(e.created_at)}</span></div>)}
+              {events.map((e) => <div key={e.id} className="minirow"><span className="mtxt" style={{ whiteSpace: 'pre-wrap' }}><b>{titleOf(e.job_id)}</b> · {evLine(e)}</span><span className="mono mval">{relTime(e.created_at)}</span></div>)}
               {!events.length && <p className="sub" style={{ padding: '12px 0' }}>Nothing yet.</p>}
             </div>
           </div>
         )}
       </div>
+      {others.length > 0 && (
+        <section className="widget">
+          <div className="widget-h"><h2 className="h2">Merge</h2></div>
+          <p className="sub" style={{ padding: '6px 0' }}>{twin ? twin.name + ' looks like the same client. ' : ''}Entered twice? Fold {client.name} into another client; everything moves across.</p>
+          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+            <select className="input" aria-label="Merge into" value={mergeTo} onChange={(e) => setMergeTo(e.target.value)}>
+              <option value="">Merge {client.name} into…</option>
+              {others.map((c) => <option key={c.id} value={c.id}>{c.name}{c.email ? ' · ' + c.email : ''}</option>)}
+            </select>
+            <button className="btn ghost sm" disabled={!mergeTo} onClick={doMerge}>Merge</button>
+          </div>
+        </section>
+      )}
       <div style={{ paddingTop: 8 }}>
         {confirm
           ? <div className="row"><span className="sub">Remove {client.name}? Their jobs stay.</span><button className="btn sm ghost" onClick={remove}>Yes, remove</button><button className="btn sm quiet" onClick={() => setConfirm(false)}>Keep</button></div>
           : <button className="btn sm quiet" onClick={() => setConfirm(true)}>Remove client</button>}
       </div>
+    </div>
+  );
+}
+
+// ── Search: clients, jobs and tasks in one box. Press / or Ctrl/Cmd+K. ────
+function SearchBar({ data, open, openClient }) {
+  const [q, setQ] = React.useState('');
+  const [on, setOn] = React.useState(false);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    const key = (e) => {
+      const t = e.target;
+      const typing = t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName);
+      if (((e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !typing)) { e.preventDefault(); if (ref.current) ref.current.focus(); }
+    };
+    window.addEventListener('keydown', key);
+    return () => window.removeEventListener('keydown', key);
+  }, []);
+  const needle = q.trim().toLowerCase();
+  const has = (...parts) => parts.filter(Boolean).join(' ').toLowerCase().includes(needle);
+  const hits = !needle || !data ? [] : [
+    ...data.clients.filter((c) => has(c.name, c.email, c.contact)).slice(0, 5)
+      .map((c) => ({ key: 'c' + c.id, label: c.name, sub: 'Client' + (c.email ? ' · ' + c.email : ''), go: () => openClient(c.id) })),
+    ...data.jobs.filter((j) => has(j.title, j.name, j.business, j.email)).slice(0, 6)
+      .map((j) => ({ key: 'j' + j.id, label: j.title, sub: STAGE_LABEL[j.stage] + ' · ' + j.name, go: () => open(j.id) })),
+    ...data.tasks.filter((t) => !t.done && has(t.t)).slice(0, 4)
+      .map((t) => ({ key: 't' + t.id, label: t.t, sub: 'Task · ' + dueWords(t.due).txt, go: () => (t.job_id ? open(t.job_id) : (location.href = '/docket')) })),
+  ];
+  const pick = (h) => { h.go(); setQ(''); setOn(false); if (ref.current) ref.current.blur(); };
+  return (
+    <div className="hsearch">
+      <input ref={ref} className="input" type="search" placeholder="Search ( / )" aria-label="Search clients, jobs and tasks" value={q}
+        onChange={(e) => setQ(e.target.value)} onFocus={() => setOn(true)} onBlur={() => setTimeout(() => setOn(false), 150)}
+        onKeyDown={(e) => { if (e.key === 'Enter' && hits[0]) pick(hits[0]); if (e.key === 'Escape') { setQ(''); e.target.blur(); } }} />
+      {on && needle && (
+        <div className="hsearch-r" role="listbox" aria-label="Search results">
+          {hits.map((h) => <button key={h.key} type="button" role="option" onMouseDown={(e) => e.preventDefault()} onClick={() => pick(h)}><b>{h.label}</b><span className="sub">{h.sub}</span></button>)}
+          {!hits.length && <p className="sub">No match.</p>}
+        </div>
+      )}
     </div>
   );
 }
@@ -1107,16 +1395,18 @@ function BusinessHub() {
   // The address holds the view (#jobs, #money, #job=<id>) so a reload or a
   // pasted link lands in the same place.
   // Today is home. (The old ring launcher is gone; an old #ring link lands on Today.)
-  const TABS = ['today', 'jobs', 'proposals', 'mail', 'money', 'clients'];
+  const TABS = ['today', 'jobs', 'proposals', 'mail', 'money', 'clients', 'reports'];
   const fromHash = () => {
     const id = (location.hash.match(/job=([0-9a-f-]{36})/) || [])[1] || null;
+    const cid = (location.hash.match(/client=([0-9a-f-]{36})/) || [])[1] || null;
     const t = location.hash.slice(1);
-    return { tab: id ? 'jobs' : (TABS.includes(t) ? t : 'today'), id };
+    return { tab: id ? 'jobs' : cid ? 'clients' : (TABS.includes(t) ? t : 'today'), id, cid };
   };
   const [tab, setTab] = React.useState(() => fromHash().tab);
   const [jobId, setJobId] = React.useState(() => fromHash().id);
+  const [clientId, setClientId] = React.useState(() => fromHash().cid);
   React.useEffect(() => {
-    const on = () => { const h = fromHash(); setTab(h.tab); setJobId(h.id); };
+    const on = () => { const h = fromHash(); setTab(h.tab); setJobId(h.id); setClientId(h.cid); };
     window.addEventListener('hashchange', on);
     return () => window.removeEventListener('hashchange', on);
   }, []);
@@ -1126,10 +1416,11 @@ function BusinessHub() {
   const [clients, reloadClients, e4] = useCollection(fetchClients);
   const [briefs, reloadBriefs, e5] = useCollection(fetchDesignBriefs);
   const [events, reloadEvents, e6] = useCollection(fetchAllEvents);
-  const error = e1 || e2 || e3 || e4 || e5 || e6;
-  const loading = [jobs, proposals, invoices, clients, briefs, events].some((r) => r === null);
-  const reloadAll = () => { reloadJobs(); reloadProposals(); reloadInvoices(); reloadClients(); reloadBriefs(); reloadEvents(); };
-  const data = loading ? null : { jobs, proposals, invoices, clients, briefs, events, needs: needsYou(jobs, proposals, invoices, briefs, events) };
+  const [tasks, reloadTasks, e7] = useCollection(fetchDocketTasks);
+  const error = e1 || e2 || e3 || e4 || e5 || e6 || e7;
+  const loading = [jobs, proposals, invoices, clients, briefs, events, tasks].some((r) => r === null);
+  const reloadAll = () => { reloadJobs(); reloadProposals(); reloadInvoices(); reloadClients(); reloadBriefs(); reloadEvents(); reloadTasks(); };
+  const data = loading ? null : { jobs, proposals, invoices, clients, briefs, events, tasks, needs: needsYou(jobs, proposals, invoices, briefs, events) };
   const [startNew, setStartNew] = React.useState(false);
   const [intro, setIntro] = React.useState(introWanted);
   const endIntro = React.useCallback(() => setIntro(false), []);
@@ -1143,8 +1434,9 @@ function BusinessHub() {
     if (ro) ro.observe(el); else window.addEventListener('resize', set);
     return () => { if (ro) ro.disconnect(); else window.removeEventListener('resize', set); };
   }, []);
-  const go = (t, opts) => { setTab(t); setJobId(null); setStartNew(!!(opts && opts.newJob)); history.replaceState(null, '', '#' + t); };
-  const open = (id) => { setTab('jobs'); setJobId(id); history.replaceState(null, '', '#job=' + id); window.scrollTo(0, 0); };
+  const go = (t, opts) => { setTab(t); setJobId(null); setClientId(null); setStartNew(!!(opts && opts.newJob)); history.replaceState(null, '', '#' + t); };
+  const open = (id) => { setTab('jobs'); setJobId(id); setClientId(null); history.replaceState(null, '', '#job=' + id); window.scrollTo(0, 0); };
+  const openClient = (id) => { setTab('clients'); setJobId(null); setClientId(id); history.replaceState(null, '', '#client=' + id); window.scrollTo(0, 0); };
 
   return (
     <React.Fragment>
@@ -1159,6 +1451,7 @@ function BusinessHub() {
             ? <a className="backlink" href="#jobs" onClick={(e) => { e.preventDefault(); go('jobs'); }}><i aria-hidden="true">←</i> Jobs</a>
             : <a className="backlink" href="/backroom"><i aria-hidden="true">←</i> Backroom</a>}
           <a className="mark" href="/backroom"><img src="assets/antler.png" alt="" /><div><b>Business Hub</b><span>The Backroom</span></div></a>
+          <SearchBar data={data} open={open} openClient={openClient} />
           <nav className="topnav">
 <a href="/docket">Docket</a>
           </nav>
@@ -1171,12 +1464,13 @@ function BusinessHub() {
           {!error && loading && <p className="sub" style={{ padding: '20px 2px' }}>Loading…</p>}
           {data && (
             <React.Fragment>
-              {tab === 'today' && <Today data={data} open={open} go={go} />}
+              {tab === 'today' && <Today data={data} open={open} go={go} reload={reloadAll} />}
               {tab === 'jobs' && (jobId ? <JobPage jobId={jobId} data={data} reload={reloadAll} back={() => go('jobs')} /> : <Jobs data={data} open={open} reload={reloadAll} startNew={startNew} />)}
               {tab === 'proposals' && <Proposals data={data} open={open} />}
               {tab === 'mail' && <Mail data={data} open={open} />}
               {tab === 'money' && <Money data={data} open={open} reload={reloadAll} />}
-              {tab === 'clients' && <Clients data={data} reload={reloadClients} open={open} />}
+              {tab === 'clients' && <Clients data={data} reload={reloadAll} open={open} sel={clientId} setSel={(id) => (id ? openClient(id) : go('clients'))} />}
+              {tab === 'reports' && <Reports data={data} open={open} />}
             </React.Fragment>
           )}
         </main>
