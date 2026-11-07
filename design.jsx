@@ -961,6 +961,7 @@ function Footer() {
         <div>
           <p className="ddisplay" style={{ fontSize: 22 }}>The Scaffold</p>
           <p className="dfootsub">Tools and design by Carter Groff. Harrisonburg, Virginia.</p>
+          <p className="dfootcredit">Cat model: <a href="https://sketchfab.com/3d-models/bicolor-cat-e623a618ca344a8393d7ba4d63ec23cf">&ldquo;Bicolor Cat&rdquo;</a> by kenchoo, based on &ldquo;3d modelling my cat: Fripouille&rdquo; by guillaume.bolis, <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. Modified: recoloured, re-rigged and animated.</p>
         </div>
         <div className="dfootlinks">
           <a href="https://www.cargroff.com/">Portfolio</a>

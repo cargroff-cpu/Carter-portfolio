@@ -914,6 +914,34 @@ under makes it look up and move.
   swat; a dodged pounce gets a short "missed it" look around; woken from a
   loaf, it watches for a beat before getting up. Each has a scenario in
   `scripts/cat-test` (17 scenarios, all passing at RUNS=5).
+- **A new cat (v7, 2026-11-07).** The first model's back legs, bare skin and
+  floor clipping were replaced by a re-rig of "Bicolor Cat" by kenchoo (itself
+  based on "3d modelling my cat: Fripouille" by guillaume.bolis), CC BY 4.0.
+  Recoloured black, re-weighted to our bone names, morphs added, a fur texture
+  baked on four alpha shells, animated again with the same 29 clip names.
+  `cat-motion.json` is re-exported (trot is now 0.5625 m/s, the pounce flight
+  0.23–0.67 s). CC BY needs a visible credit, so the Scaffold footer carries it
+  (`.dfootcredit` in `design.jsx`); keep it as long as this model is used. The
+  site zeroes the model's fur sheen at load: under the amber lamps it turned the
+  underside pale and showed the old white markings. Eyes are the model's own,
+  solid white with no pupil, shrunk to 55% about each eye's centre at load
+  (`EYE_SCALE`): at full size they read huge from the hero camera. The cool rim
+  light is 1.2 (was 2.8) and the fur's specular 0.15: on this model the old
+  values lit the belly and inner legs violet in crouches and stretches. The
+  suite is unchanged and passes with the new model.
+- **Every post is somewhere to go (2026-11-07).** The far posts were barely
+  visited (about 30 s each in 15 minutes, nearly all of it walking past) and he
+  sat a metre away from the post he had gone to, so it looked like a sprite laid
+  over the lane. Now a post nobody has visited yet is his next stop 9 times in
+  10, and after that the longest-neglected one is likeliest (unlit posts too).
+  He sits 0.5 m from the post (was 0.8), turns to face it, looks up at the
+  lantern and flicks his tail. The one canvas sits between the near and mid
+  posts, so it is always drawn over the mid, far and back posts; sitting closer
+  made it show at the wrong depth now and then (110 frames in 15 minutes by the
+  far posts). `avoidPosts()` keeps him inward of any post nearer than he is, so
+  its base is never hidden by his sprite. The suite has a 15-minute no-cursor
+  scenario (rendering off, about 20 s) that fails if any of the eight posts gets
+  no visit or if he is ever drawn over a nearer post.
 
 ## 2026-11-07 — Business Hub: one home per thing
 - Leads is a lens on work not yet won: Overview, Tasks, Activity, Reports. Its Pipeline and Contacts tabs are gone, since they were the Jobs board and the Clients page under a second name; Leads' stage cards now open Jobs.
