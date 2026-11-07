@@ -32,6 +32,8 @@ const SINP = Math.sin(PITCH), COSP = Math.cos(PITCH);
 const DEG = Math.PI / 180;
 const ORG_Y = 0.74;            // where the cat's feet sit inside its canvas
 const CHASE_M = 2.6;           // beyond this (metres) a cursor isn't worth getting up for
+const EYE_SCALE = 0.55;        // each eye shrunk about its own centre: the model's eyes read huge at hero size
+const RIM_I = 1.2;             // the cool rim light that holds the silhouette (was 2.8 on the first, smoother model)
 const HAZE_K = 0.6;            // share of each fog bank's haze laid on the cat
 const REACH_H = 1.5;           // an air toy higher than this (metres) is only watched, never played with
 const FLICK_MPS = 1.6;         // cursor speed (m/s at the cat's depth) that reads as a flick
@@ -370,10 +372,10 @@ class Cat {
       // tuned in the page's light: matte near-black fur, eyes that stay amber instead of blowing out
       const m = o.material;
       if (m && m.name === 'cat_fur') {
-        m.color.set(0x141219); m.roughness = 0.78; if ('specularIntensity' in m) m.specularIntensity = 0.5;
+        m.color.set(0x141219); m.roughness = 0.78; if ('specularIntensity' in m) m.specularIntensity = 0.15;   // low: the cool rim light lit the belly and inner legs violet
         if ('sheen' in m) m.sheen = 0;   // the model's fur sheen turns the underside pale under the amber lamps; the page's own rim light does that job
       }
-      if (m && m.name === 'cat_eye') m.emissiveIntensity = 1.4;
+      if (m && m.name === 'cat_eye') { m.emissiveIntensity = 1.4; this.shrinkEyes(o.geometry); }
       if (o.isBone) o.matrixAutoUpdate = true;
     });
     this.bones = { neck_01: null, neck_02: null, head: null };
@@ -404,7 +406,7 @@ class Cat {
     // gaslight: the two nearest lit lamps light the cat from where they stand
     this.hemi = new THREE.HemisphereLight(0x3a3440, 0x0a0705, 0.15); scene.add(this.hemi);
     this.keys = [0, 1].map(() => { const l = new THREE.DirectionalLight(0xffc27a, 0); scene.add(l); return l; });
-    this.rim = new THREE.DirectionalLight(0xd8c9f0, 2.8); this.rim.position.set(-1.3, 1.5, -2.2); scene.add(this.rim);
+    this.rim = new THREE.DirectionalLight(0xd8c9f0, RIM_I); this.rim.position.set(-1.3, 1.5, -2.2); scene.add(this.rim);
     this.fill = new THREE.DirectionalLight(0xffc27c, 0.1); this.fill.position.set(0.4, 0.6, 3); scene.add(this.fill);
 
     // soft contact shadow
@@ -426,6 +428,22 @@ class Cat {
     this.tmp = { v: new THREE.Vector3(), v2: new THREE.Vector3(), q: new THREE.Quaternion(), q2: new THREE.Quaternion(),
       q3: new THREE.Quaternion(), qy: new THREE.Quaternion(), qp: new THREE.Quaternion(), e: new THREE.Euler() };
     this.style = { z: '', f: '', t: '' };
+  }
+
+  // the two eyes are one mesh: shrink each about its own centre (bind pose, so skinning and
+  // morph deltas still line up; the deltas are scaled by the same factor)
+  shrinkEyes(geo) {
+    if (!geo || !geo.attributes.position || geo.userData.eyesShrunk) return;
+    geo.userData.eyesShrunk = true;
+    const pos = geo.attributes.position, n = pos.count, sum = [[0, 0, 0, 0], [0, 0, 0, 0]];
+    for (let i = 0; i < n; i++) { const k = pos.getX(i) < 0 ? 0 : 1; sum[k][0] += pos.getX(i); sum[k][1] += pos.getY(i); sum[k][2] += pos.getZ(i); sum[k][3]++; }
+    for (let i = 0; i < n; i++) {
+      const s = sum[pos.getX(i) < 0 ? 0 : 1], cx = s[0] / s[3], cy = s[1] / s[3], cz = s[2] / s[3];
+      pos.setXYZ(i, cx + (pos.getX(i) - cx) * EYE_SCALE, cy + (pos.getY(i) - cy) * EYE_SCALE, cz + (pos.getZ(i) - cz) * EYE_SCALE);
+    }
+    pos.needsUpdate = true;
+    for (const a of geo.morphAttributes.position || []) { for (let i = 0; i < a.count; i++) a.setXYZ(i, a.getX(i) * EYE_SCALE, a.getY(i) * EYE_SCALE, a.getZ(i) * EYE_SCALE); a.needsUpdate = true; }
+    geo.computeBoundingSphere();
   }
 
   sizeCanvas() {
@@ -765,7 +783,7 @@ class Cat {
     const a = 1 - clear;
     this.hazeNow = a;
     this.scene.fog.density = a > 0.001 ? Math.sqrt(-Math.log(1 - Math.min(a, 0.98))) / 12 : 0;
-    this.rim.intensity = 2.8 * (1 + 1.2 * a);          // the cool rim holds the silhouette in the fog
+    this.rim.intensity = RIM_I * (1 + 1.2 * a);          // the cool rim holds the silhouette in the fog
     const f = L.filterAt(this.Z);
     const zs = String(z), fs = `brightness(${f.bright.toFixed(3)}) blur(${f.blur.toFixed(2)}px)`;
     const ts = `translate3d(${(s.x - cw / 2).toFixed(1)}px, ${(s.y - ORG_Y * ch).toFixed(1)}px, 0)`;

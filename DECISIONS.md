@@ -924,7 +924,11 @@ under makes it look up and move.
   (`.dfootcredit` in `design.jsx`); keep it as long as this model is used. The
   site zeroes the model's fur sheen at load: under the amber lamps it turned the
   underside pale and showed the old white markings. Eyes are the model's own,
-  solid white with no pupil. The suite is unchanged and passes with the new model.
+  solid white with no pupil, shrunk to 55% about each eye's centre at load
+  (`EYE_SCALE`): at full size they read huge from the hero camera. The cool rim
+  light is 1.2 (was 2.8) and the fur's specular 0.15: on this model the old
+  values lit the belly and inner legs violet in crouches and stretches. The
+  suite is unchanged and passes with the new model.
 
 ## 2026-11-07 — Business Hub: one home per thing
 - Leads is a lens on work not yet won: Overview, Tasks, Activity, Reports. Its Pipeline and Contacts tabs are gone, since they were the Jobs board and the Clients page under a second name; Leads' stage cards now open Jobs.

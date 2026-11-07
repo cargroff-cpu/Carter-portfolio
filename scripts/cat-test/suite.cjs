@@ -12,7 +12,7 @@ const SCEN = [
     check: `r => [r.firstPlay >= 0 && r.firstPlay < 1.5 || 'slow to notice: ' + r.firstPlay, r.clips.has('loco') || 'never went over', r.first('pounce') >= 0 && r.first('pounce') < 6.5 || 'no pounce by 6.5 s (' + r.first('pounce') + ')']` },
   { name: 'wiggle far away (~3.8 m) is ignored', start: 'STAND', secs: 10,
     ptr: `(t, c, L) => { const a = c.anchor || (c.anchor = L.clampIn(c.X0 + (c.X0 > 0 ? -3.8 : 3.8), c.Z0 + 1.2, 0.6)); const s = L.toScreen(a.X + 0.25*Math.sin(t*7), a.Z + 0.15*Math.cos(t*5)); return [s.x, s.y]; }`,
-    check: `r => [r.firstPlay < 0 || 'got up for a far cursor at ' + r.firstPlay, !r.clips.has('loco') || 'walked toward it']` },
+    check: `r => [r.firstPlay < 0 || r.dmAtPlay <= 2.9 || 'got up for a far cursor at ' + r.firstPlay + ' (it was ' + r.dmAtPlay.toFixed(1) + ' m away)', r.firstPlay < 0 || r.dmAtPlay <= 2.9 || !r.clips.has('loco') || 'walked toward it']` },   // a cat that wandered into range by itself may play
   { name: 'cursor waving high over the headline: watches, does not walk', start: 'STAND', secs: 10,
     ptr: `(t, c, L) => { const s = L.toScreen(c.X0 + 0.4*Math.sin(t*4), c.Z0); return [s.x + 200*Math.sin(t*3), s.y - 2.8*s.ppm]; }`,
     check: `r => [!r.clips.has('loco') || 'walked under an unreachable cursor']` },
@@ -82,7 +82,7 @@ const SCEN = [
         for (let i = 0; i < 10; i++) c.update(1 / 30);
         c.ahead = (d) => ({ X: c.X0 + Math.sin(c.yaw0) * d, Z: c.Z0 - Math.cos(c.yaw0) * d }); c.yaw0 = c.yaw;
         c.brain.swap('life', c.brain.life(false));
-        const r = { firstPlay: -1, playEnd: -1, clips: new Set(), firsts: {}, seq: [], trace: [], starts: [], misses: [], locks: [], maxGaze: 0, walkedToward: 0, dist: 0, headSpike: 0 };
+        const r = { dmAtPlay: 99, firstPlay: -1, playEnd: -1, clips: new Set(), firsts: {}, seq: [], trace: [], starts: [], misses: [], locks: [], maxGaze: 0, walkedToward: 0, dist: 0, headSpike: 0 };
         const rect = c.hero.getBoundingClientRect();
         let px = null, py = null, lx = c.X, lz = c.Z;
         const headBones = ['neck_01', 'neck_02', 'head'].map(n => c.model.getObjectByName(n));
@@ -97,7 +97,7 @@ const SCEN = [
           c.update(1 / 30);
           const mode = c.brain.mode, cur = c.motor.cur;
           const playing = mode === 'play' && c.brain.note !== 'winddown';
-          if (playing && r.firstPlay < 0) r.firstPlay = +t.toFixed(2);
+          if (playing && r.firstPlay < 0) { r.firstPlay = +t.toFixed(2); r.dmAtPlay = c.toy ? c.toy.dm : 99; }
           if (r.firstPlay >= 0 && !playing && r.playEnd < 0) r.playEnd = +t.toFixed(2);
           const tag = cur + (c.brain.note ? '/' + c.brain.note : '');
           if (!r.seq.length || r.seq[r.seq.length - 1][0] !== tag) r.seq.push([tag, +t.toFixed(2)]);
