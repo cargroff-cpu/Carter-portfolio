@@ -31,6 +31,7 @@ const PITCH = 13 * Math.PI / 180; // the lane is seen from slightly above
 const SINP = Math.sin(PITCH), COSP = Math.cos(PITCH);
 const DEG = Math.PI / 180;
 const ORG_Y = 0.74;            // where the cat's feet sit inside its canvas
+const CHASE_M = 2.6;           // beyond this (metres) a cursor isn't worth getting up for
 const HAZE_K = 0.6;            // share of each fog bank's haze laid on the cat
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -261,10 +262,11 @@ class Motor {
     this.step = 0;
   }
   has(name) { return this.s.has(name); }
-  play(name, fade = 0.25, restart = true) {
+  play(name, fade = 0.25, restart = true, speed = 1) {
     const x = name === 'loco' ? this.loco : this.s.get(name);
     if (!x) return;
     if (this.cur === name && !restart) return;
+    if (x !== this.loco) x.act.timeScale = speed;
     const rate = 1 / Math.max(fade, 1 / 120);
     for (const o of this.slots) { o.target = o === x ? 1 : 0; o.rate = rate; }
     if (x !== this.loco) {
@@ -478,31 +480,34 @@ class Cat {
     const hp = this.ptrToHero(); this.ptr.inside = !!hp;
     if (!hp) return null;
     this.ptr.x = hp.x; this.ptr.y = hp.y;
-    const moving = this.ptr.speed > 70;
     const yc = this.lane.yOfZ(this.Z), ppm = this.lane.ppmAtY(yc) * this.vis;
+    // cursor speed in metres per second at the cat's own depth, so a wiggle reads
+    // the same whether the cat is near the front or back by the far lamps
+    this.ptr.mps = this.ptr.speed / ppm;
+    const moving = this.ptr.mps > 0.18;
     const ax = (hp.x - this.lane.cAtY(yc)) / ppm, ah = (yc - hp.y) / (ppm * COSP);
     // hovering just over the cat means "over the cat", not a spot on the ground behind it
-    const keepGround = this.toy && this.toy.kind === 'ground' && (this.posture === 'CROUCH' || this.brain.note === 'chase');
-    const overCat = Math.abs(ax - this.X) < 0.5 && ah > (keepGround ? 0.55 : 0.3) * this.vis && ah < 0.95;
+    // on or just over the cat means "on the cat", not a spot on the ground behind
+    // it; while it's hunting something on the ground it takes more to change its mind
+    const hunting = this.toy && this.toy.kind === 'ground' && (this.posture === 'CROUCH' || this.brain.note === 'chase' || this.brain.note === 'stalk');
+    const overCat = Math.abs(ax - this.X) < 0.5 && ah > (hunting ? 0.5 : 0.15) * this.vis && ah < 1.0;
     const g = overCat ? null : this.lane.fromScreen(hp.x, hp.y);
     if (g && g.Z <= this.lane.Zmax + 0.6) {
       const c = this.lane.clampIn(g.X, g.Z, 0.5);
-      return { kind: 'ground', X: c.X, Z: c.Z, h: 0.02, moving };
+      return { kind: 'ground', X: c.X, Z: c.Z, h: 0.02, moving, dm: Math.hypot(c.X - this.X, c.Z - this.Z) };
     }
-    return { kind: 'air', X: ax, Z: this.Z, h: ah, moving };
+    return { kind: 'air', X: ax, Z: this.Z, h: ah, moving, dm: Math.hypot(ax - this.X, Math.max(0, ah - 0.3)) };
   }
 
   updateAttention(dt) {
     const p = this.ptr, toy = this.toy;
-    p.speed = damp(p.speed, 0, 5, dt);
-    if (!toy) { this.interest = Math.max(0, this.interest - dt * 0.5); return; }
-    const s = this.lane.toScreen(this.X, this.Z), catH = 0.33 * s.ppm * this.vis;
-    const d = Math.hypot(p.x - s.x, p.y - (s.y - catH));
-    const prox = Math.exp(-d / (catH * 6));
-    const act = clamp(p.speed / 260, 0, 1);
-    this.interest += dt * 1.4 * act * (0.2 + prox);
-    if (act < 0.12) this.interest -= dt * (this.brain.mode === 'play' ? 0.22 : 0.35);
-    this.interest = clamp(this.interest, 0, 3);
+    p.speed = damp(p.speed, 0, 6, dt);
+    if (!toy) { this.interest = Math.max(0, this.interest - dt * 0.8); return; }
+    const prox = Math.exp(-toy.dm / 1.1);                 // 1 on the cat, ~0.4 a metre away, ~0.1 at chase range
+    const act = clamp((p.mps || 0) / 0.5, 0, 1);
+    if (act > 0.3 && toy.dm < CHASE_M) this.interest += dt * 3.0 * act * (0.15 + prox);
+    else this.interest -= dt * 0.6;
+    this.interest = clamp(this.interest, 0, 1.6);
   }
 
   // ── per-frame ──
@@ -541,10 +546,10 @@ class Cat {
       if (o.kind === 'viewer') return { p: out.set(0, 3.2, 14).applyAxisAngle(T.v2.set(0, 1, 0), -this.yaw), w: 1 };
       return { p: this.toLocal(o.X, o.h, o.Z, out), w: 1 };
     }
-    if (this.toy && this.interest > 0.12) {
+    if (this.toy && (this.interest > 0.08 || this.brain.mode === 'play')) {
       const t = this.toy;
       const p = t.kind === 'ground' ? this.toLocal(t.X, 0.03, t.Z, out) : this.toLocal(t.X, t.h, t.Z + -0.25, out);
-      return { p, w: sm(this.interest / 0.55) };
+      return { p, w: this.brain.mode === 'play' ? 1 : sm(this.interest / 0.4) };
     }
     if (this.glance && this.glance.until > this.time) {
       const g = this.glance;
@@ -710,8 +715,8 @@ class Brain {
       if (this.mode !== 'play' && c.posture !== 'WALK') this.swap('pet', this.pet());
     }
     if (this.mode === 'life' && c.cool <= 0) {
-      const need = { STAND: 0.9, WALK: 1.1, SIT: 1.4, LOAF: 2.0, CROUCH: 0.9 }[c.posture] || 1;
-      if (c.interest > need && c.toy) this.swap('play', this.play());
+      const need = { STAND: 0.45, WALK: 0.55, SIT: 0.65, LOAF: 1.0, CROUCH: 0.45 }[c.posture] || 0.5;
+      if (c.interest > need && c.toy && c.toy.dm < CHASE_M) this.swap('play', this.play());
     }
     const r = this.gen.next(dt);
     if (r.done) this.swap('life', this.life(false));
@@ -720,9 +725,9 @@ class Brain {
 
   // ── primitives ──
   *wait(sec) { let t = 0; while (t < sec) t += yield; }
-  *once(name, fade = 0.2, each) {
+  *once(name, fade = 0.2, each, speed = 1) {
     const c = this.c, m = c.motor; if (!m.has(name)) return;
-    m.play(name, fade, true);
+    m.play(name, fade, true, speed);
     c.posture = ENDS[name] || 'STAND';
     do { const dt = yield; each && each(dt, m.time(name), m.dur(name)); } while (!m.done(name));
   }
@@ -733,13 +738,13 @@ class Brain {
     while (t < sec) { t += yield; if (until && until()) break; }
   }
   *settle() { const m = this.c.motor; while (m.busy()) yield; }
-  *toStand() {
+  *toStand(speed = 1) {
     const c = this.c, m = c.motor;
     yield* this.settle();
     switch (c.posture) {
       case 'WALK': yield* this.stopWalk(); break;
-      case 'LOAF': yield* this.once('loaf_to_sit', 0.2); // falls through: then stand
-      case 'SIT': yield* this.once('sit_to_stand', 0.2); break;
+      case 'LOAF': yield* this.once('loaf_to_sit', 0.2, null, speed); // falls through: then stand
+      case 'SIT': yield* this.once('sit_to_stand', 0.2, null, speed); break;
       case 'CROUCH': m.play('idle_stand', 0.32); c.posture = 'STAND'; c.creep = 0; yield* this.wait(0.3); return;
       default: break;
     }
@@ -766,17 +771,17 @@ class Brain {
     yield* this.once('walk_to_idle', 0.12);
     m.play('idle_stand', 0.15); c.posture = 'STAND';
   }
-  *turnBy(d) {
+  *turnBy(d, speed = 1) {
     d = wrap(d);
     if (Math.abs(d) < 15 * DEG) return;
-    if (d > 135 * DEG) yield* this.turnClip('turn_180', d);
-    else if (d < -135 * DEG) { yield* this.turnClip('turn_R_90', d / 2); yield* this.turnClip('turn_R_90', d / 2); }
-    else yield* this.turnClip(d > 0 ? 'turn_L_90' : 'turn_R_90', d);
+    if (d > 135 * DEG) yield* this.turnClip('turn_180', d, speed);
+    else if (d < -135 * DEG) { yield* this.turnClip('turn_R_90', d / 2, speed); yield* this.turnClip('turn_R_90', d / 2, speed); }
+    else yield* this.turnClip(d > 0 ? 'turn_L_90' : 'turn_R_90', d, speed);
     this.c.motor.play('idle_stand', 0.2);
   }
-  *turnClip(name, d) {
+  *turnClip(name, d, speed = 1) {
     const c = this.c, y0 = c.yaw;
-    yield* this.once(name, 0.2, (dt, t, T) => { c.yaw = wrap(y0 + d * sm(t / T)); });
+    yield* this.once(name, 0.2, (dt, t, T) => { c.yaw = wrap(y0 + d * sm(t / T)); }, speed);
     c.yaw = wrap(y0 + d);
   }
   // walk (or trot) to a moving or fixed target, then stop on the walk's phase 0
@@ -788,10 +793,10 @@ class Brain {
       yield* this.toStand();
       t = getT(); if (!t || c.distTo(t) <= stop + 0.06) return;
       const dy = wrap(c.headingTo(t) - c.yaw);
-      if (Math.abs(dy) > 40 * DEG) yield* this.turnBy(dy);
+      if (Math.abs(dy) > 40 * DEG) yield* this.turnBy(dy, o.quick || 1);
       t = getT(); if (!t) return;
       L.v = 0.27;
-      yield* this.once(o.bored ? 'bored_walkaway_start' : 'idle_to_walk', 0.15, (dt) => c.steer(t, 45 * DEG, dt));
+      yield* this.once(o.bored ? 'bored_walkaway_start' : 'idle_to_walk', 0.15, (dt) => c.steer(t, 45 * DEG, dt), o.quick || 1);
       m.play('loco', 0.2); L.p = 0;
     } else if (m.cur !== 'loco') {
       yield* this.settle(); m.play('loco', 0.2); L.p = 0;
@@ -808,6 +813,9 @@ class Brain {
       L.v += clamp(vT - L.v, -0.9 * dt, 0.6 * dt);
       if (t) c.steer(t, L.v < 0.36 ? 80 * DEG : L.v < 0.8 ? 115 * DEG : 150 * DEG, dt);
       if (t && !stopping && d <= stop + 0.2) stopping = true;
+      if (stopping && o.toCrouch && c.toy && c.toy.kind === 'ground' && c.toy.dm < 1.2) {   // a hunting cat sinks straight from the walk into its stalk
+        m.play('stalk_crouch', 0.4, true, 1.15); c.posture = 'CROUCH'; return;
+      }
       if (stopping && L.wrapped && L.v < 0.36) break;
       if (stopping && elapsed > 60) break;
     }
@@ -915,52 +923,60 @@ class Brain {
   }
 
   // ── play ──
+  // Hunting: it watches, chases a cursor on the ground, stalks, wiggles and
+  // pounces, swats at one dangling over it and walks under one hanging low off to
+  // the side. Everything runs a little quicker while it's excited.
   *play() {
     const c = this.c, m = c.motor;
-    const started = c.time, maxT = rnd(25, 45);
+    const started = c.time, maxT = rnd(30, 50);
     let calm = 0, sideT = 0;
     try {
-      yield* this.toStand();
-      if (c.interest > 0.6) yield* this.once('notice', 0.15);
+      yield* this.toStand(1.6);
+      // spotted from across the lane: a beat of alert first; up close, straight in
+      if (c.toy && c.toy.dm > 0.9 && c.posture === 'STAND') yield* this.once('notice', 0.12, null, 1.35);
       while (true) {
-        yield;
-        const t = c.toy;
-        calm = c.interest < 0.28 ? calm + 1 / 60 : 0;
-        if (!t || calm > 1.5 || c.time - started > maxT) break;
+        const dt = yield;
+        const t = c.toy && c.toy.dm < CHASE_M + 0.3 ? c.toy : null;   // gone too far: let it go
+        calm = !t ? calm + dt * 1.5 : t.moving ? 0 : calm + dt;        // a still or vanished toy is boring
+        if (calm > 2.2 || c.time - started > maxT) break;
+        if (!t) { if (m.cur !== 'idle_stand') m.play('idle_stand', 0.25, false); continue; }
         if (t.kind === 'ground') {
+          c.chatter = 0;
           const d = c.distTo(t);
-          if (d > 1.25) {
+          if (c.posture === 'CROUCH' && d > 0.3) { this.note = 'stalk'; yield* this.stalk(); continue; }
+          if (d > 1.2) {
             this.note = 'chase';
             yield* this.walkTo(() => {
               const u = c.toy; if (!u || u.kind !== 'ground') return null;
-              const dd = c.distTo(u), k = Math.max(0, dd - 0.9) / (dd || 1);
+              const dd = c.distTo(u), k = Math.max(0, dd - 0.62) / (dd || 1);
               return { X: c.X + (u.X - c.X) * k, Z: c.Z + (u.Z - c.Z) * k };
-            }, { speed: d > 4 ? 0.75 : d > 2.2 ? 0.45 : 0.27, stop: 0.08, until: () => !c.toy || c.toy.kind !== 'ground' || c.distTo(c.toy) < 1.05 || c.interest < 0.25 });
-          } else if (d > 0.32) { this.note = 'stalk'; yield* this.stalk(); }
+            }, { speed: d > 1.7 ? 0.5 : 0.36, stop: 0.06, quick: 1.4, toCrouch: true,
+              until: () => !c.toy || c.toy.kind !== 'ground' || c.distTo(c.toy) < 0.8 || c.toy.dm > CHASE_M + 0.3 || c.interest < 0.2 });
+          } else if (d > 0.34) { this.note = 'stalk'; yield* this.stalk(); }
           else if (t.moving) { this.note = 'swat'; yield* this.swat(t); }
-          else { this.note = 'sniff'; yield* this.hold('idle_stand', 0.3, 0.25); }
+          else { this.note = 'sniff'; if (m.cur !== 'idle_stand') m.play('idle_stand', 0.25, false); }
         } else {
           const dx = t.X - c.X, lat = Math.abs(dx);
           // turn the body only when it stays well off to one side; the head does the rest
           const dy = lat > 0.25 ? wrap(c.headingTo({ X: t.X, Z: c.Z }) - c.yaw) : 0;
-          sideT = Math.abs(dy) > (t.h > 1.2 ? 100 : 70) * DEG ? sideT + 1 / 30 : 0;
-          if (sideT > (t.h > 1.2 ? 1.2 : 0.35) && c.posture !== 'WALK') { sideT = 0; yield* this.turnBy(dy); }
+          sideT = Math.abs(dy) > (t.h > 1.2 ? 100 : 70) * DEG ? sideT + dt : 0;
+          if (sideT > (t.h > 1.2 ? 1.0 : 0.25)) { sideT = 0; yield* this.turnBy(dy, 1.4); continue; }
           this.note = 'air';
-          if (t.h < 0.62 && lat < 0.5) {
+          if (t.h < 0.7 && lat < 0.55) {
             c.chatter = 0;
-            if (t.moving || chance(0.02)) yield* this.swat(t); else yield* this.hold('idle_stand', 0.25, 0.25);
-          } else if (lat > 0.9 && t.h < 1.8) {
+            if (t.moving) yield* this.swat(t); else if (m.cur !== 'idle_stand') m.play('idle_stand', 0.25, false);
+          } else if (lat > 0.9 && lat < CHASE_M && t.h < 1.8) {
             yield* this.walkTo(() => {
               const u = c.toy; if (!u || u.kind !== 'air') return null;
               return c.lane.clampIn(u.X, c.Z, 0.55);
-            }, { speed: 0.45, stop: 0.35, until: () => !c.toy || c.toy.kind !== 'air' || c.interest < 0.25 });
+            }, { speed: 0.5, stop: 0.35, quick: 1.4, until: () => !c.toy || c.toy.kind !== 'air' || c.interest < 0.2 });
           } else {
-            c.chatter = t.moving && t.h > 0.62 ? 1 : 0;   // can't reach it: chatter at it
-            yield* this.hold('idle_stand', 0.3, 0.25);
+            c.chatter = t.moving && t.h >= 0.7 ? 1 : 0;   // can't reach it: chatter at it
+            if (m.cur !== 'idle_stand') m.play('idle_stand', 0.25, false);
           }
         }
       }
-      c.chatter = 0;
+      c.chatter = 0; this.note = 'winddown';
       // wind down the way cats do: pretend nothing happened
       const r = Math.random();
       if (r < 0.4) { yield* this.toSit(); yield* this.hold('groom', rnd(3, 5), 0.3); c.motor.play('sit_idle', 0.3); c.posture = 'SIT'; }
@@ -968,57 +984,60 @@ class Brain {
       else { yield* this.toStand(); yield* this.once('tail_flick', 0.2); m.play('idle_stand', 0.2); }
     } finally {
       c.chatter = 0; c.creep = 0; c.earsWant = 0;
-      c.cool = rnd(6, 11); c.interest = Math.min(c.interest, 0.2);
+      c.cool = rnd(3, 6); c.interest = Math.min(c.interest, 0.2);
     }
   }
   *stalk() {
     const c = this.c, m = c.motor;
-    let t = c.toy; if (!t) return;
-    yield* this.toStand();
-    t = c.toy; if (!t || t.kind !== 'ground') return;
-    const dy = wrap(c.headingTo(t) - c.yaw);
-    if (Math.abs(dy) > 45 * DEG) yield* this.turnBy(dy);
-    m.play('stalk_crouch', 0.32); c.posture = 'CROUCH';
+    let t = c.toy;
+    if (c.posture !== 'CROUCH') {
+      yield* this.toStand(1.6);
+      t = c.toy; if (!t || t.kind !== 'ground') return;
+      const dy = wrap(c.headingTo(t) - c.yaw);
+      if (Math.abs(dy) > 45 * DEG) yield* this.turnBy(dy, 1.5);
+      m.play('stalk_crouch', 0.25, true, 1.15); c.posture = 'CROUCH';
+    }
+    if (!t || t.kind !== 'ground') { yield* this.toStand(1.4); return; }
     let still = 0, tt = 0;
     while (true) {
       const dt = yield; tt += dt;
       t = c.toy;
-      if (!t || t.kind !== 'ground' || c.interest < 0.2) { c.creep = 0; yield* this.toStand(); return; }
+      if (!t || t.kind !== 'ground' || c.interest < 0.15) { c.creep = 0; yield* this.toStand(1.4); return; }
       const d = c.distTo(t), err = wrap(c.headingTo(t) - c.yaw);
-      c.yaw = wrap(c.yaw + clamp(err * 2, -35 * DEG, 35 * DEG) * dt);
-      if (d > 1.8) { c.creep = 0; yield* this.toStand(); return; }
+      c.yaw = wrap(c.yaw + clamp(err * 2.5, -50 * DEG, 50 * DEG) * dt);
+      if (d > 1.8) { c.creep = 0; yield* this.toStand(1.4); return; }
       c.creep = d > 0.62 && Math.abs(err) < 30 * DEG ? 0.06 : 0;
       still = t.moving ? 0 : still + dt;
-      if (still > 4 && chance(dt * 0.4)) { c.creep = 0; c.interest *= 0.5; yield* this.toStand(); return; }
-      if (d <= 0.64 && Math.abs(err) < 20 * DEG && tt > 0.9) break;
+      if (still > 3.5 && chance(dt * 0.5)) { c.creep = 0; c.interest *= 0.5; yield* this.toStand(); return; }
+      if (d <= 0.66 && Math.abs(err) < 22 * DEG && tt > 0.45) break;
     }
     c.creep = 0;
-    yield* this.once('butt_wiggle', 0.15, (dt) => {
-      const u = c.toy; if (u && u.kind === 'ground') c.yaw = wrap(c.yaw + clamp(wrap(c.headingTo(u) - c.yaw) * 2, -30 * DEG, 30 * DEG) * dt);
-    });
+    yield* this.once('butt_wiggle', 0.12, (dt) => {
+      const u = c.toy; if (u && u.kind === 'ground') c.yaw = wrap(c.yaw + clamp(wrap(c.headingTo(u) - c.yaw) * 3, -45 * DEG, 45 * DEG) * dt);
+    }, 1.3);
     const u = c.toy && c.toy.kind === 'ground' ? c.toy : t;
-    m.pounceTravel = clamp(c.distTo(u) - 0.14, 0.28, 0.62);
+    m.pounceTravel = clamp(c.distTo(u) - 0.14, 0.2, 0.62);
     yield* this.once('pounce', 0.1);
-    m.play('idle_stand', 0.2); c.posture = 'STAND';
-    c.interest = Math.max(0, c.interest - 0.35);
+    m.play('idle_stand', 0.18); c.posture = 'STAND';
+    c.interest = Math.max(0, c.interest - 0.2);
     const v = c.toy;
-    if (v && v.kind === 'ground' && c.distTo(v) < 0.55 && v.moving && chance(0.6)) yield* this.swat(v);
+    if (v && v.kind === 'ground' && c.distTo(v) < 0.55 && v.moving && chance(0.65)) yield* this.swat(v);
   }
   *swat(t) {
     const c = this.c, m = c.motor, T = c.tmp;
     // face it first: a swat at something behind or beside it reads wrong
     if (t.kind === 'ground' && c.distTo(t) > 0.12) {
       const dy = wrap(c.headingTo(t) - c.yaw);
-      if (Math.abs(dy) > 50 * DEG) { yield* this.toStand(); yield* this.turnBy(dy); }
+      if (Math.abs(dy) > 50 * DEG) { yield* this.toStand(1.4); yield* this.turnBy(dy, 1.5); }
       const u = c.toy; if (u) t = u;
     }
     const p = c.toLocal(t.X, t.h, t.Z, T.v);
-    const name = Math.abs(p.x) < 0.08 && t.h < 0.35 && chance(0.45) ? 'bat_play' : p.x >= 0 ? 'swat_L' : 'swat_R';
+    const name = Math.abs(p.x) < 0.1 && t.h < 0.4 && chance(0.4) ? 'bat_play' : p.x >= 0 ? 'swat_L' : 'swat_R';
     c.earsWant = 0.25;
-    yield* this.once(name, 0.12);
+    yield* this.once(name, 0.1, null, 1.15);
     c.earsWant = 0;
-    m.play('idle_stand', 0.2); c.posture = 'STAND';
-    c.interest = Math.max(0, c.interest - 0.12);
+    m.play('idle_stand', 0.15); c.posture = 'STAND';
+    c.interest = Math.max(0, c.interest - 0.1);
   }
 }
 
