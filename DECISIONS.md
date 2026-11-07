@@ -867,3 +867,34 @@ mcc.css, is unchanged.
 - Database: supabase/migrations/20261108_crm_tasks_fields.sql adds crm_tasks and clients.custom. NOT APPLIED. The Hub shows a setup note instead of failing until it is run. Duplicate detection is app-level on purpose: a unique email index would fail on any existing duplicates.
 - Notes reuse job_events (kind note, meta.type note/call/meeting), so no table for them.
 - Also fixed: Remove client threw a ReferenceError because deleteClient was never pulled from window.CC.
+
+## 2026-11-06 — The Scaffold hero gets a black cat
+
+A small 3D black cat lives in the hero's lamp lane (`scaffold-cat.js`, model
+`assets/cat/scaffold-cat.glb` from the Blender pipeline, 29 clips). It walks in
+from the side, wanders between the posts, sits and loafs under the lit ones,
+walks back into the fog to the far lamps, and plays with the cursor: it watches
+it, chases a cursor on the ground, stalks, wiggles and pounces, swats at one
+hanging just over its head, chatters at one it can't reach, then gets bored and
+grooms. Clicking it makes it sit and slow-blink. Snuffing the lamp it's resting
+under makes it look up and move.
+
+- **Fits the lane, not a separate 3D scene.** The lane is DOM layers, so the
+  cat reads its ground from the lamp rows every frame: screen height, scale and
+  spread come from the measured rows; depth is integrated from them so walking
+  away moves the paws exactly as fast as they push the ground.
+- **One layer, own fog.** The canvas sits just behind the near posts (z 6).
+  The walkable ground never reaches the mid/far/back posts on screen, so the
+  cat doesn't need to slip under each CSS fog bank; the banks it's behind are
+  laid on it as haze (60% strength) that ramps across each row, plus the rows'
+  brightness/blur. Under the real banks a black cat vanished at the back.
+- **Smooth by construction.** Eased, normalised crossfades; walk/trot/run are
+  phase-synced and speed-blended; walks stop on the gait's phase 0 so
+  `walk_to_idle` starts from an identical pose; transition clips move the cat by
+  per-frame travel sampled from the GLB's planted paws; head and neck turn
+  toward what it's watching with damped, overlapping motion on top of the clip.
+- **Cheap and polite.** three.js r169 and the 1.4 MB model load only on
+  desktop (lane is hidden under 900px), after the page is idle, never for
+  reduced motion. It pauses off screen and in background tabs. Under 1 ms of
+  script and GPU per frame.
+- `?catdebug` exposes `window.__cat`; `?catdebug=lines` draws the measured lane.
