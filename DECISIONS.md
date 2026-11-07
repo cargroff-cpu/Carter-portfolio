@@ -898,6 +898,22 @@ under makes it look up and move.
   reduced motion. It pauses off screen and in background tabs. Under 1 ms of
   script and GPU per frame.
 - `?catdebug` exposes `window.__cat`; `?catdebug=lines` draws the measured lane.
+- **Cursor play, tightened (2026-11-07).** Medium-range hunts (1.2–2.6 m) now
+  land the pounce in about 5 s instead of 7–8: the notice beat is cut short, a
+  hunting cat takes turns under 75° into its first steps instead of turning in
+  place, trots in (capped at the trot's own 0.6 m/s), sinks into the crouch a
+  little farther out and pounces from up to 0.85 m. It doesn't creep faster:
+  `stalk_crouch` barely moves its paws, so faster creeping would slide.
+  A ground spot under 0.8 m behind the cat lands on the same pixels as its body,
+  so it counts as ground behind it (the cat turns round) instead of air over
+  its back. An air cursor higher than 1.5 m is only watched and never builds
+  play interest. New: pounces lead a cursor that is actually going somewhere
+  (smoothed ground velocity, scaled by how steady it is, so a jiggle isn't led);
+  ears flick twice and the tail tip twitches when it locks on (the tail layer is
+  undone in `unlayer()` like the head); a flick past its face gets a one-two
+  swat; a dodged pounce gets a short "missed it" look around; woken from a
+  loaf, it watches for a beat before getting up. Each has a scenario in
+  `scripts/cat-test` (17 scenarios, all passing at RUNS=5).
 
 ## 2026-11-07 — Business Hub: one home per thing
 - Leads is a lens on work not yet won: Overview, Tasks, Activity, Reports. Its Pipeline and Contacts tabs are gone, since they were the Jobs board and the Clients page under a second name; Leads' stage cards now open Jobs.

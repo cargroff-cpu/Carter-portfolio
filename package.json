@@ -5,7 +5,8 @@
   "scripts": {
     "build:design": "node scripts/build-design.mjs",
     "build:portfolio": "node scripts/build-portfolio.mjs",
-    "build:pages": "node scripts/build-design.mjs && node scripts/build-portfolio.mjs"
+    "build:pages": "node scripts/build-design.mjs && node scripts/build-portfolio.mjs",
+    "test:cat": "node scripts/cat-test/suite.cjs"
   },
   "devDependencies": {
     "@babel/standalone": "7.29.0"
