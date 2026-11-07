@@ -41,6 +41,8 @@ const TOOL_SERVICES = [
 ];
 const DESIGN_CHIPS = ['Website', 'Social graphics', 'Business card or print', 'Flyer or one-pager', 'Document or report', 'Presentation or deck', 'Brand basics', 'Video', 'Something else'];
 const AUTOMATION_CHIPS = [...TOOL_SERVICES.map((t) => t.need), 'Something else'];
+// How they found me. The value goes to the Backroom's client "Came from" field.
+const HEARD = [['referral', 'A referral'], ['social', 'Social media'], ['search', 'A search'], ['event', 'An event'], ['repeat', 'Worked together before'], ['other', 'Something else']];
 const BUDGETS = ['Under $150', '$150–$500', '$500–$1,500', '$1,500–$5,000', '$5,000+', 'Not sure yet'];
 
 // Real work only. Each item: { title, kind, src, alt }. Empty = hidden.
@@ -697,7 +699,7 @@ const Brief = React.forwardRef(function Brief(props, ref) {
   const [busyNote, setBusyNote] = React.useState('');
   const [f, setF] = React.useState({
     lane: 'design', name: '', email: '', business: '', need: [], about: '', where: '', when: '', flexible: false,
-    assets: '', copy: '', refs: '', notes: '', budget: '', auto_slow: '', auto_tools: '', auto_who: '', website: '',
+    assets: '', copy: '', refs: '', notes: '', budget: '', heard: '', auto_slow: '', auto_tools: '', auto_who: '', website: '',
   });
   const auto = f.lane === 'automation';
 
@@ -913,6 +915,16 @@ const Brief = React.forwardRef(function Brief(props, ref) {
                     {BUDGETS.map((b) => (
                       <label key={b} className={'dchip' + (f.budget === b ? ' on' : '')}>
                         <input type="radio" name="budget" checked={f.budget === b} onChange={() => setF((s) => ({ ...s, budget: b }))} />{b}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <span className="dqlb">How did you hear about me?</span>
+                  <div className="dchips">
+                    {HEARD.map(([value, label]) => (
+                      <label key={value} className={'dchip' + (f.heard === value ? ' on' : '')}>
+                        <input type="radio" name="heard" checked={f.heard === value} onChange={() => setF((s) => ({ ...s, heard: value }))} />{label}
                       </label>
                     ))}
                   </div>

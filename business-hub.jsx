@@ -34,7 +34,7 @@ const pill = (txt, kind) => <span className={'pill ' + (kind || 'mute')}>{txt}</
 const stageKind = (s) => ({ new: 'warn', proposed: 'mute', drafts: 'mute', final: 'warn', paid: 'ok', closed: 'mute' }[s] || 'mute');
 const firstName = (n) => String(n || '').trim().split(/\s+/)[0] || 'there';
 const fill = (t, f) => String(t || '').replace(/\{(\w+)\}/g, (m, k) => (f[k] != null && f[k] !== '' ? String(f[k]) : m));
-const SOURCE_LABEL = { brief: 'Scaffold brief', referral: 'Referral', repeat: 'Repeat client', social: 'Social', search: 'Search', event: 'Event', other: 'Other' };
+const SOURCE_LABEL = { brief: 'Scaffold brief', referral: 'Referral', repeat: 'Repeat client', social: 'Social media', search: 'Search', event: 'Event', other: 'Other' };
 const sumItems = (items) => (items || []).reduce((s, i) => s + (Number(i.amount) || 0), 0);
 
 // ── Mail templates. {fields} fill from the job; the email goes out in the
@@ -725,10 +725,12 @@ function JobPage({ jobId, data, reload, reloadTasks, back }) {
   // Clients are matched by id, or by email for jobs that came in as briefs.
   const matchClient = data.clients.find((c) => c.id === job.client_id)
     || (job.email ? data.clients.find((c) => c.email && c.email.toLowerCase() === job.email.toLowerCase()) : null);
+  // What they said on the brief form ("How did you hear about me?") fills Came from.
+  const briefHeard = ((data.briefs || []).find((b) => b.id === job.brief_id) || {}).heard || null;
   const saveAsClient = () => {
     const linkTo = matchClient
-      ? Promise.resolve({ row: matchClient })
-      : saveClient({ name: job.business || job.name, contact: job.business ? job.name : null, email: job.email || null, since: new Date().toISOString().slice(0, 10), ...(job.brief_id ? { source: 'brief' } : {}) });
+      ? (briefHeard && !matchClient.source ? saveClient({ id: matchClient.id, source: briefHeard }).catch(() => ({ row: matchClient })).then(() => ({ row: matchClient })) : Promise.resolve({ row: matchClient }))
+      : saveClient({ name: job.business || job.name, contact: job.business ? job.name : null, email: job.email || null, since: new Date().toISOString().slice(0, 10), ...(briefHeard ? { source: briefHeard } : {}) });
     linkTo.then((r) => saveJob({ id: job.id, client_id: r.row.id })).then(refresh).catch((e) => alert(e.message));
   };
   return (
@@ -1290,18 +1292,23 @@ function dueLabel(d) {
   return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function TaskAdd({ jobId, clientId, jobs, onAdded }) {
-  const [title, setTitle] = React.useState('');
+function TaskAdd({ jobId, clientId, clientName, jobs, clients, onAdded }) {
+  // On a client's (or a job's) page the client is already known: the task is
+  // filed under them and the title starts "Follow up with <name>". On the
+  // Tasks tool, picking a job fills in that job's client; or pick one.
+  const lead = clientName ? 'Follow up with ' + clientName.trim().split(/\s+/)[0] + ': ' : '';
+  const [title, setTitle] = React.useState(lead);
+  const [client, setClient] = React.useState(clientId || '');
   const [due, setDue] = React.useState('');
   const [job, setJob] = React.useState(jobId || '');
   const [err, setErr] = React.useState('');
   const [busy, setBusy] = React.useState(false);
   const add = (e) => {
     e.preventDefault();
-    if (!title.trim()) { setErr('Add what needs doing.'); return; }
+    if (!title.trim() || title.trim() === lead.trim()) { setErr('Add what needs doing.'); return; }
     setBusy(true);
-    saveTask({ title: title.trim(), due_on: due || null, job_id: job || null, client_id: clientId || null })
-      .then(() => { setTitle(''); setDue(''); setErr(''); onAdded(); })
+    saveTask({ title: title.trim(), due_on: due || null, job_id: job || null, client_id: client || null })
+      .then(() => { setTitle(lead); setDue(''); setErr(''); onAdded(); })
       .catch((x) => setErr(x.message))
       .then(() => setBusy(false));
   };
@@ -1310,9 +1317,15 @@ function TaskAdd({ jobId, clientId, jobs, onAdded }) {
       <input className="input" placeholder="Follow up with…" value={title} onChange={(e) => setTitle(e.target.value)} aria-label="Task" />
       <input className="input" type="date" value={due} onChange={(e) => setDue(e.target.value)} aria-label="Due date" />
       {jobs && !jobId && (
-        <select className="input" value={job} onChange={(e) => setJob(e.target.value)} aria-label="Job">
+        <select className="input" value={job} onChange={(e) => { setJob(e.target.value); const jb = jobs.find((x) => x.id === e.target.value); if (jb && jb.client_id) setClient(jb.client_id); }} aria-label="Job">
           <option value="">No job</option>
           {jobs.filter((j) => j.stage !== 'paid' && j.stage !== 'closed').map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}
+        </select>
+      )}
+      {clients && !clientId && (
+        <select className="input" value={client} onChange={(e) => setClient(e.target.value)} aria-label="Client">
+          <option value="">No client</option>
+          {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
       )}
       <button className="btn sm" type="submit" disabled={busy}>Add task</button>
@@ -1373,7 +1386,7 @@ function Tasks({ data, open, reloadTasks }) {
     <div className="stack">
       <section className="widget">
         <div className="widget-h"><div><h2 className="h2">Add a task</h2><p className="sub">Follow-ups tied to a job or client. Your own to-dos live in the <a className="linkbtn" href="/docket">Docket</a>.</p></div><button className="btn quiet sm" onClick={exportTasks} disabled={!tasks.length}>Export CSV</button></div>
-        <TaskAdd jobs={jobs} onAdded={reloadTasks} />
+        <TaskAdd jobs={jobs} clients={data.clients} onAdded={reloadTasks} />
       </section>
       {groups.map(([label, list]) => list.length > 0 && (
         <section className="widget" key={label}>
@@ -1393,11 +1406,14 @@ function Tasks({ data, open, reloadTasks }) {
 }
 function ItemTasks({ data, jobId, clientId, open, reloadTasks }) {
   if (data.tasks.notReady) return null;
+  // The client this page is about (a job's page uses the job's client).
+  const jobRow = jobId ? data.jobs.find((j) => j.id === jobId) : null;
+  const who = data.clients.find((c) => c.id === (clientId || (jobRow && jobRow.client_id))) || null;
   const list = data.tasks.filter((x) => (jobId && x.job_id === jobId) || (clientId && x.client_id === clientId));
   return (
     <section className="tile">
       <div className="tilehead"><h2 className="h2">Follow-ups</h2><span className="lbl">{list.filter((x) => !x.done_at).length} open</span></div>
-      <TaskAdd jobId={jobId} clientId={clientId} onAdded={reloadTasks} />
+      <TaskAdd jobId={jobId} clientId={who ? who.id : clientId} clientName={who ? who.name : null} onAdded={reloadTasks} />
       <TaskRows list={list} jobs={data.jobs} open={open} reload={reloadTasks} hideJob={!!jobId} />
     </section>
   );

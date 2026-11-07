@@ -29,6 +29,7 @@ import { randomUUID } from 'node:crypto';
 const DESIGN_SERVICES = ['Website', 'Social graphics', 'Business card or print', 'Flyer or one-pager',
   'Document or report', 'Presentation or deck', 'Brand basics', 'Video', 'Something else'];
 const AUTOMATION_SERVICES = ['Inquiries and leads', 'Quotes and invoices', 'Scheduling and bookings', 'Dashboards and reports', 'Reminders and follow-ups', 'AI assistants', 'Something else'];
+const HEARD = ['referral', 'social', 'search', 'event', 'repeat', 'other'];
 const BUDGETS = ['Under $150', '$150–$500', '$500–$1,500', '$1,500–$5,000', '$5,000+', 'Not sure yet'];
 const ASSETS = ['Yes', 'Some', 'No'];
 
@@ -111,7 +112,7 @@ function briefLines(b) {
   } else {
     lines.push(`Where: ${b.where || '—'}`, `Assets: ${b.assets || '—'}`, `Copy: ${b.copy || '—'}`, `Refs: ${b.refs || '—'}`);
   }
-  lines.push(`When: ${b.when_date || (b.flexible ? 'Flexible' : '—')}`, `Budget: ${b.budget || '—'}`, `Notes: ${b.notes || '—'}`);
+  lines.push(`When: ${b.when_date || (b.flexible ? 'Flexible' : '—')}`, `Budget: ${b.budget || '—'}`, `Heard via: ${b.heard || '—'}`, `Notes: ${b.notes || '—'}`);
   return lines;
 }
 
@@ -207,6 +208,7 @@ export default async function handler(req, res) {
     refs: text(body.refs, 2000),
     notes: text(body.notes),
     budget: BUDGETS.includes(body.budget) ? body.budget : null,
+    heard: HEARD.includes(body.heard) ? body.heard : null,
     auto_slow: lane === 'automation' ? text(body.auto_slow) : null,
     auto_tools: lane === 'automation' ? text(body.auto_tools, 1000) : null,
     auto_who: lane === 'automation' ? text(body.auto_who, 1000) : null,
@@ -260,7 +262,11 @@ export default async function handler(req, res) {
       // A returning client: attach the job to the client already on the books
       // (matched by email), and put "reply to the brief" on the Docket.
       const known = await findClientByEmail(email);
-      if (known) await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { client_id: known.id } }).catch(() => {});
+      if (known) {
+        await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { client_id: known.id } }).catch(() => {});
+        // Fill "Came from" on a client who has none yet.
+        if (brief.heard) await sb(`clients?id=eq.${known.id}&source=is.null`, { method: 'PATCH', body: { source: brief.heard } }).catch(() => {});
+      }
       await openTask(KEYS.brief(job.id), { t: `Reply to the brief: ${job.title}`.slice(0, 200), due: dueIn(1), job_id: job.id, client_id: known ? known.id : null });
       await sb('job_events', { method: 'POST', body: { job_id: job.id, kind: 'brief', who: 'client', body: `Brief ${brief.reference} received.` } });
     } catch (e) {

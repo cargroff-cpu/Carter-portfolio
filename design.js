@@ -701,6 +701,7 @@ const TOOL_SERVICES = [{
 }];
 const DESIGN_CHIPS = ['Website', 'Social graphics', 'Business card or print', 'Flyer or one-pager', 'Document or report', 'Presentation or deck', 'Brand basics', 'Video', 'Something else'];
 const AUTOMATION_CHIPS = [...TOOL_SERVICES.map(t => t.need), 'Something else'];
+const HEARD = [['referral', 'A referral'], ['social', 'Social media'], ['search', 'A search'], ['event', 'An event'], ['repeat', 'Worked together before'], ['other', 'Something else']];
 const BUDGETS = ['Under $150', '$150–$500', '$500–$1,500', '$1,500–$5,000', '$5,000+', 'Not sure yet'];
 const WORK = [];
 const TESTIMONIALS = [];
@@ -1865,6 +1866,7 @@ const Brief = React.forwardRef(function Brief(props, ref) {
     refs: '',
     notes: '',
     budget: '',
+    heard: '',
     auto_slow: '',
     auto_tools: '',
     auto_who: '',
@@ -2235,7 +2237,22 @@ const Brief = React.forwardRef(function Brief(props, ref) {
       ...s,
       budget: b
     }))
-  }), b)))), React.createElement("label", {
+  }), b)))), React.createElement("div", null, React.createElement("span", {
+    className: "dqlb"
+  }, "How did you hear about me?"), React.createElement("div", {
+    className: "dchips"
+  }, HEARD.map(([value, label]) => React.createElement("label", {
+    key: value,
+    className: 'dchip' + (f.heard === value ? ' on' : '')
+  }, React.createElement("input", {
+    type: "radio",
+    name: "heard",
+    checked: f.heard === value,
+    onChange: () => setF(s => ({
+      ...s,
+      heard: value
+    }))
+  }), label)))), React.createElement("label", {
     className: "dfl"
   }, React.createElement("span", {
     className: "dlb"
