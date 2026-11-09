@@ -32,7 +32,7 @@ const SINP = Math.sin(PITCH), COSP = Math.cos(PITCH);
 const DEG = Math.PI / 180;
 const ORG_Y = 0.74;            // where the cat's feet sit inside its canvas
 const CHASE_M = 2.6;           // beyond this (metres) a cursor isn't worth getting up for
-const EYE_SCALE = 0.55;        // each eye shrunk about its own centre: the model's eyes read huge at hero size
+const EYE_SCALE = 0.72;        // each eye shrunk across the face (not in depth): the model's eyes read huge at hero size
 const RIM_I = 1.2;             // the cool rim light that holds the silhouette (was 2.8 on the first, smoother model)
 const HAZE_K = 0.6;            // share of each fog bank's haze laid on the cat
 const REACH_H = 1.5;           // an air toy higher than this (metres) is only watched, never played with
@@ -67,7 +67,8 @@ const ROOT = {
   bored_walkaway_start: [0, 0, 0, 0, 0, 0, 0.0004, 0.0011, 0.0021, 0.0034, 0.005, 0.007, 0.0093, 0.0095, 0.0099, 0.0107, 0.0119, 0.0134,
     0.0153, 0.0176, 0.0202, 0.023, 0.0262, 0.0297, 0.0333, 0.0371, 0.0396, 0.0425, 0.0456, 0.049, 0.0525],
 };
-const GAIT_SPEED = [0.2692, 0.6, 1.2857]; // walk, trot, run (m/s at 1x)
+const GAIT_SPEED = [0.2692, 0.6, 1.2857]; // walk, trot, run (m/s at 1x; walk and trot are re-measured at load)
+const WALK = () => GAIT_SPEED[0];          // an unhurried walk is the walk clip at its own pace
 const POUNCE = { start: 0.3, end: 0.7333 };  // seconds of the pounce clip the cat is airborne
 // assets/cat/cat-motion.json (written by the Blender export) overrides the numbers
 // above, so a re-animated model drops in without touching this file.
@@ -84,16 +85,58 @@ const GAZE_ALLOW = {
   loco: 0.55, idle_to_walk: 0.5, walk_to_idle: 0.5, bored_walkaway_start: 0.2, sit_slow_blink: 0.8,
 };
 
-// speed bands follow the clips' own speeds, so each gait stays within ~0.65-1.35x
+// speed bands follow the clips' own speeds, so each gait stays within ~0.65-1.35x.
+// The run clip is never blended in: its hind legs flip up to 160° between two keys (a broken
+// export), and nothing here asks for more than a trot. Past the trot band the trot just speeds up.
 function gaitWeights(v) {
-  const [w, t, r] = GAIT_SPEED;
-  const a0 = w * 1.22, a1 = Math.max(a0 + 0.04, t * 0.75), b0 = t * 1.3, b1 = Math.max(b0 + 0.05, r * 0.78);
+  const [w, t] = GAIT_SPEED;
+  const a0 = w * 1.22, a1 = Math.max(a0 + 0.04, t * 0.75);
   if (v <= a0) return [1, 0, 0];
   if (v < a1) { const k = sm((v - a0) / (a1 - a0)); return [1 - k, k, 0]; }
-  if (v <= b0) return [0, 1, 0];
-  if (v < b1) { const k = sm((v - b0) / (b1 - b0)); return [0, 1 - k, k]; }
-  return [0, 0, 1];
+  return [0, 1, 0];
 }
+
+// The walk and trot loops swing each leg forward in two or three keys (up to 70° a frame at
+// 30 fps), so the stride reads as a snap rather than a swing. Each looping rotation track is
+// softened with three passes of a cyclic [1 2 1] filter (the planted paws barely move, so stance and foot
+// travel are kept; only the fast swings round off) and resampled at 60 fps with a Catmull-Rom
+// spline, so the legs pass through the keys on a curve instead of a straight line between them.
+// The same pass calms the tail-tip whips in the idle_stand and stalk_crouch loops.
+const SMOOTH_PASSES = 3;
+function smoothLoop(clip) {
+  for (const tr of clip.tracks) {
+    if (!tr.name.endsWith('.quaternion')) continue;
+    const n = tr.times.length, m = n - 1, v = tr.values;
+    if (m < 4) continue;
+    const q = [];
+    for (let i = 0; i < n; i++) q.push([v[4 * i], v[4 * i + 1], v[4 * i + 2], v[4 * i + 3]]);
+    for (let i = 1; i < n; i++) if (dot4(q[i], q[i - 1]) < 0) q[i] = q[i].map((x) => -x);   // one hemisphere
+    // the last key repeats the first (as a rotation); going round the loop may flip its sign
+    const cyc = (arr, sign) => (i) => { const k = Math.floor(i / m), r = arr[i - k * m]; return (k & 1) && sign < 0 ? r.map((x) => -x) : r; };
+    const Q = cyc(q, dot4(q[m], q[0]) < 0 ? -1 : 1);
+    let f = q.slice(0, m), G = Q;
+    for (let pass = 0; pass < SMOOTH_PASSES; pass++) {
+      const g = [];
+      for (let i = 0; i < m; i++) { const a = G(i - 1), b = G(i), c = G(i + 1); g.push(norm4([0, 1, 2, 3].map((k) => (a[k] + 2 * b[k] + c[k]) / 4))); }
+      for (let i = 1; i < m; i++) if (dot4(g[i], g[i - 1]) < 0) g[i] = g[i].map((x) => -x);
+      f = g; G = cyc(f, dot4(f[m - 1], f[0]) < 0 ? -1 : 1);
+    }
+    const F = cyc(f, dot4(f[m - 1], f[0]) < 0 ? -1 : 1);
+    const dt = tr.times[1] - tr.times[0], times = [], vals = [];
+    for (let i = 0; i < m; i++) {
+      for (const s of [0, 0.5]) {
+        const p0 = F(i - 1), p1 = F(i), p2 = F(i + 1), p3 = F(i + 2);
+        times.push((i + s) * dt); vals.push(...norm4([0, 1, 2, 3].map((k) => catmull(p0[k], p1[k], p2[k], p3[k], s))));
+      }
+    }
+    const last = F(m); times.push(m * dt); vals.push(...last);
+    tr.times = new Float32Array(times); tr.values = new Float32Array(vals);
+  }
+  return clip;
+}
+const dot4 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+const norm4 = (a) => { const l = Math.hypot(a[0], a[1], a[2], a[3]) || 1; return a.map((x) => x / l); };
+const catmull = (p0, p1, p2, p3, t) => 0.5 * (2 * p1 + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t * t * t);
 
 // ───────────────────────────── the lane ─────────────────────────────
 // Everything about where things are, measured from the DOM lamp rows.
@@ -247,7 +290,8 @@ class Motor {
   constructor(THREE, root, clips) {
     this.mixer = new THREE.AnimationMixer(root);
     this.s = new Map();
-    for (const c of clips) {
+    const all = [];
+    const slot = (c) => {
       const act = this.mixer.clipAction(c);
       const loop = LOOPS.has(c.name);
       act.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce, Infinity);
@@ -255,21 +299,32 @@ class Motor {
       act.play(); act.enabled = false;
       const root = ROOT[c.name] || null;
       const endSlope = root ? (root[root.length - 1] - root[root.length - 2]) * 30 : 0;
-      this.s.set(c.name, { name: c.name, act, dur: c.duration, loop, w: 0, e: 0, target: 0, rate: 4, prev: 0, root, endSlope });
+      const x = { name: c.name, act, dur: c.duration, loop, w: 0, e: 0, target: 0, rate: 4, prev: 0, root, endSlope };
+      all.push(x); return x;
+    };
+    for (const c of clips) {
+      const a = slot(c);
+      this.s.set(c.name, a);
+      // Every clip but the gaits gets a twin action. A clip asked to start again while it is
+      // still showing (a second swat, the second half of a big turn) starts on the twin and
+      // crossfades from the first; one action can't fade into itself, so it used to snap
+      // back to frame 0 (bones jumped up to 90° in one frame).
+      if (!['walk', 'trot', 'run'].includes(c.name)) { const b = slot(c.clone()); a.twin = b; b.twin = a; }
     }
     this.gaits = ['walk', 'trot', 'run'].map((n) => this.s.get(n));
     for (const g of this.gaits) { g.act.timeScale = 0; g.gait = true; }
     this.loco = { name: 'loco', w: 0, e: 0, target: 0, rate: 4, p: 0, v: 0.27, k: 1, speed: 0.27, wrapped: false };
-    this.slots = [...this.s.values()].filter((x) => !x.gait).concat([this.loco]);
+    this.slots = all.filter((x) => !x.gait).concat([this.loco]);
     this.cur = null;
     this.pounceTravel = 0.45;
     this.step = 0;
   }
   has(name) { return this.s.has(name); }
   play(name, fade = 0.25, restart = true, speed = 1) {
-    const x = name === 'loco' ? this.loco : this.s.get(name);
+    let x = name === 'loco' ? this.loco : this.s.get(name);
     if (!x) return;
-    if (this.cur === name && !restart) return;
+    if (this.cur === name && (!restart || (x.loop && x.w > 0.5))) return;   // a loop already playing just carries on
+    if (x !== this.loco && x.twin && (restart || !x.loop) && x.w > 0.02) { x = x.twin; this.s.set(name, x); }
     if (x !== this.loco) x.act.timeScale = speed;
     const rate = 1 / Math.max(fade, 1 / 120);
     for (const o of this.slots) { o.target = o === x ? 1 : 0; o.rate = rate; }
@@ -366,18 +421,34 @@ class Cat {
       for (const t of c.tracks) { first = Math.min(first, t.times[0]); last = Math.max(last, t.times[t.times.length - 1]); }
       for (const t of c.tracks) { t.times = t.times.slice(); t.shift(-first); }   // times arrays are shared between tracks
       c.duration = last - first;
+      if (['walk', 'trot', 'idle_stand', 'stalk_crouch'].includes(c.name)) smoothLoop(c);   // the tail tip whips in the last two
     }
     this.model = gltf.scene;
     this.morphs = [];
     this.model.traverse((o) => {
       if (o.isMesh) { o.frustumCulled = false; if (o.morphTargetInfluences) this.morphs.push(o); }
-      // tuned in the page's light: matte near-black fur, eyes that stay amber instead of blowing out
+      // tuned in the page's light: matte near-black fur, eyes that catch the lamplight without blowing out
       const m = o.material;
       if (m && m.name === 'cat_fur') {
-        m.color.set(0x141219); m.roughness = 0.78; if ('specularIntensity' in m) m.specularIntensity = 0.15;   // low: the cool rim light lit the belly and inner legs violet
-        if ('sheen' in m) m.sheen = 0;   // the model's fur sheen turns the underside pale under the amber lamps; the page's own rim light does that job
+        m.color.set(0x141219); m.roughness = 0.78; if ('specularIntensity' in m) m.specularIntensity = 0.15;
+        if ('sheen' in m) m.sheen = 0;
+        // The model's body is inside out: its triangles wind (and its normals point) inward
+        // (signed volume < 0). Drawn front-side, the renderer showed the inside of the far wall
+        // of the body, so the eyes showed through the back of the head when he faced away, and
+        // the lights hit the wrong side (the pale underside and violet belly worked around
+        // before). Back faces of an inside-out mesh are its true outside, and three flips the
+        // normals of back faces for lighting, so this one setting fixes both.
+        m.side = THREE.BackSide;
+        // The alpha fur shells were extruded along those inward normals, so they sit inside
+        // the body and can never be seen once it is drawn the right way out: skip them.
+        if (m.alphaTest > 0) o.visible = false;
       }
-      if (m && m.name === 'cat_eye') { m.emissiveIntensity = 1.4; this.shrinkEyes(o.geometry); }
+      if (m && m.name === 'cat_eye') {
+        // eyeshine, not two white lights: a lamplit gold-green that dims with the scene
+        m.color.set(0xc9c27e); m.emissive.set(0x8a8236); m.emissiveIntensity = 1.1; m.side = THREE.FrontSide;
+        m.polygonOffset = true; m.polygonOffsetFactor = -1; m.polygonOffsetUnits = -2;   // wins the tie with the lids it sits flush against
+        this.shrinkEyes(o.geometry);
+      }
       if (o.isBone) o.matrixAutoUpdate = true;
     });
     this.bones = { neck_01: null, neck_02: null, head: null };
@@ -423,6 +494,7 @@ class Cat {
     this.shadow.scale.set(0.3, 0.62, 1);
     this.body.add(this.shadow);
 
+    this.calibrateGaits(THREE, gltf.animations);
     this.motor = new Motor(THREE, this.model, gltf.animations);
     this.motor.play('idle_stand', 0);
     this.brain = new Brain(this);
@@ -432,19 +504,68 @@ class Cat {
     this.style = { z: '', f: '', t: '' };
   }
 
-  // the two eyes are one mesh: shrink each about its own centre (bind pose, so skinning and
-  // morph deltas still line up; the deltas are scaled by the same factor)
+  // Each gait's natural speed is read off the (smoothed) clip itself: how fast a planted paw
+  // travels backward under the body. Moving the cat at exactly that speed keeps the paws still
+  // on the ground; the exported speeds were measured before the strides were smoothed.
+  calibrateGaits(THREE, clips) {
+    const paws = ['fl_paw_L', 'fl_paw_R', 'hl_paw_L', 'hl_paw_R'].map((n) => this.model.getObjectByName(n));
+    if (paws.some((p) => !p)) return;
+    const mixer = new THREE.AnimationMixer(this.model), v = new THREE.Vector3(), inv = new THREE.Matrix4();
+    ['walk', 'trot'].forEach((name, gi) => {
+      const clip = clips.find((c) => c.name === name); if (!clip) return;
+      const act = mixer.clipAction(clip); act.play();
+      const N = 64, track = paws.map(() => []);
+      for (let i = 0; i <= N; i++) {
+        act.time = clip.duration * i / N; mixer.update(0);
+        this.model.updateMatrixWorld(true); inv.copy(this.model.matrixWorld).invert();
+        paws.forEach((p, k) => { p.getWorldPosition(v).applyMatrix4(inv); track[k].push([v.y, v.z]); });
+      }
+      const vs = [];
+      for (const tr of track) {          // only the truly planted stretch (within 3 mm of the floor)
+        const low = Math.min(...tr.map((x) => x[0]));
+        for (let i = 1; i <= N; i++) if (tr[i][0] < low + 0.003 && tr[i - 1][0] < low + 0.003) vs.push((tr[i - 1][1] - tr[i][1]) / (clip.duration / N));
+      }
+      vs.sort((a, b) => a - b);
+      const speed = vs.length > 4 ? vs[vs.length >> 1] : 0;   // median: lift-off and touch-down don't drag it
+      if (speed > 0.05 && speed < 3) GAIT_SPEED[gi] = speed;
+      act.stop(); mixer.uncacheAction(clip);
+    });
+    mixer.uncacheRoot(this.model);
+  }
+
+  // The two eyes are one mesh. Each is shrunk across the face only (in the plane square to its
+  // own outward direction), never in depth: shrinking it in depth as well sank it behind the
+  // eyelids once the head was drawn the right way out. Bind pose, so skinning still lines up;
+  // the morph deltas (the blink) get the same in-plane scaling.
   shrinkEyes(geo) {
     if (!geo || !geo.attributes.position || geo.userData.eyesShrunk) return;
     geo.userData.eyesShrunk = true;
-    const pos = geo.attributes.position, n = pos.count, sum = [[0, 0, 0, 0], [0, 0, 0, 0]];
-    for (let i = 0; i < n; i++) { const k = pos.getX(i) < 0 ? 0 : 1; sum[k][0] += pos.getX(i); sum[k][1] += pos.getY(i); sum[k][2] += pos.getZ(i); sum[k][3]++; }
+    const pos = geo.attributes.position, nor = geo.attributes.normal, n = pos.count;
+    const eye = [0, 1].map(() => ({ c: [0, 0, 0], d: [0, 0, 0], k: 0 }));
+    const side = (i) => eye[pos.getX(i) < 0 ? 0 : 1];
     for (let i = 0; i < n; i++) {
-      const s = sum[pos.getX(i) < 0 ? 0 : 1], cx = s[0] / s[3], cy = s[1] / s[3], cz = s[2] / s[3];
-      pos.setXYZ(i, cx + (pos.getX(i) - cx) * EYE_SCALE, cy + (pos.getY(i) - cy) * EYE_SCALE, cz + (pos.getZ(i) - cz) * EYE_SCALE);
+      const e = side(i); e.k++;
+      e.c[0] += pos.getX(i); e.c[1] += pos.getY(i); e.c[2] += pos.getZ(i);
+      if (nor) { e.d[0] += nor.getX(i); e.d[1] += nor.getY(i); e.d[2] += nor.getZ(i); }
+    }
+    for (const e of eye) {
+      e.c = e.c.map((v) => v / Math.max(1, e.k));
+      const l = Math.hypot(...e.d);
+      e.d = l > 1e-6 ? e.d.map((v) => v / l) : [0, 0, 1];
+    }
+    const planar = (e, x, y, z) => {          // keep the part along the eye's direction, scale the rest
+      const along = x * e.d[0] + y * e.d[1] + z * e.d[2];
+      return [0, 1, 2].map((k) => along * e.d[k] + ([x, y, z][k] - along * e.d[k]) * EYE_SCALE);
+    };
+    for (let i = 0; i < n; i++) {
+      const e = side(i), p = planar(e, pos.getX(i) - e.c[0], pos.getY(i) - e.c[1], pos.getZ(i) - e.c[2]);
+      pos.setXYZ(i, e.c[0] + p[0], e.c[1] + p[1], e.c[2] + p[2]);
     }
     pos.needsUpdate = true;
-    for (const a of geo.morphAttributes.position || []) { for (let i = 0; i < a.count; i++) a.setXYZ(i, a.getX(i) * EYE_SCALE, a.getY(i) * EYE_SCALE, a.getZ(i) * EYE_SCALE); a.needsUpdate = true; }
+    for (const a of geo.morphAttributes.position || []) {
+      for (let i = 0; i < a.count; i++) { const p = planar(side(i), a.getX(i), a.getY(i), a.getZ(i)); a.setXYZ(i, p[0], p[1], p[2]); }
+      a.needsUpdate = true;
+    }
     geo.computeBoundingSphere();
   }
 
@@ -672,7 +793,10 @@ class Cat {
     }
     const want = this.gazeTarget(T.v);
     const allow = this.motor.cur in GAZE_ALLOW ? GAZE_ALLOW[this.motor.cur] : 1;
-    G.w = damp(G.w, want ? want.w * allow : 0, 3.2, dt);
+    // Something behind him isn't looked at over the shoulder like an owl: past ~100° off his
+    // nose the head lets go (fully by 145°). It is the body's job to turn round for it.
+    const behind = want ? 1 - sm((Math.abs(Math.atan2(want.p.x, want.p.z)) - 100 * DEG) / (45 * DEG)) : 0;
+    G.w = damp(G.w, want ? want.w * allow * behind : 0, 3.2, dt);
 
     // the animated head's own heading, smoothed so the clip's small life still shows through
     B.head.getWorldQuaternion(T.q);
@@ -684,9 +808,9 @@ class Cat {
     if (want) {
       B.head.getWorldPosition(T.v2); this.body.worldToLocal(T.v2);
       const d = want.p.sub(T.v2);
-      const ty = clamp(Math.atan2(d.x, d.z), -90 * DEG, 90 * DEG);
+      const ty = clamp(Math.atan2(d.x, d.z), -80 * DEG, 80 * DEG);
       const tp = clamp(Math.atan2(-d.y, Math.hypot(d.x, d.z)), -52 * DEG, 47 * DEG);
-      G.yaw = clamp(wrap(ty - G.ay), -95 * DEG, 95 * DEG);
+      G.yaw = clamp(wrap(ty - G.ay), -80 * DEG, 80 * DEG);
       G.pitch = clamp(tp - G.ap, -60 * DEG, 50 * DEG);
     }
     if (G.w < 0.002) { for (const k in G.per) { G.per[k][0] = damp(G.per[k][0], 0, 4, dt); G.per[k][1] = damp(G.per[k][1], 0, 4, dt); } return; }
@@ -873,8 +997,8 @@ class Brain {
       let t = 0;
       while (true) {
         const dt = yield; t += dt;
-        L.v = Math.max(0.27, L.v - 0.9 * dt);
-        if ((L.wrapped && L.v < 0.36) || t > 3) break;
+        L.v = Math.max(WALK(), L.v - 0.9 * dt);
+        if ((L.wrapped && L.v < WALK() * 1.3) || t > 3) break;
       }
     }
     yield* this.once('walk_to_idle', 0.12);
@@ -896,7 +1020,7 @@ class Brain {
   // walk (or trot) to a moving or fixed target, then stop on the walk's phase 0
   *walkTo(getT, o = {}) {
     const c = this.c, m = c.motor, L = m.loco;
-    const speed = o.speed || 0.27, stop = o.stop ?? 0.12;
+    const speed = o.speed || WALK(), stop = o.stop ?? 0.12;
     let t = getT(); if (!t) return;
     if (c.posture !== 'WALK') {
       yield* this.toStand(o.hunt ? 1.6 : 1);
@@ -905,7 +1029,7 @@ class Brain {
       const dy = wrap(c.headingTo(t) - c.yaw);
       if (Math.abs(dy) > (o.hunt ? 75 : 40) * DEG) yield* this.turnBy(dy, o.quick || 1);
       t = getT(); if (!t) return;
-      L.v = 0.27;
+      L.v = WALK();
       yield* this.once(o.bored ? 'bored_walkaway_start' : 'idle_to_walk', 0.15, (dt) => c.steer(t, (o.hunt ? 100 : 45) * DEG, dt), o.quick || 1);
       m.play('loco', 0.2); L.p = 0;
     } else if (m.cur !== 'loco') {
@@ -919,15 +1043,15 @@ class Brain {
       t = getT();
       const d = t ? c.distTo(t) : 0;
       if (!t || (o.until && o.until(d)) || elapsed > 45) stopping = true;
-      let vT = stopping ? 0.27 : speed;
-      if (t && !stopping) vT = Math.min(vT, Math.max(0.2, Math.sqrt(2 * dec * Math.max(0, d - stop))));
+      let vT = stopping ? WALK() : speed;
+      if (t && !stopping) vT = Math.min(vT, Math.max(WALK() * 0.8, Math.sqrt(2 * dec * Math.max(0, d - stop))));
       L.v += clamp(vT - L.v, -2 * dec * dt, acc * dt);
-      if (t) c.steer(t, L.v < 0.36 ? 80 * DEG : L.v < 0.8 ? 115 * DEG : 150 * DEG, dt);
+      if (t) c.steer(t, L.v < WALK() * 1.3 ? 80 * DEG : L.v < 0.8 ? 115 * DEG : 150 * DEG, dt);
       if (t && !stopping && d <= stop + 0.2) stopping = true;
       if (stopping && o.toCrouch && c.toy && c.toy.kind === 'ground' && c.toy.dm < 1.2) {   // a hunting cat sinks straight from the walk into its stalk
         m.play('stalk_crouch', 0.4, true, 1.15); c.posture = 'CROUCH'; c.lockOn(); return;
       }
-      if (stopping && L.wrapped && L.v < 0.36) break;
+      if (stopping && L.wrapped && L.v < WALK() * 1.3) break;
       if (stopping && elapsed > 60) break;
     }
     yield* this.once('walk_to_idle', 0.12);
@@ -952,10 +1076,10 @@ class Brain {
     const y = L.yOfZ(Z), ppm = L.ppmAtY(y);
     const xs = side < 0 ? -0.7 * ppm : L.W + 0.7 * ppm;
     c.X = (xs - L.cAtY(y)) / ppm; c.Z = Z; c.yaw = side < 0 ? 90 * DEG : -90 * DEG; c.outside = true;
-    m.loco.v = 0.27; m.play('loco', 0); m.loco.p = 0; c.posture = 'WALK';
+    m.loco.v = WALK(); m.play('loco', 0); m.loco.p = 0; c.posture = 'WALK';
     const lamps = L.lamps.filter((l) => l.side === side && (l.row === 'mid' || l.row === 'near') && l.lit);   // settle by the first lit post it reaches
     const dest = lamps.length ? L.spot(lamps[Math.floor(Math.random() * lamps.length)]) : L.randomPoint();
-    yield* this.walkTo(() => dest, { speed: 0.27, stop: 0.12 });
+    yield* this.walkTo(() => dest, { speed: WALK(), stop: 0.12 });
   }
   *idleBeat() {
     yield* this.toStand();
@@ -1028,7 +1152,7 @@ class Brain {
     }
     if (!opts.length) { yield* this.wait(1); return; }
     const dest = (fresh.length && chance(0.9) ? pick(fresh) : pick(opts)).t, d = c.distTo(dest);   // posts nobody has visited yet come first
-    yield* this.walkTo(() => dest, { speed: d > 5 && chance(0.35) ? 0.5 : 0.27, stop: 0.12, bored: o.bored });
+    yield* this.walkTo(() => dest, { speed: d > 5 && chance(0.35) ? 0.5 : WALK(), stop: 0.12, bored: o.bored });
     c.atLamp = dest.lamp && c.distTo(dest) < 0.6 ? dest.lamp : null;
     if (c.atLamp && !o.bored) yield* this.visitLamp(c.atLamp);
   }
@@ -1143,7 +1267,8 @@ class Brain {
       t = c.toy;
       if (!t || t.kind !== 'ground' || c.interest < 0.15) { c.creep = 0; yield* this.toStand(1.4); return; }
       const d = c.distTo(t), err = wrap(c.headingTo(t) - c.yaw);
-      c.yaw = wrap(c.yaw + clamp(err * 2.5, -50 * DEG, 50 * DEG) * dt);
+      // a crouched cat re-aims in small shuffles: a few degrees off is left to the head
+      if (Math.abs(err) > 6 * DEG) c.yaw = wrap(c.yaw + clamp(err * 2, -35 * DEG, 35 * DEG) * dt);
       if (d > 1.8) { c.creep = 0; yield* this.toStand(1.4); return; }
       c.creep = d > 0.62 && Math.abs(err) < 30 * DEG ? 0.06 : 0;
       still = t.moving ? 0 : still + dt;
@@ -1154,14 +1279,16 @@ class Brain {
     c.creep = 0;
     // wiggle and pounce at where the toy is going, not where it was
     const WIG = 1.4, aim = (left) => c.lead(left) || (c.toy && c.toy.kind === 'ground' ? c.toy : t);
-    const face = (p, rate, dt) => { c.yaw = wrap(c.yaw + clamp(wrap(c.headingTo(p) - c.yaw) * 3, -rate, rate) * dt); };
-    yield* this.once('butt_wiggle', 0.12, (dt, tm, T) => face(aim((T - tm) / WIG + POUNCE.end), 45 * DEG, dt), WIG);
+    // During the wiggle the back legs are treading, not stepping round, so the body only
+    // creeps toward the aim (the head follows the toy); it used to swivel after every jiggle.
+    const face = (p, rate, dt, dead = 0) => { const e = wrap(c.headingTo(p) - c.yaw); if (Math.abs(e) > dead) c.yaw = wrap(c.yaw + clamp(e * 3, -rate, rate) * dt); };
+    yield* this.once('butt_wiggle', 0.2, (dt, tm, T) => face(aim((T - tm) / WIG + POUNCE.end), 22 * DEG, dt, 8 * DEG), WIG);
     const u = c.toy;
     if (u && u.kind === 'ground' && c.distTo(u) < 0.3) { yield* this.swat(u); return; }   // it came to its paws: pin it there
     m.pounceTravel = clamp(c.distTo(aim(POUNCE.end)) - 0.14, 0.2, 0.72);
-    yield* this.once('pounce', 0.1, (dt, tm) => {
+    yield* this.once('pounce', 0.14, (dt, tm) => {
       if (tm >= POUNCE.start) return;              // committed once airborne
-      const p = aim(POUNCE.end - tm); face(p, 120 * DEG, dt);
+      const p = aim(POUNCE.end - tm); face(p, 80 * DEG, dt);
       m.pounceTravel = clamp(c.distTo(p) - 0.14, 0.2, 0.72);
     });
     m.play('idle_stand', 0.18); c.posture = 'STAND';
@@ -1182,7 +1309,7 @@ class Brain {
   // spotted from across the lane: head up, ears flick, then go (the clip is cut short)
   *alert() {
     const c = this.c, m = c.motor;
-    m.play('notice', 0.12, true, 1.5); c.posture = 'STAND'; c.lockOn();
+    m.play('notice', 0.18, true, 1.5); c.posture = 'STAND'; c.lockOn();
     let t = 0; while (t < 0.5 && !m.done('notice')) t += yield;
   }
   // the pounce came down on nothing: a quick look around, as if it meant to do that
@@ -1201,7 +1328,10 @@ class Brain {
     return Math.abs(wrap(c.headingTo(t) - c.yaw)) < 70 * DEG;
   }
   *swat(t) {
-    const c = this.c, m = c.motor, T = c.tmp, dbl = this.flicked(t);
+    const c = this.c, m = c.motor, T = c.tmp;
+    if (c.time - (c.swatEnd ?? -9) > 3) c.swatN = 0;            // a fresh bout
+    // the quick one-two is for a flick past its face, and not every time it sees one
+    const dbl = this.flicked(t) && c.time - (c.oneTwoT ?? -9) > 2.5;
     // face it first: a swat at something behind or beside it reads wrong
     if (t.kind === 'ground' && c.distTo(t) > 0.12) {
       const dy = wrap(c.headingTo(t) - c.yaw);
@@ -1210,19 +1340,37 @@ class Brain {
     }
     const p = c.toLocal(t.X, t.h, t.Z, T.v);
     c.earsWant = 0.25;
+    // Fades of 0.16 s at the least: the paw comes up out of whatever it was doing (a crouch,
+    // a stand) instead of snapping into the swat's first frame.
     if (dbl) {
-      // a flick past its face gets a quick one-two: one paw, then the other before the first is down
+      c.oneTwoT = c.time;
+      // one paw, then the other before the first is down
       const a = p.x >= 0 ? 'swat_L' : 'swat_R', b = a === 'swat_L' ? 'swat_R' : 'swat_L';
-      m.play(a, 0.08, true, 1.5); c.posture = 'STAND';
+      m.play(a, 0.16, true, 1.3); c.posture = 'STAND';
       while (m.time(a) < 0.55 * m.dur(a)) yield;
-      yield* this.once(b, 0.12, null, 1.5);
+      yield* this.once(b, 0.16, null, 1.3);
     } else {
       const name = Math.abs(p.x) < 0.1 && t.h < 0.4 && chance(0.4) ? 'bat_play' : p.x >= 0 ? 'swat_L' : 'swat_R';
-      yield* this.once(name, 0.1, null, 1.15);
+      m.play(name, 0.16, true, 1.1); c.posture = 'STAND';
+      // a flick past its face while this paw is still going up turns it into a one-two
+      let follow = false;
+      while (!m.done(name)) {
+        yield;
+        if (!follow && name !== 'bat_play' && m.time(name) < 0.45 * m.dur(name) && this.flicked(c.toy) && c.time - (c.oneTwoT ?? -9) > 2.5) follow = true;
+        if (follow && m.time(name) >= 0.55 * m.dur(name)) break;
+      }
+      if (follow) { c.oneTwoT = c.time; yield* this.once(name === 'swat_L' ? 'swat_R' : 'swat_L', 0.16, null, 1.3); }
     }
     c.earsWant = 0;
-    m.play('idle_stand', 0.15); c.posture = 'STAND';
+    m.play('idle_stand', 0.25); c.posture = 'STAND';
     c.interest = Math.max(0, c.interest - 0.1);
+    // Then it watches for a beat before going again (longer as the bout goes on), instead of
+    // swatting on a loop as long as the cursor moves. After four it has had enough for now.
+    c.swatN = (c.swatN || 0) + 1;
+    const beat = rnd(0.35, 0.7) + (c.swatN > 2 ? rnd(0.5, 1.2) : 0);
+    for (let w = 0; w < beat && c.toy; ) w += yield;
+    if (c.swatN >= 4) { c.interest *= 0.55; c.swatN = 0; }
+    c.swatEnd = c.time;
   }
 }
 
@@ -1246,7 +1394,7 @@ async function start(hero) {
   const lane = new Lane(hero);
   if (!lane.ok) return;
   const cat = new Cat(THREE, hero, gltf, lane);
-  if (DEBUG) { window.__cat = cat; cat.POUNCE = POUNCE; if (/catdebug=lines/.test(location.search)) debugLayer(cat); }
+  if (DEBUG) { window.__cat = cat; cat.POUNCE = POUNCE; cat.GAIT = GAIT_SPEED; if (/catdebug=lines/.test(location.search)) debugLayer(cat); }
 
   let visible = true, last = performance.now(), raf = 0;
   const io = new IntersectionObserver((es) => { visible = es[0].isIntersecting; kick(); }, { threshold: 0.02 });

@@ -8,7 +8,9 @@ the head never snaps (> 30° in one frame), plus the newer behaviours: lock-on
 ear/tail flick, pounces that lead a moving cursor, the one-two swat at a flick,
 the "missed it" look around, the pause before getting up from a loaf, and a 15-minute
 no-cursor run (rendering off) that checks every lamp post gets a visit and that his sprite
-is never drawn over a post that is nearer than he is.
+is never drawn over a post that is nearer than he is. Every scenario also fails if any bone
+jumps more than 70° in one frame (a pop), a swat-pacing scenario checks he doesn't swat on a
+loop, and a render check confirms his eyes are lit facing the viewer and dark from behind.
 
     npm i -D playwright && npx playwright install chromium   # once
     npm run test:cat                                          # RUNS=5 VERBOSE=1 for more

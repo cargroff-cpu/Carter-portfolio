@@ -942,6 +942,45 @@ under makes it look up and move.
   its base is never hidden by his sprite. The suite has a 15-minute no-cursor
   scenario (rendering off, about 20 s) that fails if any of the eight posts gets
   no visit or if he is ever drawn over a nearer post.
+- **Audit: the model was inside out, and the motion snapped (2026-11-09).**
+  He looked fine standing still and wrong in motion. Measured frame by frame in
+  headless Chromium, the causes were:
+  - *Inside-out body.* The fur mesh's triangles and normals all point inward
+    (signed volume < 0). Drawn front-side, the renderer showed the inside of the
+    far wall of his body: his eyes showed through the back of his head when he
+    faced away, and the lamps lit the wrong side (the pale underside and violet
+    belly worked around in v7). Now drawn `BackSide`, which is the mesh's true
+    outside, and three flips back-face normals for lighting, so one setting
+    fixes both. The four alpha fur shells were extruded inward and can't be
+    seen any more, so they're hidden. The eyes are shrunk across the face only
+    (shrinking in depth too had sunk them behind the lids) and are a lamplit
+    gold-green instead of glowing white.
+  - *Pops.* A clip asked to play again while still showing (`idle_stand`
+    restarts, back-to-back swats, both halves of a big turn) reset to frame 0,
+    because one three.js action can't crossfade into itself: bones jumped up to
+    90° in a frame. Every clip but the gaits now has a twin action that takes
+    over and fades in, and a loop that's already playing just carries on.
+    Swat/pounce/notice fades are 0.14–0.2 s (were 0.08–0.12).
+  - *Snappy stride.* The walk and trot swing each leg in 2–3 keys (34° and 68°
+    a frame). `walk`, `trot`, `idle_stand` and `stalk_crouch` get three passes
+    of a cyclic [1 2 1] filter and a 60 fps Catmull-Rom resample at load. Gait
+    speeds are then re-measured from the smoothed clips (median speed of a
+    planted paw), which gives 0.269 m/s on the raw walk, the same as the
+    export. Unhurried walks use that speed instead of a fixed 0.27. The `run`
+    clip is never blended in: its hind legs flip up to 160° between keys.
+  - *Swivelling.* During the butt wiggle and the stalk the whole body turned on
+    the spot after every jiggle (380 frames in 5 minutes): now a dead zone and
+    a 22–35°/s limit, so the head follows the toy and the body only creeps.
+  - *Owl head.* Gaze targets more than ~100° behind him (the viewer, a toy) fade
+    out instead of twisting the head round. Turning is the body's job.
+  - *Swat loop.* A cursor jiggling over him got a swat every 0.35 s. Now there's
+    a watching beat after each one (longer as a bout goes on), the bout cools
+    after four, and the one-two happens at most every 2.5 s (a flick that
+    comes while one paw is still rising turns it into a one-two).
+  - Tests: every scenario now fails on any bone jumping more than 70° in a
+    frame (the pounce launch is the biggest real move, ~67°). New: a swat-pacing
+    scenario, and a render check that the eyes are lit facing the viewer and
+    dark from behind. Both fail on the previous cat. All pass at RUNS=3.
 
 ## 2026-11-07 — Business Hub: one home per thing
 - Leads is a lens on work not yet won: Overview, Tasks, Activity, Reports. Its Pipeline and Contacts tabs are gone, since they were the Jobs board and the Clients page under a second name; Leads' stage cards now open Jobs.

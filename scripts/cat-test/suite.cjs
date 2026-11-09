@@ -59,6 +59,9 @@ const SCEN = [
   { name: 'woken from a loaf: a beat of looking, then plays', start: 'LOAF', secs: 8,
     ptr: `(t, c, L) => { const a = c.ahead(0.7); const s = L.toScreen(a.X + 0.12*Math.sin(t*8), a.Z + 0.08*Math.cos(t*6)); return [s.x, s.y]; }`,
     check: `r => [r.firstPlay >= 0 || 'never played', r.first('loaf_to_sit') - r.firstPlay >= 0.4 || 'got up with no hesitation', r.firstAny(['pounce','swat_L','swat_R','bat_play']) >= 0 && r.firstAny(['pounce','swat_L','swat_R','bat_play']) < 5.5 || 'no play move by 5.5 s']` },
+  { name: 'jiggle over its head for 8 s: swats come with a beat between them, not on a loop', start: 'STAND', secs: 8,
+    ptr: `(t, c, L) => { const s = L.toScreen(c.X, c.Z); return [s.x + 0.12*s.ppm*Math.sin(t*9), s.y - (0.48 + 0.05*Math.sin(t*7))*s.ppm]; }`,
+    check: `r => { const sw = r.starts.filter(([n]) => /^(swat_|bat_)/.test(n)).map(([, t]) => t); return [sw.length >= 2 || 'hardly swatted (' + sw.join(',') + ')', sw.length <= 7 || 'swatted ' + sw.length + ' times in 8 s']; }` },
   // ── the posts ──
   { name: 'life, no cursor, 15 min: every post gets a visit and he is never drawn over a nearer post', start: 'STAND', secs: 900, fast: true, runs: 2,
     ptr: `(t, c, L) => [-500, -500]`,
@@ -80,7 +83,7 @@ const SCEN = [
         const X0 = [-1.0, 0.6, 1.4][run % 3], Z0 = [1.6, 2.6, 4.5][run % 3];
         c.X = X0; c.Z = Z0; c.yaw = [0.4, -2.2, 1.3][run % 3]; c.outside = false; c.interest = 0; c.cool = 0; c.glance = null; c.nextGlance = 999;
         c.gazeOverride = null; c.gaze.w = 0; c.ptr.cx = -1; c.ptr.speed = 0; c.ptr.mps = 0; c.anchor = null; c.X0 = X0; c.Z0 = Z0;
-        c.lampSeen = new Map(); c.atLamp = null; c.lockT = -9; c.flickT = -9; c.toyV = { X: 0, Z: 0, sp: 0 }; c.toyPrev = null; c.lastMiss = -1;
+        c.lampSeen = new Map(); c.atLamp = null; c.lockT = -9; c.flickT = -9; c.toyV = { X: 0, Z: 0, sp: 0 }; c.toyPrev = null; c.lastMiss = -1; c.oneTwoT = -9; c.swatN = 0; c.swatEnd = -9;
         const pose = { STAND: 'idle_stand', SIT: 'sit_idle', LOAF: 'loaf' }[sc.start];
         c.posture = sc.start; c.motor.play(pose, 0);
         for (let i = 0; i < 10; i++) c.update(1 / 30);
@@ -88,10 +91,12 @@ const SCEN = [
         c.brain.swap('life', c.brain.life(false));
         const lampNames = L.lamps.map((l) => l.row + (l.side < 0 ? '-left' : '-right')), lampStay = L.lamps.map(() => 0);
         const render0 = c.renderer.render; if (sc.fast) c.renderer.render = () => {};   // no drawing for the long runs
-        const r = { lampNames, lampStay, hidden: 0, dmAtPlay: 99, firstPlay: -1, playEnd: -1, clips: new Set(), firsts: {}, seq: [], trace: [], starts: [], misses: [], locks: [], maxGaze: 0, walkedToward: 0, dist: 0, headSpike: 0 };
+        const r = { lampNames, lampStay, hidden: 0, dmAtPlay: 99, firstPlay: -1, playEnd: -1, clips: new Set(), firsts: {}, seq: [], trace: [], starts: [], misses: [], locks: [], maxGaze: 0, boneSpike: 0, boneSpikeAt: '', walkedToward: 0, dist: 0, headSpike: 0 };
         const rect = c.hero.getBoundingClientRect();
         let px = null, py = null, lx = c.X, lz = c.Z;
         const headBones = ['neck_01', 'neck_02', 'head'].map(n => c.model.getObjectByName(n));
+        const allBones = []; c.model.traverse(o => { if (o.isBone) allBones.push(o); });
+        const prevAll = allBones.map(() => new T.Quaternion());
         const prevQ = headBones.map(() => new T.Quaternion()), q = new T.Quaternion(), bq = new T.Quaternion();
         const trace = sc.trace || 0;
         let firstFrame = true, d0 = null, lastCur = null, lastLock = c.lockT, pt = 0;
@@ -125,6 +130,7 @@ const SCEN = [
           r.dist += Math.hypot(c.X - lx, c.Z - lz); lx = c.X; lz = c.Z;
           if (playing && c.toy && c.toy.kind === 'ground') { const d = Math.hypot(c.toy.X - c.X, c.toy.Z - c.Z); if (d0 == null) d0 = d; r.walkedToward = Math.max(r.walkedToward, d0 - d); }
           c.body.getWorldQuaternion(bq); bq.invert();
+          if (!sc.fast) allBones.forEach((b, i) => { b.getWorldQuaternion(q); q.premultiply(bq); if (!firstFrame) { const a = 2 * Math.acos(Math.min(1, Math.abs(q.dot(prevAll[i])))) * 57.3; if (a > r.boneSpike) { r.boneSpike = a; r.boneSpikeAt = cur + ':' + b.name + '@' + t.toFixed(2); } } prevAll[i].copy(q); });
           headBones.forEach((b, i) => { b.getWorldQuaternion(q); q.premultiply(bq); if (!firstFrame) r.headSpike = Math.max(r.headSpike, 2 * Math.acos(Math.min(1, Math.abs(q.dot(prevQ[i])))) * 57.3); prevQ[i].copy(q); });
           firstFrame = false;
         }
@@ -133,6 +139,9 @@ const SCEN = [
         r.firstAny = (ns) => { const v = ns.map(r.first).filter(x => x >= 0); return v.length ? Math.min(...v) : -1; };
         const problems = check(r).filter(x => x !== true);
         if (r.headSpike > 30) problems.push('head snapped ' + r.headSpike.toFixed(0) + '°/frame');
+        // any bone: a clip restarting on itself or a too-short fade shows up as a jump; the
+        // biggest real move is the pounce launch (~67°)
+        if (r.boneSpike > 70) problems.push('pose popped ' + r.boneSpike.toFixed(0) + '°/frame at ' + r.boneSpikeAt);
         return { problems, firstPlay: r.firstPlay, playEnd: r.playEnd, clips: [...r.clips].join(','), trace: r.trace.join('\n'), misses: r.misses.map(m => m.toFixed(2)).join(','), seq: r.seq.map(([n, t]) => n + '@' + t).join(' '), dist: r.dist.toFixed(2), head: r.headSpike.toFixed(0) };
       }, [sc, run]);
       const ok = res.problems.length === 0; if (!ok) fails++;
@@ -141,6 +150,27 @@ const SCEN = [
       if (res.trace) console.log(res.trace);
       if (process.env.VERBOSE) console.log('      seq: ' + res.seq + (res.misses ? '  pounce misses: ' + res.misses : ''));
     }
+  }
+  // ── the model: eyes show when he faces the viewer and never through the back of his head ──
+  if (!ONLY || 'eyes'.includes(ONLY) || ONLY === 'eyes') {
+    const res = await page.evaluate(() => {
+      const c = window.__cat; c.manual = true;
+      c.brain.swap('life', (function* () { while (true) yield; })());
+      c.glance = null; c.gazeOverride = null; c.nextGlance = 999; c.interest = 0; c.ptr.cx = -1; c.gaze.w = 0;
+      c.X = 0; c.Z = 1.5; c.posture = 'STAND'; c.motor.play('idle_stand', 0);
+      const bright = (yaw) => {
+        c.yaw = yaw; for (let i = 0; i < 6; i++) c.update(1 / 30);
+        const g = document.createElement('canvas'); g.width = c.canvas.width; g.height = c.canvas.height;
+        const x = g.getContext('2d'); x.drawImage(c.canvas, 0, 0);
+        const d = x.getImageData(0, 0, g.width, g.height).data; let n = 0;
+        for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 200 && d[i] + d[i + 1] > 180) n++;
+        return n;
+      };
+      return { front: bright(0.3), back: bright(Math.PI), backL: bright(Math.PI - 0.5), backR: bright(Math.PI + 0.5) };
+    });
+    const ok = res.front > 0 && res.back === 0 && res.backL === 0 && res.backR === 0;
+    if (!ok) fails++;
+    console.log(`${ok ? 'PASS' : 'FAIL'}  eyes: lit facing the viewer, dark facing away  (eye pixels front ${res.front}, back ${res.back}/${res.backL}/${res.backR})`);
   }
   console.log(fails ? `${fails} FAILED` : 'ALL PASSED');
   await close();
