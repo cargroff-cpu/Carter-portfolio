@@ -991,7 +991,7 @@ under makes it look up and move.
     so he is seen from the side a real eye would see him from. Worst case is now
     ~8° (diagonals: the lane's post spacing isn't a perfect perspective).
     Looking "at the viewer" follows the same angle.
-  - *Intro.* Instead of walking in from the edge, he starts out of sight behind
+  - *Intro (superseded below, see "A real entrance").* Instead of walking in from the edge, he starts out of sight behind
     one of the mid posts, walks out from behind it, stops with his head and
     shoulders round the post and looks at you (ear flick, a blink), glances down
     the lane and carries on out. His canvas is drawn over the mid posts, so while
@@ -1006,6 +1006,49 @@ under makes it look up and move.
   - Tests: a crab-walk check (screen motion vs screen heading under 12° at the
     lane's sides) and an intro scenario (starts hidden behind a mid post, looks at
     the viewer, comes out in front of the post inside the lane, no pose pops).
+- **A real entrance, and a walk that gets somewhere (2026-11-09).** After the
+  last two attempts he still read as appearing next to the lamp, and as walking
+  on the spot. Measured, not guessed: the old intro moved him 0.15 body lengths
+  across the screen in 3 s, and 35–55 % of his ordinary walking time moved him
+  under 0.2 body lengths a second on screen.
+  - *Why it read as walking on the spot.* The lane is seen from 13° above, so a
+    metre of walking along the lane (toward or away from the viewer) is about a
+    quarter of a metre across the screen. The intro walked him toward the viewer.
+    The walk clip's stride is also short (about 0.28 body lengths; a cat's is
+    nearer twice that), so his feet cycled and his body hardly got anywhere.
+  - *Intro.* He starts completely hidden behind one of the front posts (near or
+    mid row, either side), side-on to us, with his nose just inside the post's
+    outline. That spot is worked out in screen pixels from the post as laid out
+    right now (`hiddenSpot`, `postEdgeX`: the lane converges, so "behind" a post is
+    not at the same lane X), so it holds at any window size. After a beat he
+    walks out from behind the post across the screen, at 1.2× his usual walk,
+    and is revealed a little at a time as he passes the post's edge (his canvas is
+    cut off along the post's inner edge with a one-piece `clip-path` polygon until
+    his tail is clear of the post's widest point, `peekDone`). He looks at the
+    viewer as he comes out and carries on across the lane. Cursor play and petting
+    wait until he is clear. A resize mid-intro doesn't shove him out of hiding.
+  - *Walk.* The walk's leg rotations are scaled ×1.35 about their mean pose
+    (`lengthenStride`), which lengthens the stride; his walking speed is
+    re-measured from the planted paws afterwards (0.27 → 0.36 m/s at the same
+    step rate) and foot slide went down (5.5 → 2.1 cm/s), so he gets further
+    per step without skating. Where he wanders, routes across the screen are now
+    likelier than routes up or down the lane (posts nobody has visited still come
+    first, so trips to the far lamps remain, and those are inherently low on
+    screen travel). Over 8 runs of 4 minutes each, walking time that reads as
+    on-the-spot fell from 42 % to 31 % and his average on-screen speed rose from
+    0.26 to 0.32 body lengths a second.
+  - *Tests.* `npm run test:cat:sizes` plays the entrance on all four front posts at
+    900×640, 1024×768, 1280×720, 1440×900, 1920×1080 and 2560×1440 in the real
+    page and checks with pixels (the page with him vs without him) that nothing of
+    him shows at the start, counts how much of him is visible through the live
+    clip-path to check he is revealed gradually, checks he really crosses the
+    screen (not on the spot), stays inside the hero, and ends up in the lane. It
+    fails on the previous intro ("on the spot: 0.15 body lengths in 3 s"). The
+    suite's intro scenario now checks the same behaviour on the front rows. Also
+    run once, all passing, at 1366×768, 1728×1117, 1280×1000 and 3440×1440. Pop
+    detection samples every tenth of a second: at half-second samples a stepped
+    plinth uncovers enough of him to look like a pop when it isn't (checked on
+    film at 900×640).
 - **The crouch belly (2026-11-09).** Crouched (stalk, wiggle, the pounce
   wind-up), his belly hung as a flat, sharp-cornered plate: a triangle in side
   view. The body drops ~5 cm while both upper legs fold hard (front 97°, back 75°)
