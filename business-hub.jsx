@@ -968,7 +968,7 @@ function Clients({ data, reload, reloadAll, reloadTasks, open, startSel }) {
         <div className="dkpi static"><span className="dkpi-l">Paid, all time</span><span className="dkpi-v mono">{usd(total)}</span><span className="dkpi-n">no card fees</span></div>
         <div className="dkpi static"><span className="dkpi-l">Owed to you</span><span className="dkpi-v mono">{usd(owed)}</span><span className="dkpi-n">invoices sent</span></div>
       </div>
-      {data.clients.length > 0 && <input className="input" placeholder="Search clients" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search clients" style={{ maxWidth: 360 }} />}
+      {data.clients.length > 0 && <input className="input sbar" placeholder="Search clients" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search clients" style={{ maxWidth: 360 }} />}
       {rows.length > 0 ? (
         <div className="widget" style={{ padding: '4px 18px 6px' }}>
           <div className="scroll-x"><table className="ctable">
