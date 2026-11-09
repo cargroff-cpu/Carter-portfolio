@@ -981,6 +981,27 @@ under makes it look up and move.
     frame (the pounce launch is the biggest real move, ~67°). New: a swat-pacing
     scenario, and a render check that the eyes are lit facing the viewer and
     dark from behind. Both fail on the previous cat. All pass at RUNS=3.
+- **No crab walk; a peek-round-the-post intro (2026-11-09).**
+  - *Crab walk.* The lane converges on a vanishing point, so near its sides
+    "straight into the lane" runs about 20° off vertical on screen, but the cat
+    is drawn with a flat camera that pointed him straight up the screen. Walking
+    into or out of the lane at the sides, he moved up to 61° away from where his
+    body pointed. His camera now swings round by the lane's own lean at his spot
+    (sampled over ±0.15 m and eased, because the lean steps at each lamp row),
+    so he is seen from the side a real eye would see him from. Worst case is now
+    ~8° (diagonals: the lane's post spacing isn't a perfect perspective).
+    Looking "at the viewer" follows the same angle.
+  - *Intro.* Instead of walking in from the edge, he starts hidden behind one of
+    the mid posts. The canvas is drawn over the mid posts, so while he's behind
+    one, the post's outline (measured from the lamp art) is cut out of his canvas
+    with an even-odd `clip-path`. He creeps forward in a crouch until his head
+    comes round the post, freezes and looks at you (ear flick, a blink), glances
+    down the lane, stands and walks out round the post. Cursor play and petting
+    wait until he's clear of the post. The old walk-in remains as a fallback if a
+    page has no mid post.
+  - Tests: a crab-walk check (screen motion vs screen heading under 12° at the
+    lane's sides) and an intro scenario (starts hidden behind a mid post, looks at
+    the viewer, comes out in front of the post inside the lane, no pose pops).
 
 ## 2026-11-07 — Business Hub: one home per thing
 - Leads is a lens on work not yet won: Overview, Tasks, Activity, Reports. Its Pipeline and Contacts tabs are gone, since they were the Jobs board and the Clients page under a second name; Leads' stage cards now open Jobs.
