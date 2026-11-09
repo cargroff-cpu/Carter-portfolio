@@ -28,6 +28,11 @@ const GLB = new URL('assets/cat/scaffold-cat.glb', document.baseURI).href;
 const LAMP_M = 4.6;            // the 200x900 lamp frame, in metres (Blender render camera)
 const LANTERN_M = 4.05;        // gas mantle height
 const PITCH = 13 * Math.PI / 180; // the lane is seen from slightly above
+// a lamp post's outline: [height m, left, right as a share of the 200x900 frame's width],
+// measured from the lamp art (all eight posts share it); a little below 0 covers his shadow
+const POST_PROFILE = [[-0.08, 0.215, 0.782], [0.15, 0.215, 0.782], [0.2, 0.242, 0.755], [0.25, 0.253, 0.745], [0.3, 0.295, 0.703],
+  [0.42, 0.295, 0.703], [0.45, 0.335, 0.662], [0.55, 0.335, 0.662], [0.6, 0.352, 0.645], [0.7, 0.385, 0.613], [0.8, 0.362, 0.635],
+  [1.0, 0.432, 0.565], [1.2, 0.485, 0.512], [LAMP_M, 0.485, 0.512]];
 const SINP = Math.sin(PITCH), COSP = Math.cos(PITCH);
 const DEG = Math.PI / 180;
 const ORG_Y = 0.74;            // where the cat's feet sit inside its canvas
@@ -399,7 +404,7 @@ class Cat {
   constructor(THREE, hero, gltf, lane) {
     this.T = THREE; this.hero = hero;
     this.lane = lane; this.hazeNow = 0; this.earsWant = 0;
-    this.X = 0; this.Z = 2; this.yaw = 0; this.creep = 0; this.vis = 1;
+    this.X = 0; this.Z = 2; this.yaw = 0; this.creep = 0; this.vis = 1; this.camPhi = 0;
     this.posture = 'STAND'; this.outside = false;
     this.interest = 0; this.cool = 4; this.playStreak = 0;
     this.time = 0; this.relocate = false;
@@ -501,7 +506,8 @@ class Cat {
     this.sizeCanvas();
     this.tmp = { v: new THREE.Vector3(), v2: new THREE.Vector3(), q: new THREE.Quaternion(), q2: new THREE.Quaternion(),
       q3: new THREE.Quaternion(), qy: new THREE.Quaternion(), qp: new THREE.Quaternion(), e: new THREE.Euler() };
-    this.style = { z: '', f: '', t: '' };
+    this.style = { z: '', f: '', t: '', c: '' };
+    this.peek = null;                                  // { lamp } while he is behind a post in the intro
   }
 
   // Each gait's natural speed is read off the (smoothed) clip itself: how fast a planted paw
@@ -730,7 +736,10 @@ class Cat {
     const step = this.motor.step + this.creep * dt;
     this.X += Math.sin(this.yaw) * step; this.Z -= Math.cos(this.yaw) * step;
     const L = this.lane;
-    if (this.outside) { if (L.inside(this.X, this.Z, 0.6)) this.outside = false; }
+    // once he is clear of the post he peeked round, he is an ordinary cat in the lane again
+    if (this.peek && (Math.abs(this.X - this.peek.lamp.X) > 0.85 || this.Z < this.peek.lamp.Z - 0.15)) this.peek = null;
+    if (this.peek) { /* hiding behind a post: the post's mask does the depth; no lane clamp */ }
+    else if (this.outside) { if (L.inside(this.X, this.Z, 0.6)) this.outside = false; }
     else { const c = L.clampIn(this.X, this.Z, 0.45); this.X = c.X; this.Z = c.Z; this.avoidPosts(); }
 
     const zMid = L.rows[1].Z, zBack = L.rows[3].Z;
@@ -742,7 +751,7 @@ class Cat {
     this.applyTail(dt);
     this.applyFace(dt);
     this.light(dt);
-    this.place();
+    this.place(dt);
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -750,7 +759,7 @@ class Cat {
     const T = this.tmp;
     if (this.gazeOverride && this.gazeOverride.until > this.time) {
       const o = this.gazeOverride;
-      if (o.kind === 'viewer') return { p: out.set(0, 3.2, 14).applyAxisAngle(T.v2.set(0, 1, 0), -this.yaw), w: 1 };
+      if (o.kind === 'viewer') return { p: out.set(14 * Math.sin(this.camPhi), 3.2, 14 * Math.cos(this.camPhi)).applyAxisAngle(T.v2.set(0, 1, 0), -this.yaw), w: 1 };
       return { p: this.toLocal(o.X, o.h, o.Z, out), w: 1 };
     }
     if (this.toy && (this.interest > 0.08 || this.brain.mode === 'play')) {
@@ -760,7 +769,7 @@ class Cat {
     }
     if (this.glance && this.glance.until > this.time) {
       const g = this.glance;
-      if (g.kind === 'viewer') return { p: out.set(0, 3.2, 14).applyAxisAngle(T.v2.set(0, 1, 0), -this.yaw), w: 0.9 };
+      if (g.kind === 'viewer') return { p: out.set(14 * Math.sin(this.camPhi), 3.2, 14 * Math.cos(this.camPhi)).applyAxisAngle(T.v2.set(0, 1, 0), -this.yaw), w: 0.9 };
       return { p: this.toLocal(g.X, g.h, g.Z, out), w: 0.85 };
     }
     return null;
@@ -902,9 +911,20 @@ class Cat {
     this.shadow.position.z = sit ? -0.04 : 0;
   }
 
-  place() {
+  place(dt = 0) {
     const L = this.lane, s = L.toScreen(this.X, this.Z), ppm = s.ppm;
     const cam = this.camera, cw = this.cw, ch = this.ch;
+    // Perspective. The lane converges on a vanishing point: off to one side, "straight into
+    // the lane" runs toward the middle of the screen (about 20° off vertical at the sides of
+    // the front rows). The cat is drawn with a flat camera, so he used to point straight up
+    // the screen while sliding off at that angle: walking one way, moving another. The camera
+    // swings round by the lane's own lean at his spot, so the model is seen from the side a
+    // real eye would see it from. Measured over ±0.15 m and eased: the measured lean steps
+    // at each lamp row.
+    const pa = L.toScreen(this.X, this.Z - 0.15), pb = L.toScreen(this.X, this.Z + 0.15);
+    const phi = Math.atan(((pb.x - pa.x) / ((pa.y - pb.y) || 1)) * SINP);
+    this.camPhi = dt > 0 && Number.isFinite(this.camPhi) ? damp(this.camPhi, phi, 10, dt) : phi;
+    cam.position.set(Math.sin(this.camPhi) * COSP * 12, SINP * 12, Math.cos(this.camPhi) * COSP * 12); cam.lookAt(0, 0, 0);
     cam.left = -cw / 2 / ppm; cam.right = cw / 2 / ppm;
     cam.top = ORG_Y * ch / ppm; cam.bottom = -(1 - ORG_Y) * ch / ppm;
     cam.updateProjectionMatrix();
@@ -931,6 +951,20 @@ class Cat {
     if (this.style.z !== zs) { st.zIndex = zs; this.style.z = zs; }
     if (this.style.f !== fs) { st.filter = fs; this.style.f = fs; }
     if (this.style.t !== ts) { st.transform = ts; this.style.t = ts; }
+    // behind the post he peeks round, the post's own shape is cut out of his canvas
+    const pk = this.peek, cs = pk && this.Z > pk.lamp.Z - 0.05 ? this.postMask(pk.lamp, s.x - cw / 2, s.y - ORG_Y * ch) : '';
+    if (this.style.c !== cs) { st.clipPath = cs; this.style.c = cs; }
+  }
+
+  // The canvas sits above the mid posts, so to be behind one the post's silhouette (measured
+  // from the lamp art: plinth, collar, shaft) is cut out of the canvas, with an even-odd
+  // polygon: the canvas rectangle, then the post outline as a hole.
+  postMask(lamp, ox, oy) {
+    const r = this.lane.rel(lamp.el), cw = this.cw, ch = this.ch;
+    const pt = (fx, hm) => `${(r.x + fx * r.w - ox).toFixed(1)}px ${(r.y + r.h * (1 - hm / LAMP_M) - oy).toFixed(1)}px`;
+    const left = POST_PROFILE.map(([hm, a]) => pt(a, hm)), right = POST_PROFILE.slice().reverse().map(([hm, , b]) => pt(b, hm));
+    const hole = left.concat(right, [left[0]]);
+    return `polygon(evenodd, 0px 0px, ${cw}px 0px, ${cw}px ${ch}px, 0px ${ch}px, 0px 0px, ${hole.join(', ')})`;
   }
 }
 
@@ -945,9 +979,9 @@ class Brain {
     const c = this.c;
     if (this.petted) {
       this.petted = false;
-      if (this.mode !== 'play' && c.posture !== 'WALK') this.swap('pet', this.pet());
+      if (this.mode !== 'play' && c.posture !== 'WALK' && !c.peek) this.swap('pet', this.pet());
     }
-    if (this.mode === 'life' && c.cool <= 0) {
+    if (this.mode === 'life' && c.cool <= 0 && !c.peek) {   // the intro plays out first
       const need = { STAND: 0.45, WALK: 0.55, SIT: 0.65, LOAF: 1.0, CROUCH: 0.45 }[c.posture] || 0.5;
       if (c.interest > need && c.toy && c.toy.dm < CHASE_M) this.swap('play', this.play());
     }
@@ -1069,7 +1103,45 @@ class Brain {
       yield* this.wander();
     }
   }
+  // The intro: he's hiding behind one of the mid posts. A pause, then he creeps forward in a
+  // crouch until his head comes round the post, freezes, looks straight at you (ears flick, a
+  // blink), glances down the lane, then gets up and walks out round the post into the lane.
   *enter() {
+    const c = this.c, L = c.lane, m = c.motor;
+    const mids = L.lamps.filter((l) => l.row === 'mid'), lit = mids.filter((l) => l.lit);
+    const pool = lit.length ? lit : mids;
+    if (!pool.length || !m.has('stalk_crouch')) { yield* this.walkIn(); return; }
+    const post = pool[Math.floor(Math.random() * pool.length)], inward = -post.side;
+    try {
+      c.peek = { lamp: post };
+      // tucked behind the plinth, side-on, nose well short of its inner edge (the tail tip may show on the far side)
+      c.Z = post.Z + 0.3; c.X = post.X - inward * 0.16; c.yaw = inward * 90 * DEG;
+      m.play('stalk_crouch', 0, true, 0.6); c.posture = 'CROUCH'; c.creep = 0;
+      c.gazeOverride = { X: c.X + inward * 2, h: 0.1, Z: c.Z, until: c.time + 99 };   // eyes on the lane
+      yield* this.wait(rnd(0.9, 1.5));
+      // the peek: a slow creep until the head is round the post
+      const x1 = post.X + inward * 0.1;
+      while ((x1 - c.X) * inward > 0.005) { c.creep = 0.09; yield; }
+      c.creep = 0;
+      // caught: look right at the viewer
+      c.lockOn(); c.gazeOverride = { kind: 'viewer', until: c.time + 99 };
+      yield* this.wait(0.7); c.blink.t = 0;
+      yield* this.wait(rnd(0.9, 1.3));
+      // a look along the lane, then out
+      c.gazeOverride = { X: c.X + inward * 3, h: 0.2, Z: c.Z - 1, until: c.time + 99 };
+      yield* this.wait(rnd(0.8, 1.1));
+      c.gazeOverride = null;
+      yield* this.toStand();
+      const fz = clamp(post.Z - rnd(0.7, 1.2), L.Zmin + 0.1, L.Zmax), fh = L.halfW(fz) - 0.6;
+      const dest = { X: clamp(post.X + inward * rnd(0.9, 1.6), -fh, fh), Z: fz };
+      const way = { X: post.X + inward * 1.4, Z: post.Z + 0.1 };       // round the post, not through it (far enough that he never slows for it)
+      yield* this.walkTo(() => (Math.abs(c.X - post.X) < 0.65 && c.Z > post.Z - 0.1 ? way : dest), { speed: WALK(), stop: 0.12 });
+    } finally {
+      c.peek = null; c.creep = 0; c.gazeOverride = null;
+    }
+  }
+  // the old entrance (used when there is no mid post): walk in from the side
+  *walkIn() {
     const c = this.c, L = c.lane, m = c.motor;
     const side = chance(0.5) ? -1 : 1;
     const Z = lerp(L.Zmin + 0.3, L.rows[1].Z - 0.35, Math.random());
