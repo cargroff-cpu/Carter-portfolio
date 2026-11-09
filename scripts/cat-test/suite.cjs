@@ -83,7 +83,7 @@ const SCEN = [
         const X0 = [-1.0, 0.6, 1.4][run % 3], Z0 = [1.6, 2.6, 4.5][run % 3];
         c.X = X0; c.Z = Z0; c.yaw = [0.4, -2.2, 1.3][run % 3]; c.outside = false; c.interest = 0; c.cool = 0; c.glance = null; c.nextGlance = 999;
         c.gazeOverride = null; c.gaze.w = 0; c.ptr.cx = -1; c.ptr.speed = 0; c.ptr.mps = 0; c.anchor = null; c.X0 = X0; c.Z0 = Z0;
-        c.lampSeen = new Map(); c.atLamp = null; c.lockT = -9; c.flickT = -9; c.toyV = { X: 0, Z: 0, sp: 0 }; c.toyPrev = null; c.lastMiss = -1; c.oneTwoT = -9; c.swatN = 0; c.swatEnd = -9;
+        c.lampSeen = new Map(); c.atLamp = null; c.lockT = -9; c.flickT = -9; c.toyV = { X: 0, Z: 0, sp: 0 }; c.toyPrev = null; c.lastMiss = -1; c.oneTwoT = -9; c.swatN = 0; c.swatEnd = -9; c.peek = null;
         const pose = { STAND: 'idle_stand', SIT: 'sit_idle', LOAF: 'loaf' }[sc.start];
         c.posture = sc.start; c.motor.play(pose, 0);
         for (let i = 0; i < 10; i++) c.update(1 / 30);
@@ -171,6 +171,65 @@ const SCEN = [
     const ok = res.front > 0 && res.back === 0 && res.backL === 0 && res.backR === 0;
     if (!ok) fails++;
     console.log(`${ok ? 'PASS' : 'FAIL'}  eyes: lit facing the viewer, dark facing away  (eye pixels front ${res.front}, back ${res.back}/${res.backL}/${res.backR})`);
+  }
+  // ── the intro: peeks round a mid post, looks at you, walks out in front of it ──
+  if (!ONLY || 'intro peek'.includes(ONLY)) {
+    for (let run = 0; run < Math.min(RUNS, 4); run++) {
+      const res = await page.evaluate(() => {
+        const c = window.__cat, L = c.lane, T = c.T; c.manual = true;
+        c.ptr.cx = -1; c.interest = 0; c.cool = 0; c.glance = null; c.gazeOverride = null; c.nextGlance = 999;
+        c.brain.swap('life', c.brain.life(true));
+        const post = c.peek && c.peek.lamp, r = { post: post ? post.row + (post.side < 0 ? '-left' : '-right') : 'none', hiddenStart: false, looked: -1, out: -1, pop: 0 };
+        if (!post) return r;
+        // at the start his nose is still behind the post's inner edge
+        const inward = -post.side;
+        r.hiddenStart = (c.X + Math.sin(c.yaw) * 0.32 - post.X) * inward < 0.22;
+        const bones = []; c.model.traverse(o => { if (o.isBone) bones.push(o); });
+        const prev = bones.map(() => new T.Quaternion()), q = new T.Quaternion(), bq = new T.Quaternion();
+        for (let f = 0; f < 16 * 30; f++) {
+          c.update(1 / 30); const t = f / 30;
+          if (r.looked < 0 && c.gazeOverride && c.gazeOverride.kind === 'viewer') r.looked = +t.toFixed(2);
+          if (r.out < 0 && !c.peek) r.out = +t.toFixed(2);
+          r.outZ = c.Z - post.Z; r.inLane = L.inside(c.X, c.Z, 0.4);
+          c.body.getWorldQuaternion(bq); bq.invert();
+          bones.forEach((b, i) => { b.getWorldQuaternion(q); q.premultiply(bq); if (f) r.pop = Math.max(r.pop, 2 * Math.acos(Math.min(1, Math.abs(q.dot(prev[i])))) * 57.3); prev[i].copy(q); });
+        }
+        return r;
+      });
+      const problems = [];
+      if (res.post === 'none' || !res.post.startsWith('mid')) problems.push('did not start behind a mid post (' + res.post + ')');
+      if (!res.hiddenStart) problems.push('head already out at the start');
+      if (!(res.looked > 1.5 && res.looked < 6)) problems.push('never peeked out and looked at the viewer (' + res.looked + ')');
+      if (!(res.out > 0 && res.out < 12)) problems.push('still hiding after 12 s (' + res.out + ')');
+      else { if (res.outZ > -0.3) problems.push('not in front of the post after 16 s (' + res.outZ.toFixed(2) + ' m)'); if (!res.inLane) problems.push('ended outside the lane'); }
+      if (res.pop > 70) problems.push('pose popped ' + res.pop.toFixed(0) + '°/frame');
+      if (problems.length) fails++;
+      console.log(`${problems.length ? 'FAIL' : 'PASS'}  intro: peeks round a mid post, looks at you, walks out [run ${run + 1}]  ${res.post} looked@${res.looked} out@${res.out}  ${problems.length ? '→ ' + problems.join('; ') : ''}`);
+    }
+  }
+  // ── perspective: on screen he moves the way his body points (no crab walk at the lane's sides) ──
+  if (!ONLY || 'crab walk'.includes(ONLY)) {
+    const res = await page.evaluate(() => {
+      const c = window.__cat, L = c.lane, T = c.T; c.manual = true;
+      c.brain.swap('life', (function* () { while (true) yield; })());
+      c.glance = null; c.gazeOverride = null; c.nextGlance = 999; c.interest = 0; c.ptr.cx = -1; c.peek = null;
+      let worst = 0, at = '';
+      for (const [X, Z] of [[-2.2, 1.2], [2.2, 1.5], [-1.2, 2.2], [1.8, 3.5]]) for (const yd of [0, 45, 135, 180, 225, 315]) {
+        c.X = X; c.Z = Z; c.yaw = yd * Math.PI / 180; c.outside = true; c.motor.loco.v = 0.27; c.motor.play('loco', 0); c.posture = 'WALK';
+        for (let i = 0; i < 30; i++) { c.motor.loco.v = 0.27; c.update(1 / 30); }
+        const s0 = L.toScreen(c.X, c.Z);
+        const o = new T.Vector3().project(c.camera), f = new T.Vector3(Math.sin(c.yaw) * 0.3, 0, Math.cos(c.yaw) * 0.3).project(c.camera);
+        for (let i = 0; i < 6; i++) { c.motor.loco.v = 0.27; c.update(1 / 30); }
+        const s1 = L.toScreen(c.X, c.Z);
+        const d = Math.abs(((Math.atan2(s1.y - s0.y, s1.x - s0.x) - Math.atan2(-(f.y - o.y) * c.ch, (f.x - o.x) * c.cw)) * 57.3 + 540) % 360 - 180);
+        if (d > worst) { worst = d; at = `X${X} Z${Z} heading ${yd}°`; }
+      }
+      c.outside = false;
+      return { worst, at };
+    });
+    const ok = res.worst < 12;
+    if (!ok) fails++;
+    console.log(`${ok ? 'PASS' : 'FAIL'}  crab walk: moves on screen the way he faces (worst ${res.worst.toFixed(1)}° at ${res.at})`);
   }
   console.log(fails ? `${fails} FAILED` : 'ALL PASSED');
   await close();
