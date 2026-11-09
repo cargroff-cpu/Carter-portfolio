@@ -991,17 +991,31 @@ under makes it look up and move.
     so he is seen from the side a real eye would see him from. Worst case is now
     ~8° (diagonals: the lane's post spacing isn't a perfect perspective).
     Looking "at the viewer" follows the same angle.
-  - *Intro.* Instead of walking in from the edge, he starts hidden behind one of
-    the mid posts. The canvas is drawn over the mid posts, so while he's behind
-    one, the post's outline (measured from the lamp art) is cut out of his canvas
-    with an even-odd `clip-path`. He creeps forward in a crouch until his head
-    comes round the post, freezes and looks at you (ear flick, a blink), glances
-    down the lane, stands and walks out round the post. Cursor play and petting
-    wait until he's clear of the post. The old walk-in remains as a fallback if a
-    page has no mid post.
+  - *Intro.* Instead of walking in from the edge, he starts out of sight behind
+    one of the mid posts, walks out from behind it, stops with his head and
+    shoulders round the post and looks at you (ear flick, a blink), glances down
+    the lane and carries on out. His canvas is drawn over the mid posts, so while
+    he's behind one it is cut off along the post's inner edge (outline measured
+    from the lamp art) with a plain one-piece `clip-path` polygon. A first version
+    cut the post out as a hole (`polygon(evenodd, ...)`, not supported in every
+    browser), and started him crouched with an ear and tail already showing: it
+    read as him appearing next to the lamp. Dropping his canvas under the post
+    instead was tried and rejected: the real mid fog and wisps then lay over him
+    and he went grey for the peek. Cursor play and petting wait until he's clear
+    of the post. The old walk-in remains as a fallback if a page has no mid post.
   - Tests: a crab-walk check (screen motion vs screen heading under 12° at the
     lane's sides) and an intro scenario (starts hidden behind a mid post, looks at
     the viewer, comes out in front of the post inside the lane, no pose pops).
+- **The crouch belly (2026-11-09).** Crouched (stalk, wiggle, the pounce
+  wind-up), his belly hung as a flat, sharp-cornered plate: a triangle in side
+  view. The body drops ~5 cm while both upper legs fold hard (front 97°, back 75°)
+  and take the skin over them up with them; the spine barely bends, so the belly
+  between was left hanging. Fixed with a corrective shape, as a rig would have it:
+  belly vertices between the legs get a weight at load, and the vertex shader
+  lifts them (up to 4.5 cm, `BELLY_TUCK_M`) in proportion to how much of the
+  current pose is a crouch. The midline chest skin's pull from the upper-leg
+  bones is also mostly handed to the torso bone it's blended with
+  (`firmChest`).
 
 ## 2026-11-07 — Business Hub: one home per thing
 - Leads is a lens on work not yet won: Overview, Tasks, Activity, Reports. Its Pipeline and Contacts tabs are gone, since they were the Jobs board and the Clients page under a second name; Leads' stage cards now open Jobs.
