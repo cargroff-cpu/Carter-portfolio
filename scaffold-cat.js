@@ -29,8 +29,8 @@ const LAMP_M = 4.6;            // the 200x900 lamp frame, in metres (Blender ren
 const LANTERN_M = 4.05;        // gas mantle height
 const PITCH = 13 * Math.PI / 180; // the lane is seen from slightly above
 // a lamp post's outline: [height m, left, right as a share of the 200x900 frame's width],
-// measured from the lamp art (all eight posts share it); a little below 0 covers his shadow
-const POST_PROFILE = [[-0.08, 0.215, 0.782], [0.15, 0.215, 0.782], [0.2, 0.242, 0.755], [0.25, 0.253, 0.745], [0.3, 0.295, 0.703],
+// measured from the lamp art (all eight posts share it); from below ground to the top
+const POST_PROFILE = [[-1, 0.215, 0.782], [0.15, 0.215, 0.782], [0.2, 0.242, 0.755], [0.25, 0.253, 0.745], [0.3, 0.295, 0.703],
   [0.42, 0.295, 0.703], [0.45, 0.335, 0.662], [0.55, 0.335, 0.662], [0.6, 0.352, 0.645], [0.7, 0.385, 0.613], [0.8, 0.362, 0.635],
   [1.0, 0.432, 0.565], [1.2, 0.485, 0.512], [LAMP_M, 0.485, 0.512]];
 const SINP = Math.sin(PITCH), COSP = Math.cos(PITCH);
@@ -38,6 +38,7 @@ const DEG = Math.PI / 180;
 const ORG_Y = 0.74;            // where the cat's feet sit inside its canvas
 const CHASE_M = 2.6;           // beyond this (metres) a cursor isn't worth getting up for
 const EYE_SCALE = 0.72;        // each eye shrunk across the face (not in depth): the model's eyes read huge at hero size
+const BELLY_TUCK_M = 0.045;    // how far the belly is drawn up in a full crouch
 const RIM_I = 1.2;             // the cool rim light that holds the silhouette (was 2.8 on the first, smoother model)
 const HAZE_K = 0.6;            // share of each fog bank's haze laid on the cat
 const REACH_H = 1.5;           // an air toy higher than this (metres) is only watched, never played with
@@ -444,6 +445,8 @@ class Cat {
         // before). Back faces of an inside-out mesh are its true outside, and three flips the
         // normals of back faces for lighting, so this one setting fixes both.
         m.side = THREE.BackSide;
+        if (o.isSkinnedMesh) this.firmChest(o);
+        if (o.isSkinnedMesh && !(m.alphaTest > 0)) this.addBellyTuck(THREE, o);
         // The alpha fur shells were extruded along those inward normals, so they sit inside
         // the body and can never be seen once it is drawn the right way out: skip them.
         if (m.alphaTest > 0) o.visible = false;
@@ -506,8 +509,75 @@ class Cat {
     this.sizeCanvas();
     this.tmp = { v: new THREE.Vector3(), v2: new THREE.Vector3(), q: new THREE.Quaternion(), q2: new THREE.Quaternion(),
       q3: new THREE.Quaternion(), qy: new THREE.Quaternion(), qp: new THREE.Quaternion(), e: new THREE.Euler() };
-    this.style = { z: '', f: '', t: '', c: '' };
+    this.style = { z: '', f: '', t: '', c: 'none' };
     this.peek = null;                                  // { lamp } while he is behind a post in the intro
+  }
+
+  // The skin of the chest between the front legs is partly tied to the upper-leg bones (up to
+  // half its weight). When the legs fold back into a crouch they drag it down into a point:
+  // the belly hung like a triangle. Near the midline, where a vertex is also tied to the torso,
+  // most of that leg pull is handed to the torso bone it is already blended with. The legs
+  // themselves (no torso weight) are untouched.
+  firmChest(mesh) {
+    const g = mesh.geometry, P = g.attributes.position, SI = g.attributes.skinIndex, SW = g.attributes.skinWeight;
+    if (!P || !SI || !SW || g.userData.chestFirmed) return;
+    g.userData.chestFirmed = true;
+    const names = mesh.skeleton.bones.map((b) => b.name);
+    const isLeg = (n) => /^fl_(upper|lower)_/.test(n), isTorso = (n) => /^(chest|neck_0\d|spine_0\d)$/.test(n);
+    for (let i = 0; i < P.count; i++) {
+      let torso = 0, best = -1, bw = 0, leg = 0;
+      for (let k = 0; k < 4; k++) {
+        const n = names[SI.getComponent(i, k)], w = SW.getComponent(i, k);
+        if (isTorso(n)) { torso += w; if (w > bw) { bw = w; best = k; } }
+        if (isLeg(n)) leg += w;
+      }
+      if (best < 0 || leg <= 0) continue;
+      const f = 0.85 * sm((0.07 - Math.abs(P.getX(i))) / 0.03) * sm((torso - 0.1) / 0.15);
+      if (f <= 0) continue;
+      let moved = 0;
+      for (let k = 0; k < 4; k++) if (isLeg(names[SI.getComponent(i, k)])) { const w = SW.getComponent(i, k); SW.setComponent(i, k, w * (1 - f)); moved += w * f; }
+      SW.setComponent(i, best, SW.getComponent(i, best) + moved);
+    }
+    SW.needsUpdate = true;
+  }
+
+  // In a crouch the body drops ~5 cm while both upper legs fold hard (97° front, 75° back) and
+  // take the skin over them up with them; the belly between was left hanging as a flat,
+  // sharp-cornered plate (a triangle in side view). A corrective shape, as a rig would have:
+  // each belly vertex between the legs has a weight (low on the torso, away from the legs),
+  // and while he is crouched the vertex shader lifts it, in the model's own space, before
+  // skinning. The lift follows how much of the pose is a crouch (see crouchAmount).
+  addBellyTuck(THREE, mesh) {
+    const g = mesh.geometry, P = g.attributes.position, SI = g.attributes.skinIndex, SW = g.attributes.skinWeight;
+    if (!P || !SI || !SW || g.attributes.tuck) return;
+    const names = mesh.skeleton.bones.map((b) => b.name), tuck = new Float32Array(P.count);
+    for (let i = 0; i < P.count; i++) {
+      let leg = 0;
+      for (let k = 0; k < 4; k++) if (/^(hl|fl)_/.test(names[SI.getComponent(i, k)])) leg += SW.getComponent(i, k);
+      const span = sm((0.21 - Math.abs(P.getZ(i) - 0.02)) / 0.08);   // between the front and back legs
+      const low = sm((0.2 - P.getY(i)) / 0.07);                      // the lower half of the torso
+      tuck[i] = span * low * clamp(1 - 1.2 * leg, 0, 1);
+    }
+    g.setAttribute('tuck', new THREE.BufferAttribute(tuck, 1));
+    const u = this.tuck = { value: 0 }, mat = mesh.material;
+    mat.onBeforeCompile = (sh) => {
+      sh.uniforms.uTuck = u;
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', '#include <common>\nattribute float tuck;\nuniform float uTuck;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\ntransformed.y += tuck * uTuck;');
+    };
+    mat.customProgramCacheKey = () => 'cat-belly-tuck';
+    mat.needsUpdate = true;
+  }
+  // how much of the current pose is a crouch (0..1): the stalk and wiggle, and a pounce until it leaves the ground
+  crouchAmount() {
+    const M = this.motor; let w = 0, all = 0;
+    for (const o of M.slots) {
+      all += o.e;
+      if (o.name === 'stalk_crouch' || o.name === 'butt_wiggle') w += o.e;
+      else if (o.name === 'pounce') w += o.e * (1 - sm((o.act.time - POUNCE.start + 0.08) / 0.16));
+    }
+    return all > 0 ? w / all : 0;
   }
 
   // Each gait's natural speed is read off the (smoothed) clip itself: how fast a planted paw
@@ -731,6 +801,7 @@ class Cat {
     this.brain.tick(dt);
     this.unlayer();
     this.motor.update(dt);
+    if (this.tuck) this.tuck.value = BELLY_TUCK_M * this.crouchAmount();
 
     // move
     const step = this.motor.step + this.creep * dt;
@@ -951,20 +1022,20 @@ class Cat {
     if (this.style.z !== zs) { st.zIndex = zs; this.style.z = zs; }
     if (this.style.f !== fs) { st.filter = fs; this.style.f = fs; }
     if (this.style.t !== ts) { st.transform = ts; this.style.t = ts; }
-    // behind the post he peeks round, the post's own shape is cut out of his canvas
-    const pk = this.peek, cs = pk && this.Z > pk.lamp.Z - 0.05 ? this.postMask(pk.lamp, s.x - cw / 2, s.y - ORG_Y * ch) : '';
-    if (this.style.c !== cs) { st.clipPath = cs; this.style.c = cs; }
+    // In the intro he's behind a mid post, but his canvas is drawn over the mid posts: so the
+    // canvas is cut off along the post's inner edge (everything on the post's side of it goes),
+    // which hides exactly what the post would. One plain polygon, which every browser clips.
+    const pk = this.peek, cs = pk && this.Z > pk.lamp.Z - 0.02 ? this.postClip(pk.lamp, s.x - cw / 2, s.y - ORG_Y * ch) : 'none';
+    if (this.style.c !== cs) { st.clipPath = cs; st.webkitClipPath = cs; this.style.c = cs; }
   }
 
-  // The canvas sits above the mid posts, so to be behind one the post's silhouette (measured
-  // from the lamp art: plinth, collar, shaft) is cut out of the canvas, with an even-odd
-  // polygon: the canvas rectangle, then the post outline as a hole.
-  postMask(lamp, ox, oy) {
-    const r = this.lane.rel(lamp.el), cw = this.cw, ch = this.ch;
-    const pt = (fx, hm) => `${(r.x + fx * r.w - ox).toFixed(1)}px ${(r.y + r.h * (1 - hm / LAMP_M) - oy).toFixed(1)}px`;
-    const left = POST_PROFILE.map(([hm, a]) => pt(a, hm)), right = POST_PROFILE.slice().reverse().map(([hm, , b]) => pt(b, hm));
-    const hole = left.concat(right, [left[0]]);
-    return `polygon(evenodd, 0px 0px, ${cw}px 0px, ${cw}px ${ch}px, 0px ${ch}px, 0px 0px, ${hole.join(', ')})`;
+  // the part of the canvas on the lane side of a post's inner edge (outline from the lamp art)
+  postClip(lamp, ox, oy) {
+    const r = this.lane.rel(lamp.el), cw = this.cw, ch = this.ch, inward = -lamp.side;
+    const edge = POST_PROFILE.map(([hm, a, b]) => [r.x + (inward > 0 ? b : a) * r.w - ox, r.y + r.h * (1 - hm / LAMP_M) - oy]);
+    const far = inward > 0 ? cw + 40 : -40, top = Math.min(-40, edge[edge.length - 1][1]), bot = Math.max(ch + 40, edge[0][1]);
+    const pts = [[edge[0][0], bot], ...edge, [edge[edge.length - 1][0], top], [far, top], [far, bot]];
+    return `polygon(${pts.map(([x, y]) => `${x.toFixed(1)}px ${y.toFixed(1)}px`).join(', ')})`;
   }
 }
 
@@ -1103,39 +1174,36 @@ class Brain {
       yield* this.wander();
     }
   }
-  // The intro: he's hiding behind one of the mid posts. A pause, then he creeps forward in a
-  // crouch until his head comes round the post, freezes, looks straight at you (ears flick, a
-  // blink), glances down the lane, then gets up and walks out round the post into the lane.
+  // The intro: he's out of sight behind one of the mid posts (his canvas is cut off along the
+  // post's edge while he's behind it, see place()). He walks out from behind it, stops with his head and
+  // shoulders round the post and looks straight at you (ears flick, a blink), glances down
+  // the lane, then carries on out into the lane in front of the post.
   *enter() {
     const c = this.c, L = c.lane, m = c.motor;
     const mids = L.lamps.filter((l) => l.row === 'mid'), lit = mids.filter((l) => l.lit);
     const pool = lit.length ? lit : mids;
-    if (!pool.length || !m.has('stalk_crouch')) { yield* this.walkIn(); return; }
+    if (!pool.length) { yield* this.walkIn(); return; }
     const post = pool[Math.floor(Math.random() * pool.length)], inward = -post.side;
     try {
       c.peek = { lamp: post };
-      // tucked behind the plinth, side-on, nose well short of its inner edge (the tail tip may show on the far side)
-      c.Z = post.Z + 0.3; c.X = post.X - inward * 0.16; c.yaw = inward * 90 * DEG;
-      m.play('stalk_crouch', 0, true, 0.6); c.posture = 'CROUCH'; c.creep = 0;
-      c.gazeOverride = { X: c.X + inward * 2, h: 0.1, Z: c.Z, until: c.time + 99 };   // eyes on the lane
-      yield* this.wait(rnd(0.9, 1.5));
-      // the peek: a slow creep until the head is round the post
-      const x1 = post.X + inward * 0.1;
-      while ((x1 - c.X) * inward > 0.005) { c.creep = 0.09; yield; }
-      c.creep = 0;
+      // behind the plinth, turned toward the lane and a little toward you, nose out of sight
+      c.Z = post.Z + 0.35; c.X = post.X - inward * 0.06; c.yaw = inward * 40 * DEG;
+      m.play('idle_stand', 0); c.posture = 'STAND'; c.creep = 0;
+      yield* this.wait(rnd(0.8, 1.3));
+      // out from behind it, as far as his head and shoulders
+      const half = { X: post.X + inward * 0.3, Z: post.Z + 0.1 };
+      yield* this.walkTo(() => half, { speed: WALK(), stop: 0.05 });
       // caught: look right at the viewer
       c.lockOn(); c.gazeOverride = { kind: 'viewer', until: c.time + 99 };
       yield* this.wait(0.7); c.blink.t = 0;
-      yield* this.wait(rnd(0.9, 1.3));
-      // a look along the lane, then out
+      yield* this.wait(rnd(0.8, 1.2));
+      // a look along the lane, then on out
       c.gazeOverride = { X: c.X + inward * 3, h: 0.2, Z: c.Z - 1, until: c.time + 99 };
-      yield* this.wait(rnd(0.8, 1.1));
+      yield* this.wait(rnd(0.7, 1.0));
       c.gazeOverride = null;
-      yield* this.toStand();
-      const fz = clamp(post.Z - rnd(0.7, 1.2), L.Zmin + 0.1, L.Zmax), fh = L.halfW(fz) - 0.6;
-      const dest = { X: clamp(post.X + inward * rnd(0.9, 1.6), -fh, fh), Z: fz };
-      const way = { X: post.X + inward * 1.4, Z: post.Z + 0.1 };       // round the post, not through it (far enough that he never slows for it)
-      yield* this.walkTo(() => (Math.abs(c.X - post.X) < 0.65 && c.Z > post.Z - 0.1 ? way : dest), { speed: WALK(), stop: 0.12 });
+      const fz = clamp(post.Z - rnd(0.8, 1.3), L.Zmin + 0.1, L.Zmax), fh = L.halfW(fz) - 0.6;
+      const dest = { X: clamp(post.X + inward * rnd(1.0, 1.6), -fh, fh), Z: fz };
+      yield* this.walkTo(() => dest, { speed: WALK(), stop: 0.12 });
     } finally {
       c.peek = null; c.creep = 0; c.gazeOverride = null;
     }
