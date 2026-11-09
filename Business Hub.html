@@ -303,6 +303,14 @@ th { font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--text
   .dkpi, .pipe-r { min-height: 44px; }
   .linkbtn { min-height: 44px; display: inline-flex; align-items: center; }
 }
+/* phones: the header and its search used to stay pinned and wrapped to two rows (about 110px of
+   a short screen); now the header scrolls away, the bottom bar carries the navigation, and the
+   search fields are compact (40px, still 16px text so iOS doesn't zoom in on focus) */
+@media (max-width: 760px) {
+  .top { position: relative; }
+  .top .topin { padding: 8px 14px; }
+  .top .hsearch .input, .shell .sbar { min-height: 40px; padding: 8px 12px; }
+}
 /* ── the opening (Intro in business-hub.jsx): once per visit ── */
 .intro { position: fixed; inset: 0; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px;
   background: radial-gradient(60% 50% at 50% 46%, #2a1c11, #120c07 70%); cursor: pointer; transition: opacity .5s ease .1s; }

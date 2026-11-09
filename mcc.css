@@ -208,11 +208,19 @@ tbody tr:hover{background:rgba(236,217,178,.035);cursor:pointer}
     border-right:none;border-top:1px solid var(--line-2);overflow:visible}
   .tools.on button{flex:1;min-width:0;flex-direction:column;gap:3px;padding:6px 2px;justify-content:center;text-align:center;border-radius:8px;box-shadow:none!important}
   .tools.on button[aria-current="true"]{background:rgba(245,205,106,.1)}
-  .tools.on .tname{display:block!important;font-size:11px;letter-spacing:.02em;text-transform:none;font-weight:500}
+  .tools.on .tname{display:block!important;font-size:clamp(9px,2.85vw,11px);letter-spacing:0;text-transform:none;font-weight:500;white-space:nowrap}
   .tools.on .tmeta{display:none!important}
   .topnav a.navhome{display:none}
   .backlink{font-size:12px;letter-spacing:.06em;text-transform:none;padding:12px 10px 12px 0}
   .tools.on .tplate{width:30px;height:30px}
+}
+/* seven tabs on a small phone: keep every label and the whole bar on screen */
+@media(max-width:359px){
+  .tools.on{padding-left:2px;padding-right:2px}
+  .tools.on button{padding:6px 0}
+  .tools.on .tplate{width:26px;height:26px}
+}
+@media(max-width:760px){
   .shell main{padding:16px 16px calc(96px + env(safe-area-inset-bottom,0px))}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
