@@ -282,17 +282,23 @@ th { font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--text
 .linkbtn { background: none; border: 0; padding: 0; color: var(--accent-lit); font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .exportbar { display: flex; justify-content: flex-end; }
 .dupe { padding: 8px 0 4px; border-top: 1px solid var(--line); }
-.hsearch { position: relative; flex: 1 1 200px; max-width: 340px; min-width: 0; }
-.hsearch .input { width: 100%; min-height: 44px; }
-.hs-pop { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 60; background: var(--surface); border: 1px solid var(--line-2); border-top: 2px solid var(--accent); box-shadow: 0 20px 50px -18px rgba(0,0,0,.9); max-height: 60vh; overflow-y: auto; }
+.hsearch { flex: none; margin-left: auto; }
+.hsearch + .topnav { margin-left: 0; }
+.hs-btn { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; background: none; border: 1px solid transparent; border-radius: 22px; color: var(--text-3); cursor: pointer; transition: color .2s ease, border-color .2s ease, background .2s ease; }
+.hs-btn:hover, .hsearch.open .hs-btn { color: #f5cd6a; border-color: rgba(245,205,106,.35); background: rgba(245,205,106,.06); }
+.hs-btn .ticon { width: 20px; height: 20px; }
+/* the panel hangs from the header, so nothing on the page moves when it opens */
+.hs-panel { position: absolute; top: calc(100% + 6px); right: 14px; width: min(400px, calc(100vw - 28px)); z-index: 60; padding: 10px; background: var(--surface); border: 1px solid var(--line-2); border-top: 2px solid var(--accent); box-shadow: 0 24px 60px -18px rgba(0,0,0,.9); }
+@media (min-width: 760px) { .hs-panel { right: 30px; } }
+.hs-panel .input { width: 100%; min-height: 44px; }
+.hs-panel input[type=search]::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
+.hs-pop { margin-top: 8px; max-height: 60vh; overflow-y: auto; }
 .hs-pop button { display: flex; gap: 10px; align-items: baseline; width: 100%; min-height: 44px; padding: 10px 14px; text-align: left; background: none; border: 0; border-top: 1px solid var(--line); color: var(--text); font-family: var(--ui); font-size: 14px; cursor: pointer; }
 .hs-pop button:first-child { border-top: 0; }
 .hs-pop button:hover, .hs-pop button.on { background: rgba(236,217,178,.07); }
 .hs-k { flex: none; width: 48px; font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--text-3); }
 .hs-t { min-width: 0; overflow-wrap: anywhere; }
 @media (max-width: 560px) {
-  .top .topin { flex-wrap: wrap; }
-  .hsearch { flex: 1 1 100%; max-width: none; order: 3; }
   .trow { grid-template-columns: 44px minmax(0, 1fr); }
   .trow > .btn { grid-column: 2; justify-self: start; }
 }
@@ -303,13 +309,19 @@ th { font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--text
   .dkpi, .pipe-r { min-height: 44px; }
   .linkbtn { min-height: 44px; display: inline-flex; align-items: center; }
 }
-/* phones: the header and its search used to stay pinned and wrapped to two rows (about 110px of
-   a short screen); now the header scrolls away, the bottom bar carries the navigation, and the
-   search fields are compact (40px, still 16px text so iOS doesn't zoom in on focus) */
+/* phones: the header is one slim row; search is an icon that opens a panel under it */
 @media (max-width: 760px) {
-  .top { position: relative; }
-  .top .topin { padding: 8px 14px; }
-  .top .hsearch .input, .shell .sbar { min-height: 40px; padding: 8px 12px; }
+  .top .topin { padding: 6px 14px; }
+}
+/* small phones: the back link is just its arrow, so the whole header stays on one row */
+@media (max-width: 420px) {
+  .top .topin { padding: 6px 12px; gap: 2px 6px; }
+  .backlink .bl-t { display: none; }
+  .backlink { margin-right: 0; padding-right: 10px; }
+  .mark { gap: 8px; }
+  .mark img { width: 24px; }
+  .top .mark b { font-size: 16px; }
+  .top .topnav a { padding: 12px 6px; font-size: 12.5px; }
 }
 /* ── the opening (Intro in business-hub.jsx): once per visit ── */
 .intro { position: fixed; inset: 0; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px;

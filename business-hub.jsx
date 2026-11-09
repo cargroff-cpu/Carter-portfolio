@@ -117,30 +117,36 @@ const TOOL_LIST = [
   { id: 'clients', label: 'Clients', glyph: 'clients', antler: 'assets/tool-acquire.png', desc: 'Who you work for and everything you have done for them.' },
 ];
 const GLYPHS = {
-  today: <React.Fragment><circle cx="12" cy="12" r="4" /><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" /></React.Fragment>,
-  leads: <React.Fragment><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="1" /><path d="M12 1.8v3M12 19.2v3M1.8 12h3M19.2 12h3" /></React.Fragment>,
-  jobs: <React.Fragment><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M9 7V5.2c0-.7.5-1.2 1.2-1.2h3.6c.7 0 1.2.5 1.2 1.2V7M3 12.5h18M11 12.5v2h2v-2" /></React.Fragment>,
-  proposals: <React.Fragment><path d="M6 3h8.5L19 7.5V21H6z" /><path d="M14 3v5h5M9 12.5h7M9 16h7M9 9h3" /></React.Fragment>,
-  mail: <React.Fragment><rect x="3" y="5.5" width="18" height="13" rx="2" /><path d="M3.5 7l8.5 6.2L20.5 7" /></React.Fragment>,
-  money: <path d="M12 3v18M16.6 7.6C16 6 14.3 5 12 5 9.5 5 7.5 6.3 7.5 8.3S9.5 11.4 12 12s4.5 1.6 4.5 3.7S14.5 19 12 19c-2.3 0-4.1-1-4.7-2.7" />,
-  clients: <React.Fragment><circle cx="9" cy="8.5" r="3.2" /><path d="M3 20c0-3.4 2.7-6 6-6s6 2.6 6 6" /><circle cx="17" cy="9" r="2.5" /><path d="M16.2 14.1c2.8.3 4.8 2.6 4.8 5.9" /></React.Fragment>,
+  // a gas lamp: Today is the lamp that's lit
+  today: <React.Fragment><path d="M10.4 3.9a1.6 1.6 0 0 1 3.2 0" /><path d="M6.7 8.6 9.3 5h5.4l2.6 3.6zM5.9 8.6h12.2M6.9 8.6l-.6 8h11.4l-.6-8" /><path d="M12 15.6c-1.9-.9-2.4-2.5-1.4-4.2.4.9 1 1.2 1.4 1.1.3-.9.9-1.6 1.6-2.1.6 2 .3 3.8-1.6 5.2z" /><path d="M5.5 16.6h13l-.9 2.3H6.4zM12 18.9v2.6M9.4 21.5h5.2" /></React.Fragment>,
+  // a shop bell: a lead is someone ringing
+  leads: <React.Fragment><path d="M12 3.4a1.1 1.1 0 0 1 1.1 1.1v.4c2.4.5 4 2.6 4 5.2v3.3l1.7 2.7H5.2l1.7-2.7v-3.3c0-2.6 1.6-4.7 4-5.2v-.4A1.1 1.1 0 0 1 12 3.4z" /><path d="M9.9 19.3a2.3 2.3 0 0 0 4.2 0" /></React.Fragment>,
+  // a ledger lying open, ribbon in the gutter
+  jobs: <React.Fragment><path d="M3.4 5.9c2.8-1 5.7-.8 8.6 1 2.9-1.8 5.8-2 8.6-1v12.3c-2.8-1-5.7-.8-8.6 1-2.9-1.8-5.8-2-8.6-1z" /><path d="M12 6.9v12.3M6 9.3c1.2-.2 2.4-.1 3.6.4M6 12.4c1.2-.2 2.4-.1 3.6.4M14.4 9.7c1.2-.5 2.4-.6 3.6-.4M14.4 12.8c1.2-.5 2.4-.6 3.6-.4" /></React.Fragment>,
+  // a letter with its wax seal and ribbon tails
+  proposals: <React.Fragment><path d="M6 3.4h9.3L19 7.1v7.4M6 3.4v16.2h6.2M15.3 3.4v3.7H19M9 9.6h6M9 13h3.4" /><circle cx="16.6" cy="17.2" r="2.5" /><path d="M15.6 19.5l-.9 2.2 1.9-.7 1.9.7-.9-2.2" /></React.Fragment>,
+  // a sealed envelope
+  mail: <React.Fragment><rect x="3" y="6" width="18" height="13" rx="1.8" /><path d="M3.5 7.2 12 13.6l8.5-6.4" /><circle cx="12" cy="13.2" r="1.7" /></React.Fragment>,
+  // a coin with its rim and a struck dollar
+  money: <React.Fragment><circle cx="12" cy="12" r="8.6" /><circle cx="12" cy="12" r="6.3" /><path d="M12 7.6v8.8M14.3 9.7c-.4-.9-1.2-1.4-2.3-1.4-1.3 0-2.2.7-2.2 1.7s1 1.4 2.2 1.8 2.3.8 2.3 1.8-1 1.7-2.3 1.7c-1.1 0-1.9-.5-2.3-1.4" /></React.Fragment>,
+  // a cameo portrait in its oval frame
+  clients: <React.Fragment><ellipse cx="12" cy="12" rx="8" ry="9.6" /><circle cx="12" cy="9.6" r="2.7" /><path d="M6.9 19.3c.6-3 2.6-4.7 5.1-4.7s4.5 1.7 5.1 4.7" /></React.Fragment>,
+  // a magnifier with a brass ring
+  search: <React.Fragment><circle cx="10.4" cy="10.4" r="6.2" /><path d="M7.6 8.4a3.6 3.6 0 0 1 2.2-1.5M15 15l5.6 5.6" /></React.Fragment>,
 };
 function ToolIcon({ name }) {
   return (
-    <svg className="ticon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg className="ticon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       {GLYPHS[name]}
     </svg>
   );
 }
-function toolMetaOf(id, d, short) {
-  if (id === 'today') return d.needs.length ? d.needs.length + ' need you' : 'All clear';
-  if (id === 'leads') { const w = d.briefs.filter((b) => b.status !== 'answered').length; return w ? w + ' to answer' : d.jobs.filter((j) => j.stage === 'new' || j.stage === 'proposed').length + ' in play'; }
-  if (id === 'jobs') return d.jobs.filter((j) => j.stage !== 'paid' && j.stage !== 'closed').length + ' open';
-  if (id === 'proposals') return d.proposals.filter((p) => p.status === 'sent').length + ' out';
-  if (id === 'mail') return d.events.filter((e) => e.kind === 'email').length + ' sent';
-  if (id === 'money') return usd(d.invoices.filter((i) => i.status === 'sent').reduce((a, i) => a + Number(i.amount || 0), 0)) + ' due';
-  if (id === 'clients') return d.clients.length + (short ? (d.clients.length === 1 ? ' client' : ' clients') : ' on the books');
-  return '';
+// A badge says "something needs you here", never a total the page itself shows.
+function toolBadgeOf(id, d) {
+  if (id === 'today') return { n: d.needs.length, word: 'need you' };
+  if (id === 'leads') return { n: d.briefs.filter((x) => x.status !== 'answered').length, word: 'to answer' };
+  if (id === 'money') return { n: d.invoices.filter((i) => i.status === 'sent' && daysSince(i.sent_at) >= 14).length, word: 'overdue' };
+  return { n: 0 };
 }
 // The tools: a sidebar on a computer or tablet, a bar at the bottom of the
 // screen on a phone (and in the home-screen app).
@@ -150,7 +156,8 @@ function ToolSidebar({ tab, go, data }) {
       {TOOL_LIST.map((n) => (
         <button key={n.id} aria-current={tab === n.id ? 'true' : undefined} onClick={() => go(n.id)}>
           <span className="tplate"><ToolIcon name={n.glyph} /></span>
-          <span><span className="tname">{n.label}</span><span className="tmeta">{toolMetaOf(n.id, data)}</span></span>
+          <span className="tname">{n.label}</span>
+          {(() => { const bd = toolBadgeOf(n.id, data); return bd.n > 0 ? <span className="tbadge" role="img" aria-label={bd.n + ' ' + bd.word}>{bd.n}</span> : null; })()}
         </button>
       ))}
     </nav>
@@ -228,9 +235,9 @@ function Kpi({ label, value, note, tone, onClick }) {
     </button>
   );
 }
-function Widget({ title, badge, children, id }) {
+function Widget({ title, badge, children, id, style }) {
   return (
-    <section className="widget" id={id}>
+    <section className="widget" id={id} style={style}>
       <div className="widget-h"><h2 className="h2">{title}</h2>{badge != null && <span className="widget-b">{badge}</span>}</div>
       {children}
     </section>
@@ -274,10 +281,6 @@ function Today({ data, open, go }) {
   const thisM = months[months.length - 1].total, lastM = months[months.length - 2].total;
   const delta = lastM ? Math.round(((thisM - lastM) / lastM) * 100) : null;
   const hot = needs.filter((n) => n.hot).length;
-  const valueOf = (j) => { const p = proposals.find((x) => x.job_id === j.id); return p ? Number(p.total || 0) : 0; };
-  const STAGE_ROWS = [['new', 'New'], ['proposed', 'Proposed'], ['drafts', 'Directions'], ['final', 'Final']];
-  const maxStage = Math.max(1, ...STAGE_ROWS.map(([id]) => jobs.filter((j) => j.stage === id).length));
-  const paidJobs = jobs.filter((j) => j.stage === 'paid').length;
   const feed = events.filter((e) => EVENT_TEXT[e.kind]).slice(0, 8);
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   return (
@@ -294,7 +297,7 @@ function Today({ data, open, go }) {
         <Kpi label="Paid this month" value={usd(thisM)} note={delta == null ? (thisM ? 'First month with income' : 'Nothing yet') : (delta >= 0 ? '+' : '') + delta + '% vs last month'} tone={delta != null && delta < 0 ? 'hot' : ''} onClick={() => go('money')} />
       </div>
       <div className="dash-g">
-        <Widget title="Needs you" id="needs" badge={needs.length ? needs.length + ' waiting' : 'All clear'}>
+        {needs.length > 0 && <Widget title="Needs you" id="needs">
           <div className="minirows">
             {needs.map((n, k) => (
               <button key={k} className="minirow" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(n.j.id)}>
@@ -302,26 +305,9 @@ function Today({ data, open, go }) {
                 <span className={'mono mval' + (n.hot ? ' hot' : '')}>{n.age ? n.age + 'd' : 'today'}</span>
               </button>
             ))}
-            {!needs.length && <p className="sub" style={{ padding: '10px 0' }}>Nothing is waiting on you.</p>}
           </div>
-        </Widget>
+        </Widget>}
         <Widget title="Paid by month" badge="last 6 months"><MonthBars months={months} /></Widget>
-        <Widget title="Pipeline" badge={openJobs.length + ' open'}>
-          <div className="pipe">
-            {STAGE_ROWS.map(([id, label]) => {
-              const list = jobs.filter((j) => j.stage === id);
-              const val = list.reduce((a, j) => a + valueOf(j), 0);
-              return (
-                <button key={id} type="button" className="pipe-r" onClick={() => go('jobs')}>
-                  <span className="pipe-n">{label}</span>
-                  <span className="pipe-bar"><i style={{ width: (list.length / maxStage) * 100 + '%' }} /></span>
-                  <span className="pipe-c mono">{list.length}{val ? ' · ' + usd(val) : ''}</span>
-                </button>
-              );
-            })}
-            <div className="pipe-r static"><span className="pipe-n">Paid</span><span className="pipe-bar" /><span className="pipe-c mono">{paidJobs}</span></div>
-          </div>
-        </Widget>
         <Widget title="Just happened" badge={feed.length ? 'latest' : null}>
           <div className="minirows">
             {feed.map((e) => (
@@ -912,7 +898,6 @@ function Clients({ data, reload, reloadAll, reloadTasks, open, startSel }) {
   const [sel, setSel] = React.useState(startSel || null);
   React.useEffect(() => { if (startSel) setSel(startSel); }, [startSel]);
   const [dupOk, setDupOk] = React.useState(false);
-  const [q, setQ] = React.useState('');
   const [adding, setAdding] = React.useState(false);
   const [f, setF] = React.useState({ name: '', email: '', notes: '' });
   const [err, setErr] = React.useState('');
@@ -937,14 +922,12 @@ function Clients({ data, reload, reloadAll, reloadTasks, open, startSel }) {
   const client = data.clients.find((c) => c.id === sel);
   if (client) return <ClientPage key={client.id} client={client} stats={statsOf(client)} data={data} open={open} reload={reload} reloadTasks={reloadTasks} back={() => setSel(null)} gone={() => { setSel(null); reload(); }} />;
 
-  const rows = data.clients.map((c) => ({ c, s: statsOf(c) }))
-    .filter(({ c }) => !q.trim() || (c.name + ' ' + (c.email || '')).toLowerCase().includes(q.trim().toLowerCase()));
-  const all = data.clients.map(statsOf);
-  const total = all.reduce((a, s) => a + s.paid, 0), owed = all.reduce((a, s) => a + s.due, 0);
+  const rows = data.clients.map((c) => ({ c, s: statsOf(c) }));
+  const withWork = rows.filter(({ s }) => s.openJobs).length;
   return (
     <div className="stack">
       <div className="dash-h">
-        <div><h1 className="h1">Clients</h1><p className="sub">The people you work for, with their jobs and money in one place.</p></div>
+        <div><h1 className="h1">Clients</h1><p className="sub">{data.clients.length ? data.clients.length + (data.clients.length === 1 ? ' client' : ' clients') + (withWork ? ', ' + withWork + ' with open work.' : '.') : 'The people you work for.'} Search finds anyone from the top of any page.</p></div>
         <div className="row" style={{ gap: 8 }}>
           <button className="btn ghost" onClick={() => exportClients(data.clients, statsOf)} disabled={!data.clients.length}>Export CSV</button>
           <button className="btn" onClick={() => setAdding(!adding)}>{adding ? 'Close' : 'Add client'}</button>
@@ -962,13 +945,6 @@ function Clients({ data, reload, reloadAll, reloadTasks, open, startSel }) {
           </div>
         </section>
       )}
-      <div className="dkpis four">
-        <div className="dkpi static"><span className="dkpi-l">Clients</span><span className="dkpi-v mono">{data.clients.length}</span><span className="dkpi-n">{all.filter((s) => s.openJobs).length} with open work</span></div>
-        <div className="dkpi static"><span className="dkpi-l">Open jobs</span><span className="dkpi-v mono">{all.reduce((a, s) => a + s.openJobs, 0)}</span><span className="dkpi-n">across all clients</span></div>
-        <div className="dkpi static"><span className="dkpi-l">Paid, all time</span><span className="dkpi-v mono">{usd(total)}</span><span className="dkpi-n">no card fees</span></div>
-        <div className="dkpi static"><span className="dkpi-l">Owed to you</span><span className="dkpi-v mono">{usd(owed)}</span><span className="dkpi-n">invoices sent</span></div>
-      </div>
-      {data.clients.length > 0 && <input className="input sbar" placeholder="Search clients" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search clients" style={{ maxWidth: 360 }} />}
       {rows.length > 0 ? (
         <div className="widget" style={{ padding: '4px 18px 6px' }}>
           <div className="scroll-x"><table className="ctable">
@@ -987,7 +963,7 @@ function Clients({ data, reload, reloadAll, reloadTasks, open, startSel }) {
           </table></div>
         </div>
       ) : (
-        <p className="sub">{data.clients.length ? 'No client matches that search.' : 'No clients yet. Add one here, or press Save as client on a job.'}</p>
+        <p className="sub">No clients yet. Add one here, or press Save as client on a job.</p>
       )}
     </div>
   );
@@ -1179,7 +1155,7 @@ function Leads({ data, open, go, reload, reloadClients, reloadTasks }) {
   );
 }
 function LeadsOverview({ data, open, go, pick }) {
-  const { jobs, proposals, briefs, needs } = data;
+  const { jobs, proposals, briefs } = data;
   const counts = LEAD_STAGES.map(([id, label]) => {
     const list = jobs.filter((j) => j.stage === id);
     return { id, label, n: list.length, val: list.reduce((a, j) => a + propValue(proposals, j), 0) };
@@ -1187,7 +1163,6 @@ function LeadsOverview({ data, open, go, pick }) {
   const max = Math.max(1, ...counts.map((c) => c.n));
   const recent = briefs.slice(0, 5);
   const jobForBrief = (b) => jobs.find((j) => j.brief_id === b.id);
-  const top = needs.slice(0, 5);
   return (
     <React.Fragment>
       <div className="lstages">
@@ -1201,18 +1176,7 @@ function LeadsOverview({ data, open, go, pick }) {
         ))}
       </div>
       <div className="dash-g">
-        <Widget title="Needs you" badge={needs.length ? needs.length + ' waiting' : 'All clear'}>
-          <div className="minirows">
-            {top.map((n, k) => (
-              <button key={k} className="minirow" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(n.j.id)}>
-                <span className="mtxt"><b>{n.j.title}</b> · {n.what}</span>
-                <span className={'mono mval' + (n.hot ? ' hot' : '')}>{n.age ? n.age + 'd' : 'today'}</span>
-              </button>
-            ))}
-            {!top.length && <p className="sub" style={{ padding: '10px 0' }}>Nothing is waiting on you.</p>}
-          </div>
-        </Widget>
-        <Widget title="New briefs" badge={recent.length ? 'latest' : null}>
+        <Widget title="New briefs" badge={recent.length ? 'latest' : null} style={{ gridColumn: '1 / -1' }}>
           <div className="minirows">
             {recent.map((b) => {
               const j = jobForBrief(b);
@@ -1407,16 +1371,19 @@ function ItemTasks({ data, jobId, clientId, open, reloadTasks }) {
 function GlobalSearch({ data, open, openClient, go }) {
   const [q, setQ] = React.useState('');
   const [on, setOn] = React.useState(false);
+  const [show, setShow] = React.useState(false);
   const [cur, setCur] = React.useState(0);
   const ref = React.useRef(null);
   React.useEffect(() => {
     const k = (e) => {
       const tag = (e.target.tagName || '').toLowerCase();
-      if (e.key === '/' && !['input', 'textarea', 'select'].includes(tag) && !e.target.isContentEditable) { e.preventDefault(); ref.current && ref.current.focus(); }
+      if (e.key === '/' && !['input', 'textarea', 'select'].includes(tag) && !e.target.isContentEditable) { e.preventDefault(); setShow(true); }
     };
     window.addEventListener('keydown', k);
     return () => window.removeEventListener('keydown', k);
   }, []);
+  React.useEffect(() => { if (show && ref.current) ref.current.focus(); }, [show]);
+  const close = () => { setShow(false); setOn(false); setQ(''); };
   const term = q.trim().toLowerCase();
   const has = (...f) => f.some((v) => v && String(v).toLowerCase().includes(term));
   const results = React.useMemo(() => {
@@ -1427,25 +1394,32 @@ function GlobalSearch({ data, open, openClient, go }) {
     data.briefs.forEach((b) => { if (has(b.name, b.business, b.email, b.reference, b.about)) { const j = data.jobs.find((x) => x.brief_id === b.id); out.push({ k: 'brief:' + b.id, kind: 'Brief', title: (b.business || b.name) + (b.reference ? ' · ' + b.reference : ''), sub: b.email || '', run: () => (j ? open(j.id) : go('leads')) }); } });
     return out.slice(0, 8);
   }, [data, term]);
-  const choose = (r) => { r.run(); setOn(false); setQ(''); };
+  const choose = (r) => { r.run(); close(); };
   const onKey = (e) => {
-    if (e.key === 'Escape') { setOn(false); e.target.blur(); }
+    if (e.key === 'Escape') { close(); }
     else if (e.key === 'ArrowDown') { e.preventDefault(); setCur((c) => Math.min(c + 1, results.length - 1)); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setCur((c) => Math.max(c - 1, 0)); }
     else if (e.key === 'Enter' && results[cur]) { e.preventDefault(); choose(results[cur]); }
   };
   React.useEffect(() => setCur(0), [term]);
   return (
-    <div className="hsearch" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setOn(false); }}>
-      <input ref={ref} className="input" type="search" placeholder="Search  ( / )" aria-label="Search clients, jobs and briefs" value={q} onChange={(e) => { setQ(e.target.value); setOn(true); }} onFocus={() => setOn(true)} onKeyDown={onKey} role="combobox" aria-expanded={on && term.length >= 2} aria-controls="hs-list" autoComplete="off" />
-      {on && term.length >= 2 && (
-        <div className="hs-pop" id="hs-list" role="listbox">
-          {results.map((r, i) => (
-            <button key={r.k} role="option" aria-selected={i === cur} className={i === cur ? 'on' : ''} onMouseDown={(e) => e.preventDefault()} onClick={() => choose(r)}>
-              <span className="hs-k">{r.kind}</span><span className="hs-t"><b>{r.title}</b>{r.sub ? <span className="sub"> · {r.sub}</span> : null}</span>
-            </button>
-          ))}
-          {!results.length && <p className="sub" style={{ padding: '12px 14px' }}>Nothing matches “{q.trim()}”.</p>}
+    <div className={'hsearch' + (show ? ' open' : '')} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) close(); }}>
+      <button type="button" className="hs-btn" aria-label="Search clients, jobs and briefs" aria-expanded={show} aria-controls="hs-panel" onClick={() => (show ? close() : setShow(true))}>
+        <ToolIcon name="search" />
+      </button>
+      {show && (
+        <div className="hs-panel" id="hs-panel">
+          <input ref={ref} className="input" type="search" placeholder="Search clients, jobs, briefs" aria-label="Search clients, jobs and briefs" value={q} onChange={(e) => { setQ(e.target.value); setOn(true); }} onFocus={() => setOn(true)} onKeyDown={onKey} role="combobox" aria-expanded={on && term.length >= 2} aria-controls="hs-list" autoComplete="off" />
+          {on && term.length >= 2 && (
+            <div className="hs-pop" id="hs-list" role="listbox">
+              {results.map((r, i) => (
+                <button key={r.k} role="option" aria-selected={i === cur} className={i === cur ? 'on' : ''} onMouseDown={(e) => e.preventDefault()} onClick={() => choose(r)}>
+                  <span className="hs-k">{r.kind}</span><span className="hs-t"><b>{r.title}</b>{r.sub ? <span className="sub"> · {r.sub}</span> : null}</span>
+                </button>
+              ))}
+              {!results.length && <p className="sub" style={{ padding: '12px 14px' }}>Nothing matches “{q.trim()}”.</p>}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -1693,9 +1667,9 @@ function BusinessHub() {
       <header className="top" ref={headRef}>
         <div className="topin">
           {jobId
-            ? <a className="backlink" href="#jobs" onClick={(e) => { e.preventDefault(); go('jobs'); }}><i aria-hidden="true">←</i> Jobs</a>
-            : <a className="backlink" href="/backroom"><i aria-hidden="true">←</i> Backroom</a>}
-          <a className="mark" href="/backroom"><img src="assets/antler.png" alt="" /><div><b>Business Hub</b><span>The Backroom</span></div></a>
+            ? <a className="backlink" href="#jobs" aria-label="Back to Jobs" onClick={(e) => { e.preventDefault(); go('jobs'); }}><i aria-hidden="true">←</i> <span className="bl-t">Jobs</span></a>
+            : <a className="backlink" href="/backroom" aria-label="Back to the Backroom"><i aria-hidden="true">←</i> <span className="bl-t">Backroom</span></a>}
+          <a className="mark" href="/backroom"><img src="assets/antler.png" alt="" /><div><b>Business Hub</b></div></a>
           {data && <GlobalSearch data={data} open={open} openClient={openClient} go={go} />}
           <nav className="topnav">
 <a href="/docket">Docket</a>

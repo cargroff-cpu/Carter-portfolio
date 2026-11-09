@@ -209,7 +209,7 @@ function Docket() {
           <a className="backlink" href="/backroom"><i aria-hidden="true">←</i> Backroom</a>
           <a className="mark" href="/backroom">
             <img src="assets/antler.png" alt="" />
-            <div><b>The Docket</b><span>The Backroom</span></div>
+            <div><b>The Docket</b></div>
           </a>
         </div>
       </header>
@@ -217,7 +217,6 @@ function Docket() {
         {saveErr && <p className="saveerr" role="alert">{saveErr} <button type="button" onClick={() => setSaveErr('')}>Dismiss</button></p>}
         <div className="filterbar">
           <div className="tally">
-            <span>Now<b className="hot">{open.filter((t) => t.q === 'q1').length}</b></span>
             <span>Open<b>{open.length}</b></span>
             <span>Late<b>{open.filter((t) => t.due && days(today(), t.due) < 0).length}</b></span>
           </div>
