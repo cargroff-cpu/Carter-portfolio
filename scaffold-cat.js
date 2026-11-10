@@ -41,6 +41,7 @@ const ORG_Y = 0.74;            // where the cat's feet sit inside its canvas
 const CHASE_M = 2.6;           // beyond this (metres) a cursor isn't worth getting up for
 const EYE_SCALE = 0.72;        // each eye shrunk across the face (not in depth): the model's eyes read huge at hero size
 const NOSE_M = 0.34, TAIL_M = 0.45;   // how far his nose and tail tip reach from the middle of his body (model space, metres)
+const BELLY_FIRM = 0.85;       // share of the legs' pull on the belly skin handed to the torso (firmBelly)
 const BELLY_TUCK_M = 0.045;    // how far the belly is drawn up in a full crouch
 const RIM_I = 1.2;             // the cool rim light that holds the silhouette (was 2.8 on the first, smoother model)
 const HAZE_K = 0.6;            // share of each fog bank's haze laid on the cat
@@ -54,6 +55,7 @@ const LOOK_M = 1.6;            // scripted: a cursor this close (metres, at his 
 const RUN_IN = () => GAIT_SPEED[1] * 1.25;   // scripted: how fast he runs in (a quick trot; the run clip is broken)
 const SEAT_GAP_M = 0.45;
 const SEAT_YAW = 62 * DEG;     // scripted: he sits three-quarters on to us (this far round from facing us, toward the middle of the lane): side-on enough to read as a cat, face still toward us
+const JUMP_M = 0.72;           // scripted: how far his leap into view carries him (the pounce's longest)
 const BEND_M = 0.55;           // scripted: how far before the seat his run-in curves round toward us (short: a walk toward the camera barely moves on screen)       // scripted: where he sits, on screen: his middle this far (metres at his depth) beyond the post's widest point
 const FLICK_MPS = 1.6;         // cursor speed (m/s at the cat's depth) that reads as a flick
 
@@ -486,7 +488,7 @@ class Cat {
         // before). Back faces of an inside-out mesh are its true outside, and three flips the
         // normals of back faces for lighting, so this one setting fixes both.
         m.side = THREE.BackSide;
-        if (o.isSkinnedMesh) this.firmChest(o);
+        if (o.isSkinnedMesh) { this.firmChest(o); this.firmBelly(o); }
         if (o.isSkinnedMesh && !(m.alphaTest > 0)) this.addBellyTuck(THREE, o);
         // The alpha fur shells were extruded along those inward normals, so they sit inside
         // the body and can never be seen once it is drawn the right way out: skip them.
@@ -576,6 +578,37 @@ class Cat {
       }
       if (best < 0 || leg <= 0) continue;
       const f = 0.85 * sm((0.07 - Math.abs(P.getX(i))) / 0.03) * sm((torso - 0.1) / 0.15);
+      if (f <= 0) continue;
+      let moved = 0;
+      for (let k = 0; k < 4; k++) if (isLeg(names[SI.getComponent(i, k)])) { const w = SW.getComponent(i, k); SW.setComponent(i, k, w * (1 - f)); moved += w * f; }
+      SW.setComponent(i, best, SW.getComponent(i, best) + moved);
+    }
+    SW.needsUpdate = true;
+  }
+
+  // The belly wobbled as he walked and ran: the skin under the body, between the front and back
+  // legs, is partly tied to the shoulder, upper-leg and thigh bones, so every stride swung it
+  // down and back up and the belly line changed shape from frame to frame. Like firmChest, but
+  // for the whole underside: on vertices low on the body, between the legs and also tied to the
+  // torso, most of the leg pull is handed to the torso bone they're blended with. Fading out
+  // towards the legs, so the legs and the haunches still move as before.
+  firmBelly(mesh) {
+    const g = mesh.geometry, P = g.attributes.position, SI = g.attributes.skinIndex, SW = g.attributes.skinWeight;
+    if (!P || !SI || !SW || g.userData.bellyFirmed) return;
+    g.userData.bellyFirmed = true;
+    const names = mesh.skeleton.bones.map((b) => b.name);
+    const isLeg = (n) => /^(fl_(scap|upper|lower)|hl_(thigh|shin))_/.test(n), isTorso = (n) => /^(hips|spine_0\d|chest)$/.test(n);
+    for (let i = 0; i < P.count; i++) {
+      let torso = 0, best = -1, bw = 0, leg = 0;
+      for (let k = 0; k < 4; k++) {
+        const n = names[SI.getComponent(i, k)], w = SW.getComponent(i, k);
+        if (isTorso(n)) { torso += w; if (w > bw) { bw = w; best = k; } }
+        if (isLeg(n)) leg += w;
+      }
+      if (best < 0 || leg <= 0) continue;
+      const span = sm((0.2 - Math.abs(P.getZ(i) - 0.02)) / 0.07);      // between the front and back legs
+      const low = sm((0.22 - P.getY(i)) / 0.06);                       // the lower part of the body
+      const f = BELLY_FIRM * span * low * sm((torso - 0.08) / 0.17);
       if (f <= 0) continue;
       let moved = 0;
       for (let k = 0; k < 4; k++) if (isLeg(names[SI.getComponent(i, k)])) { const w = SW.getComponent(i, k); SW.setComponent(i, k, w * (1 - f)); moved += w * f; }
@@ -878,8 +911,8 @@ class Cat {
     }
     if (this.scripted) {                                 // scripted: watch a cursor that comes close (see watchCursor)
       const W = this.watch;
-      if (W.w < 0.01 || !W.ok) return null;
-      return { p: this.toLocal(W.X, W.h, W.Z, out), w: W.w };
+      if (W.w > 0.01 && W.ok) return { p: this.toLocal(W.X, W.h, W.Z, out), w: W.w };
+      if (this.posture !== 'SIT') return null;
     }
     if (this.toy && (this.interest > 0.08 || this.brain.mode === 'play')) {
       const t = this.toy;
@@ -905,7 +938,7 @@ class Cat {
     let want = 0;
     if (t && seated) {
       W.still = (this.ptr.mps || 0) > 0.12 ? 0 : W.still + dt;
-      const near = 1 - sm((t.dm - (this.lure ? 6 : LOOK_M)) / 0.6), bored = this.lure ? 0 : sm((W.still - 3.5) / 2);
+      const near = 1 - sm((t.dm - LOOK_M) / 0.6), bored = sm((W.still - 3.5) / 2);
       want = near * (1 - bored);
       const X = t.X, h = t.kind === 'ground' ? 0.03 : t.h, Z = t.kind === 'ground' ? t.Z : t.Z - 0.25;
       if (!W.ok || W.w < 0.05) { W.fx = X; W.fh = h; W.fz = Z; W.X = X; W.h = h; W.Z = Z; W.ok = true; }
@@ -932,8 +965,9 @@ class Cat {
     for (const b of Object.values(B)) (b.userData.animQ || (b.userData.animQ = b.quaternion.clone())).copy(b.quaternion);
     // idle glances: a lantern, the viewer, a spot on the ground
     this.nextGlance -= dt;
-    if (this.nextGlance <= 0 && !this.scripted) {
-      this.nextGlance = rnd(4, 9);
+    // Seated and scripted, he looks about a little too: at a lantern, at you, down the lane.
+    if (this.nextGlance <= 0 && (!this.scripted || (this.posture === 'SIT' && this.watch.w < 0.1 && !(this.gazeOverride && this.gazeOverride.until > this.time)))) {
+      this.nextGlance = this.scripted ? rnd(3.5, 7) : rnd(4, 9);
       if (this.interest < 0.1 && this.posture !== 'WALK' && chance(0.75)) {
         const r = Math.random(), lamp = this.nearestLamps(true)[0];
         if (r < 0.4 && lamp) this.glance = { X: lamp.l.X, h: LANTERN_M, Z: lamp.l.Z, until: this.time + rnd(1.8, 3) };
@@ -988,14 +1022,25 @@ class Cat {
   }
 
   // locking on: the tail tip twitches side to side for a moment, layered on the clip
-  applyTail() {
+  // Sitting, the tail is never quite still: a slow sway that travels down it, and now and then
+  // a lazy curl of the tip (tailCurl), eased in and out with how settled into the sit he is.
+  applyTail(dt = 0) {
     const T = this.tmp, k = this.time - this.lockT;
     for (const b of this.tail) (b.userData.animQ || (b.userData.animQ = b.quaternion.clone())).copy(b.quaternion);
-    if (k < 0 || k > 0.9) return;
-    const env = sm(k / 0.12) * (1 - sm((k - 0.45) / 0.45));
+    const sitting = this.posture === 'SIT' && /^sit/.test(this.motor.cur);
+    this.tailSit = damp(this.tailSit || 0, sitting ? 1 : 0, 1.5, dt);
+    if (this.tailSit > 0.01) {
+      this.nextCurl = (this.nextCurl ?? rnd(3, 6)) - dt;
+      if (this.nextCurl <= 0) { this.curlT = this.time; this.nextCurl = rnd(5, 10); }
+    }
+    const ck = this.time - (this.curlT ?? -9), curl = ck < 1.6 ? Math.sin(Math.PI * ck / 1.6) : 0;
+    const env = k >= 0 && k <= 0.9 ? sm(k / 0.12) * (1 - sm((k - 0.45) / 0.45)) : 0;
+    if (env <= 0 && this.tailSit <= 0.01) return;
     this.body.getWorldQuaternion(T.q3);
     this.tail.forEach((b, i) => {
-      const a = 22 * DEG * env * (0.5 + 0.25 * i) * Math.sin(k * 26 - i * 0.7);
+      const n = this.tail.length, f = i / Math.max(1, n - 1);   // 0 at the root, 1 at the tip
+      const sway = this.tailSit * (5 + 7 * f) * DEG * Math.sin(this.time * 1.3 - i * 0.55) + this.tailSit * curl * 26 * DEG * f * f;
+      const a = 22 * DEG * env * (0.5 + 0.25 * i) * Math.sin(k * 26 - i * 0.7) + sway;
       T.q.setFromAxisAngle(T.v2.set(0, 1, 0), a);                        // side to side, in cat space
       T.q.premultiply(T.q3).multiply(T.q2.copy(T.q3).invert());
       b.getWorldQuaternion(T.q2); T.q2.premultiply(T.q);
@@ -1110,38 +1155,6 @@ class Cat {
     // which hides exactly what the post would. One plain polygon, which every browser clips.
     const pk = this.peek, cs = pk && this.Z > pk.lamp.Z - 0.02 ? this.postClip(pk.lamp, s.x - cw / 2, s.y - ORG_Y * ch) : 'none';
     if (this.style.c !== cs) { st.clipPath = cs; st.webkitClipPath = cs; this.style.c = cs; }
-    if (this.gift) this.placeGift(s);
-  }
-
-  // ── the toy mouse (bat-mouse.js): the visitor found it and gave it to him ──
-  // Is a point (client px) on him or close by? Generous: it's a drop target, not a hit test.
-  nearMe(cx, cy) {
-    const r = this.hero.getBoundingClientRect(), s = this.lane.toScreen(this.X, this.Z), ppm = s.ppm * this.vis;
-    const dx = cx - r.left - s.x, dy = s.y - (cy - r.top);
-    return Math.abs(dx) < 0.62 * ppm && dy > -0.25 * ppm && dy < 0.75 * ppm;
-  }
-  // where his head is, client px (the dropped toy flies from the cursor to just in front of it)
-  giftSpot() {
-    const r = this.hero.getBoundingClientRect(), g = this.giftAt(), s = this.lane.toScreen(g.X, g.Z);
-    return { x: r.left + s.x, y: r.top + s.y, ppm: s.ppm * this.vis };
-  }
-  giftAt() { return { X: this.X + Math.sin(this.yaw) * 0.3, Z: this.Z - Math.cos(this.yaw) * 0.3 }; }
-  // The toy is put down just in front of his nose (nearer us than him, so drawn over him) and
-  // stays there. He looks down at it, his ears flick, then he looks up at you and slow-blinks.
-  receive(el) {
-    const g = this.giftAt();
-    this.gift = { el, X: g.X, Z: g.Z, t: this.time };
-    el.style.position = 'absolute'; el.style.left = '0'; el.style.top = '0'; el.style.zIndex = '6'; el.style.pointerEvents = 'none';
-    this.hero.appendChild(el);
-    this.lure = false;
-    this.brain.gifted = true;
-    this.place();
-  }
-  placeGift(s0) {
-    const G = this.gift, s = this.lane.toScreen(G.X, G.Z), k = (s.ppm * this.vis * 0.16) / 40;   // the toy art is 40 px long; a felt mouse is ~16 cm
-    const f = this.lane.filterAt(G.Z);
-    const ts = `translate3d(${(s.x - 20).toFixed(1)}px, ${(s.y - 16).toFixed(1)}px, 0) scale(${k.toFixed(3)})`;
-    if (G.ts !== ts) { G.el.style.transform = ts; G.el.style.transformOrigin = '20px 16px'; G.el.style.filter = `brightness(${(f.bright * 0.9).toFixed(3)})`; G.ts = ts; }
   }
 
   // A post's inner edge as drawn, in hero pixels, from below the ground up: the outline measured
@@ -1385,8 +1398,14 @@ class Brain {
         const sb = L.toScreen(0, bend.Z), edge = post.side < 0 ? 0 : L.W, x0 = edge - inward * (NOSE_M * sb.ppm + 16);
         c.X = (x0 - L.cAtY(sb.y)) / sb.ppm; c.Z = bend.Z; c.yaw = inward * 90 * DEG; c.outside = true; c.gaze.w = 0;
         m.play('idle_stand', 0); c.posture = 'STAND';
-        yield* this.wait(rnd(0.3, 0.7));
-        m.loco.v = RUN_IN(); m.play('loco', 0.25); m.loco.p = 0; c.posture = 'WALK';   // blends into the run off-screen
+        yield* this.wait(rnd(0.3, 0.6));
+        // He jumps in: the pounce's wind-up happens just off the edge (the hero clips it), and the
+        // leap carries him into view. He lands and goes straight on at a trot, no stop.
+        m.pounceTravel = JUMP_M;
+        m.play('pounce', 0.15); const pj = m.s.get('pounce');
+        pj.act.time = Math.max(0, POUNCE.start - 0.26); pj.prev = pj.act.time; c.posture = 'WALK';
+        while (m.time('pounce') < POUNCE.end - 0.04) yield;
+        m.loco.v = RUN_IN(); m.play('loco', 0.22); m.loco.p = 0; c.posture = 'WALK';   // lands into the trot
         const L0 = m.loco;
         let passed = false, stopping = false, t = 0;
         while (true) {
@@ -1415,25 +1434,11 @@ class Brain {
     let next = rnd(5, 9);
     while (true) {
       next -= yield;
-      if (c.brain.gifted) { yield* this.thanks(); next = rnd(6, 10); continue; }
       if (next > 0) continue;
       yield* this.once(chance(0.5) ? 'sit_ear_twitch' : 'sit_slow_blink', 0.25);
       m.play('sit_idle', 0.3, false); c.posture = 'SIT';
       next = rnd(6, 12);
     }
-  }
-  // Given the toy mouse: eyes down on it, ears flick, then up at you and a slow blink.
-  *thanks() {
-    const c = this.c, m = c.motor, g = c.gift;
-    c.brain.gifted = false;
-    if (!g) return;
-    c.gazeOverride = { X: g.X, h: 0.03, Z: g.Z, until: c.time + 1.5 }; c.lockOn();
-    yield* this.wait(1.5);
-    c.gazeOverride = { kind: 'viewer', until: c.time + 4.5 };
-    if (c.posture === 'SIT') { yield* this.once('sit_slow_blink', 0.25); m.play('sit_idle', 0.3, false); }
-    else yield* this.wait(2);
-    yield* this.wait(1.5);
-    c.gazeOverride = { X: g.X, h: 0.03, Z: g.Z, until: c.time + 2.2 };
   }
   // the old entrance (used when there is no mid post): walk in from the side
   *walkIn() {
@@ -1768,13 +1773,8 @@ async function start(hero) {
   const lane = new Lane(hero);
   if (!lane.ok) return;
   const cat = new Cat(THREE, hero, gltf, lane);
-  // the hidden toy mouse (bat-mouse.js) talks to him through this
-  window.ScaffoldCat = {
-    near: (x, y) => DESK.matches && (cat.scripted ? cat.posture === 'SIT' : !cat.outside) && cat.nearMe(x, y),
-    spot: () => cat.giftSpot(),
-    lure: (on) => { cat.lure = !!on; },
-    give: (el) => cat.receive(el),
-  };
+  // the hidden toy mouse (bat-mouse.js) only shows where he is
+  window.ScaffoldCat = { here: true };
   window.dispatchEvent(new Event('scaffoldcat:ready'));
   if (DEBUG) { window.__cat = cat; cat.POUNCE = POUNCE; cat.GAIT = GAIT_SPEED; if (/catdebug=lines/.test(location.search)) debugLayer(cat); }
 

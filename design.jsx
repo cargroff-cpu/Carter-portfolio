@@ -614,7 +614,7 @@ function Why() {
       <div className="dsec-candle left" aria-hidden="true" />
       <div className="dwrap">
         <div className="dwhyhead up">
-          <img className="dportrait" src="assets/portrait.jpg" alt="Carter Groff" loading="lazy" />
+          <img className="dportrait" src="assets/scaffold-portrait.jpg" alt="Carter Groff" loading="lazy" />
           <div>
             <h2 className="ddisplay">{SITE.whyHead}</h2>
             <p className="dp">{SITE.whyIntro}</p>
@@ -677,10 +677,10 @@ async function uploadPlan(file) {
   if (!put.ok) throw new Error('The plan could not upload.');
   return { path: j.path, filename: file.name, type: file.type };
 }
-// Bat's toy mouse (bat-mouse.js): a visitor who found it and gave it to him has a 5% code
-// in this browser; it goes with their brief.
-function batCode() {
-  try { const v = JSON.parse(localStorage.getItem('scaffold-bat-mouse') || 'null'); return v && typeof v.code === 'string' ? v.code : null; } catch (e) { return null; }
+// Bat's toy mouse (bat-mouse.js): a visitor who found it has Bat's favour (5% off) in this
+// browser; it goes with their brief.
+function batFavour() {
+  try { return !!JSON.parse(localStorage.getItem('scaffold-bat-mouse') || 'null'); } catch (e) { return false; }
 }
 
 function readFile(file) {
@@ -755,7 +755,7 @@ const Brief = React.forwardRef(function Brief(props, ref) {
   const submit = async () => {
     setBusy(true); setError('');
     try {
-      const payload = { ...f, files: await Promise.all(files.map(readFile)), bat: batCode() || undefined };
+      const payload = { ...f, files: await Promise.all(files.map(readFile)), bat: batFavour() || undefined };
       if (auto && plan) {
         setBusyNote('Uploading your plan\u2026');
         try { payload.plan = await uploadPlan(plan); } catch (e) {
@@ -945,7 +945,7 @@ const Brief = React.forwardRef(function Brief(props, ref) {
           <div className="dwalk">
             {step > 0 && <button className="dback" type="button" onClick={back}>Back</button>}
             <p className="dfine">
-              {step === 2 ? "Price and timeline back within a day." + (batCode() ? " Bat\u2019s favour (5% off) comes with it." : '')
+              {step === 2 ? "Price and timeline back within a day." + (batFavour() ? " Bat\u2019s favour (5% off) comes with it." : '')
                 : step === 1 ? 'One more step. All optional.'
                 : 'Three short steps.'}
             </p>

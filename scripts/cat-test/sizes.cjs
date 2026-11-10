@@ -66,8 +66,15 @@ const ROWS = (process.env.ONLY || 'near').split(',');   // the scripted cat (the
       if (vis0 < 0) problems.push('never came into view');
       else {
         // a pop is a big share of him appearing within a frame or two; a stepped plinth uncovers him over about a second
-        let worst = 0, worstAt = 0;
-        for (let i = 1; i < area.length; i++) if (area[i - 1] < 0.9 * full && area[i] - area[i - 1] > worst) { worst = area[i] - area[i - 1]; worstAt = at[i].t - t0; }
+        // He leaps in from the edge, so in the first 0.6 s after he shows up he comes in at a
+        // jump's speed (up to 60% of him a tenth of a second); after that, 30% is a pop.
+        let worst = 0, worstAt = 0, leap = 0;
+        for (let i = 1; i < area.length; i++) {
+          if (area[i - 1] >= 0.9 * full) continue;
+          const d = area[i] - area[i - 1];
+          if (i <= vis0 + 6) leap = Math.max(leap, d); else if (d > worst) { worst = d; worstAt = at[i].t - t0; }
+        }
+        if (leap > 0.6 * full) problems.push(`popped in: ${(100 * leap / full).toFixed(0)}% of him appeared within a tenth of a second as he came in`);
         if (worst > 0.3 * full) problems.push(`popped in: ${(100 * worst / full).toFixed(0)}% of him appeared within a tenth of a second at ${worstAt.toFixed(1)} s`);
         const a = at[vis0], b = at[Math.min(at.length - 1, vis0 + 30)], len = 0.77 * a.ppm * a.vis;   // 3 s of walking after he first shows, in body lengths
         const bl = Math.hypot(b.x - a.x, b.y - a.y) / len / ((b.t - a.t) / 3);

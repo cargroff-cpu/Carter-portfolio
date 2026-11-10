@@ -1759,7 +1759,7 @@ function Why() {
     className: "dwhyhead up"
   }, React.createElement("img", {
     className: "dportrait",
-    src: "assets/portrait.jpg",
+    src: "assets/scaffold-portrait.jpg",
     alt: "Carter Groff",
     loading: "lazy"
   }), React.createElement("div", null, React.createElement("h2", {
@@ -1830,12 +1830,11 @@ async function uploadPlan(file) {
     type: file.type
   };
 }
-function batCode() {
+function batFavour() {
   try {
-    const v = JSON.parse(localStorage.getItem('scaffold-bat-mouse') || 'null');
-    return v && typeof v.code === 'string' ? v.code : null;
+    return !!JSON.parse(localStorage.getItem('scaffold-bat-mouse') || 'null');
   } catch (e) {
-    return null;
+    return false;
   }
 }
 function readFile(file) {
@@ -1945,7 +1944,7 @@ const Brief = React.forwardRef(function Brief(props, ref) {
       const payload = {
         ...f,
         files: await Promise.all(files.map(readFile)),
-        bat: batCode() || undefined
+        bat: batFavour() || undefined
       };
       if (auto && plan) {
         setBusyNote('Uploading your plan\u2026');
@@ -2285,7 +2284,7 @@ const Brief = React.forwardRef(function Brief(props, ref) {
     onClick: back
   }, "Back"), React.createElement("p", {
     className: "dfine"
-  }, step === 2 ? "Price and timeline back within a day." + (batCode() ? " Bat\u2019s favour (5% off) comes with it." : '') : step === 1 ? 'One more step. All optional.' : 'Three short steps.'), React.createElement("button", {
+  }, step === 2 ? "Price and timeline back within a day." + (batFavour() ? " Bat\u2019s favour (5% off) comes with it." : '') : step === 1 ? 'One more step. All optional.' : 'Three short steps.'), React.createElement("button", {
     className: "p-btn",
     type: "submit",
     disabled: busy || !stepValid(step)
