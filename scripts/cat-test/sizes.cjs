@@ -9,7 +9,7 @@
 //   node scripts/cat-test/sizes.cjs         (SIZES=1440x900,1920x1080 to pick sizes; ONLY=mid to pick rows)
 const { open } = require('./harness.cjs');
 const SIZES = (process.env.SIZES || '900x640,1024x768,1280x720,1440x900,1920x1080,2560x1440').split(',').map((s) => s.split('x').map(Number));
-const ROWS = (process.env.ONLY || 'near,mid').split(',');
+const ROWS = (process.env.ONLY || 'near').split(',');   // the scripted cat (the default) comes out from behind a front (near) post
 
 (async () => {
   let fails = 0;

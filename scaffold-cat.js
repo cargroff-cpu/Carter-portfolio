@@ -1,8 +1,10 @@
 // scaffold-cat.js — a small black cat that lives in the lamp lane of the
-// Scaffold hero (Carter Groff Design.html). It wanders between the posts, sits
-// and loafs under the lit ones, walks back into the fog to the far lamps, and
-// plays with the visitor's cursor: it watches it, stalks it across the ground,
-// wiggles and pounces, and swats at it when it hangs low. Click the cat to pet it.
+// Scaffold hero (Carter Groff Design.html). By default (SCRIPTED) he runs out
+// from behind one of the front lamp posts, sits down beside it and stays, and
+// looks at the cursor when it comes close. With SCRIPTED off he is free-roaming:
+// he wanders between the posts, sits and loafs under the lit ones, walks back
+// into the fog to the far lamps, and plays with the visitor's cursor (watches,
+// stalks, wiggles and pounces, swats at it when it hangs low; click to pet).
 //
 // How it fits the scene: the lane is a 2.5D stack of DOM layers (lamp rows and
 // fog veils at fixed z-indexes). The cat is a real 3D model (assets/cat/
@@ -43,6 +45,13 @@ const BELLY_TUCK_M = 0.045;    // how far the belly is drawn up in a full crouch
 const RIM_I = 1.2;             // the cool rim light that holds the silhouette (was 2.8 on the first, smoother model)
 const HAZE_K = 0.6;            // share of each fog bank's haze laid on the cat
 const REACH_H = 1.5;           // an air toy higher than this (metres) is only watched, never played with
+// Pre-scripted (the default): he runs out from behind one of the front lamp posts, sits down
+// beside it and stays there, blinking, the odd ear twitch, and looks at the cursor when it
+// comes close. No wandering, hunting or petting. Set to false (or cat.scripted = false) for the
+// full free-roaming cat, which is all still here and still tested (scripts/cat-test).
+const SCRIPTED = true;
+const LOOK_M = 1.6;            // scripted: a cursor this close (metres, at his depth) gets looked at; fades out by +0.6 m
+const SEAT_GAP_M = 0.45;       // scripted: where he sits, on screen: his middle this far (metres at his depth) beyond the post's widest point
 const FLICK_MPS = 1.6;         // cursor speed (m/s at the cat's depth) that reads as a flick
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -534,6 +543,7 @@ class Cat {
     this.calibrateGaits(THREE, gltf.animations);
     this.motor = new Motor(THREE, this.model, gltf.animations);
     this.motor.play('idle_stand', 0);
+    this.scripted = SCRIPTED;
     this.brain = new Brain(this);
     this.sizeCanvas();
     this.tmp = { v: new THREE.Vector3(), v2: new THREE.Vector3(), q: new THREE.Quaternion(), q2: new THREE.Quaternion(),
@@ -862,6 +872,12 @@ class Cat {
       if (o.kind === 'viewer') return { p: out.set(14 * Math.sin(this.camPhi), 3.2, 14 * Math.cos(this.camPhi)).applyAxisAngle(T.v2.set(0, 1, 0), -this.yaw), w: 1 };
       return { p: this.toLocal(o.X, o.h, o.Z, out), w: 1 };
     }
+    if (this.scripted && this.toy) {                     // scripted: just look at a cursor that comes close
+      const t = this.toy, near = 1 - sm((t.dm - LOOK_M) / 0.6);
+      if (near < 0.01) return null;
+      const p = t.kind === 'ground' ? this.toLocal(t.X, 0.03, t.Z, out) : this.toLocal(t.X, t.h, t.Z + -0.25, out);
+      return { p, w: near };
+    }
     if (this.toy && (this.interest > 0.08 || this.brain.mode === 'play')) {
       const t = this.toy;
       const p = t.kind === 'ground' ? this.toLocal(t.X, 0.03, t.Z, out) : this.toLocal(t.X, t.h, t.Z + -0.25, out);
@@ -891,7 +907,7 @@ class Cat {
     for (const b of Object.values(B)) (b.userData.animQ || (b.userData.animQ = b.quaternion.clone())).copy(b.quaternion);
     // idle glances: a lantern, the viewer, a spot on the ground
     this.nextGlance -= dt;
-    if (this.nextGlance <= 0) {
+    if (this.nextGlance <= 0 && !this.scripted) {
       this.nextGlance = rnd(4, 9);
       if (this.interest < 0.1 && this.posture !== 'WALK' && chance(0.75)) {
         const r = Math.random(), lamp = this.nearestLamps(true)[0];
@@ -1115,9 +1131,9 @@ class Brain {
     const c = this.c;
     if (this.petted) {
       this.petted = false;
-      if (this.mode !== 'play' && c.posture !== 'WALK' && !c.peek) this.swap('pet', this.pet());
+      if (this.mode !== 'play' && c.posture !== 'WALK' && !c.peek && !c.scripted) this.swap('pet', this.pet());
     }
-    if (this.mode === 'life' && c.cool <= 0 && !c.peek) {   // the intro plays out first
+    if (this.mode === 'life' && c.cool <= 0 && !c.peek && !c.scripted) {   // the intro plays out first
       const need = { STAND: 0.45, WALK: 0.55, SIT: 0.65, LOAF: 1.0, CROUCH: 0.45 }[c.posture] || 0.5;
       if (c.interest > need && c.toy && c.toy.dm < CHASE_M) this.swap('play', this.play());
     }
@@ -1231,6 +1247,7 @@ class Brain {
   // ── a quiet life ──
   *life(first) {
     const c = this.c;
+    if (c.scripted) { yield* this.sitShow(first); return; }
     if (first) yield* this.enter();
     while (true) {
       yield;
@@ -1267,6 +1284,49 @@ class Brain {
       }, { speed: INTRO_SPEED(), stop: 0.12 });
     } finally {
       c.peek = null; c.creep = 0; c.gazeOverride = null;
+    }
+  }
+  // Pre-scripted: out of sight behind a front post, he darts out from behind it (a trot; revealed
+  // a little at a time as he passes the post's edge, as in enter()), stops just clear of it,
+  // turns three-quarters on to us and sits beside the post. Then he stays: sitting, blinking,
+  // now and then an ear twitch or a slow blink. Looking at a close cursor is in gazeTarget().
+  *sitShow(first) {
+    const c = this.c, L = c.lane, m = c.motor;
+    if (first) {
+      const near = L.lamps.filter((l) => l.row === 'near'), lit = near.filter((l) => l.lit), pool = lit.length ? lit : near;
+      const post = pool.length && ((c.introPick && c.introPick(pool)) || pool[Math.floor(Math.random() * pool.length)]);
+      if (post) {
+        const inward = -post.side;
+        try {
+          c.peek = { lamp: post };
+          const Z = clamp(post.Z + 0.95, L.Zmin, L.Zmax);
+          c.Z = Z; c.X = c.hiddenSpot(post, Z); c.yaw = inward * 90 * DEG;
+          m.play('idle_stand', 0); c.posture = 'STAND'; c.creep = 0; c.gaze.w = 0;
+          yield* this.wait(rnd(0.6, 1.0));
+          // The seat is placed on screen: just clear of the post's widest point. He can't stand level
+          // with a front post's base (it is on the hero's bottom edge), so he is a little behind
+          // it, and the lane converges: measured in lane metres he'd look a long way off.
+          const s0 = L.toScreen(0, Z);
+          let ex = inward > 0 ? -Infinity : Infinity;
+          for (const [x] of c.postEdge(post)) ex = inward > 0 ? Math.max(ex, x) : Math.min(ex, x);
+          const seat = L.clampIn((ex + inward * SEAT_GAP_M * s0.ppm - L.cAtY(s0.y)) / s0.ppm, Z, 0.45);
+          yield* this.walkTo(() => seat, { speed: GAIT_SPEED[1], stop: 0.05, hunt: true });
+          // three-quarters on to us, turned a little toward the middle of the lane, and sit
+          yield* this.turnBy(wrap(inward * 40 * DEG - c.yaw));
+        } finally {
+          c.peek = null; c.gazeOverride = null;
+        }
+      }
+    }
+    if (c.posture !== 'SIT') { yield* this.toStand(); yield* this.once('stand_to_sit', 0.25); }
+    m.play('sit_idle', 0.3, false); c.posture = 'SIT';
+    let next = rnd(5, 9);
+    while (true) {
+      next -= yield;
+      if (next > 0) continue;
+      yield* this.once(chance(0.5) ? 'sit_ear_twitch' : 'sit_slow_blink', 0.25);
+      m.play('sit_idle', 0.3, false); c.posture = 'SIT';
+      next = rnd(6, 12);
     }
   }
   // the old entrance (used when there is no mid post): walk in from the side

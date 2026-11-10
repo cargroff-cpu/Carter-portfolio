@@ -76,7 +76,7 @@ const SCEN = [
     if (process.env.TRACE) sc.trace = +process.env.TRACE;   // TRACE=<secs>: per-frame state dump
     for (let run = 0; run < Math.min(RUNS, sc.runs || RUNS); run++) {
       const res = await page.evaluate(([sc, run]) => {
-        const c = window.__cat, L = c.lane, T = c.T; c.manual = true;
+        const c = window.__cat, L = c.lane, T = c.T; c.manual = true; c.scripted = false;   // these scenarios are the free-roaming cat
         const fn = eval(sc.ptr), check = eval(sc.check);
         // fresh state
         c.brain.swap('life', (function* () { while (true) yield; })());
@@ -176,7 +176,7 @@ const SCEN = [
   if (!ONLY || 'intro peek'.includes(ONLY)) {
     for (let run = 0; run < Math.min(RUNS, 4); run++) {
       const res = await page.evaluate(() => {
-        const c = window.__cat, L = c.lane, T = c.T; c.manual = true;
+        const c = window.__cat, L = c.lane, T = c.T; c.manual = true; c.scripted = false; c.introPick = null;
         c.ptr.cx = -1; c.interest = 0; c.cool = 0; c.glance = null; c.gazeOverride = null; c.nextGlance = 999;
         c.brain.swap('life', c.brain.life(true));
         const post = c.peek && c.peek.lamp, r = { post: post ? post.row + (post.side < 0 ? '-left' : '-right') : 'none', hiddenStart: false, looked: -1, out: -1, pop: 0 };
@@ -209,12 +209,70 @@ const SCEN = [
       console.log(`${problems.length ? 'FAIL' : 'PASS'}  intro: out of sight behind a post, walks out along the lane, looks at you [run ${run + 1}]  ${res.post} looked@${res.looked} out@${res.out}  ${problems.length ? '→ ' + problems.join('; ') : ''}`);
     }
   }
+  // ── the pre-scripted cat (the default): runs out from behind a front post, sits beside it, watches a close cursor ──
+  if (!ONLY || 'scripted'.includes(ONLY)) {
+    for (let run = 0; run < Math.min(RUNS, 4); run++) {
+      const res = await page.evaluate((run) => {
+        const c = window.__cat, L = c.lane, T = c.T; c.manual = true; c.scripted = true;
+        c.ptr.cx = -1; c.glance = null; c.gazeOverride = null; c.peek = null;
+        c.introPick = (pool) => pool[run % pool.length];
+        c.brain.swap('life', c.brain.life(true));
+        const post = c.peek && c.peek.lamp, rect = c.hero.getBoundingClientRect();
+        const r = { post: post ? post.row + (post.side < 0 ? '-left' : '-right') : 'none', sat: -1, ran: 0, pop: 0, stood: 0, moves: [], gazeNear: 0, gazeFar: 1, aim: 180 };
+        const bones = []; c.model.traverse(o => { if (o.isBone) bones.push(o); });
+        const prev = bones.map(() => new T.Quaternion()), q = new T.Quaternion(), bq = new T.Quaternion();
+        const head = c.model.getObjectByName('head'), hp = new T.Vector3(), hf = new T.Vector3(), tp = new T.Vector3();
+        let px = null, py = null;
+        for (let f = 0; f < 30 * 30; f++) {
+          const t = f / 30;
+          // cursor: away for 9 s, then a wiggle close in front of him for 7 s, then a wiggle far off
+          let cur = null;
+          if (t >= 9 && t < 16) { const s = L.toScreen(c.X + 0.5 * Math.sin(c.yaw), c.Z - 0.5 * Math.cos(c.yaw)); cur = [s.x + 0.15 * s.ppm * Math.sin(t * 6), s.y - (0.4 + 0.1 * Math.sin(t * 5)) * s.ppm]; }
+          else if (t >= 16 && t < 22) { const s = L.toScreen(c.X > 0 ? -2.5 : 2.5, 4.5); cur = [s.x + 0.2 * s.ppm * Math.sin(t * 6), s.y]; }
+          if (cur) { const sp = px == null ? 0 : Math.hypot(cur[0] - px, cur[1] - py) * 30; px = cur[0]; py = cur[1]; c.ptr.cx = rect.left + cur[0]; c.ptr.cy = rect.top + cur[1]; c.ptr.speed = Math.max(c.ptr.speed, sp * 0.6); }
+          else { c.ptr.cx = -1; px = null; }
+          c.update(1 / 30);
+          if (c.motor.cur === 'loco' && c.motor.loco.v > r.ran) r.ran = c.motor.loco.v;
+          if (r.sat < 0 && c.posture === 'SIT') r.sat = +t.toFixed(2);
+          if (r.sat >= 0 && c.posture !== 'SIT') r.stood++;
+          if (r.sat >= 0 && !/^sit/.test(c.motor.cur) && c.motor.cur !== 'stand_to_sit') r.moves.push(c.motor.cur);
+          if (t > 14 && t < 16) {      // looking at the close cursor: gaze weight, and the head's nose pointing at it
+            r.gazeNear = Math.max(r.gazeNear, c.gaze.w);
+            head.getWorldPosition(hp); c.body.worldToLocal(hp);
+            hf.set(0, 1, 0).applyQuaternion(head.getWorldQuaternion(q)).applyQuaternion(c.body.getWorldQuaternion(bq).invert());
+            const toy = c.toy; if (toy) { c.toLocal(toy.X, toy.kind === 'ground' ? 0.03 : toy.h, toy.kind === 'ground' ? toy.Z : toy.Z - 0.25, tp); tp.sub(hp);
+              const a1 = Math.atan2(hf.x, hf.z), a2 = Math.atan2(tp.x, tp.z); r.aim = Math.min(r.aim, Math.abs(((a1 - a2) * 57.3 + 540) % 360 - 180)); }
+          }
+          if (t > 21 && t < 22) r.gazeFar = Math.min(r.gazeFar, c.gaze.w);
+          c.body.getWorldQuaternion(bq); bq.invert();
+          bones.forEach((b, i) => { b.getWorldQuaternion(q); q.premultiply(bq); if (f) r.pop = Math.max(r.pop, 2 * Math.acos(Math.min(1, Math.abs(q.dot(prev[i])))) * 57.3); prev[i].copy(q); });
+        }
+        r.inLane = L.inside(c.X, c.Z, 0.0); r.peek = !!c.peek; r.moves = [...new Set(r.moves)].join(',');
+        if (post) { const s = L.toScreen(c.X, c.Z); let ex = post.side > 0 ? Infinity : -Infinity; for (const [x] of c.postEdge(post)) ex = post.side > 0 ? Math.min(ex, x) : Math.max(ex, x); r.gapM = ((s.x - ex) * -post.side) / s.ppm; }
+        c.introPick = null;
+        return r;
+      }, run);
+      const problems = [];
+      if (!/^near/.test(res.post)) problems.push('did not start behind a front post (' + res.post + ')');
+      if (!(res.ran > 0.45)) problems.push('walked out instead of running (' + res.ran.toFixed(2) + ' m/s)');
+      if (!(res.sat > 2 && res.sat < 9)) problems.push('not sitting by 9 s (' + res.sat + ')');
+      if (!(res.gapM > 0.15 && res.gapM < 0.9)) problems.push('not sitting beside the post (' + (res.gapM || 0).toFixed(2) + ' m off its edge)');
+      if (res.stood) problems.push('got up again (' + res.stood + ' frames)');
+      if (res.moves) problems.push('did more than sit: ' + res.moves);
+      if (res.gazeNear < 0.6 || res.aim > 30) problems.push(`didn't look at a close cursor (gaze ${res.gazeNear.toFixed(2)}, head ${res.aim.toFixed(0)}° off)`);
+      if (res.gazeFar > 0.2) problems.push('kept looking at a far cursor (' + res.gazeFar.toFixed(2) + ')');
+      if (res.peek || !res.inLane) problems.push('not in the lane, clear of the post');
+      if (res.pop > 70) problems.push('pose popped ' + res.pop.toFixed(0) + '°/frame');
+      if (problems.length) fails++;
+      console.log(`${problems.length ? 'FAIL' : 'PASS'}  scripted: runs out from behind a front post, sits beside it, looks at a close cursor [run ${run + 1}]  ${res.post} sat@${res.sat} ${(res.gapM || 0).toFixed(2)} m off the post, head ${res.aim.toFixed(0)}° off the cursor  ${problems.length ? '→ ' + problems.join('; ') : ''}`);
+    }
+  }
   // ── perspective: on screen he moves the way his body points (no crab walk at the lane's sides) ──
   if (!ONLY || 'crab walk'.includes(ONLY)) {
     const res = await page.evaluate(() => {
       const c = window.__cat, L = c.lane, T = c.T; c.manual = true;
       c.brain.swap('life', (function* () { while (true) yield; })());
-      c.glance = null; c.gazeOverride = null; c.nextGlance = 999; c.interest = 0; c.ptr.cx = -1; c.peek = null;
+      c.glance = null; c.gazeOverride = null; c.nextGlance = 999; c.interest = 0; c.ptr.cx = -1; c.peek = null; c.scripted = false;
       let worst = 0, at = '';
       for (const [X, Z] of [[-2.2, 1.2], [2.2, 1.5], [-1.2, 2.2], [1.8, 3.5]]) for (const yd of [0, 45, 135, 180, 225, 315]) {
         c.X = X; c.Z = Z; c.yaw = yd * Math.PI / 180; c.outside = true; c.motor.loco.v = 0.27; c.motor.play('loco', 0); c.posture = 'WALK';

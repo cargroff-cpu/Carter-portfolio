@@ -1049,6 +1049,22 @@ under makes it look up and move.
     detection samples every tenth of a second: at half-second samples a stepped
     plinth uncovers enough of him to look like a pop when it isn't (checked on
     film at 900×640).
+- **Pre-scripted by default (2026-11-10).** Simpler is the brief now: he runs
+  out from behind one of the front (near) lamp posts, sits down beside it and
+  stays there, blinking, with an ear twitch or slow blink every 6–12 s, and turns
+  his head to look at the cursor when it comes within about 1.6 m of him (fading
+  out by 2.2 m). No wandering, hunting, pouncing or petting, and no idle glances.
+  `SCRIPTED` in `scaffold-cat.js` (or `cat.scripted = false`) brings back the
+  free-roaming cat, which is all still in the file and still covered by the suite
+  (its scenarios switch it on). He runs at the trot (the run clip is broken). The
+  seat is placed on screen, just clear of the post's widest point
+  (`SEAT_GAP_M`): he can't stand level with a front post's base, which is on the
+  hero's bottom edge, so he sits a little behind it, and measured in lane metres
+  that looked a long way off because the lane converges. The near posts are
+  drawn above his canvas, so anything of him behind one stays covered. Tests: a
+  suite scenario (starts behind a front post, runs, sits by 9 s beside the post,
+  looks at a close cursor and not a far one, never gets up, no pops), and the
+  size sweep now plays the scripted entrance on the near posts.
 - **The crouch belly (2026-11-09).** Crouched (stalk, wiggle, the pounce
   wind-up), his belly hung as a flat, sharp-cornered plate: a triangle in side
   view. The body drops ~5 cm while both upper legs fold hard (front 97°, back 75°)

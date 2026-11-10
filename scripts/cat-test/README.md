@@ -1,6 +1,8 @@
 # Hero cat tests
 
-`scaffold-cat.js` (the black cat in the Scaffold hero) is driven frame by frame in
+`scaffold-cat.js` (the black cat in the Scaffold hero) is driven frame by frame. The page's default is
+the pre-scripted cat (runs out from behind a front post and sits); the behaviour scenarios below switch
+on the free-roaming cat (`cat.scripted = false`), and one scenario checks the scripted one. It is in
 headless Chromium with a scripted cursor, and each scenario is checked pass/fail:
 reaction time, what it does (chase / stalk / wiggle / pounce / swat), that it
 ignores far cursors, that play ends when the cursor stops or leaves, and that
