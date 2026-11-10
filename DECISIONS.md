@@ -1104,9 +1104,10 @@ under makes it look up and move.
   - *The toy mouse* (`bat-mouse.js`). A plain grey mouse peeks out from behind the
     bottom-right corner of the portrait in "Why". Click it, carry it to Bat, click
     on him: it lands at his paws, he looks at it, looks up and slow-blinks, and a
-    plain retro dialog box ("BAT", Press Start 2P) says thanks and promises 5% off
-    the final price. Only where the cat is (desktop, motion allowed); keyboard
-    users get it delivered for them. The code (`BAT-XXXXXX`) is made in the
+    plain retro dialog box ("BAT", Press Start 2P) has him, in his own rather
+    distinguished voice, thank them and promise 5% off the final price as a favour
+    under his own seal. Only where the cat is (desktop, motion allowed); keyboard
+    users get it delivered for them. The code (`BAT-FAVOUR-XXXX`; the server also accepts the first `BAT-XXXXXX` form) is made in the
     browser and kept in localStorage; finding it emails Carter at once
     (`/api/design-brief`, action `bat-mouse`, 3 an hour per IP, no new function),
     and a brief sent later from that browser carries it into the brief email, the

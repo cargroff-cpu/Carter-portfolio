@@ -8,7 +8,7 @@
 // finder's final price.
 //
 // How the discount reaches Carter:
-//   - Finding it gives a code (BAT-XXXXXX), kept in this browser (localStorage), and emails
+//   - Finding it gives Bat's favour, a code signed by him (BAT-FAVOUR-XXXX), kept in this browser (localStorage), and emails
 //     Carter at once (POST /api/design-brief, action "bat-mouse"; rate limited).
 //   - Any brief sent later from this browser carries the code (design.jsx reads it), and the
 //     brief email, the Backroom job history and the client's confirmation all show it.
@@ -78,9 +78,9 @@ function ready() {
 }
 
 function makeCode() {
-  const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', b = new Uint8Array(6);
+  const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', b = new Uint8Array(4);
   crypto.getRandomValues(b);
-  return 'BAT-' + [...b].map((n) => A[n % A.length]).join('');
+  return 'BAT-FAVOUR-' + [...b].map((n) => A[n % A.length]).join('');
 }
 
 function loadFont() {
@@ -134,7 +134,7 @@ function pickUp(e) {
   addEventListener('pointermove', onMove, { passive: true });
   addEventListener('pointerdown', onDown, true);
   addEventListener('keydown', onKey);
-  say(keyboard ? 'Bat lost this. Taking it to him…' : 'Someone in the lamplight lost this.', x, y);
+  say(keyboard ? 'This belongs to Bat. Returning it to him…' : 'This looks like it belongs to someone.', x, y);
   if (keyboard) autoDeliver();
 }
 
@@ -230,9 +230,10 @@ function found() {
 // ── the dialog box ──
 function dialog(code) {
   const pages = [
-    'My mouse! Thank you, friend.',
-    `I'll tell my owner to take <b>5% off your final price</b>.`,
-    `Your code is <b>${code}</b>. It comes with any brief you send from this browser.`,
+    'Ah. My mouse.\nI had quite given it up to the fog.',
+    'You have my sincere gratitude.\nA cat does not forget a kindness.',
+    `I shall have a word with my owner. He will take <b>5% off your final price</b>.\nHe is, I assure you, most obliging.`,
+    `Consider it a favour from me, under my own seal:\n<b>${code}</b>\nIt goes with any brief you send from this browser.\n\nYours, Bat.`,
   ];
   const box = document.createElement('div');
   box.className = 'bm-dlg'; box.tabIndex = -1;
@@ -268,7 +269,7 @@ function dialog(code) {
     clearInterval(timer); typing = false; text.innerHTML = full;
     if (page < pages.length - 1) { nxt.hidden = false; return; }
     nxt.hidden = true; menu.hidden = false;
-    menu.innerHTML = '<li><button type="button" data-go="brief">Write a brief</button></li><li><button type="button" data-go="close">Keep exploring</button></li>';
+    menu.innerHTML = '<li><button type="button" data-go="brief">Write a brief</button></li><li><button type="button" data-go="close">Carry on</button></li>';
     menu.querySelector('button').focus();
   }
   function advance() {

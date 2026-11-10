@@ -945,7 +945,7 @@ const Brief = React.forwardRef(function Brief(props, ref) {
           <div className="dwalk">
             {step > 0 && <button className="dback" type="button" onClick={back}>Back</button>}
             <p className="dfine">
-              {step === 2 ? "Price and timeline back within a day." + (batCode() ? " Bat\u2019s 5% is attached." : '')
+              {step === 2 ? "Price and timeline back within a day." + (batCode() ? " Bat\u2019s favour (5% off) comes with it." : '')
                 : step === 1 ? 'One more step. All optional.'
                 : 'Three short steps.'}
             </p>

@@ -2285,7 +2285,7 @@ const Brief = React.forwardRef(function Brief(props, ref) {
     onClick: back
   }, "Back"), React.createElement("p", {
     className: "dfine"
-  }, step === 2 ? "Price and timeline back within a day." + (batCode() ? " Bat\u2019s 5% is attached." : '') : step === 1 ? 'One more step. All optional.' : 'Three short steps.'), React.createElement("button", {
+  }, step === 2 ? "Price and timeline back within a day." + (batCode() ? " Bat\u2019s favour (5% off) comes with it." : '') : step === 1 ? 'One more step. All optional.' : 'Three short steps.'), React.createElement("button", {
     className: "p-btn",
     type: "submit",
     disabled: busy || !stepValid(step)

@@ -89,7 +89,7 @@ const RATE = { limit: 5, windowMs: 10 * 60 * 1000 };
 
 // Bat's toy mouse (bat-mouse.js): a visitor found the easter egg. The code is made in their
 // browser, so this email is the record of which codes are real.
-const BAT_CODE = /^BAT-[A-HJ-NP-Z2-9]{6}$/;
+const BAT_CODE = /^BAT-(?:FAVOUR-[A-HJ-NP-Z2-9]{4}|[A-HJ-NP-Z2-9]{6})$/;   // BAT-FAVOUR-K7Q2 (and the first form, BAT-XXXXXX)
 const batCode = (v) => (typeof v === 'string' && BAT_CODE.test(v) ? v : null);
 async function batMouse(req, res, body) {
   const code = batCode(body.code), ip = clientIp(req);
@@ -98,12 +98,12 @@ async function batMouse(req, res, body) {
   try {
     await sendEmail({
       to: NOTIFY_EMAIL,
-      subject: `Someone found Bat's mouse: ${code}`,
+      subject: `Bat owes someone a favour: ${code}`,
       text: `A visitor found the toy mouse on the Scaffold page and gave it to Bat.\n\nBat promised them 5% off their final price. Their code: ${code}\n\nIf they send a brief from the same browser, the code comes with it. If they mention it any other way, this email is the record that it's real.`,
       html: renderEmail({
         tone: 'internal', eyebrow: 'Easter egg', heading: "Someone found Bat's mouse",
         body: 'A visitor found the toy mouse on the Scaffold page and gave it to Bat. He promised them 5% off their final price.\n\nIf they send a brief from the same browser, the code comes with it. If they mention it another way, this email is the record that it is real.',
-        panels: [{ type: 'facts', rows: [{ k: 'Code', v: code }, { k: 'Promised', v: '5% off their final price' }] }],
+        panels: [{ type: 'facts', rows: [{ k: 'Code', v: code }, { k: 'Promised', v: '5% off their final price, on Bat\'s word' }] }],
       }).html,
     });
   } catch (e) {
@@ -242,7 +242,7 @@ export default async function handler(req, res) {
   };
   const lines = briefLines(brief);
   const bat = batCode(body.bat);
-  if (bat) lines.push(`Found Bat's mouse: 5% off the final price (code ${bat})`);
+  if (bat) lines.push(`Bat's favour: 5% off the final price (${bat})`);
   if (files.length) lines.push(`Files: ${files.map((f) => f.filename).join(', ')}`);
   if (plan) lines.push(`Plan uploaded: ${plan.filename} (in the Backroom)`);
 
@@ -260,7 +260,7 @@ export default async function handler(req, res) {
           ...(brief.need.length ? [{ k: 'Needs', v: brief.need.join(', ') }] : []),
           ...(brief.budget ? [{ k: 'Budget', v: brief.budget }] : []),
           ...(brief.when_date ? [{ k: 'Needed by', v: brief.when_date }] : []),
-          ...(bat ? [{ k: "Bat's mouse", v: `5% off the final price (${bat})` }] : []),
+          ...(bat ? [{ k: "Bat's favour", v: `5% off the final price (${bat})` }] : []),
         ] }],
         button: { label: 'Open it in the Backroom', url: 'https://scaffold.cargroff.com/backroom' },
       }).html,
@@ -295,7 +295,7 @@ export default async function handler(req, res) {
       if (known) await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { client_id: known.id } }).catch(() => {});
       await openTask(KEYS.brief(job.id), { t: `Reply to the brief: ${job.title}`.slice(0, 200), due: dueIn(1), job_id: job.id, client_id: known ? known.id : null });
       await sb('job_events', { method: 'POST', body: { job_id: job.id, kind: 'brief', who: 'client', body: `Brief ${brief.reference} received.` } });
-      if (bat) await sb('job_events', { method: 'POST', body: { job_id: job.id, kind: 'note', who: 'system', body: `Found Bat's mouse on the site: 5% off the final price (code ${bat}).`, meta: { bat } } }).catch(() => {});
+      if (bat) await sb('job_events', { method: 'POST', body: { job_id: job.id, kind: 'note', who: 'system', body: `Returned Bat's mouse on the site. Bat's favour: 5% off the final price (${bat}).`, meta: { bat } } }).catch(() => {});
     } catch (e) {
       await logEvent({ kind: 'job_create', ok: false, reference: brief.reference, detail: e.message.slice(0, 500) });
     }
@@ -356,7 +356,7 @@ export default async function handler(req, res) {
               ...(brief.need.length ? [{ k: 'Needs', v: brief.need.join(', ') }] : []),
               ...(brief.budget ? [{ k: 'Budget', v: brief.budget }] : []),
               ...(brief.when_date ? [{ k: 'Needed by', v: brief.when_date }] : []),
-              ...(bat ? [{ k: "Bat's mouse", v: `5% off your final price (${bat})` }] : []),
+              ...(bat ? [{ k: "Bat's favour", v: `5% off your final price (${bat})` }] : []),
             ] },
           ],
         }).html,
