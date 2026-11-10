@@ -1172,6 +1172,22 @@ under makes it look up and move.
     is emailed (first time per browser) and the favour is recorded for briefs. A stowed
     mouse stays stowed across visits. The cat exposes `window.ScaffoldCat`
     (`near`, `where`, `thank`) again for this.
+- **The mouse peeks from behind the portrait, and Bat keeps it (2026-11-10).**
+  - *Where.* In "I'm Carter", the mouse peeks out from behind the right edge of the portrait,
+    low down: a box sits just outside the photo with overflow hidden and the mouse (facing
+    out) mostly inside the photo's area, so only its nose, an eye and an ear show (clipping
+    also blocks clicks, so nothing invisible sits over the photo). Hover: it leans out a
+    little. Small and dim (opacity .72 once the portrait has faded in).
+  - *Picking it up.* It ducks back behind the photo and is stowed. No dialog box: a line of
+    handwriting ("Caveat", loaded on hover) fades in under the photo's corner and away again
+    on its own: "I know someone who might like this."
+  - *Giving it back.* Clicking Bat (sitting) drops the mouse in front of him: it falls in
+    from above, bounces once, and stays at his paws (`receive`/`placeGift` in
+    `scaffold-cat.js`, placed every frame like his canvas). He looks down at it, then at you
+    and slow-blinks, then the dialog opens.
+  - *Afterwards he has it.* On later visits in that browser the mouse is waiting just in
+    front of where he sits (`keep`; `seatAt` is worked out with the seat, before he arrives)
+    and the portrait has no mouse.
 - **The crouch belly (2026-11-09).** Crouched (stalk, wiggle, the pounce
   wind-up), his belly hung as a flat, sharp-cornered plate: a triangle in side
   view. The body drops ~5 cm while both upper legs fold hard (front 97°, back 75°)

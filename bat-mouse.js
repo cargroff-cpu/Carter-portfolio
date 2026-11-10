@@ -1,11 +1,14 @@
 // bat-mouse.js — an easter egg on the Scaffold page (Carter Groff Design.html).
 //
-// Bat, the black cat in the hero (scaffold-cat.js), has lost his toy mouse. It sits, small and
-// dim, at the very end of the footer's "Cat model" credit line, like a full stop. Click it and
-// it's stowed away (nothing on screen), with an old-school dialog box: "I know someone who
-// might like this." Click Bat while you have it (he has to be sitting; the cursor turns to a
-// pointer over him) and you give it back: he looks at you, his ears flick, and his dialog box
-// opens: he thanks you and says he'll have his owner take 5% off your final price.
+// Bat, the black cat in the hero (scaffold-cat.js), has lost his toy mouse. In the "I'm Carter"
+// section it peeks out from behind the right edge of Carter's portrait, low down: just its
+// nose, an eye and an ear, small and dim. Hover and it leans out a little; click and it ducks
+// back behind the photo and is stowed away (nothing on screen), and a line of handwriting fades
+// in beside it and away again: "I know someone who might like this." Click Bat while you have
+// it (he has to be sitting; the cursor turns to a pointer over him) and you give it back: it
+// drops down in front of him and stays there, he looks at it, then at you and slow-blinks, and
+// his old-school dialog box opens: he thanks you and says he'll have his owner take 5% off your
+// final price.
 //
 // How the discount reaches Carter:
 //   - Giving it back is remembered in this browser (localStorage) and emails Carter at once
@@ -16,9 +19,9 @@
 //
 // Only where Bat is (screens 900px and wider, reduced motion off: the same rule as
 // scaffold-cat.js). It doesn't wait for the 3D model to load, though giving it back needs him.
-// A stowed mouse stays stowed across visits until you give it to him. Once given,
-// it is back in its spot on the next visit; giving it again just brings his dialog back (Carter
-// is emailed only the first time). ?batreset forgets all of it, for testing.
+// A stowed mouse stays stowed across visits until you give it to him. Once given, he has it:
+// on later visits it is waiting where he sits, and the portrait has no mouse. Carter is
+// emailed once per browser. ?batreset forgets all of it, for testing.
 
 const KEY = 'scaffold-bat-mouse';          // given back to Bat (the favour); design.jsx reads it
 const HELD = 'scaffold-bat-mouse-held';    // stowed away, not given back yet
@@ -36,14 +39,20 @@ const TOY = `<svg viewBox="0 0 40 32" width="40" height="32" aria-hidden="true" 
 
 const PIX = '"Press Start 2P", ui-monospace, Menlo, Consolas, monospace';
 const CSS = `
-.bm-toy { position: absolute; z-index: 3; width: 20px; height: 16px; padding: 0; border: 0; background: none; cursor: pointer;
-  opacity: 0; transition: opacity 1.2s ease .6s, transform .25s ease; }
-.bm-toy.bm-on { opacity: .55; }
-.bm-toy:hover { opacity: .9; transform: translateY(-1px); }
+.bm-peek { position: absolute; z-index: 3; width: 22px; height: 24px; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity 1.2s ease .8s; }
+.bm-peek.bm-on { opacity: .72; }
+@media (max-width: 899px) { .bm-peek { display: none; } }
+.bm-toy { position: absolute; left: -20px; bottom: 0; width: 34px; height: 27px; padding: 0; border: 0; background: none; cursor: pointer; pointer-events: auto;
+  transform: scaleX(-1); transition: left .35s cubic-bezier(.3, .7, .4, 1); }
 .bm-toy svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.bm-toy:focus-visible { outline: 1px dashed rgba(233,223,198,.6); outline-offset: 3px; }
-@media (max-width: 899px) { .bm-toy { display: none; } }
-.bm-toy.bm-away { transition: opacity .3s ease, transform .3s ease; opacity: 0 !important; transform: translateY(4px) scale(.5); pointer-events: none; }
+.bm-peek:hover .bm-toy, .bm-toy:focus-visible { left: -15px; }
+.bm-toy:focus-visible { outline: 1px dashed rgba(233,223,198,.6); outline-offset: -2px; }
+.bm-peek.bm-away .bm-toy { left: -40px; transition: left .25s ease-in; }
+.bm-hand { position: absolute; z-index: 3; pointer-events: none; white-space: nowrap; color: #e9dfc6; opacity: 0;
+  font: 400 26px/1 "Caveat", "Segoe Print", "Bradley Hand", cursive; transform: rotate(-3deg); transform-origin: left center;
+  animation: bm-hand 5.2s ease both; }
+@keyframes bm-hand { 0% { opacity: 0; transform: rotate(-3deg) translateY(4px); } 14% { opacity: .82; transform: rotate(-3deg) translateY(0); }
+  62% { opacity: .82; } 100% { opacity: 0; transform: rotate(-3deg) translateY(-6px); } }
 
 .bm-cursor, .bm-cursor * { cursor: pointer !important; }
 .bm-dlg { position: fixed; left: 50%; bottom: 28px; z-index: 2147483002; width: min(760px, calc(100vw - 32px)); transform: translateX(-50%);
@@ -53,8 +62,6 @@ const CSS = `
   animation: bm-pop .32s steps(4, end) both; }
 .bm-dlg:focus { outline: none; }
 .bm-dlg.bm-top { bottom: auto; top: 104px; }
-.bm-dlg.bm-thought { width: min(560px, calc(100vw - 32px)); }
-.bm-dlg.bm-thought .bm-text { min-height: 0; }
 .bm-dlg.bm-bye { animation: bm-out .2s steps(3, end) both; }
 @keyframes bm-pop { from { transform: translateX(-50%) scaleY(.05); } to { transform: translateX(-50%) scaleY(1); } }
 @keyframes bm-out { to { transform: translateX(-50%) scaleY(.05); opacity: 0; } }
@@ -73,7 +80,7 @@ const CSS = `
 @media (max-width: 640px) { .bm-dlg { font-size: 11px; } }
 `;
 
-let toy = null, armed = false, closeOpen = null;   // closeOpen: closes whichever dialog is up
+let peek = null, armed = false, closeOpen = null;   // closeOpen: closes whichever dialog is up
 
 function waitFor(sel) {
   return new Promise((res) => {
@@ -90,47 +97,58 @@ function loadFont() {
   if (document.getElementById('bm-font')) return;
   const l = document.createElement('link');
   l.id = 'bm-font'; l.rel = 'stylesheet';
-  l.href = 'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap';
+  l.href = 'https://fonts.googleapis.com/css2?family=Caveat:wght@400&family=Press+Start+2P&display=swap';
   document.head.appendChild(l);
 }
 
-// ── where it hides: at the very end of the footer's "Cat model" credit, where the full stop is ──
-const SPOT = '.dfooter .dfootcredit';
+// ── where it hides: peeking out from behind the right edge of the portrait, low down ──
+// A box sits just outside the photo's edge with overflow hidden; the mouse (facing out) is
+// mostly to the left of it, so its body is "behind" the photo and only the face shows.
+const SPOT = '.dwhyhead .dportrait';
 function place() {
-  const at = document.querySelector(SPOT);
-  if (!at) return;
-  if (!toy) {
-    toy = document.createElement('button');
-    toy.type = 'button'; toy.className = 'bm-toy';
-    toy.setAttribute('aria-label', 'A toy mouse');
-    toy.innerHTML = TOY;
-    toy.addEventListener('pointerenter', loadFont, { once: true });
-    toy.addEventListener('click', pickUp);
-    document.body.appendChild(toy);
+  const img = document.querySelector(SPOT);
+  if (!img) return;
+  if (!peek) {
+    peek = document.createElement('div');
+    peek.className = 'bm-peek';
+    peek.innerHTML = `<button type="button" class="bm-toy" aria-label="A toy mouse, peeking out from behind the photo">${TOY}</button>`;
+    const b = peek.querySelector('.bm-toy');
+    b.addEventListener('pointerenter', loadFont, { once: true });
+    b.addEventListener('click', pickUp, { once: true });
+    document.body.appendChild(peek);
   }
-  const range = document.createRange(); range.selectNodeContents(at);
-  const rs = range.getClientRects(), last = rs[rs.length - 1];
-  if (!last) return;
-  toy.style.left = (last.right + scrollX + 5) + 'px';
-  toy.style.top = (last.bottom + scrollY - 15) + 'px';
-  toy.classList.add('bm-on');
+  const r = img.getBoundingClientRect(), shown = !!img.closest('.dwhyhead.shown') && r.width > 0;
+  peek.style.left = (r.right + scrollX) + 'px';
+  peek.style.top = (r.bottom + scrollY - 24 - Math.round(r.height * 0.06)) + 'px';
+  peek.classList.toggle('bm-on', shown);
 }
 function watchSpot() {
   place();
-  const again = () => { if (toy && toy.isConnected && !toy.classList.contains('bm-away')) place(); };
+  const again = () => { if (peek && peek.isConnected && !peek.classList.contains('bm-away')) place(); };
   addEventListener('resize', again, { passive: true });
   new ResizeObserver(again).observe(document.body);
-  new MutationObserver(again).observe(document.querySelector('.dfooter') || document.body, { subtree: true, childList: true, characterData: true });
+  // the portrait fades in as it scrolls into view; React may also re-render the section
+  new MutationObserver(again).observe(document.getElementById('why') || document.body, { attributes: true, subtree: true, childList: true, attributeFilter: ['class'] });
 }
 
-// ── picked up: stowed away, and a thought ──
+// a line of handwriting that fades in beside something and away again (not a box to dismiss)
+function scribble(text, x, y) {
+  const h = document.createElement('div');
+  h.className = 'bm-hand'; h.setAttribute('role', 'status'); h.textContent = text;
+  h.style.left = x + 'px'; h.style.top = y + 'px';
+  document.body.appendChild(h);
+  h.addEventListener('animationend', () => h.remove());
+}
+
+// ── picked up: it ducks back behind the photo, and is stowed ──
 function pickUp() {
   loadFont();
-  toy.classList.add('bm-away');
-  const t = toy; toy = null; setTimeout(() => t.remove(), 320);
+  const r = peek.getBoundingClientRect();
+  peek.classList.add('bm-away');
+  const el = peek; peek = null; setTimeout(() => el.remove(), 300);
   put(HELD, { at: new Date().toISOString() });
   arm();
-  setTimeout(() => dialog(['I know someone who might like this.'], { thought: true }), 250);
+  scribble('I know someone who might like this.', r.left + scrollX - 250, r.bottom + scrollY + 26);   // in the space just under the photo's corner
 }
 function arm() {
   if (armed) return; armed = true;
@@ -162,6 +180,7 @@ function give() {
   put(HELD, null);
   disarm();
   if (closeOpen) closeOpen();
+  cat().give(toyEl());     // it drops down in front of him and stays
   cat().thank();
   const first = !get(KEY);
   put(KEY, { found: true, at: new Date().toISOString() });
@@ -173,7 +192,15 @@ function give() {
       }).catch(() => {});
     } catch (e) { /* offline: fine */ }
   }
-  setTimeout(() => dialog(BAT_SAYS), 1100);   // he looks at you first
+  setTimeout(() => dialog(BAT_SAYS), 2400);   // it lands, he looks at it, then at you
+}
+
+// the mouse as it lies on the ground by Bat (scaffold-cat.js places it every frame)
+function toyEl() {
+  const el = document.createElement('div');
+  el.className = 'bm-had'; el.setAttribute('aria-hidden', 'true'); el.innerHTML = TOY;
+  el.firstElementChild.style.cssText = 'display:block;width:100%;height:100%;overflow:visible;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5))';
+  return el;
 }
 
 // ── the dialog box ──
@@ -182,19 +209,18 @@ const BAT_SAYS = [
   `I shall have a word with my owner. He will take <b>5% off your final price</b>.\nHe is, I assure you, most obliging.`,
   'Consider it a favour from me, under my own seal.\nIt goes with any brief you send from this browser.\n\nYours, Bat.',
 ];
-// Bat's dialog (a name tag, pages, then the two buttons), or with { thought: true } a one-page
-// thought of your own (no name tag; a click, Enter or Escape closes it)
-function dialog(pages, opt = {}) {
+// Bat's dialog: a name tag, pages typed out, then the two buttons
+function dialog(pages) {
   const box = document.createElement('div');
-  box.className = 'bm-dlg' + (opt.thought ? ' bm-thought' : ''); box.tabIndex = -1;
-  box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', opt.thought ? 'A thought' : 'Bat says');
-  box.innerHTML = `${opt.thought ? '' : '<span class="bm-name">BAT</span>'}
+  box.className = 'bm-dlg'; box.tabIndex = -1;
+  box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', 'Bat says');
+  box.innerHTML = `<span class="bm-name">BAT</span>
     <div><p class="bm-text" aria-hidden="true"></p><p class="bm-sr" aria-live="polite"></p><ul class="bm-menu" hidden></ul></div>
     <span class="bm-next" aria-hidden="true">▼</span>`;
   document.body.appendChild(box);
   // classic spot is the bottom of the screen, unless that would cover him
   try {
-    const w = !opt.thought && cat().where(), r = box.getBoundingClientRect();
+    const w = cat().where(), r = box.getBoundingClientRect();
     if (w && w.x > r.left - 60 && w.x < r.right + 60 && w.y > r.top - 0.9 * w.ppm) box.classList.add('bm-top');
   } catch (e) { /* no cat: stays put */ }
   const text = box.querySelector('.bm-text'), sr = box.querySelector('.bm-sr'), menu = box.querySelector('.bm-menu'), nxt = box.querySelector('.bm-next');
@@ -217,7 +243,7 @@ function dialog(pages, opt = {}) {
   }
   function done() {
     clearInterval(timer); typing = false; text.innerHTML = full;
-    if (page < pages.length - 1 || opt.thought) { nxt.hidden = false; return; }
+    if (page < pages.length - 1) { nxt.hidden = false; return; }
     nxt.hidden = true; menu.hidden = false;
     menu.innerHTML = '<li><button type="button" class="bm-go" data-go="brief">Write a brief</button></li><li><button type="button" data-go="close">Carry on</button></li>';
     menu.querySelector('button').focus();
@@ -225,7 +251,6 @@ function dialog(pages, opt = {}) {
   function advance() {
     if (typing) return done();
     if (page < pages.length - 1) show(page + 1);
-    else if (opt.thought) close();
   }
   function close(go) {
     if (closeOpen === close) closeOpen = null;
@@ -258,6 +283,11 @@ function dialog(pages, opt = {}) {
 (async function boot() {
   if (!matchMedia('(min-width: 900px)').matches || matchMedia('(prefers-reduced-motion: reduce)').matches) return;   // no Bat here, so no mouse
   const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
+  if (get(KEY)) {                                        // he already has it: it waits where he sits
+    const keep = () => cat() && cat().keep(toyEl());
+    if (cat()) keep(); else addEventListener('scaffoldcat:ready', keep, { once: true });
+    return;
+  }
   if (get(HELD)) { arm(); return; }                     // still stowed from an earlier visit
   if (!(await waitFor(SPOT))) return;
   watchSpot();
