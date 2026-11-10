@@ -1773,9 +1773,6 @@ async function start(hero) {
   const lane = new Lane(hero);
   if (!lane.ok) return;
   const cat = new Cat(THREE, hero, gltf, lane);
-  // the hidden toy mouse (bat-mouse.js) only shows where he is
-  window.ScaffoldCat = { here: true };
-  window.dispatchEvent(new Event('scaffoldcat:ready'));
   if (DEBUG) { window.__cat = cat; cat.POUNCE = POUNCE; cat.GAIT = GAIT_SPEED; if (/catdebug=lines/.test(location.search)) debugLayer(cat); }
 
   let visible = true, last = performance.now(), raf = 0;

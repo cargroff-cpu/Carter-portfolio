@@ -12,9 +12,10 @@
 //     5% off" in the brief email, the client's confirmation and the job history.
 //   Honour system: the find email is the record.
 //
-// Only where Bat is (desktop, motion allowed, the 3D cat loaded): it waits for
-// scaffold-cat.js to announce itself. Found once, it stays found in that browser.
-// ?batreset clears it, for testing.
+// It shows wherever Bat does (screens 900px and wider, reduced motion off: the same rule as
+// scaffold-cat.js), without waiting for the 3D model to load, and comes back
+// on every visit: clicking it again just brings Bat's dialog back. Carter is emailed only the
+// first time a browser finds it. ?batreset forgets the find, for testing.
 
 const KEY = 'scaffold-bat-mouse';
 const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } };
@@ -33,6 +34,7 @@ const CSS = `
 .bm-toy { position: absolute; z-index: 3; width: 40px; height: 32px; padding: 0; border: 0; background: none; cursor: pointer;
   opacity: 0; transition: opacity 1.2s ease .6s, transform .25s ease; }
 .bm-toy.bm-on { opacity: .92; }
+@media (max-width: 899px) { .bm-toy { display: none; } }
 .bm-toy:hover { transform: translateY(-2px); }
 .bm-toy svg { display: block; overflow: visible; }
 .bm-toy:focus-visible { outline: 1px dashed rgba(233,223,198,.6); outline-offset: 3px; }
@@ -64,10 +66,15 @@ const CSS = `
 
 let toy = null;
 
-function ready() {
+// the page is React: wait until the portrait is on the page
+function portrait() {
   return new Promise((res) => {
-    if (window.ScaffoldCat) return res(window.ScaffoldCat);
-    window.addEventListener('scaffoldcat:ready', () => res(window.ScaffoldCat), { once: true });
+    const t0 = Date.now();
+    (function poll() {
+      const img = document.querySelector('.dwhyhead .dportrait');
+      if (img || Date.now() - t0 > 20000) return res(img);
+      setTimeout(poll, 250);
+    })();
   });
 }
 
@@ -89,7 +96,7 @@ function place() {
     toy.setAttribute('aria-label', 'A toy mouse');
     toy.innerHTML = TOY;
     toy.addEventListener('pointerenter', loadFont, { once: true });
-    toy.addEventListener('click', found, { once: true });
+    toy.addEventListener('click', found);
     document.body.appendChild(toy);
   }
   const r = img.getBoundingClientRect(), shown = !!img.closest('.dwhyhead.shown') && r.width > 0;
@@ -112,6 +119,7 @@ function found() {
   loadFont();
   toy.classList.add('bm-away');
   setTimeout(() => { toy.remove(); }, 400);
+  if (read()) { setTimeout(dialog, 350); return; }   // found before: Bat says it again, Carter already knows
   write({ found: true, at: new Date().toISOString() });
   try {
     fetch('/api/design-brief', {
@@ -191,9 +199,8 @@ function dialog() {
 }
 
 (async function boot() {
-  if (read()) return;                                  // already found in this browser
-  const cat = await ready();
-  if (!cat) return;
+  if (!matchMedia('(min-width: 900px)').matches || matchMedia('(prefers-reduced-motion: reduce)').matches) return;   // no Bat here, so no mouse
+  if (!(await portrait())) return;
   const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
   watchSpot();
 })();

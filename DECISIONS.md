@@ -1124,8 +1124,11 @@ under makes it look up and move.
     will take 5% off your final price, and calls it his favour ("Yours, Bat."),
     with clear "Write a brief" / "Carry on" buttons. No carrying, no code: it is
     remembered in the browser, emails Carter on the spot, and a later brief from
-    that browser says "Bat's favour: 5% off". The cat only signals that he's on the
-    page (`window.ScaffoldCat`); the mouse shows only where he is.
+    that browser says "Bat's favour: 5% off". It shows wherever Bat does (900px and wider,
+    reduced motion off) without waiting for the 3D cat to load, and comes back each visit (clicking it again
+    brings the dialog back; Carter is emailed only on a browser's first find). The
+    first version hid it for good once found and waited for the cat, so the owner,
+    having found it once, never saw it again.
   - Tests: "seated life" (tail moves, 2–7 glances in 20 s, stays sitting, no pops).
 - **The crouch belly (2026-11-09).** Crouched (stalk, wiggle, the pounce
   wind-up), his belly hung as a flat, sharp-cornered plate: a triangle in side
