@@ -1101,22 +1101,32 @@ under makes it look up and move.
     runs in. As he settles he looks at you; seated, he fixes on the cursor and holds
     it, re-fixing when it moves ~9 cm (not slaved to every pixel), takes a beat to
     notice, and loses interest if it sits still for ~4 s (`watchCursor`).
-  - *The toy mouse* (`bat-mouse.js`). A plain grey mouse peeks out from behind the
-    bottom-right corner of the portrait in "Why". Click it, carry it to Bat, click
-    on him: it lands at his paws, he looks at it, looks up and slow-blinks, and a
-    plain retro dialog box ("BAT", Press Start 2P) has him, in his own rather
-    distinguished voice, thank them and promise 5% off the final price as a favour
-    under his own seal. Only where the cat is (desktop, motion allowed); keyboard
-    users get it delivered for them. The code (`BAT-FAVOUR-XXXX`; the server also accepts the first `BAT-XXXXXX` form) is made in the
-    browser and kept in localStorage; finding it emails Carter at once
-    (`/api/design-brief`, action `bat-mouse`, 3 an hour per IP, no new function),
-    and a brief sent later from that browser carries it into the brief email, the
-    client's confirmation and the job's history. Honour system: the find email is
-    the record of real codes. `?batreset` clears it. The cat side is a small hook,
-    `window.ScaffoldCat` (`near`, `spot`, `lure`, `give`).
+  - *The toy mouse* (`bat-mouse.js`). See "Jump in, a livelier sit" below for how
+    it works now (the first version, carried to Bat and given to him, was dropped).
   - Tests: "run-in side-on" (fails on the previous cat: camera 46° off, head on
-    the cursor mid-run) and "toy mouse" (a drop counts only on him and only once
-    he's seated; he looks at it, then at you, slow-blinks, stays sitting, no pops).
+    the cursor mid-run) and "toy mouse" (since replaced by "seated life").
+- **Jump in, a livelier sit, a firmer belly, a simpler mouse (2026-11-10).**
+  - *Jump in.* The scripted entrance starts with a leap: the pounce's wind-up plays
+    just past the hero's edge (clipped), its flight (`JUMP_M`, 0.72 m) carries him
+    into view, and he lands straight into the trot. The size sweep allows a leap's
+    speed (up to 60% of him in a tenth of a second) in the first 0.6 s after he
+    shows, and keeps the 30% pop limit after that.
+  - *Seated.* He glances about every 3.5–7 s (a lantern, you, down the lane) when
+    no cursor is being watched, and his tail is never still: a slow sway that
+    travels down it, and every 5–10 s a lazy curl of the tip (`applyTail`). The
+    arrival look at you used to leave a stale override that blocked glances.
+  - *Belly.* It wobbled on every stride: the skin under the body, between the legs,
+    is partly tied to the shoulder, upper-leg and thigh bones. `firmBelly` hands
+    85% (`BELLY_FIRM`) of that pull to the torso bone each vertex is blended with,
+    fading out towards the legs (as `firmChest` does for the chest).
+  - *The mouse.* A plain grey mouse sits whole at the foot of the portrait in "Why".
+    Clicking it tucks it away and opens the dialog: Bat thanks you, says his owner
+    will take 5% off your final price, and calls it his favour ("Yours, Bat."),
+    with clear "Write a brief" / "Carry on" buttons. No carrying, no code: it is
+    remembered in the browser, emails Carter on the spot, and a later brief from
+    that browser says "Bat's favour: 5% off". The cat only signals that he's on the
+    page (`window.ScaffoldCat`); the mouse shows only where he is.
+  - Tests: "seated life" (tail moves, 2–7 glances in 20 s, stays sitting, no pops).
 - **The crouch belly (2026-11-09).** Crouched (stalk, wiggle, the pounce
   wind-up), his belly hung as a flat, sharp-cornered plate: a triangle in side
   view. The body drops ~5 cm while both upper legs fold hard (front 97°, back 75°)

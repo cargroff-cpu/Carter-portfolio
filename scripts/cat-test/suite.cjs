@@ -253,7 +253,7 @@ const SCEN = [
             const toy = c.toy; if (toy) { c.toLocal(toy.X, toy.kind === 'ground' ? 0.03 : toy.h, toy.kind === 'ground' ? toy.Z : toy.Z - 0.25, tp); tp.sub(hp);
               const a1 = Math.atan2(hf.x, hf.z), a2 = Math.atan2(tp.x, tp.z); r.aim = Math.min(r.aim, Math.abs(((a1 - a2) * 57.3 + 540) % 360 - 180)); }
           }
-          if (t > 21 && t < 22) r.gazeFar = Math.min(r.gazeFar, c.gaze.w);
+          if (t > 21 && t < 22) r.gazeFar = Math.min(r.gazeFar, c.watch.w);   // watching the cursor (he may still glance about)
           c.body.getWorldQuaternion(bq); bq.invert();
           bones.forEach((b, i) => { b.getWorldQuaternion(q); q.premultiply(bq); if (f) r.pop = Math.max(r.pop, 2 * Math.acos(Math.min(1, Math.abs(q.dot(prev[i])))) * 57.3); prev[i].copy(q); });
         }
@@ -309,48 +309,40 @@ const SCEN = [
       console.log(`${problems.length ? 'FAIL' : 'PASS'}  run-in side-on: profile while crossing, eyes ahead [run ${run + 1}]  camera ${res.phi.toFixed(1)}°, gaze ${res.gaze.toFixed(2)}  ${problems.length ? '→ ' + problems.join('; ') : ''}`);
     }
   }
-  // ── the toy mouse (bat-mouse.js): given to him, he looks at it, then at you, and stays sitting ──
-  if (!ONLY || 'toy mouse gift'.includes(ONLY)) {
+  // ── the scripted cat, seated with nobody about: his tail keeps moving and he looks around a little ──
+  if (!ONLY || 'seated life'.includes(ONLY)) {
     const res = await page.evaluate(() => {
-      const c = window.__cat, T = c.T, A = window.ScaffoldCat; c.manual = true; c.scripted = true;
+      const c = window.__cat, T = c.T; c.manual = true; c.scripted = true;
       c.ptr.cx = -1; c.glance = null; c.gazeOverride = null; c.peek = null; c.seatPost = null; c.introPick = null;
-      if (c.gift) { c.gift.el.remove(); c.gift = null; }
       c.brain.swap('life', c.brain.life(true));
-      const r = { nearRunning: false, near: false, far: false, sat: true, lookedToy: false, lookedYou: false, pop: 0, blink: false };
-      for (let f = 0; f < 30 * 2; f++) c.update(1 / 30);
-      const s0 = A.spot(); r.nearRunning = A.near(s0.x, s0.y);           // no drop while he's still running in
       for (let f = 0; f < 30 * 12 && c.posture !== 'SIT'; f++) c.update(1 / 30);
-      for (let f = 0; f < 30; f++) c.update(1 / 30);
-      const s = A.spot(); r.near = A.near(s.x, s.y - 0.2 * s.ppm); r.far = A.near(s.x + 3 * s.ppm, s.y - 2 * s.ppm);
-      const el = document.createElement('div'); el.style.width = '40px'; el.style.height = '32px';
-      A.give(el);
+      for (let f = 0; f < 30 * 2; f++) c.update(1 / 30);
+      c.nextGlance = 2;   // other scenarios park it
+      const tip = c.tail[c.tail.length - 1], q = new T.Quaternion(), q0 = new T.Quaternion(), bq = new T.Quaternion();
+      const r = { tail: 0, glances: 0, glanceW: 0, pop: 0, stood: 0 };
       const bones = []; c.model.traverse(o => { if (o.isBone) bones.push(o); });
-      const prev = bones.map(() => new T.Quaternion()), q = new T.Quaternion(), bq = new T.Quaternion();
-      for (let f = 0; f < 30 * 8; f++) {
+      const prev = bones.map(() => new T.Quaternion());
+      let was = false;
+      for (let f = 0; f < 30 * 20; f++) {
         c.update(1 / 30);
-        const o = c.gazeOverride;
-        if (o && o.until > c.time && o.kind !== 'viewer' && Math.hypot(o.X - c.gift.X, o.Z - c.gift.Z) < 0.01 && c.gaze.w > 0.5) r.lookedToy = true;
-        if (o && o.until > c.time && o.kind === 'viewer' && c.gaze.w > 0.4) r.lookedYou = true;
-        if (c.motor.cur === 'sit_slow_blink') r.blink = true;
-        if (c.posture !== 'SIT') r.sat = false;
         c.body.getWorldQuaternion(bq); bq.invert();
+        tip.getWorldQuaternion(q); q.premultiply(bq);
+        if (f === 0) q0.copy(q); else r.tail = Math.max(r.tail, 2 * Math.acos(Math.min(1, Math.abs(q.dot(q0)))) * 57.3);
+        const on = !!(c.glance && c.glance.until > c.time); if (on && !was) r.glances++; was = on;
+        r.glanceW = Math.max(r.glanceW, on ? c.gaze.w : 0);
+        if (c.posture !== 'SIT') r.stood++;
         bones.forEach((b, i) => { b.getWorldQuaternion(q); q.premultiply(bq); if (f) r.pop = Math.max(r.pop, 2 * Math.acos(Math.min(1, Math.abs(q.dot(prev[i])))) * 57.3); prev[i].copy(q); });
       }
-      r.onHero = el.parentNode === c.hero && /translate3d/.test(el.style.transform);
-      el.remove(); c.gift = null;
       return r;
     });
     const problems = [];
-    if (res.nearRunning) problems.push('took the toy while still running in');
-    if (!res.near) problems.push("a drop on him didn't count");
-    if (res.far) problems.push('a drop far from him counted');
-    if (!res.onHero) problems.push('toy not put down in the hero');
-    if (!res.lookedToy) problems.push("didn't look at the toy");
-    if (!res.lookedYou || !res.blink) problems.push("didn't look up and slow-blink at you");
-    if (!res.sat) problems.push('got up');
+    if (res.tail < 8) problems.push(`tail barely moved (${res.tail.toFixed(1)}°)`);
+    if (res.glances < 2 || res.glanceW < 0.4) problems.push(`hardly looked around (${res.glances} glances in 20 s)`);
+    if (res.glances > 7) problems.push(`too restless (${res.glances} glances in 20 s)`);
+    if (res.stood) problems.push('got up');
     if (res.pop > 70) problems.push('pose popped ' + res.pop.toFixed(0) + '°/frame');
     if (problems.length) fails++;
-    console.log(`${problems.length ? 'FAIL' : 'PASS'}  toy mouse: a drop on him counts, he looks at it, then at you, slow-blinks, stays sitting  ${problems.length ? '→ ' + problems.join('; ') : ''}`);
+    console.log(`${problems.length ? 'FAIL' : 'PASS'}  seated life: tail moves, looks around a little  tail ${res.tail.toFixed(0)}°, ${res.glances} glances  ${problems.length ? '→ ' + problems.join('; ') : ''}`);
   }
   // ── perspective: on screen he moves the way his body points (no crab walk at the lane's sides) ──
   if (!ONLY || 'crab walk'.includes(ONLY)) {
