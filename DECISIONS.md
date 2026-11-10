@@ -1193,13 +1193,12 @@ under makes it look up and move.
     and gives one small twitch out and back with a little tilt (`bm-budge`), once per visit:
     easy to miss on purpose.
   - *The find.* Clicking it still ducks it behind the photo and stows it. The whole mouse and
-    "I know someone who might like this." in handwriting then float up over the page, with no
+    "I know someone who might like this." in italic serif then float up over the page, with no
     box, border or label (a framed "Found / A toy mouse" card was tried and dropped), and fade
     away together after ~5 s. Nothing to click away.
-    The handwriting font (Caveat, SIL OFL) ships with the site in `assets/fonts` instead of
-    loading from Google on hover: it was fetched only on hover, so on a first click the line
-    could appear in a stand-in. The line now waits (up to 1.5 s) for the font, which starts
-    loading as soon as the mouse is placed.
+    The line is in the page's own italic serif (Cormorant, the same as Bat's dialog), not
+    handwriting: a handwriting font (Caveat, first from Google on hover, then bundled in
+    `assets/fonts`) was tried and dropped.
   - *Bat's dialog.* The pixel game box (Press Start 2P, thick white border) is gone. It is a
     card in the page's own style: dark wood gradient, a brass hairline with an inner rule,
     Cormorant italic, a small amber "BAT" label with a rule, each word fading in a beat after

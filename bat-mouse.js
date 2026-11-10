@@ -4,8 +4,8 @@
 // section it peeks out from behind the right edge of Carter's portrait, low down: just its
 // nose, an eye and an ear, small and dim. It gives one small budge the first time you scroll
 // onto it, and leans out when you hover. Click it and it ducks back behind the photo and is
-// stowed, while the whole mouse and a line of handwriting, "I know someone who might like
-// this.", float up over the page (no box) and fade away on their own. Click Bat while you have it
+// stowed, while the whole mouse and a line in the page's own italic, "I know someone who might
+// like this.", float up over the page (no box) and fade away on their own. Click Bat while you have it
 // (he has to be sitting; the cursor turns to a pointer over him) and you give it back: it drops
 // down in front of him and stays there, he looks at it, then at you and slow-blinks, and a card
 // in the site's own style opens: he thanks you and says he'll have his owner take 5% off your
@@ -39,7 +39,6 @@ const TOY = `<svg viewBox="0 0 40 32" width="40" height="32" aria-hidden="true" 
 </svg>`;
 
 const CSS = `
-@font-face { font-family: "Caveat"; font-style: normal; font-weight: 400; font-display: swap; src: url("assets/fonts/caveat-latin-400.woff2") format("woff2"); }
 .bm-peek { position: absolute; z-index: 3; width: 22px; height: 24px; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity 1.2s ease .8s; }
 .bm-peek.bm-on { opacity: .72; }
 @media (max-width: 899px) { .bm-peek { display: none; } }
@@ -81,17 +80,17 @@ const CSS = `
 .bm-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 @media (max-width: 640px) { .bm-dlg { padding: 28px 24px 24px; } .bm-text { font-size: 21px; } }
 
-/* the find: just the whole mouse and a line of handwriting, floating over the page, which fade away on
+/* the find: just the whole mouse and a line in the page's italic, floating over the page, which fade away on
    their own (no box) */
 .bm-found { position: fixed; left: 50%; bottom: 76px; z-index: 2147483002; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px;
   pointer-events: none; text-align: center; text-shadow: 0 2px 14px #000, 0 0 3px #000; animation: bm-find 5.4s ease both; }
 .bm-found-art { display: block; width: 66px; height: 53px; animation: bm-pop 1s cubic-bezier(.3, 1.4, .5, 1) .15s both; }
 .bm-found-art svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 4px 5px rgba(0,0,0,.6)); }
 @keyframes bm-pop { from { transform: translateY(-16px) scale(.5) rotate(-12deg); opacity: 0; } 60% { opacity: 1; } to { transform: none; opacity: 1; } }
-.bm-found-h { display: block; white-space: nowrap; font: 400 30px/1.15 "Caveat", "Segoe Print", "Bradley Hand", cursive; color: var(--ink, #ecd9b2); transform: rotate(-2deg); }
+.bm-found-h { display: block; white-space: nowrap; font: italic 400 27px/1.2 var(--display, "Cormorant Garamond", Georgia, serif); color: var(--ink, #ecd9b2); }
 @keyframes bm-find { 0% { opacity: 0; transform: translateX(-50%) translateY(14px); } 12% { opacity: 1; transform: translateX(-50%) translateY(0); }
   68% { opacity: 1; transform: translateX(-50%) translateY(0); } 100% { opacity: 0; transform: translateX(-50%) translateY(-8px); } }
-@media (max-width: 640px) { .bm-found-h { font-size: 24px; white-space: normal; max-width: calc(100vw - 48px); } }
+@media (max-width: 640px) { .bm-found-h { font-size: 22px; white-space: normal; max-width: calc(100vw - 48px); } }
 `;
 
 let peek = null, armed = false, closeOpen = null;   // closeOpen: closes whichever dialog is up
@@ -107,12 +106,6 @@ function waitFor(sel) {
   });
 }
 
-// the handwriting font ships with the site (assets/fonts, SIL OFL), so it is there when the
-// line appears: this starts the download early, and foundCard() waits for it
-function loadFont() {
-  try { return document.fonts.load('30px "Caveat"', 'I know someone who might like this.').catch(() => {}); } catch (e) { return Promise.resolve(); }
-}
-
 // ── where it hides: peeking out from behind the right edge of the portrait, low down ──
 // A box sits just outside the photo's edge with overflow hidden; the mouse (facing out) is
 // mostly to the left of it, so its body is "behind" the photo and only the face shows.
@@ -125,10 +118,8 @@ function place() {
     peek.className = 'bm-peek';
     peek.innerHTML = `<button type="button" class="bm-toy" aria-label="A toy mouse, peeking out from behind the photo">${TOY}</button>`;
     const b = peek.querySelector('.bm-toy');
-    b.addEventListener('pointerenter', loadFont, { once: true });
     b.addEventListener('click', pickUp, { once: true });
     document.body.appendChild(peek);
-    loadFont();
     budgeOnce(peek);
   }
   const r = img.getBoundingClientRect(), shown = !!img.closest('.dwhyhead.shown') && r.width > 0;
@@ -157,11 +148,9 @@ function watchSpot() {
   new MutationObserver(again).observe(document.getElementById('why') || document.body, { attributes: true, subtree: true, childList: true, attributeFilter: ['class'] });
 }
 
-// the find: the whole mouse and a line of handwriting, floating over the page with no box.
+// the find: the whole mouse and a line in the page's own italic, floating over the page with no box.
 // Nothing to click away: it all fades by itself after a few seconds
-async function foundCard() {
-  // wait (a moment at most) for the handwriting font, so it never shows in a stand-in
-  await Promise.race([loadFont(), new Promise((r) => setTimeout(r, 1500))]);
+function foundCard() {
   const c = document.createElement('div');
   c.className = 'bm-found'; c.setAttribute('role', 'status');
   c.innerHTML = `<span class="bm-found-art">${TOY}</span><span class="bm-found-h">I know someone who might like this.</span>`;
@@ -171,7 +160,6 @@ async function foundCard() {
 
 // ── picked up: it ducks back behind the photo, and is stowed ──
 function pickUp() {
-  loadFont();
   peek.classList.add('bm-away');
   const el = peek; peek = null; setTimeout(() => el.remove(), 300);
   put(HELD, { at: new Date().toISOString() });
@@ -204,7 +192,6 @@ function onDown(e) {
   give();
 }
 function give() {
-  loadFont();
   put(HELD, null);
   disarm();
   if (closeOpen) closeOpen();
