@@ -1188,6 +1188,21 @@ under makes it look up and move.
   - *Afterwards he has it.* On later visits in that browser the mouse is waiting just in
     front of where he sits (`keep`; `seatAt` is worked out with the seat, before he arrives)
     and the portrait has no mouse.
+- **The mouse budges, is shown as a found item, and Bat talks in the page's style (2026-11-10).**
+  - *Budge.* The first time the peeking mouse scrolls into view (90% visible) it waits 1.8 s
+    and gives one small twitch out and back with a little tilt (`bm-budge`), once per visit:
+    easy to miss on purpose.
+  - *Found card.* Clicking it still ducks it behind the photo and stows it, and now a card
+    slides up showing the whole mouse, "Found / A toy mouse", and "I know someone who might
+    like this." in handwriting. Nothing to click away: it fades by itself after ~5 s.
+  - *Bat's dialog.* The pixel game box (Press Start 2P, thick white border) is gone. It is a
+    card in the page's own style: dark wood gradient, a brass hairline with an inner rule,
+    Cormorant italic, a small amber "BAT" label with a rule, each word fading in a beat after
+    the last (a click skips), and the site's own `.p-btn` / `.p-btn.ghost` for "Write a brief"
+    and "Carry on". Same pages, same placement (top of the screen if it would cover him).
+  - *Looking at you.* While the dialog is open the cat is `speaking`: `gazeTarget` returns the
+    viewer at full weight, ahead of idle glances and the cursor, and lets go when it closes
+    (`ScaffoldCat.speak`). Test: "talking".
 - **The crouch belly (2026-11-09).** Crouched (stalk, wiggle, the pounce
   wind-up), his belly hung as a flat, sharp-cornered plate: a triangle in side
   view. The body drops ~5 cm while both upper legs fold hard (front 97°, back 75°)

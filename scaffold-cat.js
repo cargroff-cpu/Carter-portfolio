@@ -920,6 +920,8 @@ class Cat {
       if (o.kind === 'viewer') return { p: out.set(14 * Math.sin(this.camPhi), 3.2, 14 * Math.cos(this.camPhi)).applyAxisAngle(T.v2.set(0, 1, 0), -this.yaw), w: 1 };
       return { p: this.toLocal(o.X, o.h, o.Z, out), w: 1 };
     }
+    // While his dialog is open (bat-mouse.js) he is talking to you: he looks at you, steadily
+    if (this.speaking) return { p: out.set(14 * Math.sin(this.camPhi), 3.2, 14 * Math.cos(this.camPhi)).applyAxisAngle(T.v2.set(0, 1, 0), -this.yaw), w: 1 };
     if (this.scripted) {                                 // scripted: watch a cursor that comes close (see watchCursor)
       const W = this.watch;
       if (W.w > 0.01 && W.ok) return { p: this.toLocal(W.X, W.h, W.Z, out), w: W.w };
@@ -1962,6 +1964,7 @@ async function start(hero) {
     near: (x, y) => DESK.matches && (cat.scripted ? cat.posture === 'SIT' : !cat.outside) && cat.nearMe(x, y),
     where: () => cat.screenSpot(),
     thank: () => cat.thank(),
+    speak: (on) => { cat.speaking = !!on; },   // his dialog is open: he looks at you while he talks
     give: (el) => cat.receive(el, true),     // given back now: it drops down in front of him
     keep: (el) => cat.receive(el, false),    // he already has it (an earlier visit): it waits where he sits
   };
