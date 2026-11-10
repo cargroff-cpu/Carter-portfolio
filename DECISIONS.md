@@ -1130,6 +1130,26 @@ under makes it look up and move.
     first version hid it for good once found and waited for the cat, so the owner,
     having found it once, never saw it again.
   - Tests: "seated life" (tail moves, 2–7 glances in 20 s, stays sitting, no pops).
+- **Sitting up, and a livelier trot in (2026-11-10).**
+  - *Arched back.* Sitting, he read as hunched: the sit clip lays the chest nearly flat
+    (19°) with the head hanging forward at shoulder height, and the outline from tail to
+    shoulders bows out. Neither skin weights (the back is all spine) nor lining up the
+    spine bones (the joints are nearly in line already) changed it much. `applyBack()`
+    does it while he sits (weighted by how much of the pose is a sit): the spine bones are
+    lined up (`BACK_STRAIGHT`), the chest tips up 8° (`SIT_CHEST_UP`) with the front legs
+    kept pointing as they were, and the neck lifts 32° (`SIT_NECK_UP`) with the head kept
+    level, so he sits up with his head above his shoulders. Mostly the neck: more chest
+    lifts his front paws (straight in this pose) off the ground; at 8° they rise 7 mm. The
+    bones it touches are snapshotted first each frame (`frameNo`; `applyGaze` leaves them)
+    so `unlayer()` takes it back off; checked for drift over 18 s.
+  - *Trotting in.* His tail goes up as he trots in (`applyTailWalk`): raised from the
+    base (`tail_01–03`, 24°/14°/8°), the tip curled over, swaying with his stride and
+    bobbing with each step. His head nods a little with each step (`applyStrideBob`), and
+    half a second after landing he glances at you for 0.9 s. The run-in test now checks
+    that he doesn't track the cursor mid-run (a glance is fine) and that his tail is up.
+  - The free-roaming "stops when the cursor goes still" scenario can time out (ends at
+    10 s) on its second run in a full-suite pass, before and after these changes; on its
+    own it passes 6/6. It isn't the mode the site uses.
 - **The crouch belly (2026-11-09).** Crouched (stalk, wiggle, the pounce
   wind-up), his belly hung as a flat, sharp-cornered plate: a triangle in side
   view. The body drops ~5 cm while both upper legs fold hard (front 97°, back 75°)

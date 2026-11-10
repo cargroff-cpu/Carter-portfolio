@@ -42,6 +42,9 @@ const CHASE_M = 2.6;           // beyond this (metres) a cursor isn't worth gett
 const EYE_SCALE = 0.72;        // each eye shrunk across the face (not in depth): the model's eyes read huge at hero size
 const NOSE_M = 0.34, TAIL_M = 0.45;   // how far his nose and tail tip reach from the middle of his body (model space, metres)
 const BELLY_FIRM = 0.85;       // share of the legs' pull on the belly skin handed to the torso (firmBelly)
+const BACK_STRAIGHT = 0.9;      // sitting: how far the spine bones are lined up (applyBack)
+const SIT_CHEST_UP = 8 * DEG;   // sitting: how far the chest tips up; more lifts the front paws off the ground
+const SIT_NECK_UP = 32 * DEG;   // sitting: how far the neck lifts, so his head is held above his shoulders
 const BELLY_TUCK_M = 0.045;    // how far the belly is drawn up in a full crouch
 const RIM_I = 1.2;             // the cool rim light that holds the silhouette (was 2.8 on the first, smoother model)
 const HAZE_K = 0.6;            // share of each fog bank's haze laid on the cat
@@ -503,6 +506,10 @@ class Cat {
       if (o.isBone) o.matrixAutoUpdate = true;
     });
     this.bones = { neck_01: null, neck_02: null, head: null };
+    this.back = ['spine_01', 'spine_02', 'spine_03', 'chest'].map((n) => this.model.getObjectByName(n)).filter(Boolean);   // straightened when he sits (applyBack)
+    this.backMore = ['neck_01', 'neck_02', 'head', 'fl_scap_L', 'fl_scap_R'].map((n) => this.model.getObjectByName(n)).filter(Boolean);
+    this.frameNo = 0;
+    this.tailBase = ['tail_01', 'tail_02', 'tail_03'].map((n) => this.model.getObjectByName(n)).filter(Boolean);   // raised as he trots in
     for (const n of Object.keys(this.bones)) this.bones[n] = this.model.getObjectByName(n);
     this.tail = ['tail_04', 'tail_05', 'tail_06', 'tail_07'].map((n) => this.model.getObjectByName(n)).filter(Boolean);
     this.gaze = { w: 0, yaw: 0, pitch: 0, ay: 0, ap: 0, inited: false, per: { neck_01: [0, 0], neck_02: [0, 0], head: [0, 0] } };
@@ -875,6 +882,7 @@ class Cat {
     this.trackToy(dt);
     this.updateAttention(dt);
     this.brain.tick(dt);
+    this.frameNo++;
     this.unlayer();
     this.motor.update(dt);
     if (this.tuck) this.tuck.value = BELLY_TUCK_M * this.crouchAmount();
@@ -894,6 +902,8 @@ class Cat {
     this.body.rotation.y = this.yaw;
     this.body.scale.setScalar(this.vis);
     this.body.updateMatrixWorld(true);
+    this.applyBack();
+    this.applyStrideBob();
     this.applyGaze(dt);
     this.applyTail(dt);
     this.applyFace(dt);
@@ -955,14 +965,89 @@ class Cat {
   unlayer() {
     for (const b of Object.values(this.bones)) if (b && b.userData.animQ) b.quaternion.copy(b.userData.animQ);
     for (const b of this.tail) if (b.userData.animQ) b.quaternion.copy(b.userData.animQ);
+    for (const b of this.tailBase || []) if (b.userData.animQ) b.quaternion.copy(b.userData.animQ);
+    for (const b of this.back || []) if (b.userData.animQ) b.quaternion.copy(b.userData.animQ);
+    for (const b of this.backMore || []) if (b.userData.animQ) b.quaternion.copy(b.userData.animQ);
     for (const m of this.morphs) if (m.userData.animInf) for (let i = 0; i < 3; i++) m.morphTargetInfluences[i] = m.userData.animInf[i];
+  }
+
+  // The sitting clip read as a hunched cat with an arched back: the chest lies nearly flat
+  // (19°) and the head hangs forward at shoulder height. While he sits: the spine bones are
+  // lined up from the first spine joint to the chest (they bend 57° → 25°, though the joints are
+  // nearly in line; a small effect), then the chest tips up (SIT_CHEST_UP) with the front legs
+  // kept pointing the way they did, and the neck lifts (SIT_NECK_UP) with the head kept level,
+  // so he sits up with his head above his shoulders. Most of it is the neck: tipping the chest
+  // further lifts the front paws (straight in this pose) off the ground. Weighted by how much
+  // of the pose is a sit. The bones it touches are snapshotted here first (applyGaze then
+  // leaves them), so unlayer() takes it all back off each frame.
+  applyBack() {
+    const B = this.back; if (B.length < 4) return;
+    for (const b of B.concat(this.backMore)) { (b.userData.animQ || (b.userData.animQ = b.quaternion.clone())).copy(b.quaternion); b.userData.snap = this.frameNo; }
+    const sit = this.sitAmount(), k = (this.backStraight ?? BACK_STRAIGHT) * sit;
+    if (k < 0.01) return;
+    const T = this.tmp, chest = B[3];
+    const A = B[0].getWorldPosition(new this.T.Vector3()), C = chest.getWorldPosition(new this.T.Vector3());
+    const want = C.clone().sub(A).normalize(), cq = chest.getWorldQuaternion(new this.T.Quaternion());
+    const p = new this.T.Vector3(), q = new this.T.Vector3(), d = new this.T.Quaternion();
+    for (let i = 0; i < 3; i++) {
+      const b = B[i];
+      b.getWorldPosition(p); B[i + 1].getWorldPosition(q);
+      const seg = q.sub(p).normalize();
+      d.setFromUnitVectors(seg, want);
+      d.slerp(T.qid || (T.qid = new this.T.Quaternion()), 1 - k);   // part of the way, by k
+      b.getWorldQuaternion(T.q2); T.q2.premultiply(d);
+      b.parent.getWorldQuaternion(T.qp);
+      b.quaternion.copy(T.qp.invert().multiply(T.q2));
+      b.updateMatrixWorld(true);
+    }
+    chest.parent.getWorldQuaternion(T.qp);
+    chest.quaternion.copy(T.qp.invert().multiply(cq));
+    chest.updateMatrixWorld(true);
+    // Sitting up: the chest tips up and the neck lifts, so his head is held above his shoulders
+    // instead of hanging forward at their height (which read as a hunched, arched back). The
+    // front legs keep pointing the way they did, so the paws stay put.
+    const up = (this.sitChestUp ?? SIT_CHEST_UP) * sit, nk = (this.sitNeckUp ?? SIT_NECK_UP) * sit;
+    if (up < 0.001 && nk < 0.001) return;
+    const M = this.backMore, scap = M.slice(3), head = M[2];
+    const keep = scap.map((b) => b.getWorldQuaternion(new this.T.Quaternion())), hq = head.getWorldQuaternion(new this.T.Quaternion());
+    const axis = new this.T.Vector3(1, 0, 0).applyQuaternion(this.body.getWorldQuaternion(new this.T.Quaternion()));
+    const turn = (b, a) => { d.setFromAxisAngle(axis, -a); b.getWorldQuaternion(T.q2); T.q2.premultiply(d); b.parent.getWorldQuaternion(T.qp); b.quaternion.copy(T.qp.invert().multiply(T.q2)); b.updateMatrixWorld(true); };
+    turn(chest, up);
+    scap.forEach((b, i) => { b.parent.getWorldQuaternion(T.qp); b.quaternion.copy(T.qp.invert().multiply(keep[i])); b.updateMatrixWorld(true); });
+    turn(M[0], nk * 0.6); turn(M[1], nk * 0.4);
+    // the head ends up level as the clip had it (plus a touch of the lift)
+    d.setFromAxisAngle(axis, -nk * 0.15); hq.premultiply(d);
+    head.parent.getWorldQuaternion(T.qp); head.quaternion.copy(T.qp.invert().multiply(hq)); head.updateMatrixWorld(true);
+  }
+  // trotting in, the head nods a little with each step (two nods a stride); the neck was
+  // snapshotted by applyBack, so unlayer() takes it back off
+  applyStrideBob() {
+    const w = this.tailWalk || 0; if (w < 0.01) return;
+    const T = this.tmp, n = this.backMore[0]; if (!n) return;
+    const a = w * 2.5 * DEG * Math.sin(4 * Math.PI * this.motor.loco.p + 1.2);
+    this.body.getWorldQuaternion(T.q3);
+    T.v2.set(1, 0, 0).applyQuaternion(T.q3);
+    T.q.setFromAxisAngle(T.v2, a);
+    n.getWorldQuaternion(T.q2); T.q2.premultiply(T.q);
+    n.parent.getWorldQuaternion(T.qp); n.quaternion.copy(T.qp.invert().multiply(T.q2)); n.updateMatrixWorld(true);
+  }
+  // how much of the current pose is a sit (0..1), ramping through stand_to_sit / sit_to_stand
+  sitAmount() {
+    const M = this.motor; let w = 0, all = 0;
+    for (const o of M.slots) {
+      all += o.e;
+      if (/^sit_(idle|ear_twitch|slow_blink)$/.test(o.name)) w += o.e;
+      else if (o.name === 'stand_to_sit') w += o.e * sm(o.act.time / o.dur);
+      else if (o.name === 'sit_to_stand') w += o.e * (1 - sm(o.act.time / o.dur));
+    }
+    return all > 0 ? w / all : 0;
   }
 
   // head and neck turn toward what the cat is attending to, layered on the clip
   applyGaze(dt) {
     const T = this.tmp, G = this.gaze, B = this.bones;
     if (!B.head || !B.neck_01 || !B.neck_02) return;
-    for (const b of Object.values(B)) (b.userData.animQ || (b.userData.animQ = b.quaternion.clone())).copy(b.quaternion);
+    for (const b of Object.values(B)) if (b.userData.snap !== this.frameNo) (b.userData.animQ || (b.userData.animQ = b.quaternion.clone())).copy(b.quaternion);
     // idle glances: a lantern, the viewer, a spot on the ground
     this.nextGlance -= dt;
     // Seated and scripted, he looks about a little too: at a lantern, at you, down the lane.
@@ -1027,6 +1112,8 @@ class Cat {
   applyTail(dt = 0) {
     const T = this.tmp, k = this.time - this.lockT;
     for (const b of this.tail) (b.userData.animQ || (b.userData.animQ = b.quaternion.clone())).copy(b.quaternion);
+    for (const b of this.tailBase) (b.userData.animQ || (b.userData.animQ = b.quaternion.clone())).copy(b.quaternion);
+    this.applyTailWalk(dt);
     const sitting = this.posture === 'SIT' && /^sit/.test(this.motor.cur);
     this.tailSit = damp(this.tailSit || 0, sitting ? 1 : 0, 1.5, dt);
     if (this.tailSit > 0.01) {
@@ -1047,6 +1134,32 @@ class Cat {
       b.parent.getWorldQuaternion(T.qp);
       b.quaternion.copy(T.qp.invert().multiply(T.q2));
       b.updateMatrixWorld(true);
+    });
+  }
+  // Trotting in (scripted), his tail is up: raised from the base, the tip curled over a little,
+  // and it sways side to side with his stride and bobs with each step. Eased in and out.
+  applyTailWalk(dt) {
+    const T = this.tmp, L = this.motor.loco;
+    const on = this.scripted && this.posture === 'WALK' && this.motor.cur === 'loco';
+    this.tailWalk = damp(this.tailWalk || 0, on ? clamp(L.e, 0, 1) : 0, on ? 2.5 : 4, dt);
+    const w = this.tailWalk; if (w < 0.01) return;
+    const ph = 2 * Math.PI * L.p;
+    this.body.getWorldQuaternion(T.q3);
+    const rot = (b, pitch, yaw) => {
+      T.qy.setFromAxisAngle(T.v2.set(0, 1, 0), yaw); T.qp.setFromAxisAngle(T.v2.set(1, 0, 0), pitch);
+      T.q.copy(T.qy).multiply(T.qp);                                    // cat-space delta
+      T.q.premultiply(T.q3).multiply(T.q2.copy(T.q3).invert());
+      b.getWorldQuaternion(T.q2); T.q2.premultiply(T.q);
+      const pq = T.pq || (T.pq = new this.T.Quaternion());
+      b.parent.getWorldQuaternion(pq);
+      b.quaternion.copy(pq.invert().multiply(T.q2));
+      b.updateMatrixWorld(true);
+    };
+    const lift = [24, 14, 8];                                           // degrees up, root to tip of the base
+    this.tailBase.forEach((b, i) => rot(b, w * (lift[i] + 3 * Math.sin(2 * ph + 0.6 - i * 0.4)) * DEG, 0));
+    this.tail.forEach((b, i) => {
+      const f = i / Math.max(1, this.tail.length - 1);
+      rot(b, w * 14 * f * DEG, w * (4 + 9 * f) * DEG * Math.sin(ph - 0.5 - i * 0.6));
     });
   }
   lockOn() { if (this.time - this.lockT > 1.2) this.lockT = this.time; }
@@ -1407,9 +1520,11 @@ class Brain {
         while (m.time('pounce') < POUNCE.end - 0.04) yield;
         m.loco.v = RUN_IN(); m.play('loco', 0.22); m.loco.p = 0; c.posture = 'WALK';   // lands into the trot
         const L0 = m.loco;
+        let glanced = false;
         let passed = false, stopping = false, t = 0;
         while (true) {
           const dt = yield; t += dt;
+          if (!glanced && t > 0.5) { glanced = true; c.gazeOverride = { kind: 'viewer', until: c.time + 0.9 }; }   // a quick look at you as he comes in
           if (!passed && ((c.X - bend.X) * inward > -0.15 || Math.hypot(c.X - bend.X, c.Z - bend.Z) < 0.2)) passed = true;
           const aim = passed ? seat : bend;
           const left = passed ? c.distTo(seat) : c.distTo(bend) + BEND_M;

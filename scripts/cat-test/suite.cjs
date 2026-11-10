@@ -296,7 +296,8 @@ const SCEN = [
           c.ptr.cx = rect.left + s.x + 20 * Math.sin(f / 3); c.ptr.cy = rect.top + s.y - 0.3 * s.ppm; c.ptr.speed = 400;
           c.update(1 / 30);
           if (c.posture === 'WALK' && Math.abs(Math.sin(c.yaw)) > 0.97 && f > 15) { r.across++; r.phi = Math.max(r.phi, Math.abs(c.camPhi) * 57.3); }
-          if (c.posture === 'WALK' && c.motor.loco.v > 0.4) r.gaze = Math.max(r.gaze, c.gaze.w);
+          if (c.posture === 'WALK' && c.motor.loco.v > 0.4) r.gaze = Math.max(r.gaze, c.watch.w);   // tracking the cursor (a glance at you is fine)
+          if (c.posture === 'WALK' && c.motor.loco.v > 0.4) r.tailUp = Math.max(r.tailUp || 0, c.tailWalk || 0);
         }
         c.ptr.cx = -1; c.introPick = null;
         return r;
@@ -305,6 +306,7 @@ const SCEN = [
       if (res.across < 20) problems.push('hardly ran across the screen (' + res.across + ' frames)');
       if (res.phi > 6) problems.push(`seen ${res.phi.toFixed(0)}° off side-on while running straight across (looks like running at an angle)`);
       if (res.gaze > 0.15) problems.push(`head followed the cursor mid-run (gaze ${res.gaze.toFixed(2)})`);
+      if (!(res.tailUp > 0.6)) problems.push(`tail not up as he trots in (${(res.tailUp || 0).toFixed(2)})`);
       if (problems.length) fails++;
       console.log(`${problems.length ? 'FAIL' : 'PASS'}  run-in side-on: profile while crossing, eyes ahead [run ${run + 1}]  camera ${res.phi.toFixed(1)}°, gaze ${res.gaze.toFixed(2)}  ${problems.length ? '→ ' + problems.join('; ') : ''}`);
     }
