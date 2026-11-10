@@ -1277,6 +1277,7 @@ class Cat {
     // which hides exactly what the post would. One plain polygon, which every browser clips.
     const pk = this.peek, cs = pk && this.Z > pk.lamp.Z - 0.02 ? this.postClip(pk.lamp, s.x - cw / 2, s.y - ORG_Y * ch) : 'none';
     if (this.style.c !== cs) { st.clipPath = cs; st.webkitClipPath = cs; this.style.c = cs; }
+    if (this.gift) this.placeGift();
   }
 
   // ── for bat-mouse.js ──
@@ -1292,9 +1293,36 @@ class Cat {
   }
   // given his mouse back: he looks at you, ears flick, tail twitches, and a slow blink if he's sitting
   thank() {
-    this.gazeOverride = { kind: 'viewer', until: this.time + 4 };
     this.lockT = this.time;
     if (this.scripted && this.posture === 'SIT' && this.motor.has('sit_slow_blink')) this.brain.swap('life', this.brain.thanked());
+    else this.gazeOverride = { kind: 'viewer', until: this.time + 4 };
+  }
+  // His toy mouse, on the ground just in front of his nose (nearer us than him, so drawn over
+  // him), kept in place every frame by place(). `drop`: it falls in from above and bounces once.
+  // If he hasn't chosen where to sit yet, it waits until he has and goes in front of that spot.
+  receive(el, drop) {
+    if (this.gift) this.gift.el.remove();
+    el.style.position = 'absolute'; el.style.left = '0'; el.style.top = '0'; el.style.zIndex = '6';
+    el.style.pointerEvents = 'none'; el.style.width = '40px'; el.style.height = '32px'; el.style.transformOrigin = '20px 30px';
+    this.hero.appendChild(el);
+    if (this.scripted && !this.seatAt && this.posture !== 'SIT') { this.giftWaiting = el; el.style.visibility = 'hidden'; return; }
+    const at = this.seatAt && this.posture !== 'SIT' ? this.seatAt : this.giftSpotLane();
+    this.gift = { el, X: at.X, Z: at.Z, t: this.time, drop };
+    this.place();
+  }
+  giftSpotLane() { return { X: this.X + Math.sin(this.yaw) * 0.3, Z: this.Z - Math.cos(this.yaw) * 0.3 }; }
+  placeGift() {
+    const G = this.gift, s = this.lane.toScreen(G.X, G.Z), k = (s.ppm * this.vis * 0.16) / 40;   // the toy art is 40 px long; a felt mouse is ~16 cm
+    let dy = 0, sq = 1;
+    if (G.drop) {                                     // falls 0.4 s, then a small bounce
+      const t = this.time - G.t, H = 0.55 * s.ppm;
+      if (t < 0.4) dy = -H * (1 - (t / 0.4) ** 2);
+      else if (t < 0.62) { const u = (t - 0.4) / 0.22; dy = -0.05 * s.ppm * Math.sin(Math.PI * u); sq = 1 - 0.12 * Math.sin(Math.PI * Math.min(1, u * 3)); }
+      else G.drop = false;
+    }
+    const f = this.lane.filterAt(G.Z);
+    const ts = `translate3d(${(s.x - 20).toFixed(1)}px, ${(s.y - 30 + dy).toFixed(1)}px, 0) scale(${k.toFixed(3)}, ${(k * sq).toFixed(3)})`;
+    if (G.ts !== ts) { G.el.style.transform = ts; G.el.style.filter = `brightness(${(f.bright * 0.9).toFixed(3)})`; G.el.style.visibility = ''; G.ts = ts; }
   }
   // A post's inner edge as drawn, in hero pixels, from below the ground up: the outline measured
   // from the lamp art (POST_PROFILE), placed on the lamp's box as laid out right now, so it
@@ -1528,6 +1556,11 @@ class Brain {
         let ex = inward > 0 ? -Infinity : Infinity;
         for (const [x] of c.postEdge(post)) ex = inward > 0 ? Math.max(ex, x) : Math.min(ex, x);
         const seat = L.clampIn((ex + inward * SEAT_GAP_M * s0.ppm - L.cAtY(s0.y)) / s0.ppm, Zs, 0.45);
+        {   // his mouse, if he already has it, waits just in front of where he'll sit
+          const fy0 = inward * SEAT_YAW;
+          c.seatAt = { X: seat.X + Math.sin(fy0) * 0.3, Z: seat.Z - Math.cos(fy0) * 0.3 };
+          if (c.giftWaiting) { const el = c.giftWaiting; c.giftWaiting = null; c.gift = { el, X: c.seatAt.X, Z: c.seatAt.Z, t: c.time, drop: false }; }
+        }
         // One move, no stops: he runs in along the lane a little behind the seat, curves toward
         // us as he slows from a trot to a walk, and arrives already facing the way he'll sit
         // (three-quarters on, turned a little toward the middle of the lane). `bend` is a point
@@ -1583,8 +1616,10 @@ class Brain {
   }
   // given his mouse back while sitting: a slow blink at you, then on as before
   *thanked() {
-    const c = this.c, m = c.motor;
-    yield* this.wait(0.5);
+    const c = this.c, m = c.motor, g = c.gift;
+    if (g) { c.gazeOverride = { X: g.X, h: 0.03, Z: g.Z, until: c.time + 1.4 }; yield* this.wait(1.4); }
+    c.gazeOverride = { kind: 'viewer', until: c.time + 4 };
+    yield* this.wait(0.3);
     yield* this.once('sit_slow_blink', 0.25);
     m.play('sit_idle', 0.3, false); c.posture = 'SIT';
     yield* this.sitShow(false);
@@ -1927,7 +1962,10 @@ async function start(hero) {
     near: (x, y) => DESK.matches && (cat.scripted ? cat.posture === 'SIT' : !cat.outside) && cat.nearMe(x, y),
     where: () => cat.screenSpot(),
     thank: () => cat.thank(),
+    give: (el) => cat.receive(el, true),     // given back now: it drops down in front of him
+    keep: (el) => cat.receive(el, false),    // he already has it (an earlier visit): it waits where he sits
   };
+  window.dispatchEvent(new Event('scaffoldcat:ready'));
   if (DEBUG) { window.__cat = cat; cat.POUNCE = POUNCE; cat.GAIT = GAIT_SPEED; if (/catdebug=lines/.test(location.search)) debugLayer(cat); }
 
   let visible = true, last = performance.now(), raf = 0;
