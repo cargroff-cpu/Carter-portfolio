@@ -1830,6 +1830,14 @@ async function uploadPlan(file) {
     type: file.type
   };
 }
+function batCode() {
+  try {
+    const v = JSON.parse(localStorage.getItem('scaffold-bat-mouse') || 'null');
+    return v && typeof v.code === 'string' ? v.code : null;
+  } catch (e) {
+    return null;
+  }
+}
 function readFile(file) {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -1936,7 +1944,8 @@ const Brief = React.forwardRef(function Brief(props, ref) {
     try {
       const payload = {
         ...f,
-        files: await Promise.all(files.map(readFile))
+        files: await Promise.all(files.map(readFile)),
+        bat: batCode() || undefined
       };
       if (auto && plan) {
         setBusyNote('Uploading your plan\u2026');
@@ -2276,7 +2285,7 @@ const Brief = React.forwardRef(function Brief(props, ref) {
     onClick: back
   }, "Back"), React.createElement("p", {
     className: "dfine"
-  }, step === 2 ? "Price and timeline back within a day." : step === 1 ? 'One more step. All optional.' : 'Three short steps.'), React.createElement("button", {
+  }, step === 2 ? "Price and timeline back within a day." + (batCode() ? " Bat\u2019s favour (5% off) comes with it." : '') : step === 1 ? 'One more step. All optional.' : 'Three short steps.'), React.createElement("button", {
     className: "p-btn",
     type: "submit",
     disabled: busy || !stepValid(step)

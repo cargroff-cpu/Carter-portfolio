@@ -27,6 +27,8 @@ Carter Groff Design.html  The Scaffold, by Carter Groff — the public studio pa
 design.jsx                Studio page source: sections + the three-movement brief form. EDIT THIS, then run `npm run build:design`
 design.js                 GENERATED from design.jsx (precompiled, so the public page ships no in-browser Babel). Commit it with design.jsx
 cargroff-design.css       Studio page styles, built on parlor.css's tokens
+scaffold-cat.js           The 3D black cat (Bat) in the studio hero
+bat-mouse.js              Easter egg: Bat's toy mouse, hidden by the portrait; finding it gives a 5% code
 
 Scaffold Hub.html         The Backroom's entry (served at /backroom; /scaffold redirects there)
 Business Hub.html         The Business Hub CRM, door 02 of The Backroom — served at /business

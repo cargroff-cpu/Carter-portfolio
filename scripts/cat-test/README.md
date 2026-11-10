@@ -13,6 +13,9 @@ no-cursor run (rendering off) that checks every lamp post gets a visit and that 
 is never drawn over a post that is nearer than he is. Every scenario also fails if any bone
 jumps more than 70° in one frame (a pop), a swat-pacing scenario checks he doesn't swat on a
 loop, and a render check confirms his eyes are lit facing the viewer and dark from behind.
+Two more cover the scripted run-in (seen side-on while he runs across, no cursor-tracking
+mid-run) and the toy mouse from `bat-mouse.js` (a drop counts only on him, once seated; he
+looks at it, then at you, and slow-blinks).
 
     npm i -D playwright && npx playwright install chromium   # once
     npm run test:cat                                          # RUNS=5 VERBOSE=1 for more
