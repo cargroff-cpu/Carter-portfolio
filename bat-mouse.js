@@ -3,9 +3,10 @@
 // Bat, the black cat in the hero (scaffold-cat.js), has lost his toy mouse. In the "I'm Carter"
 // section it peeks out from behind the right edge of Carter's portrait, low down: just its
 // nose, an eye and an ear, small and dim. It gives one small budge the first time you scroll
-// onto it, and leans out when you hover. Click it and it ducks back behind the photo and is
-// stowed, while the whole mouse and a line in the page's own italic, "I know someone who might
-// like this.", float up over the page (no box) and fade away on their own. Click Bat while you have it
+// onto it, and leans out when you hover. Click it and it gives a startled shake, springs out from
+// behind the photo in a puff of dust, tumbles across the page in an arc and lands with a bounce
+// at the bottom of the screen, where a line in the page's own italic, "I know someone who might
+// like this.", comes in under it (no box); both fade away on their own. Click Bat while you have it
 // (he has to be sitting; the cursor turns to a pointer over him) and you give it back: it drops
 // down in front of him and stays there, he looks at it, then at you and slow-blinks, and a card
 // in the site's own style opens: he thanks you and says he'll have his owner take 5% off your
@@ -47,7 +48,15 @@ const CSS = `
 .bm-toy svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .bm-peek:hover .bm-toy, .bm-toy:focus-visible { left: -15px; }
 .bm-toy:focus-visible { outline: 1px dashed rgba(233,223,198,.6); outline-offset: -2px; }
-.bm-peek.bm-away .bm-toy { left: -40px; transition: left .25s ease-in; }
+/* clicked: a startled shake where it hides, before it springs out (pickUp) */
+.bm-peek.bm-away .bm-toy { animation: bm-shake .2s linear both; }
+@keyframes bm-shake { 0% { left: -20px; } 20% { left: -14px; transform: scaleX(-1) rotate(-7deg); } 45% { left: -17px; transform: scaleX(-1) rotate(5deg); }
+  70% { left: -13px; transform: scaleX(-1) rotate(-4deg); } 100% { left: -22px; transform: scaleX(-1) scale(1.08, .8); } }
+/* in the air: placed every frame by pickUp */
+.bm-fly { position: fixed; left: 0; top: 0; z-index: 2147483003; width: 34px; height: 27px; pointer-events: none; will-change: transform; }
+.bm-fly svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 4px 5px rgba(0,0,0,.55)); }
+.bm-puff { position: fixed; z-index: 2147483002; width: 7px; height: 7px; margin: -3px 0 0 -3px; border-radius: 50%; background: rgba(236,217,178,.5); pointer-events: none; animation: bm-puff .65s ease-out both; }
+@keyframes bm-puff { from { transform: scale(.4); opacity: .9; } to { transform: translate(var(--dx), var(--dy)) scale(1.7); opacity: 0; } }
 /* the one small budge, the first time you scroll onto it: a twitch out and back, a little tilt */
 .bm-peek.bm-budge .bm-toy { animation: bm-budge 1.1s cubic-bezier(.3, .7, .4, 1) both; }
 @keyframes bm-budge { 0% { left: -20px; } 30% { left: -15px; transform: scaleX(-1) rotate(-4deg); } 52% { left: -17px; transform: scaleX(-1) rotate(2deg); } 100% { left: -20px; transform: scaleX(-1); } }
@@ -83,13 +92,20 @@ const CSS = `
 /* the find: just the whole mouse and a line in the page's italic, floating over the page, which fade away on
    their own (no box) */
 .bm-found { position: fixed; left: 50%; bottom: 76px; z-index: 2147483002; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px;
-  pointer-events: none; text-align: center; text-shadow: 0 2px 14px #000, 0 0 3px #000; animation: bm-find 5.4s ease both; }
-.bm-found-art { display: block; width: 66px; height: 53px; animation: bm-pop 1s cubic-bezier(.3, 1.4, .5, 1) .15s both; }
+  pointer-events: none; text-align: center; text-shadow: 0 2px 14px #000, 0 0 3px #000; }
+/* nothing shows until the mouse lands (bm-go): then it squashes, hops once and settles, the line
+   comes in under it, and the lot fades away */
+.bm-found-art { display: block; width: 66px; height: 53px; opacity: 0; transform-origin: 50% 100%; }
 .bm-found-art svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 4px 5px rgba(0,0,0,.6)); }
-@keyframes bm-pop { from { transform: translateY(-16px) scale(.5) rotate(-12deg); opacity: 0; } 60% { opacity: 1; } to { transform: none; opacity: 1; } }
-.bm-found-h { display: block; white-space: nowrap; font: italic 400 27px/1.2 var(--display, "Cormorant Garamond", Georgia, serif); color: var(--ink, #ecd9b2); }
-@keyframes bm-find { 0% { opacity: 0; transform: translateX(-50%) translateY(14px); } 12% { opacity: 1; transform: translateX(-50%) translateY(0); }
-  68% { opacity: 1; transform: translateX(-50%) translateY(0); } 100% { opacity: 0; transform: translateX(-50%) translateY(-8px); } }
+.bm-found-art.bm-flip svg { transform: scaleX(-1); }
+.bm-found-h { display: block; opacity: 0; white-space: nowrap; font: italic 400 27px/1.2 var(--display, "Cormorant Garamond", Georgia, serif); color: var(--ink, #ecd9b2); }
+.bm-found.bm-go { animation: bm-out 5s ease both; }
+.bm-go .bm-found-art { opacity: 1; animation: bm-land .75s cubic-bezier(.3, 1.2, .5, 1) both; }
+.bm-go .bm-found-h { animation: bm-say .7s ease .3s both; }
+@keyframes bm-land { 0% { transform: scale(1.3, .6); } 30% { transform: translateY(-18px) scale(.9, 1.14) rotate(-7deg); } 56% { transform: translateY(0) scale(1.13, .85); }
+  76% { transform: translateY(-5px) scale(.98, 1.03) rotate(3deg); } 100% { transform: none; } }
+@keyframes bm-say { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes bm-out { 0%, 74% { opacity: 1; transform: translateX(-50%); } 100% { opacity: 0; transform: translateX(-50%) translateY(-8px); } }
 @media (max-width: 640px) { .bm-found-h { font-size: 22px; white-space: normal; max-width: calc(100vw - 48px); } }
 `;
 
@@ -149,22 +165,63 @@ function watchSpot() {
 }
 
 // the find: the whole mouse and a line in the page's own italic, floating over the page with no box.
+// Laid out at once (so the flying mouse knows where to land) but unseen until it gets there.
 // Nothing to click away: it all fades by itself after a few seconds
 function foundCard() {
   const c = document.createElement('div');
   c.className = 'bm-found'; c.setAttribute('role', 'status');
   c.innerHTML = `<span class="bm-found-art">${TOY}</span><span class="bm-found-h">I know someone who might like this.</span>`;
   document.body.appendChild(c);
-  c.addEventListener('animationend', (e) => { if (e.animationName === 'bm-find') c.remove(); });
+  c.addEventListener('animationend', (e) => { if (e.animationName === 'bm-out') c.remove(); });
+  return c;
 }
 
-// ── picked up: it ducks back behind the photo, and is stowed ──
+// ── picked up: it springs out from behind the photo, tumbles across the page and lands ──
+// A startled shake where it hides (0.2 s), then it leaps: a puff of dust at the photo's edge, one
+// full tumble through a high arc, growing as it comes, down to where the find shows. There it
+// lands with a squash and a hop (bm-land) and the line comes in under it. It is stowed from the
+// click, whatever happens to the animation.
+const FLY_MS = 820;
 function pickUp() {
-  peek.classList.add('bm-away');
-  const el = peek; peek = null; setTimeout(() => el.remove(), 300);
+  const el = peek, toy = el.querySelector('.bm-toy'); peek = null;
   put(HELD, { at: new Date().toISOString() });
   arm();
-  foundCard();
+  const card = foundCard(), art = card.querySelector('.bm-found-art');
+  el.classList.add('bm-away');
+  setTimeout(() => {
+    const a = toy.getBoundingClientRect(), b = art.getBoundingClientRect();
+    el.remove();
+    if (!card.isConnected) return;                       // already given to Bat: nothing to land on
+    const x0 = a.left + a.width / 2, y0 = a.top + a.height / 2, x1 = b.left + b.width / 2, y1 = b.top + b.height / 2;
+    const dir = x1 >= x0 ? 1 : -1, grow = b.width / a.width;
+    const H = Math.max(40, Math.min(Math.max(90, 0.4 * Math.hypot(x1 - x0, y1 - y0)), Math.min(y0, y1) - 24));   // the arc's height, kept on screen
+    art.classList.toggle('bm-flip', dir > 0);            // it lands facing the way it flew
+    puffs(a.right - 6, y0 + 4, dir);
+    const fly = document.createElement('div');
+    fly.className = 'bm-fly'; fly.setAttribute('aria-hidden', 'true'); fly.innerHTML = TOY;
+    document.body.appendChild(fly);
+    const t0 = performance.now();
+    (function frame(now) {
+      const t = Math.min(1, (now - t0) / FLY_MS);
+      if (!card.isConnected) { fly.remove(); return; }
+      const x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t - H * 4 * t * (1 - t);
+      const spin = dir * 360 * (1 - (1 - t) ** 2), k = 1 + (grow - 1) * t;
+      fly.style.transform = `translate(${(x - 17).toFixed(1)}px, ${(y - 13.5).toFixed(1)}px) rotate(${spin.toFixed(1)}deg) scale(${(dir > 0 ? -k : k).toFixed(3)}, ${k.toFixed(3)})`;
+      if (t < 1) return requestAnimationFrame(frame);
+      fly.remove(); card.classList.add('bm-go');
+    })(t0);
+  }, 200);
+}
+// a few specks of dust kicked up where it sprang from
+function puffs(x, y, dir) {
+  for (let i = 0; i < 6; i++) {
+    const p = document.createElement('span'), ang = (-150 + i * 24 + Math.random() * 14) * Math.PI / 180, d = 14 + Math.random() * 16;
+    p.className = 'bm-puff'; p.style.left = x + 'px'; p.style.top = y + 'px';
+    p.style.setProperty('--dx', (-dir * Math.cos(ang) * d * 0.6).toFixed(1) + 'px'); p.style.setProperty('--dy', (Math.sin(ang) * d).toFixed(1) + 'px');
+    p.style.animationDelay = (i * 18) + 'ms';
+    document.body.appendChild(p);
+    p.addEventListener('animationend', () => p.remove());
+  }
 }
 function arm() {
   if (armed) return; armed = true;

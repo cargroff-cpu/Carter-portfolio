@@ -42,10 +42,29 @@ const CHASE_M = 2.6;           // beyond this (metres) a cursor isn't worth gett
 const EYE_SCALE = 0.72;        // each eye shrunk across the face (not in depth): the model's eyes read huge at hero size
 const NOSE_M = 0.34, TAIL_M = 0.45;   // how far his nose and tail tip reach from the middle of his body (model space, metres)
 const TAIL_ARC = [0, 14, 12, 9, 7, 10, 14];   // trotting in: degrees of lift per tail bone, base to tip (a soft arc, the tip hooked over)
+const KEEL_FIRM = 0.9;         // share of the legs' pull on the midline of his underside handed to the torso (firmKeel)
+// His outline, reshaped at load (sculpt): [distance along the body (m, + toward the head), change].
+// back and belly are metres up (+) or down (-); girth is a scale on his width.
+const SHAPE = {
+  back: [[-0.22, 0], [-0.2, -0.012], [-0.16, -0.003], [-0.11, 0.004], [-0.03, -0.007], [0.03, -0.009], [0.09, 0.002], [0.13, 0.004], [0.18, 0]],
+  belly: [[-0.17, 0], [-0.1, 0.012], [-0.05, 0.02], [0, 0.008], [0.05, -0.006], [0.09, -0.012], [0.14, -0.008], [0.2, 0]],
+  girth: [[-0.2, 1], [-0.12, 1.04], [-0.04, 0.86], [0.05, 1.05], [0.12, 0.97], [0.17, 1]],
+};
+const RUMP_TAPER = 0.24;       // how much narrower his hindquarters are at the top than across the thighs
+const RUMP_ROUND_M = 0.016;    // how far the back corners of his rump are drawn in
+const NECK_SLIM = 0.1;        // how much narrower the neck is made
 const BELLY_FIRM = 0.85;       // share of the legs' pull on the belly skin handed to the torso (firmBelly)
 const BACK_STRAIGHT = 0.9;      // sitting: how far the spine bones are lined up (applyBack)
 const SIT_CHEST_UP = 8 * DEG;   // sitting: how far the chest tips up; more lifts the front paws off the ground
 const SIT_NECK_UP = 32 * DEG;   // sitting: how far the neck lifts, so his head is held above his shoulders
+const SIT_HEAD_UP = 0.15;      // sitting: share of the neck's lift the head takes too (chin a little up)
+// Sitting: where each back leg is put (applyHaunch), in his own space (metres; x out from his middle, y up from the
+// ground, z forward). rest / ball: the hock and the ball of the foot as he stands; hock: the hock as he sits (z from the hips); thigh / foot: how far
+// the upper leg and the lower leg are tipped forward from standing (degrees); splay: how far the leg turns out.
+const HAUNCH = { rest: [0.047, 0.07, -0.165], ball: [0.05, 0.025, -0.165], hock: [0.05, 0.028, 0.005], thigh: -20, foot: -80, splay: 7 };
+const TOE_Y = 0.03;            // standing, a back foot below this height (m) is toes: given to the paw bone (giveToes)
+const TROT_BOB_M = 0.005;      // trotting in: how far his body rises with each step (model metres; he stands 0.29 at the back)
+const TROT_SWAY = 2.2 * DEG;   // trotting in: how far his spine bends side to side with the stride
 const BELLY_TUCK_M = 0.045;    // how far the belly is drawn up in a full crouch
 const RIM_I = 1.2;             // the cool rim light that holds the silhouette (was 2.8 on the first, smoother model)
 const HAZE_K = 0.6;            // share of each fog bank's haze laid on the cat
@@ -492,8 +511,8 @@ class Cat {
         // before). Back faces of an inside-out mesh are its true outside, and three flips the
         // normals of back faces for lighting, so this one setting fixes both.
         m.side = THREE.BackSide;
-        if (o.isSkinnedMesh) { this.firmChest(o); this.firmBelly(o); }
-        if (o.isSkinnedMesh && !(m.alphaTest > 0)) this.addBellyTuck(THREE, o);
+        if (o.isSkinnedMesh) { this.giveToes(o); this.firmKeel(o); this.firmChest(o); this.firmBelly(o); }
+        if (o.isSkinnedMesh && !(m.alphaTest > 0)) { this.addBellyTuck(THREE, o); this.sculpt(o); }
         // The alpha fur shells were extruded along those inward normals, so they sit inside
         // the body and can never be seen once it is drawn the right way out: skip them.
         if (m.alphaTest > 0) o.visible = false;
@@ -510,6 +529,11 @@ class Cat {
     this.back = ['spine_01', 'spine_02', 'spine_03', 'chest'].map((n) => this.model.getObjectByName(n)).filter(Boolean);   // straightened when he sits (applyBack)
     this.backMore = ['neck_01', 'neck_02', 'head', 'fl_scap_L', 'fl_scap_R'].map((n) => this.model.getObjectByName(n)).filter(Boolean);
     this.frameNo = 0;
+    this.model.traverse((o) => {   // each bone as it is in the standing rest shape (applyHaunch places leg pieces from it)
+      if (!o.isSkinnedMesh || !o.skeleton) return;
+      o.skeleton.bones.forEach((b, i) => { if (!b.userData.bindM) b.userData.bindM = o.skeleton.boneInverses[i].clone().invert(); });
+    });
+    this.hind = ['L', 'R'].map((sd) => ['hl_thigh_', 'hl_shin_', 'hl_foot_', 'hl_paw_'].map((n) => this.model.getObjectByName(n + sd))).filter((leg) => leg.every(Boolean));   // folded properly when he sits (applyHaunch)
     this.tailBase = ['tail_01', 'tail_02', 'tail_03'].map((n) => this.model.getObjectByName(n)).filter(Boolean);   // raised as he trots in
     for (const n of Object.keys(this.bones)) this.bones[n] = this.model.getObjectByName(n);
     this.tail = ['tail_04', 'tail_05', 'tail_06', 'tail_07'].map((n) => this.model.getObjectByName(n)).filter(Boolean);
@@ -592,6 +616,158 @@ class Cat {
       SW.setComponent(i, best, SW.getComponent(i, best) + moved);
     }
     SW.needsUpdate = true;
+  }
+
+  // His back toes had no bone of their own: the paw bones carry at most half of any vertex, the
+  // rest is the lower leg's. Standing it doesn't matter. Sitting, the lower leg lies down along
+  // the ground and the toes went with it, pointing up in the air. Everything at toe height on a
+  // back foot (standing, below TOE_Y) is handed to that side's paw bone, fading in over 2 cm, so
+  // the toes can stay flat on the ground while the leg above them folds (applyHaunch).
+  giveToes(mesh) {
+    const g = mesh.geometry, P = g.attributes.position, SI = g.attributes.skinIndex, SW = g.attributes.skinWeight;
+    if (!P || !SI || !SW || g.userData.toesGiven) return;
+    g.userData.toesGiven = true;
+    const names = mesh.skeleton.bones.map((b) => b.name);
+    for (let v = 0; v < P.count; v++) {
+      let foot = 0, side = ''; const inf = new Map();
+      for (let k = 0; k < 4; k++) {
+        const bi = SI.getComponent(v, k), w = SW.getComponent(v, k); if (w <= 0) continue;
+        inf.set(bi, (inf.get(bi) || 0) + w);
+        const mm = /^hl_(foot|paw)_([LR])$/.exec(names[bi]); if (mm) { foot += w; side = mm[2]; }
+      }
+      if (foot < 0.5) continue;
+      const f = sm((TOE_Y + 0.01 - P.getY(v)) / 0.02); if (f <= 0) continue;
+      const paw = names.indexOf('hl_paw_' + side); if (paw < 0) continue;
+      let moved = 0;
+      for (const [bi, w] of inf) if (bi !== paw) { inf.set(bi, w * (1 - f)); moved += w * f; }
+      inf.set(paw, (inf.get(paw) || 0) + moved);
+      const top = [...inf].sort((a, b) => b[1] - a[1]).slice(0, 4), sum = top.reduce((t, x) => t + x[1], 0) || 1;
+      for (let k = 0; k < 4; k++) { SI.setComponent(v, k, top[k] ? top[k][0] : 0); SW.setComponent(v, k, top[k] ? top[k][1] / sum : 0); }
+    }
+    SI.needsUpdate = true; SW.needsUpdate = true;
+  }
+
+  // The strip of skin along the midline of his underside (the breastbone between the front legs,
+  // and the groin between the back legs) was tied to the leg bones only, shared between left and
+  // right, with no torso bone at all. The two legs swing opposite ways, so that strip was dragged
+  // both ways at once and collapsed into a flat plate with hard corners that hung under him and
+  // changed shape every stride: the boxy belly. Where a vertex is shared between a left and a
+  // right leg, most of the legs' pull is handed to the torso bone over it (the breastbone to the
+  // chest, the groin to the hips), fading out as the skin becomes one leg's own.
+  firmKeel(mesh) {
+    const g = mesh.geometry, P = g.attributes.position, SI = g.attributes.skinIndex, SW = g.attributes.skinWeight;
+    if (!P || !SI || !SW || g.userData.keelFirmed) return;
+    g.userData.keelFirmed = true;
+    const bones = mesh.skeleton.bones, names = bones.map((b) => b.name), at = (n) => names.indexOf(n);
+    const zOf = (n) => { const i = at(n); return i < 0 ? null : mesh.skeleton.boneInverses[i].clone().invert().elements[14]; };
+    const chain = ['hips', 'spine_01', 'spine_02', 'spine_03', 'chest'].map((n) => ({ i: at(n), z: zOf(n) })).filter((b) => b.i >= 0);
+    if (chain.length < 2) return;
+    const isLeg = (n) => /^(fl_(upper|lower)|hl_(thigh|shin))_[LR]$/.test(n);
+    for (let v = 0; v < P.count; v++) {
+      let L = 0, R = 0; const inf = new Map();
+      for (let k = 0; k < 4; k++) {
+        const bi = SI.getComponent(v, k), w = SW.getComponent(v, k); if (w <= 0) continue;
+        inf.set(bi, (inf.get(bi) || 0) + w);
+        if (isLeg(names[bi])) { if (names[bi].endsWith('_L')) L += w; else R += w; }
+      }
+      if (L + R <= 0) continue;
+      // the floor of the chest, between the front legs at elbow height, was the forearms' too
+      const x = Math.abs(P.getX(v)), y = P.getY(v), zc = P.getZ(v);
+      const floor = sm((0.032 - x) / 0.016) * sm((y - 0.112) / 0.014) * sm((zc - 0.04) / 0.03);
+      const f = KEEL_FIRM * Math.max(floor, L > 0 && R > 0 ? sm((2 * Math.min(L, R) / (L + R)) / 0.7) : 0);
+      if (f <= 0.01) continue;
+      // the torso bone over this vertex, shared with its neighbour near a joint
+      const z = P.getZ(v); let j = 0; while (j < chain.length - 1 && z > chain[j + 1].z) j++;
+      const z0 = chain[j].z, z1 = j < chain.length - 1 ? chain[j + 1].z : z0 + 0.1, u = clamp((z - z0) / (z1 - z0), 0, 1);
+      const share = [[chain[j].i, 1]];
+      if (u < 0.5 && j > 0) { share[0][1] = 0.5 + u; share.push([chain[j - 1].i, 0.5 - u]); }
+      else if (u > 0.5 && j < chain.length - 1) { share[0][1] = 1.5 - u; share.push([chain[j + 1].i, u - 0.5]); }
+      let moved = 0;
+      for (const [bi, w] of inf) if (isLeg(names[bi])) { inf.set(bi, w * (1 - f)); moved += w * f; }
+      for (const [bi, w] of share) inf.set(bi, (inf.get(bi) || 0) + moved * w);
+      const top = [...inf].sort((p, q) => q[1] - p[1]).slice(0, 4), sum = top.reduce((t, x) => t + x[1], 0) || 1;
+      for (let k = 0; k < 4; k++) { SI.setComponent(v, k, top[k] ? top[k][0] : 0); SW.setComponent(v, k, top[k] ? top[k][1] / sum : 0); }
+    }
+    SI.needsUpdate = true; SW.needsUpdate = true;
+  }
+
+  // His trunk was a brick: the line of his back was dead flat from hips to shoulders (0.290 to
+  // 0.295 all the way), his belly line ran parallel to it, and he was the same width from end to
+  // end. In silhouette, which is all a black cat is, that is a rectangle on legs. The rest shape is
+  // reshaped at load into a cat's outline (SHAPE, by distance along the body): the back dips a
+  // little behind the shoulders and rises over the hips, the rump rounds down to the tail, the
+  // chest is deeper between the front legs and the belly tucks up toward the back legs, and he has
+  // ribs and a waist seen from the front or above. The neck is slimmer under the jaw so the head
+  // reads as a head. Only the trunk moves (by how much of each vertex is the torso's), so legs,
+  // head, face and tail keep their shape and the eyes still sit in their sockets.
+  sculpt(mesh) {
+    const g = mesh.geometry, P = g.attributes.position, SI = g.attributes.skinIndex, SW = g.attributes.skinWeight;
+    if (!P || !SI || !SW || g.userData.sculpted) return;
+    g.userData.sculpted = true;
+    const names = mesh.skeleton.bones.map((b) => b.name);
+    const curve = (pts, z) => {
+      if (z <= pts[0][0]) return pts[0][1];
+      for (let i = 1; i < pts.length; i++) if (z <= pts[i][0]) return lerp(pts[i - 1][1], pts[i][1], sm((z - pts[i - 1][0]) / (pts[i][0] - pts[i - 1][0])));
+      return pts[pts.length - 1][1];
+    };
+    for (let v = 0; v < P.count; v++) {
+      let torso = 0, neck = 0, hind = 0;
+      for (let k = 0; k < 4; k++) {
+        const n = names[SI.getComponent(v, k)], w = SW.getComponent(v, k);
+        if (/^(hips|tail_01|hl_thigh_[LR])$/.test(n)) hind += w;
+        if (/^(hips|spine_0\d|chest|tail_01)$/.test(n)) torso += w;
+        if (/^neck_0\d$/.test(n)) { neck += w; torso += w; }
+      }
+      if (torso <= 0.02 && hind <= 0.02) continue;
+      const k = sm(torso / 0.6);
+      let x = P.getX(v), y = P.getY(v), z = P.getZ(v);
+      // Hindquarters: seen from behind or three-quarters on they were a block, as wide over the
+      // hips as across the thighs, with a flat back face and square corners. Narrower toward
+      // the top (a pelvis, not a box lid), and the two back corners drawn in round the tail.
+      const hk = sm(hind / 0.6);
+      if (hk > 0 && z < -0.05) {
+        const ax = Math.abs(x);
+        x *= 1 - hk * RUMP_TAPER * sm((y - 0.225) / 0.06) * sm((-0.05 - z) / 0.05);
+        z += hk * RUMP_ROUND_M * sm((-0.13 - z) / 0.05) * sm((ax - 0.015) / 0.035) * sm((y - 0.13) / 0.04);
+      }
+      const up = sm((y - 0.2) / 0.07), down = sm((0.215 - y) / 0.06);
+      y += k * (up * curve(SHAPE.back, z) + down * curve(SHAPE.belly, z));
+      x *= 1 + k * (curve(SHAPE.girth, z) - 1);
+      if (neck > 0) {                                   // a neck: slimmer, and tucked in under the jaw
+        const nk = sm(neck / 0.6);
+        x *= 1 - NECK_SLIM * nk;
+        y += NECK_SLIM * 0.6 * nk * sm((0.255 - y) / 0.05) * 0.06;
+      }
+      P.setXYZ(v, x, y, z);
+    }
+    P.needsUpdate = true;
+    g.computeBoundingSphere();
+    this.weldNormals(g);
+  }
+  // Normals again, for the new shape, and shared between vertices that sit on the same spot. The
+  // mesh is split along its texture seams and each side had its own normals, which lit as a hard
+  // line round the shoulders and behind the front legs. (Triangles wind inward on this mesh and so
+  // did its normals: the same convention is kept, see the BackSide note.)
+  weldNormals(g) {
+    const P = g.attributes.position, N = g.attributes.normal, I = g.index; if (!P || !N || !I) return;
+    const key = (i) => Math.round(P.getX(i) * 2e4) + ',' + Math.round(P.getY(i) * 2e4) + ',' + Math.round(P.getZ(i) * 2e4);
+    const acc = new Map(), keys = new Array(P.count);
+    for (let i = 0; i < P.count; i++) { keys[i] = key(i); if (!acc.has(keys[i])) acc.set(keys[i], [0, 0, 0]); }
+    let flip = 0;
+    for (let t = 0; t < I.count; t += 3) {
+      const a = I.getX(t), b = I.getX(t + 1), c = I.getX(t + 2);
+      const ux = P.getX(b) - P.getX(a), uy = P.getY(b) - P.getY(a), uz = P.getZ(b) - P.getZ(a);
+      const vx = P.getX(c) - P.getX(a), vy = P.getY(c) - P.getY(a), vz = P.getZ(c) - P.getZ(a);
+      const n = [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx];           // area-weighted
+      flip += n[0] * N.getX(a) + n[1] * N.getY(a) + n[2] * N.getZ(a);
+      for (const i of [a, b, c]) { const s = acc.get(keys[i]); s[0] += n[0]; s[1] += n[1]; s[2] += n[2]; }
+    }
+    const sg = flip < 0 ? -1 : 1;                       // whichever way the mesh's own normals went
+    for (let i = 0; i < P.count; i++) {
+      const s = acc.get(keys[i]), l = Math.hypot(s[0], s[1], s[2]);
+      if (l > 1e-12) N.setXYZ(i, sg * s[0] / l, sg * s[1] / l, sg * s[2] / l);
+    }
+    N.needsUpdate = true;
   }
 
   // The belly wobbled as he walked and ran: the skin under the body, between the front and back
@@ -904,6 +1080,7 @@ class Cat {
     this.body.scale.setScalar(this.vis);
     this.body.updateMatrixWorld(true);
     this.applyBack();
+    this.applyHaunch();
     this.applyStrideBob();
     this.applyGaze(dt);
     this.applyTail(dt);
@@ -971,6 +1148,7 @@ class Cat {
     for (const b of this.tailBase || []) if (b.userData.animQ) b.quaternion.copy(b.userData.animQ);
     for (const b of this.back || []) if (b.userData.animQ) b.quaternion.copy(b.userData.animQ);
     for (const b of this.backMore || []) if (b.userData.animQ) b.quaternion.copy(b.userData.animQ);
+    for (const leg of this.hind || []) for (const b of leg) { if (b.userData.animQ) b.quaternion.copy(b.userData.animQ); if (b.userData.animP) b.position.copy(b.userData.animP); }
     for (const m of this.morphs) if (m.userData.animInf) for (let i = 0; i < 3; i++) m.morphTargetInfluences[i] = m.userData.animInf[i];
   }
 
@@ -1018,21 +1196,81 @@ class Cat {
     turn(chest, up);
     scap.forEach((b, i) => { b.parent.getWorldQuaternion(T.qp); b.quaternion.copy(T.qp.invert().multiply(keep[i])); b.updateMatrixWorld(true); });
     turn(M[0], nk * 0.6); turn(M[1], nk * 0.4);
-    // the head ends up level as the clip had it (plus a touch of the lift)
-    d.setFromAxisAngle(axis, -nk * 0.15); hq.premultiply(d);
+    // the head ends up nearly level as the clip had it, with a share of the lift: kept dead level
+    // over a neck leaned back this far, the skin behind the skull bunched into a hood
+    d.setFromAxisAngle(axis, -nk * SIT_HEAD_UP); hq.premultiply(d);
     head.parent.getWorldQuaternion(T.qp); head.quaternion.copy(T.qp.invert().multiply(hq)); head.updateMatrixWorld(true);
   }
-  // trotting in, the head nods a little with each step (two nods a stride); the neck was
-  // snapshotted by applyBack, so unlayer() takes it back off
+  // Sitting, his back legs folded in under him and all but disappeared. The sit clip lays hip,
+  // knee and hock at one height with the foot tucked back under the rump, and on this rig the
+  // bones don't run through the limbs they move (the leg bones sit ~4 cm forward of the mesh, the
+  // thigh bone is a 4 cm stub), so aiming joints got nowhere. Instead each part of the leg is
+  // placed as a piece, starting from how it is shaped standing: the upper leg (everything the
+  // "shin" bone carries, hip to hock) is tipped forward about the hock into a haunch lying along
+  // his flank, the hock is set down on the ground beside the rump, the lower leg (the "foot"
+  // bone's part) is laid forward from it along the ground, and the toes are kept flat as they
+  // are when he stands. So a sitting cat's back leg shows: a round thigh, and a foot on the
+  // ground reaching forward toward his front paws. Weighted by how much of the pose is a sit
+  // (from the clip's pose to this one). Bones are snapshotted first and unlayer() puts them back.
+  applyHaunch() {
+    const legs = this.hind; if (!legs || !legs.length || !legs[0][1].userData.bindM) return;
+    for (const leg of legs) for (const b of leg) {
+      (b.userData.animQ || (b.userData.animQ = b.quaternion.clone())).copy(b.quaternion);
+      (b.userData.animP || (b.userData.animP = b.position.clone())).copy(b.position);
+    }
+    const s = (this.haunch ?? 1) * this.sitAmount(); if (s < 0.01) return;
+    const T3 = this.T, V = T3.Vector3, Q = T3.Quaternion, M = T3.Matrix4, H = this.haunchSet || HAUNCH;
+    const hips = this.model.getObjectByName('hips'); if (!hips) return;
+    const bw = this.body.matrixWorld, inv = new M().copy(bw).invert();
+    const hz = hips.getWorldPosition(new V()).applyMatrix4(inv).z;            // where the clip has sat him (his own space)
+    const m = new M(), g = new M(), g0 = new M(), r = new M(), p = new V(), q = new Q(), sc = new V(), p0 = new V(), q0 = new Q();
+    // put a bone where a rigid move of its standing shape (turn R about `pivot`, pivot carried to `to`) leaves it
+    const set = (bone, R, pivot, to) => {
+      g.makeTranslation(to.x, to.y, to.z).multiply(R).multiply(m.makeTranslation(-pivot.x, -pivot.y, -pivot.z)); g0.copy(g);
+      m.copy(bw).multiply(g).multiply(bone.userData.bindM).decompose(p, q, sc);     // world
+      bone.matrixWorld.decompose(p0, q0, sc);
+      p0.lerp(p, s); q0.slerp(q, s);
+      m.compose(p0, q0, sc).premultiply(g.copy(bone.parent.matrixWorld).invert()).decompose(bone.position, bone.quaternion, sc);
+      bone.updateMatrixWorld(true);
+    };
+    for (const [, shin, foot, paw] of legs) {
+      const sx = shin.userData.bindM.elements[12] >= 0 ? 1 : -1;
+      const pivot = new V(sx * H.rest[0], H.rest[1], H.rest[2]);                 // the hock, standing
+      const to = new V(sx * H.hock[0], H.hock[1], hz + H.hock[2]);                // the hock, sitting
+      const yaw = new M().makeRotationY(sx * H.splay * DEG);
+      set(shin, r.copy(yaw).multiply(m.makeRotationX(H.thigh * DEG)), pivot, to);
+      set(foot, r.copy(yaw).multiply(m.makeRotationX(H.foot * DEG)), pivot, to);
+      const gFoot = new M().copy(g0);
+      // the toes: flat on the ground as they are standing (only turned out with the leg), carried to
+      // wherever the laid-down lower leg now ends (the ball of the foot)
+      const ball = new V(sx * H.ball[0], H.ball[1], H.ball[2]);
+      set(paw, yaw, ball, ball.clone().applyMatrix4(gFoot));
+    }
+  }
+
+  // Trotting in, his body is not a plank carried along by four legs. With each step it rises and
+  // settles a little (two bobs a stride), the spine bends gently from side to side with the
+  // stride (the shoulders one way, the neck back the other, so the head stays on its line), and
+  // the head nods. All small: more reads as a wobble at hero size. The bones were snapshotted by
+  // applyBack, so unlayer() takes it back off.
   applyStrideBob() {
-    const w = this.tailWalk || 0; if (w < 0.01) return;
-    const T = this.tmp, n = this.backMore[0]; if (!n) return;
-    const a = w * 2.5 * DEG * Math.sin(4 * Math.PI * this.motor.loco.p + 1.2);
+    const w = this.tailWalk || 0;
+    this.model.position.y = 0;
+    if (w < 0.01) return;
+    const T = this.tmp, n = this.backMore[0], sp = this.back[0], ch = this.back[3]; if (!n || !sp || !ch) return;
+    const ph = 2 * Math.PI * this.motor.loco.p;
+    this.model.position.y = w * TROT_BOB_M * (0.5 + 0.5 * Math.sin(2 * ph + 0.6));
+    this.model.updateMatrixWorld(true);
     this.body.getWorldQuaternion(T.q3);
-    T.v2.set(1, 0, 0).applyQuaternion(T.q3);
-    T.q.setFromAxisAngle(T.v2, a);
-    n.getWorldQuaternion(T.q2); T.q2.premultiply(T.q);
-    n.parent.getWorldQuaternion(T.qp); n.quaternion.copy(T.qp.invert().multiply(T.q2)); n.updateMatrixWorld(true);
+    const rot = (b, ax, a) => {
+      T.q.setFromAxisAngle(ax, a);
+      b.getWorldQuaternion(T.q2); T.q2.premultiply(T.q);
+      b.parent.getWorldQuaternion(T.qp); b.quaternion.copy(T.qp.invert().multiply(T.q2)); b.updateMatrixWorld(true);
+    };
+    const up = T.v2.set(0, 1, 0).applyQuaternion(T.q3), sway = w * TROT_SWAY * Math.sin(ph + 0.4);
+    rot(sp, up, sway); rot(ch, up, -0.35 * sway); rot(n, up, -0.65 * sway);
+    const side = T.v2.set(1, 0, 0).applyQuaternion(T.q3);
+    rot(n, side, w * 2.5 * DEG * Math.sin(2 * ph + 1.2));
   }
   // how much of the current pose is a sit (0..1), ramping through stand_to_sit / sit_to_stand
   sitAmount() {
@@ -1065,7 +1303,8 @@ class Cat {
     }
     if (this.scripted) this.watchCursor(dt);
     const want = this.gazeTarget(T.v);
-    const allow = this.motor.cur in GAZE_ALLOW ? GAZE_ALLOW[this.motor.cur] : 1;
+    // (talking, he holds your eye through a slow blink too: the blink clip used to loosen it to 0.8)
+    const allow = this.speaking && this.posture === 'SIT' ? 1 : this.motor.cur in GAZE_ALLOW ? GAZE_ALLOW[this.motor.cur] : 1;
     // Something behind him isn't looked at over the shoulder like an owl: past ~100° off his
     // nose the head lets go (fully by 145°). It is the body's job to turn round for it.
     const behind = want ? 1 - sm((Math.abs(Math.atan2(want.p.x, want.p.z)) - 100 * DEG) / (45 * DEG)) : 0;

@@ -1207,6 +1207,56 @@ under makes it look up and move.
   - *Looking at you.* While the dialog is open the cat is `speaking`: `gazeTarget` returns the
     viewer at full weight, ahead of idle glances and the cursor, and lets go when it closes
     (`ScaffoldCat.speak`). Test: "talking".
+- **A cat's outline, not a brick; a trot with some give; a mouse that leaps (2026-11-10).**
+  Measured on big clay-coloured renders of every pose (side, three-quarters, behind), since a
+  black cat is all silhouette.
+  - *Why he was boxy.* In the rest shape the line of his back was dead flat from hips to
+    shoulders (0.290–0.295 m all the way), the belly line ran parallel to it, and he was the same
+    width from end to end: a rectangle on legs. `sculpt()` reshapes the trunk at load (`SHAPE`:
+    change by distance along the body): the back dips behind the shoulders and rises over the
+    hips, the rump rounds down to the tail, the chest is deeper between the front legs, the belly
+    tucks up toward the back legs, and he has ribs and a waist. The hindquarters taper toward
+    the top and their back corners are drawn in (`RUMP_TAPER`, `RUMP_ROUND_M`): from behind they
+    were a block with a flat back face. The neck is a little slimmer (`NECK_SLIM`). Only
+    torso-weighted skin moves, so legs, head, face, eyes and tail are untouched.
+  - *The plate under his chest.* The whole midline of his underside (breastbone and groin) was
+    weighted to the leg bones only, shared left and right, with no torso bone; the floor of the
+    chest between the front legs belonged to the forearms. Each stride dragged it both ways
+    into a flat plate with hard corners. `firmKeel` hands 90% (`KEEL_FIRM`) of that to the chest
+    / spine / hips bone over each vertex.
+  - *Shoulder seam.* The mesh is split along its texture seams with separate normals each side,
+    which lit as a hard line round the shoulders. `weldNormals` recomputes them for the new
+    shape, shared across coincident vertices (same inward convention as the mesh).
+  - *Trot.* His body was carried like a plank. `applyStrideBob` now also lifts it a little with
+    each step (`TROT_BOB_M`, 5 mm on a 29 cm back) and bends the spine gently side to side with
+    the stride (`TROT_SWAY`, 2.2°; the neck counters it so the head holds its line). Small on
+    purpose.
+  - *Not changed:* the sit's back and neck (tuned earlier). Tipping the head up with the neck was
+    tried for the bump behind his ears in side view and made no visible difference.
+  - *Talking.* The "talking" test failed about one run in four before this work: a slow blink
+    while his dialog was open loosened his gaze to 0.8. Speaking, the gaze now stays at full.
+  - *The mouse.* Clicking it no longer just slides it behind the photo. It gives a startled
+    shake (0.2 s), springs out in a puff of dust, tumbles once through an arc across the page,
+    growing as it comes (`pickUp`, 0.82 s, placed per frame), and lands with a squash and a hop
+    where the find shows; the line comes in under it once it has landed. Same wording, same
+    place, still fades on its own, still stowed from the moment of the click.
+  - Suite and size sweep pass.
+- **Sitting: back legs you can see (2026-11-10).** The sit clip lays hip, knee and hock at one
+  height with the foot tucked back under the rump, so the back legs folded in and all but
+  disappeared. Two tries at aiming the joints failed (owner: "they fold in and disappear"): on
+  this rig the leg bones don't run through the limbs they move (about 4 cm forward of the mesh),
+  the thigh bone is a 4 cm stub, and the back toes had no bone of their own, so a lower leg laid
+  flat took the toes up into the air.
+  - `giveToes` (at load): everything at toe height on a back foot (standing, below `TOE_Y`) is
+    handed to that side's paw bone.
+  - `applyHaunch` (weighted by how much of the pose is a sit) places each part of the leg as a
+    piece, starting from its standing shape: the upper leg is tipped forward about the hock into
+    a thigh lying along his flank, the hock is set on the ground beside the rump, the lower leg
+    is laid forward along the ground, and the toes stay flat at its end. All in `HAUNCH`.
+  - Checked on grey renders from six sides and in silhouette: a thigh, a lower leg on the
+    ground and a paw reaching toward the front paws, from both sides; the sit-down eases into
+    it. Suite and size sweep pass. ("Seated life" and "stops when the cursor goes still" can each
+    fail once in a full pass and pass on repeat, with and without this: random/timing checks.)
 - **The crouch belly (2026-11-09).** Crouched (stalk, wiggle, the pounce
   wind-up), his belly hung as a flat, sharp-cornered plate: a triangle in side
   view. The body drops ~5 cm while both upper legs fold hard (front 97°, back 75°)
