@@ -1192,9 +1192,10 @@ under makes it look up and move.
   - *Budge.* The first time the peeking mouse scrolls into view (90% visible) it waits 1.8 s
     and gives one small twitch out and back with a little tilt (`bm-budge`), once per visit:
     easy to miss on purpose.
-  - *Found card.* Clicking it still ducks it behind the photo and stows it, and now a card
-    slides up showing the whole mouse, "Found / A toy mouse", and "I know someone who might
-    like this." in handwriting. Nothing to click away: it fades by itself after ~5 s.
+  - *The find.* Clicking it still ducks it behind the photo and stows it. The whole mouse and
+    "I know someone who might like this." in handwriting then float up over the page, with no
+    box, border or label (a framed "Found / A toy mouse" card was tried and dropped), and fade
+    away together after ~5 s. Nothing to click away.
   - *Bat's dialog.* The pixel game box (Press Start 2P, thick white border) is gone. It is a
     card in the page's own style: dark wood gradient, a brass hairline with an inner rule,
     Cormorant italic, a small amber "BAT" label with a rule, each word fading in a beat after
