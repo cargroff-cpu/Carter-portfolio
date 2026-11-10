@@ -1,7 +1,7 @@
 # Hero cat tests
 
 `scaffold-cat.js` (the black cat in the Scaffold hero) is driven frame by frame. The page's default is
-the pre-scripted cat (runs out from behind a front post and sits); the behaviour scenarios below switch
+the pre-scripted cat (runs in from the side of the screen and sits beside a front post); the behaviour scenarios below switch
 on the free-roaming cat (`cat.scripted = false`), and one scenario checks the scripted one. It is in
 headless Chromium with a scripted cursor, and each scenario is checked pass/fail:
 reaction time, what it does (chase / stalk / wiggle / pounce / swat), that it
@@ -17,7 +17,7 @@ loop, and a render check confirms his eyes are lit facing the viewer and dark fr
     npm i -D playwright && npx playwright install chromium   # once
     npm run test:cat                                          # RUNS=5 VERBOSE=1 for more
 
-`npm run test:cat:sizes` plays his entrance on each front post at six window sizes (900×640 up to
+`npm run test:cat:sizes` plays his entrance (in from the side, to each front post) at six window sizes (900×640 up to
 2560×1440) in the real page, with pixel checks: nothing of him shows at the start, he is revealed
 gradually, he really crosses the screen, and he ends up in the lane. `SIZES=1440x900,1920x1080` and
 `ONLY=mid` narrow it.

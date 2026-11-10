@@ -209,16 +209,19 @@ const SCEN = [
       console.log(`${problems.length ? 'FAIL' : 'PASS'}  intro: out of sight behind a post, walks out along the lane, looks at you [run ${run + 1}]  ${res.post} looked@${res.looked} out@${res.out}  ${problems.length ? '→ ' + problems.join('; ') : ''}`);
     }
   }
-  // ── the pre-scripted cat (the default): runs out from behind a front post, sits beside it, watches a close cursor ──
+  // ── the pre-scripted cat (the default): runs in from the side of the screen, sits beside the front post, watches a close cursor ──
   if (!ONLY || 'scripted'.includes(ONLY)) {
     for (let run = 0; run < Math.min(RUNS, 4); run++) {
       const res = await page.evaluate((run) => {
         const c = window.__cat, L = c.lane, T = c.T; c.manual = true; c.scripted = true;
-        c.ptr.cx = -1; c.glance = null; c.gazeOverride = null; c.peek = null;
+        c.ptr.cx = -1; c.glance = null; c.gazeOverride = null; c.peek = null; c.seatPost = null;
         c.introPick = (pool) => pool[run % pool.length];
         c.brain.swap('life', c.brain.life(true));
-        const post = c.peek && c.peek.lamp, rect = c.hero.getBoundingClientRect();
+        const post = c.seatPost, rect = c.hero.getBoundingClientRect(), st0 = L.toScreen(c.X, c.Z);
         const r = { post: post ? post.row + (post.side < 0 ? '-left' : '-right') : 'none', sat: -1, ran: 0, pop: 0, stood: 0, moves: [], gazeNear: 0, gazeFar: 1, aim: 180 };
+        // he starts off the edge of the hero (which clips him) on the post's side, nose and all
+        r.offscreen = st0.x + 0.36 * st0.ppm < 0 || st0.x - 0.36 * st0.ppm > L.W;
+        r.sameSide = post && (st0.x < L.W / 2) === (post.side < 0);
         const bones = []; c.model.traverse(o => { if (o.isBone) bones.push(o); });
         const prev = bones.map(() => new T.Quaternion()), q = new T.Quaternion(), bq = new T.Quaternion();
         const head = c.model.getObjectByName('head'), hp = new T.Vector3(), hf = new T.Vector3(), tp = new T.Vector3();
@@ -253,7 +256,8 @@ const SCEN = [
         return r;
       }, run);
       const problems = [];
-      if (!/^near/.test(res.post)) problems.push('did not start behind a front post (' + res.post + ')');
+      if (!/^near/.test(res.post)) problems.push('did not head for a front post (' + res.post + ')');
+      if (!res.offscreen || !res.sameSide) problems.push('did not start off the edge of the screen on the post\'s side');
       if (!(res.ran > 0.45)) problems.push('walked out instead of running (' + res.ran.toFixed(2) + ' m/s)');
       if (!(res.sat > 2 && res.sat < 9)) problems.push('not sitting by 9 s (' + res.sat + ')');
       if (!(res.gapM > 0.15 && res.gapM < 0.9)) problems.push('not sitting beside the post (' + (res.gapM || 0).toFixed(2) + ' m off its edge)');
@@ -264,7 +268,7 @@ const SCEN = [
       if (res.peek || !res.inLane) problems.push('not in the lane, clear of the post');
       if (res.pop > 70) problems.push('pose popped ' + res.pop.toFixed(0) + '°/frame');
       if (problems.length) fails++;
-      console.log(`${problems.length ? 'FAIL' : 'PASS'}  scripted: runs out from behind a front post, sits beside it, looks at a close cursor [run ${run + 1}]  ${res.post} sat@${res.sat} ${(res.gapM || 0).toFixed(2)} m off the post, head ${res.aim.toFixed(0)}° off the cursor  ${problems.length ? '→ ' + problems.join('; ') : ''}`);
+      console.log(`${problems.length ? 'FAIL' : 'PASS'}  scripted: runs in from the side of the screen, sits beside the front post, looks at a close cursor [run ${run + 1}]  ${res.post} sat@${res.sat} ${(res.gapM || 0).toFixed(2)} m off the post, head ${res.aim.toFixed(0)}° off the cursor  ${problems.length ? '→ ' + problems.join('; ') : ''}`);
     }
   }
   // ── perspective: on screen he moves the way his body points (no crab walk at the lane's sides) ──
