@@ -1,26 +1,30 @@
 // bat-mouse.js — an easter egg on the Scaffold page (Carter Groff Design.html).
 //
-// Bat, the black cat in the hero (scaffold-cat.js), has lost his toy mouse. It sits at the
-// foot of Carter's portrait in the "Why" section. Click it and it's tucked away, and an
-// old-school video game dialog box opens: Bat thanks the finder and says he'll have his
-// owner take 5% off their final price. No game to play, nothing to carry.
+// Bat, the black cat in the hero (scaffold-cat.js), has lost his toy mouse. It sits, small and
+// dim, on the rule under the last of the "Short answers" questions. Click it and it goes into
+// your inventory (a little slot under the nav) with a note: "I know someone who might like
+// this." Click Bat while you have it (he has to be sitting) and you give it back: he looks at
+// you, his ears flick, and an old-school video game dialog box opens: he thanks you and says
+// he'll have his owner take 5% off your final price.
 //
 // How the discount reaches Carter:
-//   - Finding it is remembered in this browser (localStorage) and emails Carter at once
+//   - Giving it back is remembered in this browser (localStorage) and emails Carter at once
 //     (POST /api/design-brief, action "bat-mouse"; rate limited).
 //   - Any brief sent later from this browser says so (design.jsx reads it): "Bat's favour,
 //     5% off" in the brief email, the client's confirmation and the job history.
-//   Honour system: the find email is the record.
+//   Honour system: the email is the record.
 //
-// It shows wherever Bat does (screens 900px and wider, reduced motion off: the same rule as
-// scaffold-cat.js), without waiting for the 3D model to load, and comes back
-// on every visit: clicking it again just brings Bat's dialog back. Carter is emailed only the
-// first time a browser finds it. ?batreset forgets the find, for testing.
+// Only where Bat is (screens 900px and wider, reduced motion off: the same rule as
+// scaffold-cat.js). It doesn't wait for the 3D model to load, though giving it back needs him.
+// A mouse in your inventory stays there across visits until you give it to him. Once given,
+// it is back in its spot on the next visit; giving it again just brings his dialog back (Carter
+// is emailed only the first time). ?batreset forgets all of it, for testing.
 
-const KEY = 'scaffold-bat-mouse';
-const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } };
-const write = (v) => { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) { /* private mode: the find email still went */ } };
-if (/[?&]batreset\b/.test(location.search)) { try { localStorage.removeItem(KEY); } catch (e) {} }
+const KEY = 'scaffold-bat-mouse';          // given back to Bat (the favour); design.jsx reads it
+const HELD = 'scaffold-bat-mouse-held';    // in your inventory
+const get = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
+const put = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private mode: fine for this visit */ } };
+if (/[?&]batreset\b/.test(location.search)) { put(KEY, null); put(HELD, null); }
 
 // the toy: a plain grey mouse, side on, facing left, with a string tail (40 x 32)
 const TOY = `<svg viewBox="0 0 40 32" width="40" height="32" aria-hidden="true" focusable="false">
@@ -30,22 +34,37 @@ const TOY = `<svg viewBox="0 0 40 32" width="40" height="32" aria-hidden="true" 
   <circle cx="7.6" cy="17.6" r="1" fill="#1a1410"/>
 </svg>`;
 
+const PIX = '"Press Start 2P", ui-monospace, Menlo, Consolas, monospace';
 const CSS = `
-.bm-toy { position: absolute; z-index: 3; width: 40px; height: 32px; padding: 0; border: 0; background: none; cursor: pointer;
+.bm-toy { position: absolute; z-index: 3; width: 26px; height: 21px; padding: 0; border: 0; background: none; cursor: pointer;
   opacity: 0; transition: opacity 1.2s ease .6s, transform .25s ease; }
-.bm-toy.bm-on { opacity: .92; }
-@media (max-width: 899px) { .bm-toy { display: none; } }
-.bm-toy:hover { transform: translateY(-2px); }
-.bm-toy svg { display: block; overflow: visible; }
+.bm-toy.bm-on { opacity: .62; }
+.bm-toy:hover { opacity: .9; transform: translateY(-1px); }
+.bm-toy svg, .bm-slot svg, .bm-fly svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .bm-toy:focus-visible { outline: 1px dashed rgba(233,223,198,.6); outline-offset: 3px; }
-.bm-toy.bm-away { transition: opacity .35s ease, transform .35s ease; opacity: 0; transform: translateY(6px) scale(.6); pointer-events: none; }
+@media (max-width: 899px) { .bm-toy, .bm-inv { display: none; } }
 
+.bm-fly { position: fixed; left: 0; top: 0; z-index: 2147483001; width: 26px; height: 21px; pointer-events: none; }
+.bm-inv { position: fixed; left: 16px; top: 92px; z-index: 60; font: 9px/1 ${PIX}; color: #e8c46a; letter-spacing: .04em; }
+.bm-inv-k { display: block; margin: 0 0 6px 2px; text-shadow: 0 1px 4px #000; }
+.bm-slot { display: block; width: 56px; height: 56px; padding: 10px 8px; box-sizing: border-box; cursor: help;
+  background: #0d0b16; border: 4px solid #f4ecd8; box-shadow: 3px 3px 0 #000; animation: bm-pop-in .3s steps(3, end) both; }
+.bm-slot:focus-visible { outline: 2px solid #e8c46a; outline-offset: 3px; }
+.bm-inv.bm-bye { animation: bm-out-k .25s steps(3, end) both; }
+@keyframes bm-pop-in { from { transform: scale(.2); } to { transform: scale(1); } }
+@keyframes bm-out-k { to { transform: scale(.2); opacity: 0; } }
+.bm-note { position: fixed; z-index: 2147483001; max-width: 300px; padding: 12px 14px; box-sizing: border-box;
+  background: #0d0b16; color: #f4ecd8; font: 10px/1.9 ${PIX}; border: 4px solid #f4ecd8; box-shadow: 3px 3px 0 #000;
+  pointer-events: none; animation: bm-pop-in .25s steps(3, end) both; }
+.bm-note.bm-bye { animation: bm-out-k .2s steps(3, end) both; }
+.bm-cursor, .bm-cursor * { cursor: pointer !important; }
 .bm-dlg { position: fixed; left: 50%; bottom: 28px; z-index: 2147483002; width: min(760px, calc(100vw - 32px)); transform: translateX(-50%);
   padding: 24px 26px 22px; box-sizing: border-box;
   background: #0d0b16; color: #f4ecd8; font: 13px/2 "Press Start 2P", ui-monospace, Menlo, Consolas, monospace; letter-spacing: .02em;
   border: 4px solid #f4ecd8; box-shadow: 0 18px 50px rgba(0,0,0,.6);
   animation: bm-pop .32s steps(4, end) both; }
 .bm-dlg:focus { outline: none; }
+.bm-dlg.bm-top { bottom: auto; top: 104px; }
 .bm-dlg.bm-bye { animation: bm-out .2s steps(3, end) both; }
 @keyframes bm-pop { from { transform: translateX(-50%) scaleY(.05); } to { transform: translateX(-50%) scaleY(1); } }
 @keyframes bm-out { to { transform: translateX(-50%) scaleY(.05); opacity: 0; } }
@@ -64,15 +83,14 @@ const CSS = `
 @media (max-width: 640px) { .bm-dlg { font-size: 11px; } }
 `;
 
-let toy = null;
+let toy = null, inv = null, note = null;
 
-// the page is React: wait until the portrait is on the page
-function portrait() {
+function waitFor(sel) {
   return new Promise((res) => {
     const t0 = Date.now();
     (function poll() {
-      const img = document.querySelector('.dwhyhead .dportrait');
-      if (img || Date.now() - t0 > 20000) return res(img);
+      const el = document.querySelector(sel);
+      if (el || Date.now() - t0 > 20000) return res(el);
       setTimeout(poll, 250);
     })();
   });
@@ -86,48 +104,116 @@ function loadFont() {
   document.head.appendChild(l);
 }
 
-// ── where it sits: at the foot of the portrait, just past its bottom-right corner ──
+// ── where it hides: on the rule under the last question in "Short answers", near its right end ──
+const SPOT = '#faq .dfaq details:last-of-type';
 function place() {
-  const img = document.querySelector('.dwhyhead .dportrait');
-  if (!img) return;
+  const at = document.querySelector(SPOT);
+  if (!at) return;
   if (!toy) {
     toy = document.createElement('button');
     toy.type = 'button'; toy.className = 'bm-toy';
     toy.setAttribute('aria-label', 'A toy mouse');
     toy.innerHTML = TOY;
     toy.addEventListener('pointerenter', loadFont, { once: true });
-    toy.addEventListener('click', found);
+    toy.addEventListener('click', pickUp);
     document.body.appendChild(toy);
   }
-  const r = img.getBoundingClientRect(), shown = !!img.closest('.dwhyhead.shown') && r.width > 0;
-  toy.style.left = (r.right + scrollX + 8) + 'px';
-  toy.style.top = (r.bottom + scrollY - 32) + 'px';
+  const r = at.getBoundingClientRect(), shown = at.classList.contains('shown') && r.width > 0;
+  toy.style.left = (r.right + scrollX - 64) + 'px';
+  toy.style.top = (r.bottom + scrollY - 20) + 'px';
   toy.classList.toggle('bm-on', shown);
 }
-
 function watchSpot() {
   place();
-  const again = () => { if (toy && toy.isConnected && !toy.classList.contains('bm-away')) place(); };
+  const again = () => { if (toy && toy.isConnected) place(); };
   addEventListener('resize', again, { passive: true });
   new ResizeObserver(again).observe(document.body);
-  // the portrait fades in when it scrolls into view; React may also re-render the section
-  new MutationObserver(again).observe(document.getElementById('why') || document.body, { attributes: true, subtree: true, childList: true, attributeFilter: ['class'] });
+  // the questions fade in as they scroll into view, and open and close
+  new MutationObserver(again).observe(document.getElementById('faq') || document.body, { attributes: true, subtree: true, childList: true });
 }
 
-// ── found: tucked away, Carter told, and Bat has a word ──
-function found() {
+// a small pixel note next to something
+function say(text, x, y, ms = 3800) {
+  if (note) note.remove();
+  const n = note = document.createElement('div');
+  n.className = 'bm-note'; n.setAttribute('role', 'status'); n.textContent = text;
+  n.style.left = x + 'px'; n.style.top = y + 'px';
+  document.body.appendChild(n);
+  setTimeout(() => { n.classList.add('bm-bye'); setTimeout(() => { n.remove(); if (note === n) note = null; }, 220); }, ms);
+}
+
+// ── picked up: into your inventory ──
+function pickUp() {
   loadFont();
-  toy.classList.add('bm-away');
-  setTimeout(() => { toy.remove(); }, 400);
-  if (read()) { setTimeout(dialog, 350); return; }   // found before: Bat says it again, Carter already knows
-  write({ found: true, at: new Date().toISOString() });
-  try {
-    fetch('/api/design-brief', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true,
-      body: JSON.stringify({ action: 'bat-mouse' }),
-    }).catch(() => {});
-  } catch (e) { /* offline: fine */ }
-  setTimeout(dialog, 350);
+  const from = toy.getBoundingClientRect();
+  toy.remove(); toy = null;
+  put(HELD, { at: new Date().toISOString() });
+  showInv(true);
+  const to = inv.querySelector('.bm-slot').getBoundingClientRect();
+  const f = document.createElement('div'); f.className = 'bm-fly'; f.innerHTML = TOY; document.body.appendChild(f);
+  const s = (to.width - 16) / 26, tx = to.left + 8, ty = to.top + 14;
+  f.animate([
+    { transform: `translate(${from.left}px, ${from.top}px)` },
+    { transform: `translate(${(from.left + tx) / 2}px, ${Math.min(from.top, ty) - 60}px) scale(${(1 + s) / 2})`, offset: 0.5 },
+    { transform: `translate(${tx}px, ${ty}px) scale(${s})` },
+  ], { duration: 650, easing: 'cubic-bezier(.4, 0, .5, 1)', fill: 'forwards' }).onfinish = () => {
+    f.remove(); inv.querySelector('.bm-slot').innerHTML = TOY;
+    say('I know someone who might like this.', to.right + 12, to.top);
+  };
+}
+
+function showInv(empty) {
+  if (inv) return;
+  inv = document.createElement('div');
+  inv.className = 'bm-inv';
+  inv.innerHTML = `<span class="bm-inv-k">ITEMS</span><button type="button" class="bm-slot" aria-label="Inventory: a toy mouse. Someone on this page might like it.">${empty ? '' : TOY}</button>`;
+  inv.querySelector('.bm-slot').addEventListener('click', (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    say('I know someone who might like this.', r.right + 12, r.top);
+  });
+  document.body.appendChild(inv);
+  addEventListener('pointerdown', onDown, true);
+  addEventListener('pointermove', onMove, { passive: true });
+}
+function hideInv() {
+  removeEventListener('pointerdown', onDown, true);
+  removeEventListener('pointermove', onMove);
+  document.documentElement.classList.remove('bm-cursor');
+  if (!inv) return;
+  const el = inv; inv = null;
+  el.classList.add('bm-bye'); setTimeout(() => el.remove(), 260);
+}
+
+// ── giving it back: click Bat while it's in your inventory ──
+const cat = () => window.ScaffoldCat;
+function onMove(e) {
+  const c = cat();
+  document.documentElement.classList.toggle('bm-cursor', !!(c && c.near(e.clientX, e.clientY)));
+}
+function onDown(e) {
+  const c = cat();
+  if (e.button !== 0 || !c || !c.near(e.clientX, e.clientY)) return;
+  e.preventDefault(); e.stopPropagation();
+  addEventListener('click', (k) => { k.preventDefault(); k.stopPropagation(); }, { capture: true, once: true });   // the click that follows isn't for what's under him
+  give();
+}
+function give() {
+  loadFont();
+  put(HELD, null);
+  hideInv();
+  if (note) note.remove();
+  cat().thank();
+  const first = !get(KEY);
+  put(KEY, { found: true, at: new Date().toISOString() });
+  if (first) {
+    try {
+      fetch('/api/design-brief', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true,
+        body: JSON.stringify({ action: 'bat-mouse' }),
+      }).catch(() => {});
+    } catch (e) { /* offline: fine */ }
+  }
+  setTimeout(dialog, 1100);   // he looks at you first
 }
 
 // ── the dialog box ──
@@ -144,6 +230,11 @@ function dialog() {
     <div><p class="bm-text" aria-hidden="true"></p><p class="bm-sr" aria-live="polite"></p><ul class="bm-menu" hidden></ul></div>
     <span class="bm-next" aria-hidden="true">▼</span>`;
   document.body.appendChild(box);
+  // classic spot is the bottom of the screen, unless that would cover him
+  try {
+    const w = cat().where(), r = box.getBoundingClientRect();
+    if (w && w.x > r.left - 60 && w.x < r.right + 60 && w.y > r.top - 0.9 * w.ppm) box.classList.add('bm-top');
+  } catch (e) { /* no cat: stays put */ }
   const text = box.querySelector('.bm-text'), sr = box.querySelector('.bm-sr'), menu = box.querySelector('.bm-menu'), nxt = box.querySelector('.bm-next');
   let page = -1, timer = 0, typing = false, full = '';
   const plain = (h) => h.replace(/<[^>]+>/g, '');
@@ -200,7 +291,8 @@ function dialog() {
 
 (async function boot() {
   if (!matchMedia('(min-width: 900px)').matches || matchMedia('(prefers-reduced-motion: reduce)').matches) return;   // no Bat here, so no mouse
-  if (!(await portrait())) return;
   const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
+  if (get(HELD)) { showInv(false); return; }            // still in your inventory from an earlier visit
+  if (!(await waitFor(SPOT))) return;
   watchSpot();
 })();
