@@ -1161,14 +1161,16 @@ under makes it look up and move.
     over (`TAIL_ARC`), a sway travels from base to tip with the stride, and each bone
     follows its target through a spring that is slower towards the tip, so it lags, follows
     through, and trails a little when he turns.
-  - *The mouse.* It now hides small and dim on the rule under the last "Short answers"
-    question. Clicking it puts it in an inventory slot under the nav ("ITEMS") with a
-    pixel note: "I know someone who might like this." It doesn't open Bat's dialogue.
+  - *The mouse.* It now hides small and dim at the very end of the footer's "Cat model"
+    credit, like a full stop (it first sat under the last "Short answers" question). Clicking
+    it stows it away, with no slot on screen (an "ITEMS" slot was tried and dropped), and a
+    one-page pixel dialogue with no name tag: "I know someone who might like this." It
+    doesn't open Bat's dialogue.
     Clicking Bat while you have it (the cursor turns to a pointer over him; he must be
     sitting) gives it back: he looks at you, his ears flick, he slow-blinks, and the
     dialogue opens (at the top of the screen if it would cover him). That is when Carter
-    is emailed (first time per browser) and the favour is recorded for briefs. An unspent
-    mouse stays in the inventory across visits. The cat exposes `window.ScaffoldCat`
+    is emailed (first time per browser) and the favour is recorded for briefs. A stowed
+    mouse stays stowed across visits. The cat exposes `window.ScaffoldCat`
     (`near`, `where`, `thank`) again for this.
 - **The crouch belly (2026-11-09).** Crouched (stalk, wiggle, the pounce
   wind-up), his belly hung as a flat, sharp-cornered plate: a triangle in side
