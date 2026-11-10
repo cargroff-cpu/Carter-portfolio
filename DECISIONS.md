@@ -1050,7 +1050,8 @@ under makes it look up and move.
     plinth uncovers enough of him to look like a pop when it isn't (checked on
     film at 900×640).
 - **Pre-scripted by default (2026-11-10).** Simpler is the brief now: he runs
-  out from behind one of the front (near) lamp posts, sits down beside it and
+  out from behind one of the front (near) lamp posts (now: in from the side of
+  the screen, see below), sits down beside it and
   stays there, blinking, with an ear twitch or slow blink every 6–12 s, and turns
   his head to look at the cursor when it comes within about 1.6 m of him (fading
   out by 2.2 m). No wandering, hunting, pouncing or petting, and no idle glances.
@@ -1065,6 +1066,28 @@ under makes it look up and move.
   suite scenario (starts behind a front post, runs, sits by 9 s beside the post,
   looks at a close cursor and not a far one, never gets up, no pops), and the
   size sweep now plays the scripted entrance on the near posts.
+- **Scripted entrance: in from the side of the screen (2026-11-10).** Coming out
+  from behind a post still read as appearing from nowhere for the owner, in their
+  browser; it depends on cutting his canvas with a `clip-path` along the post's
+  edge, which could not be checked outside headless Chromium. Now he starts just
+  past the edge of the hero on the side of his front post (the hero is
+  `overflow: hidden`, so nothing of him shows), already blending into a quick
+  trot, runs in, passes behind the near post (near posts are drawn over his
+  canvas, so the page's own layering covers him there, in any browser), stops
+  just clear of it, turns three-quarters on and sits. No mask is involved. The
+  suite's scripted scenario checks he starts off-screen on the post's side; the
+  size sweep counts only what is inside the hero.
+- **The scripted entrance is one move (2026-11-10).** It was run in → stop →
+  turn on the spot → sit, which looked scripted. Now he runs in along the lane a
+  little behind his seat, curves toward us as he slows from a trot to a walk
+  (aiming first for a point `BEND_M` before the seat on his sitting heading, then
+  the seat), arrives already facing the way he sits, and starts to sit halfway
+  through his last step (`walk_to_idle` into `stand_to_sit`). He sits
+  three-quarters on (`SEAT_YAW` 62° from facing us): a short, gentle curve,
+  because walking toward the camera barely moves on screen, and head-on he
+  reads as a blob. The suite's scripted scenario now fails if he stands still,
+  turns on the spot or swings round faster than 160°/s before sitting (the
+  previous version fails it: 31 still frames and a turn on the spot).
 - **The crouch belly (2026-11-09).** Crouched (stalk, wiggle, the pounce
   wind-up), his belly hung as a flat, sharp-cornered plate: a triangle in side
   view. The body drops ~5 cm while both upper legs fold hard (front 97°, back 75°)

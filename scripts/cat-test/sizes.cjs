@@ -1,11 +1,12 @@
 // Screen-size sweep for the hero cat's entrance. For each desktop window size and each front
-// post (near/mid, left/right) it plays the intro in the real page and checks:
+// post (left/right; ONLY=mid for the free-roaming cat's mid posts) it plays the entrance in the
+// real page (the scripted cat: running in from the side of the screen) and checks:
 //   - with pixels (the page with him vs the page without him): nothing of him shows at the
 //     start, and he is plainly there once he has walked out
 //   - how much of him is visible over time, counted through the page's live clip-path: he is
 //     revealed a little at a time, not popped in
 //   - he really travels across the screen while he walks out (not on the spot)
-//   - he stays inside the hero, and ends up in the lane, clear of the post
+//   - once in, he stays inside the hero, and ends up sitting in the lane
 //   node scripts/cat-test/sizes.cjs         (SIZES=1440x900,1920x1080 to pick sizes; ONLY=mid to pick rows)
 const { open } = require('./harness.cjs');
 const SIZES = (process.env.SIZES || '900x640,1024x768,1280x720,1440x900,1920x1080,2560x1440').split(',').map((s) => s.split('x').map(Number));
@@ -48,7 +49,9 @@ const ROWS = (process.env.ONLY || 'near').split(',');   // the scripted cat (the
         let poly = null; const m = /polygon\((.*)\)/.exec(cv.style.clipPath || '');
         if (m) poly = m[1].split(',').map((p) => p.trim().split(/\s+/).map((v) => parseFloat(v) * k));
         const inside = (px, py) => { let o = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) o = !o; } return o; };
-        let n2 = 0; for (let py = 0; py < g.height; py += 2) for (let px = 0; px < g.width; px += 2) if (d[(py * g.width + px) * 4 + 3] > 40 && (!poly || inside(px, py))) n2++;
+        // only what is inside the hero counts (it clips him), and inside the clip-path if there is one
+        const inHero = (px, py) => { const X = r.left + px / k, Y = r.top + py / k; return X >= hero.left && X <= hero.right && Y >= hero.top && Y <= hero.bottom; };
+        let n2 = 0; for (let py = 0; py < g.height; py += 2) for (let px = 0; px < g.width; px += 2) if (d[(py * g.width + px) * 4 + 3] > 40 && inHero(px, py) && (!poly || inside(px, py))) n2++;
         const cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;
         return { n: n2 * 4 / (k * k), t: c.time, x: s.x, y: s.y, ppm: s.ppm, vis: c.vis, inHero: cx > hero.left - 2 && cx < hero.right + 2 && cy > hero.top - 2 && cy < hero.bottom + 2 };
       }, n);
@@ -57,7 +60,7 @@ const ROWS = (process.env.ONLY || 'near').split(',');   // the scripted cat (the
       if (first > 40) problems.push(`${first} px of him showing at the start, before he moves`);
       const s0 = await stepAndCount(0), t0 = s0.t, at = [];
       let leftHero = -1;
-      for (let i = 0; i < 70; i++) { const st = await stepAndCount(3); at.push(st); if (!st.inHero && leftHero < 0) leftHero = st.t - t0; }   // a sample every tenth of a second
+      for (let i = 0; i < 100; i++) { const st = await stepAndCount(3); at.push(st); if (!st.inHero && leftHero < 0 && at.some((a) => a.inHero)) leftHero = st.t - t0; }   // a sample every tenth of a second
       if (leftHero >= 0) problems.push('left the hero at ' + leftHero.toFixed(1) + ' s');
       const area = at.map((a) => a.n), full = Math.max(...area), vis0 = area.findIndex((n) => n > 150);
       if (vis0 < 0) problems.push('never came into view');
@@ -73,8 +76,8 @@ const ROWS = (process.env.ONLY || 'near').split(',');   // the scripted cat (the
         await stepAndCount(30);
         const out = await pixelDiff(); if (out < 150) problems.push(`he is not visible in the page when out (${out} px)`);
       }
-      const end = await page.evaluate(() => { const c = window.__cat; return { peek: !!c.peek, inside: c.lane.inside(c.X, c.Z, 0.0) }; });
-      if (end.peek) problems.push('still hiding after 9 s'); if (!end.inside) problems.push('ended outside the lane');
+      const end = await page.evaluate(() => { const c = window.__cat; for (let i = 0; i < 450 && c.posture !== 'SIT'; i++) c.update(1 / 30); return { peek: !!c.peek, inside: c.lane.inside(c.X, c.Z, 0.0), sat: c.posture === 'SIT' }; });
+      if (end.peek) problems.push('still hiding'); if (!end.inside) problems.push('ended outside the lane'); if (!end.sat) problems.push('never sat down');
       if (problems.length) fails++;
       console.log(`${problems.length ? 'FAIL' : 'PASS'}  ${W}x${H} ${row}-${side}  start ${first}px, shows at ${vis0 < 0 ? '-' : (at[vis0].t - t0).toFixed(1) + 's'}${problems.length ? '  → ' + problems.join('; ') : ''}`);
     }
