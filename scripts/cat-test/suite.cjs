@@ -281,6 +281,77 @@ const SCEN = [
       console.log(`${problems.length ? 'FAIL' : 'PASS'}  scripted: runs in from the side of the screen, sits beside the front post, looks at a close cursor [run ${run + 1}]  ${res.post} sat@${res.sat} ${(res.gapM || 0).toFixed(2)} m off the post, head ${res.aim.toFixed(0)}° off the cursor  ${problems.length ? '→ ' + problems.join('; ') : ''}`);
     }
   }
+  // ── the scripted run-in: seen side-on while he runs across the screen, and eyes on where he's going ──
+  if (!ONLY || 'run-in side-on'.includes(ONLY)) {
+    for (let run = 0; run < 2; run++) {
+      const res = await page.evaluate((run) => {
+        const c = window.__cat, L = c.lane; c.manual = true; c.scripted = true;
+        c.ptr.cx = -1; c.glance = null; c.gazeOverride = null; c.peek = null; c.seatPost = null;
+        c.introPick = (pool) => pool[run % pool.length];
+        c.brain.swap('life', c.brain.life(true));
+        const rect = c.hero.getBoundingClientRect(), r = { phi: 0, gaze: 0, across: 0 };
+        for (let f = 0; f < 30 * 9 && c.posture !== 'SIT'; f++) {
+          // a cursor wiggling just ahead of him the whole way in
+          const s = L.toScreen(c.X + 0.5 * Math.sin(c.yaw), c.Z - 0.5 * Math.cos(c.yaw));
+          c.ptr.cx = rect.left + s.x + 20 * Math.sin(f / 3); c.ptr.cy = rect.top + s.y - 0.3 * s.ppm; c.ptr.speed = 400;
+          c.update(1 / 30);
+          if (c.posture === 'WALK' && Math.abs(Math.sin(c.yaw)) > 0.97 && f > 15) { r.across++; r.phi = Math.max(r.phi, Math.abs(c.camPhi) * 57.3); }
+          if (c.posture === 'WALK' && c.motor.loco.v > 0.4) r.gaze = Math.max(r.gaze, c.gaze.w);
+        }
+        c.ptr.cx = -1; c.introPick = null;
+        return r;
+      }, run);
+      const problems = [];
+      if (res.across < 20) problems.push('hardly ran across the screen (' + res.across + ' frames)');
+      if (res.phi > 6) problems.push(`seen ${res.phi.toFixed(0)}° off side-on while running straight across (looks like running at an angle)`);
+      if (res.gaze > 0.15) problems.push(`head followed the cursor mid-run (gaze ${res.gaze.toFixed(2)})`);
+      if (problems.length) fails++;
+      console.log(`${problems.length ? 'FAIL' : 'PASS'}  run-in side-on: profile while crossing, eyes ahead [run ${run + 1}]  camera ${res.phi.toFixed(1)}°, gaze ${res.gaze.toFixed(2)}  ${problems.length ? '→ ' + problems.join('; ') : ''}`);
+    }
+  }
+  // ── the toy mouse (bat-mouse.js): given to him, he looks at it, then at you, and stays sitting ──
+  if (!ONLY || 'toy mouse gift'.includes(ONLY)) {
+    const res = await page.evaluate(() => {
+      const c = window.__cat, T = c.T, A = window.ScaffoldCat; c.manual = true; c.scripted = true;
+      c.ptr.cx = -1; c.glance = null; c.gazeOverride = null; c.peek = null; c.seatPost = null; c.introPick = null;
+      if (c.gift) { c.gift.el.remove(); c.gift = null; }
+      c.brain.swap('life', c.brain.life(true));
+      const r = { nearRunning: false, near: false, far: false, sat: true, lookedToy: false, lookedYou: false, pop: 0, blink: false };
+      for (let f = 0; f < 30 * 2; f++) c.update(1 / 30);
+      const s0 = A.spot(); r.nearRunning = A.near(s0.x, s0.y);           // no drop while he's still running in
+      for (let f = 0; f < 30 * 12 && c.posture !== 'SIT'; f++) c.update(1 / 30);
+      for (let f = 0; f < 30; f++) c.update(1 / 30);
+      const s = A.spot(); r.near = A.near(s.x, s.y - 0.2 * s.ppm); r.far = A.near(s.x + 3 * s.ppm, s.y - 2 * s.ppm);
+      const el = document.createElement('div'); el.style.width = '40px'; el.style.height = '32px';
+      A.give(el);
+      const bones = []; c.model.traverse(o => { if (o.isBone) bones.push(o); });
+      const prev = bones.map(() => new T.Quaternion()), q = new T.Quaternion(), bq = new T.Quaternion();
+      for (let f = 0; f < 30 * 8; f++) {
+        c.update(1 / 30);
+        const o = c.gazeOverride;
+        if (o && o.until > c.time && o.kind !== 'viewer' && Math.hypot(o.X - c.gift.X, o.Z - c.gift.Z) < 0.01 && c.gaze.w > 0.5) r.lookedToy = true;
+        if (o && o.until > c.time && o.kind === 'viewer' && c.gaze.w > 0.4) r.lookedYou = true;
+        if (c.motor.cur === 'sit_slow_blink') r.blink = true;
+        if (c.posture !== 'SIT') r.sat = false;
+        c.body.getWorldQuaternion(bq); bq.invert();
+        bones.forEach((b, i) => { b.getWorldQuaternion(q); q.premultiply(bq); if (f) r.pop = Math.max(r.pop, 2 * Math.acos(Math.min(1, Math.abs(q.dot(prev[i])))) * 57.3); prev[i].copy(q); });
+      }
+      r.onHero = el.parentNode === c.hero && /translate3d/.test(el.style.transform);
+      el.remove(); c.gift = null;
+      return r;
+    });
+    const problems = [];
+    if (res.nearRunning) problems.push('took the toy while still running in');
+    if (!res.near) problems.push("a drop on him didn't count");
+    if (res.far) problems.push('a drop far from him counted');
+    if (!res.onHero) problems.push('toy not put down in the hero');
+    if (!res.lookedToy) problems.push("didn't look at the toy");
+    if (!res.lookedYou || !res.blink) problems.push("didn't look up and slow-blink at you");
+    if (!res.sat) problems.push('got up');
+    if (res.pop > 70) problems.push('pose popped ' + res.pop.toFixed(0) + '°/frame');
+    if (problems.length) fails++;
+    console.log(`${problems.length ? 'FAIL' : 'PASS'}  toy mouse: a drop on him counts, he looks at it, then at you, slow-blinks, stays sitting  ${problems.length ? '→ ' + problems.join('; ') : ''}`);
+  }
   // ── perspective: on screen he moves the way his body points (no crab walk at the lane's sides) ──
   if (!ONLY || 'crab walk'.includes(ONLY)) {
     const res = await page.evaluate(() => {

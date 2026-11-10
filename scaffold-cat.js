@@ -504,6 +504,7 @@ class Cat {
     for (const n of Object.keys(this.bones)) this.bones[n] = this.model.getObjectByName(n);
     this.tail = ['tail_04', 'tail_05', 'tail_06', 'tail_07'].map((n) => this.model.getObjectByName(n)).filter(Boolean);
     this.gaze = { w: 0, yaw: 0, pitch: 0, ay: 0, ap: 0, inited: false, per: { neck_01: [0, 0], neck_02: [0, 0], head: [0, 0] } };
+    this.watch = { w: 0, ok: false, still: 0, X: 0, h: 0, Z: 0, fx: 0, fh: 0, fz: 0 };   // scripted: the cursor he's watching (watchCursor)
 
     // ── renderer ──
     const canvas = this.canvas = document.createElement('canvas');
@@ -875,11 +876,10 @@ class Cat {
       if (o.kind === 'viewer') return { p: out.set(14 * Math.sin(this.camPhi), 3.2, 14 * Math.cos(this.camPhi)).applyAxisAngle(T.v2.set(0, 1, 0), -this.yaw), w: 1 };
       return { p: this.toLocal(o.X, o.h, o.Z, out), w: 1 };
     }
-    if (this.scripted && this.toy) {                     // scripted: just look at a cursor that comes close
-      const t = this.toy, near = 1 - sm((t.dm - LOOK_M) / 0.6);
-      if (near < 0.01) return null;
-      const p = t.kind === 'ground' ? this.toLocal(t.X, 0.03, t.Z, out) : this.toLocal(t.X, t.h, t.Z + -0.25, out);
-      return { p, w: near };
+    if (this.scripted) {                                 // scripted: watch a cursor that comes close (see watchCursor)
+      const W = this.watch;
+      if (W.w < 0.01 || !W.ok) return null;
+      return { p: this.toLocal(W.X, W.h, W.Z, out), w: W.w };
     }
     if (this.toy && (this.interest > 0.08 || this.brain.mode === 'play')) {
       const t = this.toy;
@@ -892,6 +892,28 @@ class Cat {
       return { p: this.toLocal(g.X, g.h, g.Z, out), w: 0.85 };
     }
     return null;
+  }
+
+  // Scripted: how a sitting cat watches a cursor. Not while he runs in (he looks where he's
+  // going; a head locked on the cursor mid-run looked bolted on). Seated, he doesn't slave his
+  // head to every pixel: he fixes on a spot and holds it, and re-fixes (a quick turn, eased by
+  // the bones' own damping) once the cursor has moved a hand's width away. Interest builds
+  // over a beat when it comes close, and fades if it sits still for a few seconds or goes.
+  watchCursor(dt) {
+    const W = this.watch, t = this.toy;
+    const seated = this.posture === 'SIT' && this.motor.cur !== 'walk_to_idle';
+    let want = 0;
+    if (t && seated) {
+      W.still = (this.ptr.mps || 0) > 0.12 ? 0 : W.still + dt;
+      const near = 1 - sm((t.dm - (this.lure ? 6 : LOOK_M)) / 0.6), bored = this.lure ? 0 : sm((W.still - 3.5) / 2);
+      want = near * (1 - bored);
+      const X = t.X, h = t.kind === 'ground' ? 0.03 : t.h, Z = t.kind === 'ground' ? t.Z : t.Z - 0.25;
+      if (!W.ok || W.w < 0.05) { W.fx = X; W.fh = h; W.fz = Z; W.X = X; W.h = h; W.Z = Z; W.ok = true; }
+      else if (Math.hypot(X - W.fx, h - W.fh, Z - W.fz) > 0.09) { W.fx = X; W.fh = h; W.fz = Z; }
+      W.X = damp(W.X, W.fx, 9, dt); W.h = damp(W.h, W.fh, 9, dt); W.Z = damp(W.Z, W.fz, 9, dt);
+    } else W.still = 0;
+    // takes a beat to notice (slower in), lets go a little quicker
+    W.w = damp(W.w, want, want > W.w ? 2.2 : 3, dt);
   }
 
   // three's mixer only writes a bone or morph when the clip's value changes, so
@@ -919,6 +941,7 @@ class Cat {
         else { const a = this.yaw + rnd(-1.2, 1.2), d = rnd(0.8, 2.5); this.glance = { X: this.X + Math.sin(a) * d, h: 0, Z: this.Z - Math.cos(a) * d, until: this.time + rnd(1.2, 2.2) }; }
       }
     }
+    if (this.scripted) this.watchCursor(dt);
     const want = this.gazeTarget(T.v);
     const allow = this.motor.cur in GAZE_ALLOW ? GAZE_ALLOW[this.motor.cur] : 1;
     // Something behind him isn't looked at over the shoulder like an owl: past ~100° off his
@@ -1040,8 +1063,20 @@ class Cat {
     // swings round by the lane's own lean at his spot, so the model is seen from the side a
     // real eye would see it from. Measured over ±0.15 m and eased: the measured lean steps
     // at each lamp row.
+    // That lean is only right for walking into or out of the lane, though. Across the lane (the
+    // scripted run-in, along the hero's bottom edge, where the lean reaches 45°) he moves
+    // straight across the screen, and a camera swung 45° showed him three-quarters on while he
+    // slid sideways: running at a weird angle. So the swing is solved for the way he faces: the
+    // angle at which his heading, drawn, points the way that heading really moves him on
+    // screen. Into the lane that is the lean above; across the lane it is 0 (side-on).
     const pa = L.toScreen(this.X, this.Z - 0.15), pb = L.toScreen(this.X, this.Z + 0.15);
-    const phi = Math.atan(((pb.x - pa.x) / ((pa.y - pb.y) || 1)) * SINP);
+    const lean = Math.atan(((pb.x - pa.x) / ((pa.y - pb.y) || 1)) * SINP);
+    const hx = Math.sin(this.yaw), hz = Math.cos(this.yaw);
+    const ha = L.toScreen(this.X - 0.15 * hx, this.Z + 0.15 * hz), hb = L.toScreen(this.X + 0.15 * hx, this.Z - 0.15 * hz);
+    const tx = hb.x - ha.x, ty = ha.y - hb.y;           // where his heading takes him on screen (y up)
+    const den = hx * SINP * tx - hz * ty;
+    const lim = Math.abs(lean) + 10 * DEG;
+    const phi = Math.abs(den) < 1e-6 ? lean : clamp(Math.atan(-(hx * ty + hz * SINP * tx) / den), -lim, lim);
     this.camPhi = dt > 0 && Number.isFinite(this.camPhi) ? damp(this.camPhi, phi, 10, dt) : phi;
     cam.position.set(Math.sin(this.camPhi) * COSP * 12, SINP * 12, Math.cos(this.camPhi) * COSP * 12); cam.lookAt(0, 0, 0);
     cam.left = -cw / 2 / ppm; cam.right = cw / 2 / ppm;
@@ -1075,6 +1110,38 @@ class Cat {
     // which hides exactly what the post would. One plain polygon, which every browser clips.
     const pk = this.peek, cs = pk && this.Z > pk.lamp.Z - 0.02 ? this.postClip(pk.lamp, s.x - cw / 2, s.y - ORG_Y * ch) : 'none';
     if (this.style.c !== cs) { st.clipPath = cs; st.webkitClipPath = cs; this.style.c = cs; }
+    if (this.gift) this.placeGift(s);
+  }
+
+  // ── the toy mouse (bat-mouse.js): the visitor found it and gave it to him ──
+  // Is a point (client px) on him or close by? Generous: it's a drop target, not a hit test.
+  nearMe(cx, cy) {
+    const r = this.hero.getBoundingClientRect(), s = this.lane.toScreen(this.X, this.Z), ppm = s.ppm * this.vis;
+    const dx = cx - r.left - s.x, dy = s.y - (cy - r.top);
+    return Math.abs(dx) < 0.62 * ppm && dy > -0.25 * ppm && dy < 0.75 * ppm;
+  }
+  // where his head is, client px (the dropped toy flies from the cursor to just in front of it)
+  giftSpot() {
+    const r = this.hero.getBoundingClientRect(), g = this.giftAt(), s = this.lane.toScreen(g.X, g.Z);
+    return { x: r.left + s.x, y: r.top + s.y, ppm: s.ppm * this.vis };
+  }
+  giftAt() { return { X: this.X + Math.sin(this.yaw) * 0.3, Z: this.Z - Math.cos(this.yaw) * 0.3 }; }
+  // The toy is put down just in front of his nose (nearer us than him, so drawn over him) and
+  // stays there. He looks down at it, his ears flick, then he looks up at you and slow-blinks.
+  receive(el) {
+    const g = this.giftAt();
+    this.gift = { el, X: g.X, Z: g.Z, t: this.time };
+    el.style.position = 'absolute'; el.style.left = '0'; el.style.top = '0'; el.style.zIndex = '6'; el.style.pointerEvents = 'none';
+    this.hero.appendChild(el);
+    this.lure = false;
+    this.brain.gifted = true;
+    this.place();
+  }
+  placeGift(s0) {
+    const G = this.gift, s = this.lane.toScreen(G.X, G.Z), k = (s.ppm * this.vis * 0.16) / 40;   // the toy art is 40 px long; a felt mouse is ~16 cm
+    const f = this.lane.filterAt(G.Z);
+    const ts = `translate3d(${(s.x - 20).toFixed(1)}px, ${(s.y - 16).toFixed(1)}px, 0) scale(${k.toFixed(3)})`;
+    if (G.ts !== ts) { G.el.style.transform = ts; G.el.style.transformOrigin = '20px 16px'; G.el.style.filter = `brightness(${(f.bright * 0.9).toFixed(3)})`; G.ts = ts; }
   }
 
   // A post's inner edge as drawn, in hero pixels, from below the ground up: the outline measured
@@ -1331,7 +1398,7 @@ class Brain {
           const vT = stopping ? WALK() * 0.85 : clamp(Math.sqrt(2 * 0.55 * Math.max(0, left - 0.25)), WALK() * 0.85, RUN_IN());
           L0.v += clamp(vT - L0.v, -0.8 * dt, 1.2 * dt);
           c.steer(aim, (L0.v > 0.45 ? 130 : 100) * DEG, dt);
-          if (passed && left < 0.3) stopping = true;
+          if (passed && left < 0.3 && !stopping) { stopping = true; c.gazeOverride = { kind: 'viewer', until: c.time + 2.6 }; }   // a look at you as he settles
           if (stopping && L0.wrapped) break;          // stop on the gait's own phase 0, where walk_to_idle starts
           if (t > 25) break;
         }
@@ -1348,11 +1415,25 @@ class Brain {
     let next = rnd(5, 9);
     while (true) {
       next -= yield;
+      if (c.brain.gifted) { yield* this.thanks(); next = rnd(6, 10); continue; }
       if (next > 0) continue;
       yield* this.once(chance(0.5) ? 'sit_ear_twitch' : 'sit_slow_blink', 0.25);
       m.play('sit_idle', 0.3, false); c.posture = 'SIT';
       next = rnd(6, 12);
     }
+  }
+  // Given the toy mouse: eyes down on it, ears flick, then up at you and a slow blink.
+  *thanks() {
+    const c = this.c, m = c.motor, g = c.gift;
+    c.brain.gifted = false;
+    if (!g) return;
+    c.gazeOverride = { X: g.X, h: 0.03, Z: g.Z, until: c.time + 1.5 }; c.lockOn();
+    yield* this.wait(1.5);
+    c.gazeOverride = { kind: 'viewer', until: c.time + 4.5 };
+    if (c.posture === 'SIT') { yield* this.once('sit_slow_blink', 0.25); m.play('sit_idle', 0.3, false); }
+    else yield* this.wait(2);
+    yield* this.wait(1.5);
+    c.gazeOverride = { X: g.X, h: 0.03, Z: g.Z, until: c.time + 2.2 };
   }
   // the old entrance (used when there is no mid post): walk in from the side
   *walkIn() {
@@ -1687,6 +1768,14 @@ async function start(hero) {
   const lane = new Lane(hero);
   if (!lane.ok) return;
   const cat = new Cat(THREE, hero, gltf, lane);
+  // the hidden toy mouse (bat-mouse.js) talks to him through this
+  window.ScaffoldCat = {
+    near: (x, y) => DESK.matches && (cat.scripted ? cat.posture === 'SIT' : !cat.outside) && cat.nearMe(x, y),
+    spot: () => cat.giftSpot(),
+    lure: (on) => { cat.lure = !!on; },
+    give: (el) => cat.receive(el),
+  };
+  window.dispatchEvent(new Event('scaffoldcat:ready'));
   if (DEBUG) { window.__cat = cat; cat.POUNCE = POUNCE; cat.GAIT = GAIT_SPEED; if (/catdebug=lines/.test(location.search)) debugLayer(cat); }
 
   let visible = true, last = performance.now(), raf = 0;

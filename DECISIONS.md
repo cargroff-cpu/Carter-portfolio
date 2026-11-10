@@ -1088,6 +1088,34 @@ under makes it look up and move.
   reads as a blob. The suite's scripted scenario now fails if he stands still,
   turns on the spot or swings round faster than 160°/s before sitting (the
   previous version fails it: 31 still frames and a turn on the spot).
+- **Running in side-on, calmer eyes, and a toy mouse (2026-11-10).**
+  - *Running at an angle.* The camera swing that stops the crab walk (the lane's
+    perspective lean at his spot) was applied whatever way he faced. On the run-in
+    he crosses the hero's bottom edge, where the lean is ~45°, so he was drawn
+    three-quarters on while sliding straight across the screen. The swing is now
+    solved for his heading: the angle at which his heading, drawn, points the way
+    it really moves him on screen. Across the lane that is 0 (side-on), into the
+    lane it is the lean as before. The crab-walk check's worst case went from ~8°
+    to 6.5°.
+  - *Head tracking.* Scripted, he no longer turns his head to the cursor while he
+    runs in. As he settles he looks at you; seated, he fixes on the cursor and holds
+    it, re-fixing when it moves ~9 cm (not slaved to every pixel), takes a beat to
+    notice, and loses interest if it sits still for ~4 s (`watchCursor`).
+  - *The toy mouse* (`bat-mouse.js`). A plain grey mouse peeks out from behind the
+    bottom-right corner of the portrait in "Why". Click it, carry it to Bat, click
+    on him: it lands at his paws, he looks at it, looks up and slow-blinks, and a
+    plain retro dialog box ("BAT", Press Start 2P) says thanks and promises 5% off
+    the final price. Only where the cat is (desktop, motion allowed); keyboard
+    users get it delivered for them. The code (`BAT-XXXXXX`) is made in the
+    browser and kept in localStorage; finding it emails Carter at once
+    (`/api/design-brief`, action `bat-mouse`, 3 an hour per IP, no new function),
+    and a brief sent later from that browser carries it into the brief email, the
+    client's confirmation and the job's history. Honour system: the find email is
+    the record of real codes. `?batreset` clears it. The cat side is a small hook,
+    `window.ScaffoldCat` (`near`, `spot`, `lure`, `give`).
+  - Tests: "run-in side-on" (fails on the previous cat: camera 46° off, head on
+    the cursor mid-run) and "toy mouse" (a drop counts only on him and only once
+    he's seated; he looks at it, then at you, slow-blinks, stays sitting, no pops).
 - **The crouch belly (2026-11-09).** Crouched (stalk, wiggle, the pounce
   wind-up), his belly hung as a flat, sharp-cornered plate: a triangle in side
   view. The body drops ~5 cm while both upper legs fold hard (front 97°, back 75°)
