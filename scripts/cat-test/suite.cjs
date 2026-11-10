@@ -172,7 +172,7 @@ const SCEN = [
     if (!ok) fails++;
     console.log(`${ok ? 'PASS' : 'FAIL'}  eyes: lit facing the viewer, dark facing away  (eye pixels front ${res.front}, back ${res.back}/${res.backL}/${res.backR})`);
   }
-  // ── the intro: peeks round a mid post, looks at you, walks out in front of it ──
+  // ── the intro: out of sight behind a front post, walks out along the lane, looks at you (the sweep over screen sizes is scripts/cat-test/sizes.cjs) ──
   if (!ONLY || 'intro peek'.includes(ONLY)) {
     for (let run = 0; run < Math.min(RUNS, 4); run++) {
       const res = await page.evaluate(() => {
@@ -181,30 +181,32 @@ const SCEN = [
         c.brain.swap('life', c.brain.life(true));
         const post = c.peek && c.peek.lamp, r = { post: post ? post.row + (post.side < 0 ? '-left' : '-right') : 'none', hiddenStart: false, looked: -1, out: -1, pop: 0 };
         if (!post) return r;
-        // at the start his nose is still behind the post's inner edge
-        const inward = -post.side;
-        r.hiddenStart = (c.X + Math.sin(c.yaw) * 0.32 - post.X) * inward < 0.22;
+        // at the start he is side-on to us and his nose is still inside the post's outline
+        const inward = -post.side, s0 = L.toScreen(c.X, c.Z);
+        r.hiddenStart = Math.abs(Math.sin(c.yaw)) > 0.95 && (s0.x + inward * 0.34 * s0.ppm - c.postEdgeX(post, 0.3)) * inward < 1;
+        r.x0 = s0.x; r.xMax = 0;
         const bones = []; c.model.traverse(o => { if (o.isBone) bones.push(o); });
         const prev = bones.map(() => new T.Quaternion()), q = new T.Quaternion(), bq = new T.Quaternion();
         for (let f = 0; f < 16 * 30; f++) {
           c.update(1 / 30); const t = f / 30;
           if (r.looked < 0 && c.gazeOverride && c.gazeOverride.kind === 'viewer') r.looked = +t.toFixed(2);
           if (r.out < 0 && !c.peek) r.out = +t.toFixed(2);
-          r.outZ = c.Z - post.Z; r.inLane = L.inside(c.X, c.Z, 0.4);
+          r.inLane = L.inside(c.X, c.Z, 0.4); r.xMax = Math.max(r.xMax, Math.abs(L.toScreen(c.X, c.Z).x - r.x0));
           c.body.getWorldQuaternion(bq); bq.invert();
           bones.forEach((b, i) => { b.getWorldQuaternion(q); q.premultiply(bq); if (f) r.pop = Math.max(r.pop, 2 * Math.acos(Math.min(1, Math.abs(q.dot(prev[i])))) * 57.3); prev[i].copy(q); });
         }
         return r;
       });
       const problems = [];
-      if (res.post === 'none' || !res.post.startsWith('mid')) problems.push('did not start behind a mid post (' + res.post + ')');
-      if (!res.hiddenStart) problems.push('head already out at the start');
-      if (!(res.looked > 1.5 && res.looked < 6)) problems.push('never peeked out and looked at the viewer (' + res.looked + ')');
+      if (res.post === 'none' || !/^(mid|near)/.test(res.post)) problems.push('did not start behind a front post (' + res.post + ')');
+      if (!res.hiddenStart) problems.push('not tucked side-on behind the post at the start');
+      if (!(res.looked > 1.5 && res.looked < 6)) problems.push('never looked at the viewer as he came out (' + res.looked + ')');
       if (!(res.out > 0 && res.out < 12)) problems.push('still hiding after 12 s (' + res.out + ')');
-      else { if (res.outZ > -0.3) problems.push('not in front of the post after 16 s (' + res.outZ.toFixed(2) + ' m)'); if (!res.inLane) problems.push('ended outside the lane'); }
+      else if (!res.inLane) problems.push('ended outside the lane');
+      if (res.xMax < 150) problems.push('hardly crossed the screen (' + res.xMax.toFixed(0) + ' px)');
       if (res.pop > 70) problems.push('pose popped ' + res.pop.toFixed(0) + '°/frame');
       if (problems.length) fails++;
-      console.log(`${problems.length ? 'FAIL' : 'PASS'}  intro: peeks round a mid post, looks at you, walks out [run ${run + 1}]  ${res.post} looked@${res.looked} out@${res.out}  ${problems.length ? '→ ' + problems.join('; ') : ''}`);
+      console.log(`${problems.length ? 'FAIL' : 'PASS'}  intro: out of sight behind a post, walks out along the lane, looks at you [run ${run + 1}]  ${res.post} looked@${res.looked} out@${res.out}  ${problems.length ? '→ ' + problems.join('; ') : ''}`);
     }
   }
   // ── perspective: on screen he moves the way his body points (no crab walk at the lane's sides) ──

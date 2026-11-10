@@ -38,6 +38,7 @@ const DEG = Math.PI / 180;
 const ORG_Y = 0.74;            // where the cat's feet sit inside its canvas
 const CHASE_M = 2.6;           // beyond this (metres) a cursor isn't worth getting up for
 const EYE_SCALE = 0.72;        // each eye shrunk across the face (not in depth): the model's eyes read huge at hero size
+const NOSE_M = 0.34, TAIL_M = 0.45;   // how far his nose and tail tip reach from the middle of his body (model space, metres)
 const BELLY_TUCK_M = 0.045;    // how far the belly is drawn up in a full crouch
 const RIM_I = 1.2;             // the cool rim light that holds the silhouette (was 2.8 on the first, smoother model)
 const HAZE_K = 0.6;            // share of each fog bank's haze laid on the cat
@@ -74,6 +75,7 @@ const ROOT = {
     0.0153, 0.0176, 0.0202, 0.023, 0.0262, 0.0297, 0.0333, 0.0371, 0.0396, 0.0425, 0.0456, 0.049, 0.0525],
 };
 const GAIT_SPEED = [0.2692, 0.6, 1.2857]; // walk, trot, run (m/s at 1x; walk and trot are re-measured at load)
+const INTRO_SPEED = () => GAIT_SPEED[0] * 1.2;   // the entrance is a purposeful walk
 const WALK = () => GAIT_SPEED[0];          // an unhurried walk is the walk clip at its own pace
 const POUNCE = { start: 0.3, end: 0.7333 };  // seconds of the pounce clip the cat is airborne
 // assets/cat/cat-motion.json (written by the Blender export) overrides the numbers
@@ -108,6 +110,32 @@ function gaitWeights(v) {
 // travel are kept; only the fast swings round off) and resampled at 60 fps with a Catmull-Rom
 // spline, so the legs pass through the keys on a curve instead of a straight line between them.
 // The same pass calms the tail-tip whips in the idle_stand and stalk_crouch loops.
+// Lengthen the walk's stride. The legs of this clip swing through short arcs (a stride of about
+// 0.28 body lengths; a cat's walk is nearer twice that), so he marched on the spot: his
+// feet cycled but his body hardly got anywhere. Every leg rotation is scaled about its own
+// mean pose (axis-angle), which scales the arc each paw sweeps; the planted-paw speed is then
+// measured again (calibrateGaits), so the feet still don't slide. x1.35 takes the walk from
+// 0.27 to about 0.35 m/s at the same step rate, with a fifth less foot slide.
+const STRIDE_BONES = /^(hl_(thigh|shin|foot)|fl_(scap|upper|lower))_[LR]$/;
+const qmul = (a, b) => [a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1], a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0],
+  a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3], a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2]];   // (x, y, z, w)
+const qconj = (a) => [-a[0], -a[1], -a[2], a[3]];
+const qpow = (q, k) => { const s = Math.hypot(q[0], q[1], q[2]); if (s < 1e-9) return [0, 0, 0, 1];
+  const ang = 2 * Math.atan2(s, q[3]), h = k * ang / 2, f = Math.sin(h) / s; return [q[0] * f, q[1] * f, q[2] * f, Math.cos(h)]; };
+function lengthenStride(clip, A) {
+  for (const tr of clip.tracks) {
+    const m = /^(.+)\.quaternion$/.exec(tr.name); if (!m || !STRIDE_BONES.test(m[1])) continue;
+    const n = tr.times.length, v = tr.values, ref = [v[0], v[1], v[2], v[3]], sum = [0, 0, 0, 0], key = [];
+    for (let i = 0; i < n; i++) { let q = [v[4 * i], v[4 * i + 1], v[4 * i + 2], v[4 * i + 3]]; if (q[0] * ref[0] + q[1] * ref[1] + q[2] * ref[2] + q[3] * ref[3] < 0) q = q.map((x) => -x); key.push(q); if (i < n - 1) for (let k = 0; k < 4; k++) sum[k] += q[k]; }
+    const l = Math.hypot(...sum), mean = sum.map((x) => x / l), inv = qconj(mean);
+    for (let i = 0; i < n; i++) {
+      let d = qmul(inv, key[i]); if (d[3] < 0) d = d.map((x) => -x);
+      const o = qmul(mean, qpow(d, A)), z = Math.hypot(...o);
+      for (let k = 0; k < 4; k++) v[4 * i + k] = o[k] / z;
+    }
+  }
+}
+const WALK_STRIDE = 1.35;
 const SMOOTH_PASSES = 3;
 function smoothLoop(clip) {
   for (const tr of clip.tracks) {
@@ -427,6 +455,7 @@ class Cat {
       for (const t of c.tracks) { first = Math.min(first, t.times[0]); last = Math.max(last, t.times[t.times.length - 1]); }
       for (const t of c.tracks) { t.times = t.times.slice(); t.shift(-first); }   // times arrays are shared between tracks
       c.duration = last - first;
+      if (c.name === 'walk') lengthenStride(c, WALK_STRIDE);
       if (['walk', 'trot', 'idle_stand', 'stalk_crouch'].includes(c.name)) smoothLoop(c);   // the tail tip whips in the last two
     }
     this.model = gltf.scene;
@@ -655,7 +684,7 @@ class Cat {
     this.lane.measure();
     if (!this.lane.ok) return;
     this.sizeCanvas();
-    if (before && !this.outside) { const c = this.lane.clampIn(this.X, this.Z, 0.45); this.X = c.X; this.Z = c.Z; }
+    if (before && !this.outside && !this.peek) { const c = this.lane.clampIn(this.X, this.Z, 0.45); this.X = c.X; this.Z = c.Z; }
   }
 
   // The cat is one canvas between the near and mid posts, so it is always drawn over the mid,
@@ -808,7 +837,7 @@ class Cat {
     this.X += Math.sin(this.yaw) * step; this.Z -= Math.cos(this.yaw) * step;
     const L = this.lane;
     // once he is clear of the post he peeked round, he is an ordinary cat in the lane again
-    if (this.peek && (Math.abs(this.X - this.peek.lamp.X) > 0.85 || this.Z < this.peek.lamp.Z - 0.15)) this.peek = null;
+    if (this.peek && this.peekDone()) this.peek = null;
     if (this.peek) { /* hiding behind a post: the post's mask does the depth; no lane clamp */ }
     else if (this.outside) { if (L.inside(this.X, this.Z, 0.6)) this.outside = false; }
     else { const c = L.clampIn(this.X, this.Z, 0.45); this.X = c.X; this.Z = c.Z; this.avoidPosts(); }
@@ -1029,13 +1058,49 @@ class Cat {
     if (this.style.c !== cs) { st.clipPath = cs; st.webkitClipPath = cs; this.style.c = cs; }
   }
 
+  // A post's inner edge as drawn, in hero pixels, from below the ground up: the outline measured
+  // from the lamp art (POST_PROFILE), placed on the lamp's box as laid out right now, so it
+  // follows the page at any window size.
+  postEdge(lamp) {
+    const r = this.lane.rel(lamp.el), inward = -lamp.side;
+    return POST_PROFILE.map(([hm, a, b]) => [r.x + (inward > 0 ? b : a) * r.w, r.y + r.h * (1 - hm / LAMP_M)]);
+  }
+  // where the post's inner edge is, as screen x, at a height (in the post's own frame, metres)
+  postEdgeX(lamp, hm) {
+    const r = this.lane.rel(lamp.el), inward = -lamp.side, P = POST_PROFILE;
+    let i = 0; while (i < P.length - 2 && hm > P[i + 1][0]) i++;
+    const t = clamp((hm - P[i][0]) / (P[i + 1][0] - P[i][0]), 0, 1), k = inward > 0 ? 2 : 1;
+    return r.x + lerp(P[i][k], P[i + 1][k], t) * r.w;
+  }
+
   // the part of the canvas on the lane side of a post's inner edge (outline from the lamp art)
   postClip(lamp, ox, oy) {
-    const r = this.lane.rel(lamp.el), cw = this.cw, ch = this.ch, inward = -lamp.side;
-    const edge = POST_PROFILE.map(([hm, a, b]) => [r.x + (inward > 0 ? b : a) * r.w - ox, r.y + r.h * (1 - hm / LAMP_M) - oy]);
+    const cw = this.cw, ch = this.ch, inward = -lamp.side;
+    const edge = this.postEdge(lamp).map(([x, y]) => [x - ox, y - oy]);
     const far = inward > 0 ? cw + 40 : -40, top = Math.min(-40, edge[edge.length - 1][1]), bot = Math.max(ch + 40, edge[0][1]);
     const pts = [[edge[0][0], bot], ...edge, [edge[edge.length - 1][0], top], [far, top], [far, bot]];
     return `polygon(${pts.map(([x, y]) => `${x.toFixed(1)}px ${y.toFixed(1)}px`).join(', ')})`;
+  }
+
+  // Where to stand, behind a post and side-on to it facing the lane, so that his nose is still
+  // just inside the post's outline: worked out in screen pixels (the lane converges, so a spot
+  // "behind" a post is not at the same lane X) at the heights his body spans, so it holds at
+  // any window size.
+  hiddenSpot(lamp, Z) {
+    const L = this.lane, inward = -lamp.side, s0 = L.toScreen(0, Z), ppm = s0.ppm;
+    const r = L.rel(lamp.el), hpx = r.h / LAMP_M, base = r.y + r.h;
+    const lo = (base - s0.y) / hpx - 0.03, hi = (base - (s0.y - 0.44 * ppm)) / hpx + 0.03;     // heights of the post his body spans
+    let ex = inward > 0 ? Infinity : -Infinity;
+    for (let h = Math.max(-0.5, lo); h <= hi + 1e-6; h += 0.02) { const x = this.postEdgeX(lamp, h); ex = inward > 0 ? Math.min(ex, x) : Math.max(ex, x); }
+    return (ex - inward * (NOSE_M * ppm + 8) - L.cAtY(s0.y)) / ppm;
+  }
+  // true once he is entirely clear of the post he came out from: tail tip past its widest point
+  peekDone() {
+    const pk = this.peek, inward = -pk.lamp.side, s = this.lane.toScreen(this.X, this.Z);
+    if (this.Z < pk.lamp.Z - 0.1) return true;                         // in front of the post's plane
+    let ex = inward > 0 ? -Infinity : Infinity;
+    for (const [x] of this.postEdge(pk.lamp)) ex = inward > 0 ? Math.max(ex, x) : Math.min(ex, x);
+    return (s.x - inward * TAIL_M * this.vis * s.ppm - ex) * inward > 6;
   }
 }
 
@@ -1174,36 +1239,32 @@ class Brain {
       yield* this.wander();
     }
   }
-  // The intro: he's out of sight behind one of the mid posts (his canvas is cut off along the
-  // post's edge while he's behind it, see place()). He walks out from behind it, stops with his head and
-  // shoulders round the post and looks straight at you (ears flick, a blink), glances down
-  // the lane, then carries on out into the lane in front of the post.
+  // The intro: he starts out of sight behind one of the front posts (near or mid row), side-on
+  // to us, nose just inside the post's outline. After a beat he walks out from behind it
+  // along the lane (across the screen: a walk toward the viewer barely moves on screen from
+  // this low angle and reads as walking on the spot), looks at the viewer as he comes out,
+  // and carries on into the lane. While he's behind the post his canvas is cut off along the
+  // post's inner edge (see place()), so he is revealed a little at a time as he passes it.
   *enter() {
     const c = this.c, L = c.lane, m = c.motor;
-    const mids = L.lamps.filter((l) => l.row === 'mid'), lit = mids.filter((l) => l.lit);
-    const pool = lit.length ? lit : mids;
+    const posts = L.lamps.filter((l) => l.row === 'mid' || l.row === 'near'), lit = posts.filter((l) => l.lit);
+    const pool = lit.length ? lit : posts;
     if (!pool.length) { yield* this.walkIn(); return; }
-    const post = pool[Math.floor(Math.random() * pool.length)], inward = -post.side;
+    const post = (c.introPick && c.introPick(pool)) || pool[Math.floor(Math.random() * pool.length)], inward = -post.side;
     try {
       c.peek = { lamp: post };
-      // behind the plinth, turned toward the lane and a little toward you, nose out of sight
-      c.Z = post.Z + 0.35; c.X = post.X - inward * 0.06; c.yaw = inward * 40 * DEG;
-      m.play('idle_stand', 0); c.posture = 'STAND'; c.creep = 0;
-      yield* this.wait(rnd(0.8, 1.3));
-      // out from behind it, as far as his head and shoulders
-      const half = { X: post.X + inward * 0.3, Z: post.Z + 0.1 };
-      yield* this.walkTo(() => half, { speed: WALK(), stop: 0.05 });
-      // caught: look right at the viewer
-      c.lockOn(); c.gazeOverride = { kind: 'viewer', until: c.time + 99 };
-      yield* this.wait(0.7); c.blink.t = 0;
-      yield* this.wait(rnd(0.8, 1.2));
-      // a look along the lane, then on out
-      c.gazeOverride = { X: c.X + inward * 3, h: 0.2, Z: c.Z - 1, until: c.time + 99 };
-      yield* this.wait(rnd(0.7, 1.0));
-      c.gazeOverride = null;
-      const fz = clamp(post.Z - rnd(0.8, 1.3), L.Zmin + 0.1, L.Zmax), fh = L.halfW(fz) - 0.6;
-      const dest = { X: clamp(post.X + inward * rnd(1.0, 1.6), -fh, fh), Z: fz };
-      yield* this.walkTo(() => dest, { speed: WALK(), stop: 0.12 });
+      const Z = clamp(post.Z + (post.row === 'near' ? 0.95 : 0.3), L.Zmin, L.Zmax);
+      c.Z = Z; c.X = c.hiddenSpot(post, Z); c.yaw = inward * 90 * DEG;
+      m.play('idle_stand', 0); c.posture = 'STAND'; c.creep = 0; c.gaze.w = 0;
+      yield* this.wait(rnd(0.7, 1.1));
+      // out from behind it and on along the lane, a little brisker than his usual stroll
+      const fh = L.halfW(Z) - 0.7, X1 = clamp(post.X + inward * rnd(2.0, 2.8), -fh, fh), Z1 = clamp(Z - rnd(0.15, 0.5), L.Zmin, L.Zmax);
+      const dest = { X: X1, Z: Z1 };
+      let looked = false;
+      yield* this.walkTo(() => {
+        if (!looked && (c.X - c.hiddenSpot(post, Z)) * inward > 0.5) { looked = true; c.gazeOverride = { kind: 'viewer', until: c.time + 2.2 }; c.lockOn(); }
+        return dest;
+      }, { speed: INTRO_SPEED(), stop: 0.12 });
     } finally {
       c.peek = null; c.creep = 0; c.gazeOverride = null;
     }
@@ -1287,6 +1348,13 @@ class Brain {
       if (seen == null) fresh.push(op);
     }
     for (let i = 0; i < 3; i++) { const p = L.randomPoint(); if (c.distTo(p) > 1.5) opts.push({ w: 0.3, t: p }); }
+    // From this low angle a walk along the lane barely moves him on screen (a metre of depth is
+    // about a quarter of a metre across it), so a stroll across the lane is likelier than one
+    // up or down it. Posts nobody has visited yet still come first (below).
+    for (const op of opts) {
+      const dx = Math.abs(op.t.X - c.X), dz = Math.abs(op.t.Z - c.Z), d = Math.hypot(dx, dz) || 1;
+      op.w *= 0.45 + 0.55 * Math.hypot(dx, dz * SINP) / d;
+    }
     if (o.away && c.toy) {   // walk off away from the toy that bored it
       for (const op of opts) if (Math.hypot(op.t.X - c.toy.X, op.t.Z - c.toy.Z) < 2) op.w *= 0.1;
     }

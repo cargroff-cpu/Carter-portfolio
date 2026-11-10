@@ -15,6 +15,11 @@ loop, and a render check confirms his eyes are lit facing the viewer and dark fr
     npm i -D playwright && npx playwright install chromium   # once
     npm run test:cat                                          # RUNS=5 VERBOSE=1 for more
 
+`npm run test:cat:sizes` plays his entrance on each front post at six window sizes (900×640 up to
+2560×1440) in the real page, with pixel checks: nothing of him shows at the start, he is revealed
+gradually, he really crosses the screen, and he ends up in the lane. `SIZES=1440x900,1920x1080` and
+`ONLY=mid` narrow it.
+
 Options: `RUNS=5` repeats each scenario five times (use it when judging a change);
 `VERBOSE=1` prints each run's clip timeline and pounce misses; `ONLY=<text>` runs only
 scenarios whose name contains the text; `TRACE=<secs>` dumps per-frame state (toy, distance,

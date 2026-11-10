@@ -7,6 +7,7 @@
     "build:portfolio": "node scripts/build-portfolio.mjs",
     "build:pages": "node scripts/build-design.mjs && node scripts/build-portfolio.mjs",
     "test:cat": "node scripts/cat-test/suite.cjs",
+    "test:cat:sizes": "node scripts/cat-test/sizes.cjs",
     "test": "node scripts/check-crm.mjs"
   },
   "devDependencies": {
