@@ -39,6 +39,7 @@ const TOY = `<svg viewBox="0 0 40 32" width="40" height="32" aria-hidden="true" 
 </svg>`;
 
 const CSS = `
+@font-face { font-family: "Caveat"; font-style: normal; font-weight: 400; font-display: swap; src: url("assets/fonts/caveat-latin-400.woff2") format("woff2"); }
 .bm-peek { position: absolute; z-index: 3; width: 22px; height: 24px; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity 1.2s ease .8s; }
 .bm-peek.bm-on { opacity: .72; }
 @media (max-width: 899px) { .bm-peek { display: none; } }
@@ -106,12 +107,10 @@ function waitFor(sel) {
   });
 }
 
+// the handwriting font ships with the site (assets/fonts, SIL OFL), so it is there when the
+// line appears: this starts the download early, and foundCard() waits for it
 function loadFont() {
-  if (document.getElementById('bm-font')) return;
-  const l = document.createElement('link');
-  l.id = 'bm-font'; l.rel = 'stylesheet';
-  l.href = 'https://fonts.googleapis.com/css2?family=Caveat:wght@400&display=swap';
-  document.head.appendChild(l);
+  try { return document.fonts.load('30px "Caveat"', 'I know someone who might like this.').catch(() => {}); } catch (e) { return Promise.resolve(); }
 }
 
 // ── where it hides: peeking out from behind the right edge of the portrait, low down ──
@@ -129,6 +128,7 @@ function place() {
     b.addEventListener('pointerenter', loadFont, { once: true });
     b.addEventListener('click', pickUp, { once: true });
     document.body.appendChild(peek);
+    loadFont();
     budgeOnce(peek);
   }
   const r = img.getBoundingClientRect(), shown = !!img.closest('.dwhyhead.shown') && r.width > 0;
@@ -159,7 +159,9 @@ function watchSpot() {
 
 // the find: the whole mouse and a line of handwriting, floating over the page with no box.
 // Nothing to click away: it all fades by itself after a few seconds
-function foundCard() {
+async function foundCard() {
+  // wait (a moment at most) for the handwriting font, so it never shows in a stand-in
+  await Promise.race([loadFont(), new Promise((r) => setTimeout(r, 1500))]);
   const c = document.createElement('div');
   c.className = 'bm-found'; c.setAttribute('role', 'status');
   c.innerHTML = `<span class="bm-found-art">${TOY}</span><span class="bm-found-h">I know someone who might like this.</span>`;
