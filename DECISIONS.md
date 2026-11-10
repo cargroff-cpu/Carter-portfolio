@@ -1241,20 +1241,22 @@ under makes it look up and move.
     where the find shows; the line comes in under it once it has landed. Same wording, same
     place, still fades on its own, still stowed from the moment of the click.
   - Suite and size sweep pass.
-- **Sitting: back legs folded against his flank, not laid out flat (2026-11-10).** The sit clip
-  puts hip, knee and hock all at one height, so the leg lay like a Z on its side under him and
-  the haunch read as a sausage along the ground. This rig's thigh bone is a 4 cm stub (the
-  "shin" runs from there to the hock), so turning joints alone can't fold it upright: the
-  hip-knee-hock triangle is almost flat whatever the angles. `applyHaunch` (weighted by how
-  much of the pose is a sit) lifts the hip joint 3.5 cm up into the body (`HAUNCH.lift`), points
-  the knee up, forward and a little out (`HAUNCH.knee`), and brings the shin back down to the
-  hock at the clip's height, with the foot kept exactly as the clip lays it. A first version
-  lowered the hock and paw bones to "ground level" and sank his feet 3 cm: the bones don't run
-  through the mesh on this rig, and the clip's foot was already on the ground (measured on the
-  skinned mesh). Seen lit up in grey there is a dark fold between thigh and foot; it doesn't
-  show in black fur. "Seated life" (1 glance in 20 s) and "stops when the cursor goes still"
-  each failed once in a full-suite pass and pass on repeat, with and without this change:
-  both are random/timing checks.
+- **Sitting: back legs you can see (2026-11-10).** The sit clip lays hip, knee and hock at one
+  height with the foot tucked back under the rump, so the back legs folded in and all but
+  disappeared. Two tries at aiming the joints failed (owner: "they fold in and disappear"): on
+  this rig the leg bones don't run through the limbs they move (about 4 cm forward of the mesh),
+  the thigh bone is a 4 cm stub, and the back toes had no bone of their own, so a lower leg laid
+  flat took the toes up into the air.
+  - `giveToes` (at load): everything at toe height on a back foot (standing, below `TOE_Y`) is
+    handed to that side's paw bone.
+  - `applyHaunch` (weighted by how much of the pose is a sit) places each part of the leg as a
+    piece, starting from its standing shape: the upper leg is tipped forward about the hock into
+    a thigh lying along his flank, the hock is set on the ground beside the rump, the lower leg
+    is laid forward along the ground, and the toes stay flat at its end. All in `HAUNCH`.
+  - Checked on grey renders from six sides and in silhouette: a thigh, a lower leg on the
+    ground and a paw reaching toward the front paws, from both sides; the sit-down eases into
+    it. Suite and size sweep pass. ("Seated life" and "stops when the cursor goes still" can each
+    fail once in a full pass and pass on repeat, with and without this: random/timing checks.)
 - **The crouch belly (2026-11-09).** Crouched (stalk, wiggle, the pounce
   wind-up), his belly hung as a flat, sharp-cornered plate: a triangle in side
   view. The body drops ~5 cm while both upper legs fold hard (front 97°, back 75°)

@@ -58,9 +58,11 @@ const BACK_STRAIGHT = 0.9;      // sitting: how far the spine bones are lined up
 const SIT_CHEST_UP = 8 * DEG;   // sitting: how far the chest tips up; more lifts the front paws off the ground
 const SIT_NECK_UP = 32 * DEG;   // sitting: how far the neck lifts, so his head is held above his shoulders
 const SIT_HEAD_UP = 0.15;      // sitting: share of the neck's lift the head takes too (chin a little up)
-// Sitting: how each back leg is folded up against his flank (applyHaunch). lift: how far the hip joint is moved into the
-// body (out, up, forward; metres); knee: the way the knee points from it (out, up, forward).
-const HAUNCH = { lift: [0.004, 0.035, 0.01], knee: [0.25, 0.5, 0.83] };
+// Sitting: where each back leg is put (applyHaunch), in his own space (metres; x out from his middle, y up from the
+// ground, z forward). rest / ball: the hock and the ball of the foot as he stands; hock: the hock as he sits (z from the hips); thigh / foot: how far
+// the upper leg and the lower leg are tipped forward from standing (degrees); splay: how far the leg turns out.
+const HAUNCH = { rest: [0.047, 0.07, -0.165], ball: [0.05, 0.025, -0.165], hock: [0.05, 0.028, 0.005], thigh: -20, foot: -80, splay: 7 };
+const TOE_Y = 0.03;            // standing, a back foot below this height (m) is toes: given to the paw bone (giveToes)
 const TROT_BOB_M = 0.005;      // trotting in: how far his body rises with each step (model metres; he stands 0.29 at the back)
 const TROT_SWAY = 2.2 * DEG;   // trotting in: how far his spine bends side to side with the stride
 const BELLY_TUCK_M = 0.045;    // how far the belly is drawn up in a full crouch
@@ -509,7 +511,7 @@ class Cat {
         // before). Back faces of an inside-out mesh are its true outside, and three flips the
         // normals of back faces for lighting, so this one setting fixes both.
         m.side = THREE.BackSide;
-        if (o.isSkinnedMesh) { this.firmKeel(o); this.firmChest(o); this.firmBelly(o); }
+        if (o.isSkinnedMesh) { this.giveToes(o); this.firmKeel(o); this.firmChest(o); this.firmBelly(o); }
         if (o.isSkinnedMesh && !(m.alphaTest > 0)) { this.addBellyTuck(THREE, o); this.sculpt(o); }
         // The alpha fur shells were extruded along those inward normals, so they sit inside
         // the body and can never be seen once it is drawn the right way out: skip them.
@@ -527,6 +529,10 @@ class Cat {
     this.back = ['spine_01', 'spine_02', 'spine_03', 'chest'].map((n) => this.model.getObjectByName(n)).filter(Boolean);   // straightened when he sits (applyBack)
     this.backMore = ['neck_01', 'neck_02', 'head', 'fl_scap_L', 'fl_scap_R'].map((n) => this.model.getObjectByName(n)).filter(Boolean);
     this.frameNo = 0;
+    this.model.traverse((o) => {   // each bone as it is in the standing rest shape (applyHaunch places leg pieces from it)
+      if (!o.isSkinnedMesh || !o.skeleton) return;
+      o.skeleton.bones.forEach((b, i) => { if (!b.userData.bindM) b.userData.bindM = o.skeleton.boneInverses[i].clone().invert(); });
+    });
     this.hind = ['L', 'R'].map((sd) => ['hl_thigh_', 'hl_shin_', 'hl_foot_', 'hl_paw_'].map((n) => this.model.getObjectByName(n + sd))).filter((leg) => leg.every(Boolean));   // folded properly when he sits (applyHaunch)
     this.tailBase = ['tail_01', 'tail_02', 'tail_03'].map((n) => this.model.getObjectByName(n)).filter(Boolean);   // raised as he trots in
     for (const n of Object.keys(this.bones)) this.bones[n] = this.model.getObjectByName(n);
@@ -610,6 +616,35 @@ class Cat {
       SW.setComponent(i, best, SW.getComponent(i, best) + moved);
     }
     SW.needsUpdate = true;
+  }
+
+  // His back toes had no bone of their own: the paw bones carry at most half of any vertex, the
+  // rest is the lower leg's. Standing it doesn't matter. Sitting, the lower leg lies down along
+  // the ground and the toes went with it, pointing up in the air. Everything at toe height on a
+  // back foot (standing, below TOE_Y) is handed to that side's paw bone, fading in over 2 cm, so
+  // the toes can stay flat on the ground while the leg above them folds (applyHaunch).
+  giveToes(mesh) {
+    const g = mesh.geometry, P = g.attributes.position, SI = g.attributes.skinIndex, SW = g.attributes.skinWeight;
+    if (!P || !SI || !SW || g.userData.toesGiven) return;
+    g.userData.toesGiven = true;
+    const names = mesh.skeleton.bones.map((b) => b.name);
+    for (let v = 0; v < P.count; v++) {
+      let foot = 0, side = ''; const inf = new Map();
+      for (let k = 0; k < 4; k++) {
+        const bi = SI.getComponent(v, k), w = SW.getComponent(v, k); if (w <= 0) continue;
+        inf.set(bi, (inf.get(bi) || 0) + w);
+        const mm = /^hl_(foot|paw)_([LR])$/.exec(names[bi]); if (mm) { foot += w; side = mm[2]; }
+      }
+      if (foot < 0.5) continue;
+      const f = sm((TOE_Y + 0.01 - P.getY(v)) / 0.02); if (f <= 0) continue;
+      const paw = names.indexOf('hl_paw_' + side); if (paw < 0) continue;
+      let moved = 0;
+      for (const [bi, w] of inf) if (bi !== paw) { inf.set(bi, w * (1 - f)); moved += w * f; }
+      inf.set(paw, (inf.get(paw) || 0) + moved);
+      const top = [...inf].sort((a, b) => b[1] - a[1]).slice(0, 4), sum = top.reduce((t, x) => t + x[1], 0) || 1;
+      for (let k = 0; k < 4; k++) { SI.setComponent(v, k, top[k] ? top[k][0] : 0); SW.setComponent(v, k, top[k] ? top[k][1] / sum : 0); }
+    }
+    SI.needsUpdate = true; SW.needsUpdate = true;
   }
 
   // The strip of skin along the midline of his underside (the breastbone between the front legs,
@@ -1113,7 +1148,7 @@ class Cat {
     for (const b of this.tailBase || []) if (b.userData.animQ) b.quaternion.copy(b.userData.animQ);
     for (const b of this.back || []) if (b.userData.animQ) b.quaternion.copy(b.userData.animQ);
     for (const b of this.backMore || []) if (b.userData.animQ) b.quaternion.copy(b.userData.animQ);
-    for (const leg of this.hind || []) { for (const b of leg) if (b.userData.animQ) b.quaternion.copy(b.userData.animQ); if (leg[0].userData.animP) leg[0].position.copy(leg[0].userData.animP); }
+    for (const leg of this.hind || []) for (const b of leg) { if (b.userData.animQ) b.quaternion.copy(b.userData.animQ); if (b.userData.animP) b.position.copy(b.userData.animP); }
     for (const m of this.morphs) if (m.userData.animInf) for (let i = 0; i < 3; i++) m.morphTargetInfluences[i] = m.userData.animInf[i];
   }
 
@@ -1166,50 +1201,50 @@ class Cat {
     d.setFromAxisAngle(axis, -nk * SIT_HEAD_UP); hq.premultiply(d);
     head.parent.getWorldQuaternion(T.qp); head.quaternion.copy(T.qp.invert().multiply(hq)); head.updateMatrixWorld(true);
   }
-  // Sitting, his back legs were laid out flat. The sit clip puts the hip, knee and hock all at
-  // one height: the leg is folded like a Z lying on its side under him, so the haunch read as a
-  // sausage along the ground with daylight between it and his belly. A sitting cat's leg is
-  // folded upright against its flank: the knee is the high point, forward beside the belly, and
-  // only the hock and foot are down on the ground. This rig's thigh bone is a stub (4 cm; the
-  // "shin" runs from there to the hock), so that can't be reached by turning joints alone: the
-  // triangle hip-knee-hock is almost flat whatever the angles. So while he sits (weighted by how
-  // much of the pose is a sit) the hip joint itself is lifted a little up and forward into the
-  // body (HAUNCH.lift), the knee is pointed up, forward and slightly out from it (HAUNCH.knee),
-  // and the shin comes back down to the hock at the height the clip had it, with the foot kept
-  // exactly as the clip lays it (it was on the ground; measured on the skinned mesh). Bones are
-  // snapshotted first, and the joint's place restored, so unlayer() takes it all back off.
+  // Sitting, his back legs folded in under him and all but disappeared. The sit clip lays hip,
+  // knee and hock at one height with the foot tucked back under the rump, and on this rig the
+  // bones don't run through the limbs they move (the leg bones sit ~4 cm forward of the mesh, the
+  // thigh bone is a 4 cm stub), so aiming joints got nowhere. Instead each part of the leg is
+  // placed as a piece, starting from how it is shaped standing: the upper leg (everything the
+  // "shin" bone carries, hip to hock) is tipped forward about the hock into a haunch lying along
+  // his flank, the hock is set down on the ground beside the rump, the lower leg (the "foot"
+  // bone's part) is laid forward from it along the ground, and the toes are kept flat as they
+  // are when he stands. So a sitting cat's back leg shows: a round thigh, and a foot on the
+  // ground reaching forward toward his front paws. Weighted by how much of the pose is a sit
+  // (from the clip's pose to this one). Bones are snapshotted first and unlayer() puts them back.
   applyHaunch() {
-    const legs = this.hind; if (!legs || !legs.length) return;
-    for (const leg of legs) for (const b of leg) (b.userData.animQ || (b.userData.animQ = b.quaternion.clone())).copy(b.quaternion);
-    for (const leg of legs) (leg[0].userData.animP || (leg[0].userData.animP = leg[0].position.clone())).copy(leg[0].position);
+    const legs = this.hind; if (!legs || !legs.length || !legs[0][1].userData.bindM) return;
+    for (const leg of legs) for (const b of leg) {
+      (b.userData.animQ || (b.userData.animQ = b.quaternion.clone())).copy(b.quaternion);
+      (b.userData.animP || (b.userData.animP = b.position.clone())).copy(b.position);
+    }
     const s = (this.haunch ?? 1) * this.sitAmount(); if (s < 0.01) return;
-    const V = this.T.Vector3, Q = this.T.Quaternion, T = this.tmp;
-    const inv = (T.minv || (T.minv = new this.T.Matrix4())).copy(this.body.matrixWorld).invert();
-    const bq = this.body.getWorldQuaternion(new Q()), bqi = bq.clone().invert();
-    const at = (b) => b.getWorldPosition(new V()).applyMatrix4(inv);          // in his own space: y up from the ground, z forward
-    const d = new Q(), cur = new V(), want = new V();
-    const aim = (bone, child, target) => {
-      const p = at(bone);
-      cur.copy(at(child)).sub(p).normalize(); want.copy(target).sub(p).normalize();
-      d.setFromUnitVectors(cur, want).premultiply(bq).multiply(bqi);            // to world space
-      bone.getWorldQuaternion(T.q2); T.q2.premultiply(d);
-      bone.parent.getWorldQuaternion(T.qp); bone.quaternion.copy(T.qp.invert().multiply(T.q2)); bone.updateMatrixWorld(true);
+    const T3 = this.T, V = T3.Vector3, Q = T3.Quaternion, M = T3.Matrix4, H = this.haunchSet || HAUNCH;
+    const hips = this.model.getObjectByName('hips'); if (!hips) return;
+    const bw = this.body.matrixWorld, inv = new M().copy(bw).invert();
+    const hz = hips.getWorldPosition(new V()).applyMatrix4(inv).z;            // where the clip has sat him (his own space)
+    const m = new M(), g = new M(), g0 = new M(), r = new M(), p = new V(), q = new Q(), sc = new V(), p0 = new V(), q0 = new Q();
+    // put a bone where a rigid move of its standing shape (turn R about `pivot`, pivot carried to `to`) leaves it
+    const set = (bone, R, pivot, to) => {
+      g.makeTranslation(to.x, to.y, to.z).multiply(R).multiply(m.makeTranslation(-pivot.x, -pivot.y, -pivot.z)); g0.copy(g);
+      m.copy(bw).multiply(g).multiply(bone.userData.bindM).decompose(p, q, sc);     // world
+      bone.matrixWorld.decompose(p0, q0, sc);
+      p0.lerp(p, s); q0.slerp(q, s);
+      m.compose(p0, q0, sc).premultiply(g.copy(bone.parent.matrixWorld).invert()).decompose(bone.position, bone.quaternion, sc);
+      bone.updateMatrixWorld(true);
     };
-    for (const [thigh, shin, foot] of legs) {
-      const h = at(thigh), sx = h.x >= 0 ? 1 : -1, k0 = at(shin), f0 = at(foot);
-      const lt = k0.distanceTo(h), ls = f0.distanceTo(k0), fq = foot.getWorldQuaternion(new Q());
-      // the hip joint, lifted into the body
-      const h1 = new V(h.x + sx * HAUNCH.lift[0] * s, h.y + HAUNCH.lift[1] * s, h.z + HAUNCH.lift[2] * s);
-      thigh.position.copy(thigh.parent.worldToLocal(h1.clone().applyMatrix4(this.body.matrixWorld))); thigh.updateMatrixWorld(true);
-      // the knee: from where the clip points it to up, forward and a little out, by how far he's sat
-      const kd = new V(sx * HAUNCH.knee[0], HAUNCH.knee[1], HAUNCH.knee[2]).normalize().lerp(cur.copy(k0).sub(h).normalize(), 1 - s).normalize();
-      const k = new V().copy(h1).addScaledVector(kd, lt);
-      aim(thigh, shin, k);
-      // the hock: back down at the height the clip had it, behind the knee, as far out as it was
-      const dy = k.y - f0.y, dx = f0.x - k.x, dz = Math.sqrt(Math.max(1e-6, ls * ls - dy * dy - dx * dx));
-      aim(shin, foot, new V(f0.x, f0.y, k.z - dz));
-      // the foot lies as the clip laid it
-      foot.parent.getWorldQuaternion(T.qp); foot.quaternion.copy(T.qp.invert().multiply(fq)); foot.updateMatrixWorld(true);
+    for (const [, shin, foot, paw] of legs) {
+      const sx = shin.userData.bindM.elements[12] >= 0 ? 1 : -1;
+      const pivot = new V(sx * H.rest[0], H.rest[1], H.rest[2]);                 // the hock, standing
+      const to = new V(sx * H.hock[0], H.hock[1], hz + H.hock[2]);                // the hock, sitting
+      const yaw = new M().makeRotationY(sx * H.splay * DEG);
+      set(shin, r.copy(yaw).multiply(m.makeRotationX(H.thigh * DEG)), pivot, to);
+      set(foot, r.copy(yaw).multiply(m.makeRotationX(H.foot * DEG)), pivot, to);
+      const gFoot = new M().copy(g0);
+      // the toes: flat on the ground as they are standing (only turned out with the leg), carried to
+      // wherever the laid-down lower leg now ends (the ball of the foot)
+      const ball = new V(sx * H.ball[0], H.ball[1], H.ball[2]);
+      set(paw, yaw, ball, ball.clone().applyMatrix4(gFoot));
     }
   }
 
