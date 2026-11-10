@@ -234,8 +234,15 @@ const SCEN = [
           else if (t >= 16 && t < 22) { const s = L.toScreen(c.X > 0 ? -2.5 : 2.5, 4.5); cur = [s.x + 0.2 * s.ppm * Math.sin(t * 6), s.y]; }
           if (cur) { const sp = px == null ? 0 : Math.hypot(cur[0] - px, cur[1] - py) * 30; px = cur[0]; py = cur[1]; c.ptr.cx = rect.left + cur[0]; c.ptr.cy = rect.top + cur[1]; c.ptr.speed = Math.max(c.ptr.speed, sp * 0.6); }
           else { c.ptr.cx = -1; px = null; }
+          const bx = c.X, bz = c.Z, byaw = c.yaw;
           c.update(1 / 30);
           if (c.motor.cur === 'loco' && c.motor.loco.v > r.ran) r.ran = c.motor.loco.v;
+          // one fluid move: before he sits, he never stands still, never turns on the spot, never swings round sharply
+          if (r.sat < 0 && t > 1.2) {
+            if (Math.hypot(c.X - bx, c.Z - bz) < 0.0005 && !/sit/.test(c.motor.cur)) r.still = (r.still || 0) + 1;
+            if (/^turn_/.test(c.motor.cur)) r.turned = true;
+            r.yawRate = Math.max(r.yawRate || 0, Math.abs(((c.yaw - byaw) * 57.3 + 540) % 360 - 180) * 30);
+          }
           if (r.sat < 0 && c.posture === 'SIT') r.sat = +t.toFixed(2);
           if (r.sat >= 0 && c.posture !== 'SIT') r.stood++;
           if (r.sat >= 0 && !/^sit/.test(c.motor.cur) && c.motor.cur !== 'stand_to_sit') r.moves.push(c.motor.cur);
@@ -262,6 +269,9 @@ const SCEN = [
       if (!(res.sat > 2 && res.sat < 9)) problems.push('not sitting by 9 s (' + res.sat + ')');
       if (!(res.gapM > 0.15 && res.gapM < 0.9)) problems.push('not sitting beside the post (' + (res.gapM || 0).toFixed(2) + ' m off its edge)');
       if (res.stood) problems.push('got up again (' + res.stood + ' frames)');
+      if ((res.still || 0) > 2) problems.push('stood still before sitting (' + res.still + ' frames)');
+      if (res.turned) problems.push('turned on the spot before sitting');
+      if ((res.yawRate || 0) > 160) problems.push('swung round at ' + res.yawRate.toFixed(0) + '°/s');
       if (res.moves) problems.push('did more than sit: ' + res.moves);
       if (res.gazeNear < 0.6 || res.aim > 30) problems.push(`didn't look at a close cursor (gaze ${res.gazeNear.toFixed(2)}, head ${res.aim.toFixed(0)}° off)`);
       if (res.gazeFar > 0.2) problems.push('kept looking at a far cursor (' + res.gazeFar.toFixed(2) + ')');

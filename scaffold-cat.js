@@ -52,7 +52,9 @@ const REACH_H = 1.5;           // an air toy higher than this (metres) is only w
 const SCRIPTED = true;
 const LOOK_M = 1.6;            // scripted: a cursor this close (metres, at his depth) gets looked at; fades out by +0.6 m
 const RUN_IN = () => GAIT_SPEED[1] * 1.25;   // scripted: how fast he runs in (a quick trot; the run clip is broken)
-const SEAT_GAP_M = 0.45;       // scripted: where he sits, on screen: his middle this far (metres at his depth) beyond the post's widest point
+const SEAT_GAP_M = 0.45;
+const SEAT_YAW = 62 * DEG;     // scripted: he sits three-quarters on to us (this far round from facing us, toward the middle of the lane): side-on enough to read as a cat, face still toward us
+const BEND_M = 0.55;           // scripted: how far before the seat his run-in curves round toward us (short: a walk toward the camera barely moves on screen)       // scripted: where he sits, on screen: his middle this far (metres at his depth) beyond the post's widest point
 const FLICK_MPS = 1.6;         // cursor speed (m/s at the cat's depth) that reads as a flick
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -1300,23 +1302,45 @@ class Brain {
       const post = pool.length && ((c.introPick && c.introPick(pool)) || pool[Math.floor(Math.random() * pool.length)]);
       if (post) {
         c.seatPost = post;
-        const inward = -post.side, Z = clamp(post.Z + 0.95, L.Zmin, L.Zmax), s0 = L.toScreen(0, Z);
-        // off the edge of the hero on the post's side, facing in, nose past the edge
-        const edge = post.side < 0 ? 0 : L.W, x0 = edge - inward * (NOSE_M * s0.ppm + 16);
-        c.X = (x0 - L.cAtY(s0.y)) / s0.ppm; c.Z = Z; c.yaw = inward * 90 * DEG; c.outside = true; c.gaze.w = 0;
-        m.play('idle_stand', 0); c.posture = 'STAND';
-        yield* this.wait(rnd(0.3, 0.7));
-        // already running as he comes into view
-        m.loco.v = RUN_IN(); m.play('loco', 0.25); m.loco.p = 0; c.posture = 'WALK';   // blends into the run off-screen
+        const inward = -post.side, Zs = clamp(post.Z + 0.95, L.Zmin, L.Zmax), s0 = L.toScreen(0, Zs);
         // The seat is placed on screen, just clear of the post's widest point. He can't stand
         // level with a front post's base (it is on the hero's bottom edge), so he is a little
         // behind it, and the lane converges: measured in lane metres he'd look a long way off.
         let ex = inward > 0 ? -Infinity : Infinity;
         for (const [x] of c.postEdge(post)) ex = inward > 0 ? Math.max(ex, x) : Math.min(ex, x);
-        const seat = L.clampIn((ex + inward * SEAT_GAP_M * s0.ppm - L.cAtY(s0.y)) / s0.ppm, Z, 0.45);
-        yield* this.walkTo(() => seat, { speed: RUN_IN(), stop: 0.05, hunt: true });
-        // three-quarters on to us, turned a little toward the middle of the lane, and sit
-        yield* this.turnBy(wrap(inward * 40 * DEG - c.yaw));
+        const seat = L.clampIn((ex + inward * SEAT_GAP_M * s0.ppm - L.cAtY(s0.y)) / s0.ppm, Zs, 0.45);
+        // One move, no stops: he runs in along the lane a little behind the seat, curves toward
+        // us as he slows from a trot to a walk, and arrives already facing the way he'll sit
+        // (three-quarters on, turned a little toward the middle of the lane). `bend` is a point
+        // behind the seat on that heading; he aims for it, then for the seat.
+        const fy = inward * SEAT_YAW, fx = Math.sin(fy), fz = -Math.cos(fy);
+        const bend = { X: seat.X - fx * BEND_M, Z: seat.Z - fz * BEND_M };
+        const sb = L.toScreen(0, bend.Z), edge = post.side < 0 ? 0 : L.W, x0 = edge - inward * (NOSE_M * sb.ppm + 16);
+        c.X = (x0 - L.cAtY(sb.y)) / sb.ppm; c.Z = bend.Z; c.yaw = inward * 90 * DEG; c.outside = true; c.gaze.w = 0;
+        m.play('idle_stand', 0); c.posture = 'STAND';
+        yield* this.wait(rnd(0.3, 0.7));
+        m.loco.v = RUN_IN(); m.play('loco', 0.25); m.loco.p = 0; c.posture = 'WALK';   // blends into the run off-screen
+        const L0 = m.loco;
+        let passed = false, stopping = false, t = 0;
+        while (true) {
+          const dt = yield; t += dt;
+          if (!passed && ((c.X - bend.X) * inward > -0.15 || Math.hypot(c.X - bend.X, c.Z - bend.Z) < 0.2)) passed = true;
+          const aim = passed ? seat : bend;
+          const left = passed ? c.distTo(seat) : c.distTo(bend) + BEND_M;
+          // ease off on the way in: a trot down to an easy walk, no braking at the end
+          const vT = stopping ? WALK() * 0.85 : clamp(Math.sqrt(2 * 0.55 * Math.max(0, left - 0.25)), WALK() * 0.85, RUN_IN());
+          L0.v += clamp(vT - L0.v, -0.8 * dt, 1.2 * dt);
+          c.steer(aim, (L0.v > 0.45 ? 130 : 100) * DEG, dt);
+          if (passed && left < 0.3) stopping = true;
+          if (stopping && L0.wrapped) break;          // stop on the gait's own phase 0, where walk_to_idle starts
+          if (t > 25) break;
+        }
+        // the last step and the sit are one move: he starts to sit while the step settles
+        m.play('walk_to_idle', 0.15); c.posture = 'STAND';
+        while (m.time('walk_to_idle') < 0.5 * m.dur('walk_to_idle')) yield;
+        const off = wrap(fy - c.yaw);
+        if (Math.abs(off) > 25 * DEG) yield* this.turnBy(off);   // only if the curve came out well short
+        yield* this.once('stand_to_sit', 0.35);
       }
     }
     if (c.posture !== 'SIT') { yield* this.toStand(); yield* this.once('stand_to_sit', 0.25); }
