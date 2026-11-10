@@ -346,6 +346,35 @@ const SCEN = [
     if (problems.length) fails++;
     console.log(`${problems.length ? 'FAIL' : 'PASS'}  seated life: tail moves, looks around a little  tail ${res.tail.toFixed(0)}°, ${res.glances} glances  ${problems.length ? '→ ' + problems.join('; ') : ''}`);
   }
+  // ── talking: while his dialog is open (bat-mouse.js) he looks at you, steadily, then lets go ──
+  if (!ONLY || 'talking'.includes(ONLY)) {
+    const res = await page.evaluate(() => {
+      const c = window.__cat; c.manual = true; c.scripted = true;
+      c.ptr.cx = -1; c.glance = null; c.gazeOverride = null; c.peek = null; c.seatPost = null; c.introPick = null; c.speaking = false;
+      c.brain.swap('life', c.brain.life(true));
+      for (let f = 0; f < 30 * 12 && c.posture !== 'SIT'; f++) c.update(1 / 30);
+      for (let f = 0; f < 30 * 2; f++) c.update(1 / 30);
+      const r = { before: c.gaze.w, min: 9, glanced: 0, after: 9, stood: 0 };
+      c.speaking = true;
+      for (let f = 0; f < 30 * 14; f++) {
+        c.nextGlance = Math.min(c.nextGlance, 0.1);      // tempt him to glance elsewhere
+        c.update(1 / 30);
+        if (f > 30 * 1.5) r.min = Math.min(r.min, c.gaze.w);
+        if (c.glance && c.glance.until > c.time) r.glanced++;
+        if (c.posture !== 'SIT') r.stood++;
+      }
+      c.speaking = false; c.nextGlance = 999; c.glance = null;
+      for (let f = 0; f < 30 * 3; f++) c.update(1 / 30);
+      r.after = c.gaze.w;
+      return r;
+    });
+    const problems = [];
+    if (res.min < 0.85) problems.push(`looked away while talking (gaze dipped to ${res.min.toFixed(2)})`);
+    if (res.after > 0.3) problems.push(`kept staring after he stopped (gaze ${res.after.toFixed(2)})`);
+    if (res.stood) problems.push('got up');
+    if (problems.length) fails++;
+    console.log(`${problems.length ? 'FAIL' : 'PASS'}  talking: looks at you the whole time he speaks  gaze held at ${res.min.toFixed(2)}+, ${res.after.toFixed(2)} after  ${problems.length ? '→ ' + problems.join('; ') : ''}`);
+  }
   // ── perspective: on screen he moves the way his body points (no crab walk at the lane's sides) ──
   if (!ONLY || 'crab walk'.includes(ONLY)) {
     const res = await page.evaluate(() => {
