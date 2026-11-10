@@ -1759,7 +1759,7 @@ function Why() {
     className: "dwhyhead up"
   }, React.createElement("img", {
     className: "dportrait",
-    src: "assets/portrait.jpg",
+    src: "assets/scaffold-portrait.jpg",
     alt: "Carter Groff",
     loading: "lazy"
   }), React.createElement("div", null, React.createElement("h2", {

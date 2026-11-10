@@ -614,7 +614,7 @@ function Why() {
       <div className="dsec-candle left" aria-hidden="true" />
       <div className="dwrap">
         <div className="dwhyhead up">
-          <img className="dportrait" src="assets/portrait.jpg" alt="Carter Groff" loading="lazy" />
+          <img className="dportrait" src="assets/scaffold-portrait.jpg" alt="Carter Groff" loading="lazy" />
           <div>
             <h2 className="ddisplay">{SITE.whyHead}</h2>
             <p className="dp">{SITE.whyIntro}</p>
