@@ -41,6 +41,7 @@ const ORG_Y = 0.74;            // where the cat's feet sit inside its canvas
 const CHASE_M = 2.6;           // beyond this (metres) a cursor isn't worth getting up for
 const EYE_SCALE = 0.72;        // each eye shrunk across the face (not in depth): the model's eyes read huge at hero size
 const NOSE_M = 0.34, TAIL_M = 0.45;   // how far his nose and tail tip reach from the middle of his body (model space, metres)
+const TAIL_ARC = [0, 14, 12, 9, 7, 10, 14];   // trotting in: degrees of lift per tail bone, base to tip (a soft arc, the tip hooked over)
 const BELLY_FIRM = 0.85;       // share of the legs' pull on the belly skin handed to the torso (firmBelly)
 const BACK_STRAIGHT = 0.9;      // sitting: how far the spine bones are lined up (applyBack)
 const SIT_CHEST_UP = 8 * DEG;   // sitting: how far the chest tips up; more lifts the front paws off the ground
@@ -1136,30 +1137,38 @@ class Cat {
       b.updateMatrixWorld(true);
     });
   }
-  // Trotting in (scripted), his tail is up: raised from the base, the tip curled over a little,
-  // and it sways side to side with his stride and bobs with each step. Eased in and out.
+  // Trotting in (scripted), his tail is up, and it moves like a tail rather than a pole. The
+  // whole tail is one chain (tail_01–07). The first bone is left alone: it also carries the
+  // skin over the top of the rump, and tipping it up folded the rump into boxy lumps. The rise
+  // is spread along the rest into a soft arc with the tip hooked over (TAIL_ARC). A sway
+  // travels from base to tip with the stride, and each bone follows its target through a
+  // spring that is slower towards the tip, so the tip lags, follows through, and trails a
+  // little when he turns. Eased in and out.
   applyTailWalk(dt) {
-    const T = this.tmp, L = this.motor.loco;
+    const T = this.tmp, L = this.motor.loco, chain = this.tailChain || (this.tailChain = this.tailBase.concat(this.tail));
     const on = this.scripted && this.posture === 'WALK' && this.motor.cur === 'loco';
-    this.tailWalk = damp(this.tailWalk || 0, on ? clamp(L.e, 0, 1) : 0, on ? 2.5 : 4, dt);
-    const w = this.tailWalk; if (w < 0.01) return;
-    const ph = 2 * Math.PI * L.p;
+    this.tailWalk = damp(this.tailWalk || 0, on ? clamp(L.e, 0, 1) : 0, on ? 2 : 3, dt);
+    const turn = dt > 0 ? wrap(this.yaw - (this.tailYaw0 ?? this.yaw)) / dt : 0; this.tailYaw0 = this.yaw;
+    const st = this.tailSpring || (this.tailSpring = chain.map(() => [0, 0]));
+    const w = this.tailWalk;
+    if (w < 0.01) { st.forEach((x) => { x[0] = 0; x[1] = 0; }); return; }
+    const ph = 2 * Math.PI * L.p, n = chain.length;
     this.body.getWorldQuaternion(T.q3);
-    const rot = (b, pitch, yaw) => {
-      T.qy.setFromAxisAngle(T.v2.set(0, 1, 0), yaw); T.qp.setFromAxisAngle(T.v2.set(1, 0, 0), pitch);
-      T.q.copy(T.qy).multiply(T.qp);                                    // cat-space delta
+    const pq = T.pq || (T.pq = new this.T.Quaternion());
+    chain.forEach((b, i) => {
+      const f = i / (n - 1);
+      const tp = w * (TAIL_ARC[i] + (1.5 + 3 * f) * Math.sin(2 * ph - 0.9 * i)) * DEG;               // up, plus a bob each step
+      const ty = w * ((1 + 11 * f) * Math.sin(ph - 0.8 * i) * DEG - clamp(turn, -3, 3) * 0.06 * f);   // sway, and trailing a turn
+      const k = 16 - 10 * f, a = 1 - Math.exp(-k * dt);
+      st[i][0] += (tp - st[i][0]) * a; st[i][1] += (ty - st[i][1]) * a;
+      if (i === 0) return;                                                // the rump's bone stays as the clip has it
+      T.qy.setFromAxisAngle(T.v2.set(0, 1, 0), st[i][1]); T.qp.setFromAxisAngle(T.v2.set(1, 0, 0), st[i][0]);
+      T.q.copy(T.qy).multiply(T.qp);                                      // cat-space delta
       T.q.premultiply(T.q3).multiply(T.q2.copy(T.q3).invert());
       b.getWorldQuaternion(T.q2); T.q2.premultiply(T.q);
-      const pq = T.pq || (T.pq = new this.T.Quaternion());
       b.parent.getWorldQuaternion(pq);
       b.quaternion.copy(pq.invert().multiply(T.q2));
       b.updateMatrixWorld(true);
-    };
-    const lift = [24, 14, 8];                                           // degrees up, root to tip of the base
-    this.tailBase.forEach((b, i) => rot(b, w * (lift[i] + 3 * Math.sin(2 * ph + 0.6 - i * 0.4)) * DEG, 0));
-    this.tail.forEach((b, i) => {
-      const f = i / Math.max(1, this.tail.length - 1);
-      rot(b, w * 14 * f * DEG, w * (4 + 9 * f) * DEG * Math.sin(ph - 0.5 - i * 0.6));
     });
   }
   lockOn() { if (this.time - this.lockT > 1.2) this.lockT = this.time; }
@@ -1270,6 +1279,23 @@ class Cat {
     if (this.style.c !== cs) { st.clipPath = cs; st.webkitClipPath = cs; this.style.c = cs; }
   }
 
+  // ── for bat-mouse.js ──
+  // a point (client px) on him or close by: generous, it's something to click
+  nearMe(cx, cy) {
+    const r = this.hero.getBoundingClientRect(), s = this.lane.toScreen(this.X, this.Z), ppm = s.ppm * this.vis;
+    const dx = cx - r.left - s.x, dy = s.y - (cy - r.top);
+    return Math.abs(dx) < 0.5 * ppm && dy > -0.12 * ppm && dy < 0.7 * ppm;
+  }
+  screenSpot() {
+    const r = this.hero.getBoundingClientRect(), s = this.lane.toScreen(this.X, this.Z);
+    return { x: r.left + s.x, y: r.top + s.y, ppm: s.ppm * this.vis };
+  }
+  // given his mouse back: he looks at you, ears flick, tail twitches, and a slow blink if he's sitting
+  thank() {
+    this.gazeOverride = { kind: 'viewer', until: this.time + 4 };
+    this.lockT = this.time;
+    if (this.scripted && this.posture === 'SIT' && this.motor.has('sit_slow_blink')) this.brain.swap('life', this.brain.thanked());
+  }
   // A post's inner edge as drawn, in hero pixels, from below the ground up: the outline measured
   // from the lamp art (POST_PROFILE), placed on the lamp's box as laid out right now, so it
   // follows the page at any window size.
@@ -1554,6 +1580,14 @@ class Brain {
       m.play('sit_idle', 0.3, false); c.posture = 'SIT';
       next = rnd(6, 12);
     }
+  }
+  // given his mouse back while sitting: a slow blink at you, then on as before
+  *thanked() {
+    const c = this.c, m = c.motor;
+    yield* this.wait(0.5);
+    yield* this.once('sit_slow_blink', 0.25);
+    m.play('sit_idle', 0.3, false); c.posture = 'SIT';
+    yield* this.sitShow(false);
   }
   // the old entrance (used when there is no mid post): walk in from the side
   *walkIn() {
@@ -1888,6 +1922,12 @@ async function start(hero) {
   const lane = new Lane(hero);
   if (!lane.ok) return;
   const cat = new Cat(THREE, hero, gltf, lane);
+  // Bat's toy mouse (bat-mouse.js): is a click on him, where is he, and he's been given it back
+  window.ScaffoldCat = {
+    near: (x, y) => DESK.matches && (cat.scripted ? cat.posture === 'SIT' : !cat.outside) && cat.nearMe(x, y),
+    where: () => cat.screenSpot(),
+    thank: () => cat.thank(),
+  };
   if (DEBUG) { window.__cat = cat; cat.POUNCE = POUNCE; cat.GAIT = GAIT_SPEED; if (/catdebug=lines/.test(location.search)) debugLayer(cat); }
 
   let visible = true, last = performance.now(), raf = 0;

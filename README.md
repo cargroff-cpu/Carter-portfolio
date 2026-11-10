@@ -28,7 +28,7 @@ design.jsx                Studio page source: sections + the three-movement brie
 design.js                 GENERATED from design.jsx (precompiled, so the public page ships no in-browser Babel). Commit it with design.jsx
 cargroff-design.css       Studio page styles, built on parlor.css's tokens
 scaffold-cat.js           The 3D black cat (Bat) in the studio hero
-bat-mouse.js              Easter egg: Bat's toy mouse by the portrait; finding it gets Bat's favour (5% off)
+bat-mouse.js              Easter egg: find Bat's toy mouse, give it back to him for his favour (5% off)
 
 Scaffold Hub.html         The Backroom's entry (served at /backroom; /scaffold redirects there)
 Business Hub.html         The Business Hub CRM, door 02 of The Backroom — served at /business

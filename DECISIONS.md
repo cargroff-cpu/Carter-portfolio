@@ -1150,6 +1150,26 @@ under makes it look up and move.
   - The free-roaming "stops when the cursor goes still" scenario can time out (ends at
     10 s) on its second run in a full-suite pass, before and after these changes; on its
     own it passes 6/6. It isn't the mode the site uses.
+- **A soft tail, a round rump, and a mouse you give back (2026-11-10).**
+  - *Boxy rump.* The rest pose is round; the lumps came from the trotting tail-up layer.
+    `tail_01` also carries the skin on top of and behind the rump, so tipping it up 24°
+    folded the rump into box-like lumps under the tail. Spreading the hindquarter skin
+    weights and Taubin-smoothing the rest shape were tried and measured first and made no
+    visible difference (the shape moved 1–1.5 mm on 13 mm edges), so they were dropped.
+  - *Stiff tail.* `applyTailWalk` now treats tail_01–07 as one chain: the first bone is left
+    as the clip has it, the lift is spread along the rest as a soft arc with the tip hooked
+    over (`TAIL_ARC`), a sway travels from base to tip with the stride, and each bone
+    follows its target through a spring that is slower towards the tip, so it lags, follows
+    through, and trails a little when he turns.
+  - *The mouse.* It now hides small and dim on the rule under the last "Short answers"
+    question. Clicking it puts it in an inventory slot under the nav ("ITEMS") with a
+    pixel note: "I know someone who might like this." It doesn't open Bat's dialogue.
+    Clicking Bat while you have it (the cursor turns to a pointer over him; he must be
+    sitting) gives it back: he looks at you, his ears flick, he slow-blinks, and the
+    dialogue opens (at the top of the screen if it would cover him). That is when Carter
+    is emailed (first time per browser) and the favour is recorded for briefs. An unspent
+    mouse stays in the inventory across visits. The cat exposes `window.ScaffoldCat`
+    (`near`, `where`, `thank`) again for this.
 - **The crouch belly (2026-11-09).** Crouched (stalk, wiggle, the pounce
   wind-up), his belly hung as a flat, sharp-cornered plate: a triangle in side
   view. The body drops ~5 cm while both upper legs fold hard (front 97°, back 75°)
