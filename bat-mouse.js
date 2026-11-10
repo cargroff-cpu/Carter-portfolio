@@ -1,11 +1,11 @@
 // bat-mouse.js — an easter egg on the Scaffold page (Carter Groff Design.html).
 //
 // Bat, the black cat in the hero (scaffold-cat.js), has lost his toy mouse. It sits, small and
-// dim, on the rule under the last of the "Short answers" questions. Click it and it goes into
-// your inventory (a little slot under the nav) with a note: "I know someone who might like
-// this." Click Bat while you have it (he has to be sitting) and you give it back: he looks at
-// you, his ears flick, and an old-school video game dialog box opens: he thanks you and says
-// he'll have his owner take 5% off your final price.
+// dim, at the very end of the footer's "Cat model" credit line, like a full stop. Click it and
+// it's stowed away (nothing on screen), with an old-school dialog box: "I know someone who
+// might like this." Click Bat while you have it (he has to be sitting; the cursor turns to a
+// pointer over him) and you give it back: he looks at you, his ears flick, and his dialog box
+// opens: he thanks you and says he'll have his owner take 5% off your final price.
 //
 // How the discount reaches Carter:
 //   - Giving it back is remembered in this browser (localStorage) and emails Carter at once
@@ -16,12 +16,12 @@
 //
 // Only where Bat is (screens 900px and wider, reduced motion off: the same rule as
 // scaffold-cat.js). It doesn't wait for the 3D model to load, though giving it back needs him.
-// A mouse in your inventory stays there across visits until you give it to him. Once given,
+// A stowed mouse stays stowed across visits until you give it to him. Once given,
 // it is back in its spot on the next visit; giving it again just brings his dialog back (Carter
 // is emailed only the first time). ?batreset forgets all of it, for testing.
 
 const KEY = 'scaffold-bat-mouse';          // given back to Bat (the favour); design.jsx reads it
-const HELD = 'scaffold-bat-mouse-held';    // in your inventory
+const HELD = 'scaffold-bat-mouse-held';    // stowed away, not given back yet
 const get = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 const put = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private mode: fine for this visit */ } };
 if (/[?&]batreset\b/.test(location.search)) { put(KEY, null); put(HELD, null); }
@@ -36,27 +36,15 @@ const TOY = `<svg viewBox="0 0 40 32" width="40" height="32" aria-hidden="true" 
 
 const PIX = '"Press Start 2P", ui-monospace, Menlo, Consolas, monospace';
 const CSS = `
-.bm-toy { position: absolute; z-index: 3; width: 26px; height: 21px; padding: 0; border: 0; background: none; cursor: pointer;
+.bm-toy { position: absolute; z-index: 3; width: 20px; height: 16px; padding: 0; border: 0; background: none; cursor: pointer;
   opacity: 0; transition: opacity 1.2s ease .6s, transform .25s ease; }
-.bm-toy.bm-on { opacity: .62; }
+.bm-toy.bm-on { opacity: .55; }
 .bm-toy:hover { opacity: .9; transform: translateY(-1px); }
-.bm-toy svg, .bm-slot svg, .bm-fly svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.bm-toy svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .bm-toy:focus-visible { outline: 1px dashed rgba(233,223,198,.6); outline-offset: 3px; }
-@media (max-width: 899px) { .bm-toy, .bm-inv { display: none; } }
+@media (max-width: 899px) { .bm-toy { display: none; } }
+.bm-toy.bm-away { transition: opacity .3s ease, transform .3s ease; opacity: 0 !important; transform: translateY(4px) scale(.5); pointer-events: none; }
 
-.bm-fly { position: fixed; left: 0; top: 0; z-index: 2147483001; width: 26px; height: 21px; pointer-events: none; }
-.bm-inv { position: fixed; left: 16px; top: 92px; z-index: 60; font: 9px/1 ${PIX}; color: #e8c46a; letter-spacing: .04em; }
-.bm-inv-k { display: block; margin: 0 0 6px 2px; text-shadow: 0 1px 4px #000; }
-.bm-slot { display: block; width: 56px; height: 56px; padding: 10px 8px; box-sizing: border-box; cursor: help;
-  background: #0d0b16; border: 4px solid #f4ecd8; box-shadow: 3px 3px 0 #000; animation: bm-pop-in .3s steps(3, end) both; }
-.bm-slot:focus-visible { outline: 2px solid #e8c46a; outline-offset: 3px; }
-.bm-inv.bm-bye { animation: bm-out-k .25s steps(3, end) both; }
-@keyframes bm-pop-in { from { transform: scale(.2); } to { transform: scale(1); } }
-@keyframes bm-out-k { to { transform: scale(.2); opacity: 0; } }
-.bm-note { position: fixed; z-index: 2147483001; max-width: 300px; padding: 12px 14px; box-sizing: border-box;
-  background: #0d0b16; color: #f4ecd8; font: 10px/1.9 ${PIX}; border: 4px solid #f4ecd8; box-shadow: 3px 3px 0 #000;
-  pointer-events: none; animation: bm-pop-in .25s steps(3, end) both; }
-.bm-note.bm-bye { animation: bm-out-k .2s steps(3, end) both; }
 .bm-cursor, .bm-cursor * { cursor: pointer !important; }
 .bm-dlg { position: fixed; left: 50%; bottom: 28px; z-index: 2147483002; width: min(760px, calc(100vw - 32px)); transform: translateX(-50%);
   padding: 24px 26px 22px; box-sizing: border-box;
@@ -65,6 +53,8 @@ const CSS = `
   animation: bm-pop .32s steps(4, end) both; }
 .bm-dlg:focus { outline: none; }
 .bm-dlg.bm-top { bottom: auto; top: 104px; }
+.bm-dlg.bm-thought { width: min(560px, calc(100vw - 32px)); }
+.bm-dlg.bm-thought .bm-text { min-height: 0; }
 .bm-dlg.bm-bye { animation: bm-out .2s steps(3, end) both; }
 @keyframes bm-pop { from { transform: translateX(-50%) scaleY(.05); } to { transform: translateX(-50%) scaleY(1); } }
 @keyframes bm-out { to { transform: translateX(-50%) scaleY(.05); opacity: 0; } }
@@ -83,7 +73,7 @@ const CSS = `
 @media (max-width: 640px) { .bm-dlg { font-size: 11px; } }
 `;
 
-let toy = null, inv = null, note = null;
+let toy = null, armed = false, closeOpen = null;   // closeOpen: closes whichever dialog is up
 
 function waitFor(sel) {
   return new Promise((res) => {
@@ -104,8 +94,8 @@ function loadFont() {
   document.head.appendChild(l);
 }
 
-// ── where it hides: on the rule under the last question in "Short answers", near its right end ──
-const SPOT = '#faq .dfaq details:last-of-type';
+// ── where it hides: at the very end of the footer's "Cat model" credit, where the full stop is ──
+const SPOT = '.dfooter .dfootcredit';
 function place() {
   const at = document.querySelector(SPOT);
   if (!at) return;
@@ -118,70 +108,40 @@ function place() {
     toy.addEventListener('click', pickUp);
     document.body.appendChild(toy);
   }
-  const r = at.getBoundingClientRect(), shown = at.classList.contains('shown') && r.width > 0;
-  toy.style.left = (r.right + scrollX - 64) + 'px';
-  toy.style.top = (r.bottom + scrollY - 20) + 'px';
-  toy.classList.toggle('bm-on', shown);
+  const range = document.createRange(); range.selectNodeContents(at);
+  const rs = range.getClientRects(), last = rs[rs.length - 1];
+  if (!last) return;
+  toy.style.left = (last.right + scrollX + 5) + 'px';
+  toy.style.top = (last.bottom + scrollY - 15) + 'px';
+  toy.classList.add('bm-on');
 }
 function watchSpot() {
   place();
-  const again = () => { if (toy && toy.isConnected) place(); };
+  const again = () => { if (toy && toy.isConnected && !toy.classList.contains('bm-away')) place(); };
   addEventListener('resize', again, { passive: true });
   new ResizeObserver(again).observe(document.body);
-  // the questions fade in as they scroll into view, and open and close
-  new MutationObserver(again).observe(document.getElementById('faq') || document.body, { attributes: true, subtree: true, childList: true });
+  new MutationObserver(again).observe(document.querySelector('.dfooter') || document.body, { subtree: true, childList: true, characterData: true });
 }
 
-// a small pixel note next to something
-function say(text, x, y, ms = 3800) {
-  if (note) note.remove();
-  const n = note = document.createElement('div');
-  n.className = 'bm-note'; n.setAttribute('role', 'status'); n.textContent = text;
-  n.style.left = x + 'px'; n.style.top = y + 'px';
-  document.body.appendChild(n);
-  setTimeout(() => { n.classList.add('bm-bye'); setTimeout(() => { n.remove(); if (note === n) note = null; }, 220); }, ms);
-}
-
-// ── picked up: into your inventory ──
+// ── picked up: stowed away, and a thought ──
 function pickUp() {
   loadFont();
-  const from = toy.getBoundingClientRect();
-  toy.remove(); toy = null;
+  toy.classList.add('bm-away');
+  const t = toy; toy = null; setTimeout(() => t.remove(), 320);
   put(HELD, { at: new Date().toISOString() });
-  showInv(true);
-  const to = inv.querySelector('.bm-slot').getBoundingClientRect();
-  const f = document.createElement('div'); f.className = 'bm-fly'; f.innerHTML = TOY; document.body.appendChild(f);
-  const s = (to.width - 16) / 26, tx = to.left + 8, ty = to.top + 14;
-  f.animate([
-    { transform: `translate(${from.left}px, ${from.top}px)` },
-    { transform: `translate(${(from.left + tx) / 2}px, ${Math.min(from.top, ty) - 60}px) scale(${(1 + s) / 2})`, offset: 0.5 },
-    { transform: `translate(${tx}px, ${ty}px) scale(${s})` },
-  ], { duration: 650, easing: 'cubic-bezier(.4, 0, .5, 1)', fill: 'forwards' }).onfinish = () => {
-    f.remove(); inv.querySelector('.bm-slot').innerHTML = TOY;
-    say('I know someone who might like this.', to.right + 12, to.top);
-  };
+  arm();
+  setTimeout(() => dialog(['I know someone who might like this.'], { thought: true }), 250);
 }
-
-function showInv(empty) {
-  if (inv) return;
-  inv = document.createElement('div');
-  inv.className = 'bm-inv';
-  inv.innerHTML = `<span class="bm-inv-k">ITEMS</span><button type="button" class="bm-slot" aria-label="Inventory: a toy mouse. Someone on this page might like it.">${empty ? '' : TOY}</button>`;
-  inv.querySelector('.bm-slot').addEventListener('click', (e) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    say('I know someone who might like this.', r.right + 12, r.top);
-  });
-  document.body.appendChild(inv);
+function arm() {
+  if (armed) return; armed = true;
   addEventListener('pointerdown', onDown, true);
   addEventListener('pointermove', onMove, { passive: true });
 }
-function hideInv() {
+function disarm() {
+  armed = false;
   removeEventListener('pointerdown', onDown, true);
   removeEventListener('pointermove', onMove);
   document.documentElement.classList.remove('bm-cursor');
-  if (!inv) return;
-  const el = inv; inv = null;
-  el.classList.add('bm-bye'); setTimeout(() => el.remove(), 260);
 }
 
 // ── giving it back: click Bat while it's in your inventory ──
@@ -200,8 +160,8 @@ function onDown(e) {
 function give() {
   loadFont();
   put(HELD, null);
-  hideInv();
-  if (note) note.remove();
+  disarm();
+  if (closeOpen) closeOpen();
   cat().thank();
   const first = !get(KEY);
   put(KEY, { found: true, at: new Date().toISOString() });
@@ -213,26 +173,28 @@ function give() {
       }).catch(() => {});
     } catch (e) { /* offline: fine */ }
   }
-  setTimeout(dialog, 1100);   // he looks at you first
+  setTimeout(() => dialog(BAT_SAYS), 1100);   // he looks at you first
 }
 
 // ── the dialog box ──
-function dialog() {
-  const pages = [
-    'You have my sincere gratitude.\nA cat does not forget a kindness.',
-    `I shall have a word with my owner. He will take <b>5% off your final price</b>.\nHe is, I assure you, most obliging.`,
-    'Consider it a favour from me, under my own seal.\nIt goes with any brief you send from this browser.\n\nYours, Bat.',
-  ];
+const BAT_SAYS = [
+  'You have my sincere gratitude.\nA cat does not forget a kindness.',
+  `I shall have a word with my owner. He will take <b>5% off your final price</b>.\nHe is, I assure you, most obliging.`,
+  'Consider it a favour from me, under my own seal.\nIt goes with any brief you send from this browser.\n\nYours, Bat.',
+];
+// Bat's dialog (a name tag, pages, then the two buttons), or with { thought: true } a one-page
+// thought of your own (no name tag; a click, Enter or Escape closes it)
+function dialog(pages, opt = {}) {
   const box = document.createElement('div');
-  box.className = 'bm-dlg'; box.tabIndex = -1;
-  box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', 'Bat says');
-  box.innerHTML = `<span class="bm-name">BAT</span>
+  box.className = 'bm-dlg' + (opt.thought ? ' bm-thought' : ''); box.tabIndex = -1;
+  box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', opt.thought ? 'A thought' : 'Bat says');
+  box.innerHTML = `${opt.thought ? '' : '<span class="bm-name">BAT</span>'}
     <div><p class="bm-text" aria-hidden="true"></p><p class="bm-sr" aria-live="polite"></p><ul class="bm-menu" hidden></ul></div>
     <span class="bm-next" aria-hidden="true">▼</span>`;
   document.body.appendChild(box);
   // classic spot is the bottom of the screen, unless that would cover him
   try {
-    const w = cat().where(), r = box.getBoundingClientRect();
+    const w = !opt.thought && cat().where(), r = box.getBoundingClientRect();
     if (w && w.x > r.left - 60 && w.x < r.right + 60 && w.y > r.top - 0.9 * w.ppm) box.classList.add('bm-top');
   } catch (e) { /* no cat: stays put */ }
   const text = box.querySelector('.bm-text'), sr = box.querySelector('.bm-sr'), menu = box.querySelector('.bm-menu'), nxt = box.querySelector('.bm-next');
@@ -255,7 +217,7 @@ function dialog() {
   }
   function done() {
     clearInterval(timer); typing = false; text.innerHTML = full;
-    if (page < pages.length - 1) { nxt.hidden = false; return; }
+    if (page < pages.length - 1 || opt.thought) { nxt.hidden = false; return; }
     nxt.hidden = true; menu.hidden = false;
     menu.innerHTML = '<li><button type="button" class="bm-go" data-go="brief">Write a brief</button></li><li><button type="button" data-go="close">Carry on</button></li>';
     menu.querySelector('button').focus();
@@ -263,8 +225,10 @@ function dialog() {
   function advance() {
     if (typing) return done();
     if (page < pages.length - 1) show(page + 1);
+    else if (opt.thought) close();
   }
   function close(go) {
+    if (closeOpen === close) closeOpen = null;
     clearInterval(timer);
     removeEventListener('keydown', key, true);
     box.classList.add('bm-bye');
@@ -284,6 +248,8 @@ function dialog() {
     if (b) return close(b.dataset.go);
     if (menu.hidden) advance();
   });
+  if (closeOpen) closeOpen();
+  closeOpen = close;
   addEventListener('keydown', key, true);
   box.focus({ preventScroll: true });
   show(0);
@@ -292,7 +258,7 @@ function dialog() {
 (async function boot() {
   if (!matchMedia('(min-width: 900px)').matches || matchMedia('(prefers-reduced-motion: reduce)').matches) return;   // no Bat here, so no mouse
   const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
-  if (get(HELD)) { showInv(false); return; }            // still in your inventory from an earlier visit
+  if (get(HELD)) { arm(); return; }                     // still stowed from an earlier visit
   if (!(await waitFor(SPOT))) return;
   watchSpot();
 })();
