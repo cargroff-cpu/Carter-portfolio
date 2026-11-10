@@ -1241,6 +1241,20 @@ under makes it look up and move.
     where the find shows; the line comes in under it once it has landed. Same wording, same
     place, still fades on its own, still stowed from the moment of the click.
   - Suite and size sweep pass.
+- **Sitting: back legs folded against his flank, not laid out flat (2026-11-10).** The sit clip
+  puts hip, knee and hock all at one height, so the leg lay like a Z on its side under him and
+  the haunch read as a sausage along the ground. This rig's thigh bone is a 4 cm stub (the
+  "shin" runs from there to the hock), so turning joints alone can't fold it upright: the
+  hip-knee-hock triangle is almost flat whatever the angles. `applyHaunch` (weighted by how
+  much of the pose is a sit) lifts the hip joint 3.5 cm up into the body (`HAUNCH.lift`), points
+  the knee up, forward and a little out (`HAUNCH.knee`), and brings the shin back down to the
+  hock at the clip's height, with the foot kept exactly as the clip lays it. A first version
+  lowered the hock and paw bones to "ground level" and sank his feet 3 cm: the bones don't run
+  through the mesh on this rig, and the clip's foot was already on the ground (measured on the
+  skinned mesh). Seen lit up in grey there is a dark fold between thigh and foot; it doesn't
+  show in black fur. "Seated life" (1 glance in 20 s) and "stops when the cursor goes still"
+  each failed once in a full-suite pass and pass on repeat, with and without this change:
+  both are random/timing checks.
 - **The crouch belly (2026-11-09).** Crouched (stalk, wiggle, the pounce
   wind-up), his belly hung as a flat, sharp-cornered plate: a triangle in side
   view. The body drops ~5 cm while both upper legs fold hard (front 97°, back 75°)
