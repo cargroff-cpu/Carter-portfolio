@@ -1,16 +1,16 @@
-// api/brief-reply.js — the approve step for AI triage. Gated by
+// api/brief-reply.js — the approve step for brief triage. Gated by
 // middleware.js (Backroom session required). Nothing reaches a client
 // without going through here, and only Carter can call it.
 //
 // POST { id, action }:
-//   action 'triage'  — (re)run AI triage on the brief and save the result
+//   action 'triage'  — (re)run the triage script on the brief and save the result
 //   action 'send'    — email { reply } (Carter's approved or edited text) to
 //                      the client from the verified domain, mark the brief
 //                      answered, log the reply on the lead's thread
 //   action 'reject'  — mark the brief answered with triage status
 //                      'rejected' and close its job (if it never got past
 //                      New), so it leaves the board; sends nothing
-// 'send' and 'reject' work with or without an AI triage (the Hub has a plain
+// 'send' and 'reject' work with or without a triage (the Hub has a plain
 // reply box for briefs that have none).
 import { sb, sendEmail, parseBody, logEvent, NOTIFY_EMAIL, FROM_VERIFIED } from '../lib/server.js';
 import { closeTasks, closeJobTasks, KEYS } from '../lib/crm.js';
@@ -46,7 +46,9 @@ export default async function handler(req, res) {
   }
 
   if (action === 'triage') {
-    const t = await triageAndSave(brief, { timeoutMs: 25000, skipCap: true });
+    // Bat's favour is noted on the job, not the brief; carry it into the draft.
+    const bat = brief.job_id ? (await sb(`job_events?job_id=eq.${brief.job_id}&meta->>bat=eq.true&select=id&limit=1`).catch(() => [])).length > 0 : false;
+    const t = await triageAndSave({ ...brief, bat });
     if (!t.ok) {
       res.status(502).json({ error: t.error });
       return;

@@ -2139,7 +2139,25 @@ const Brief = React.forwardRef(function Brief(props, ref) {
     value: f.auto_who,
     onChange: set('auto_who'),
     placeholder: "Me, after hours"
-  }))) : React.createElement("div", {
+  })), React.createElement("div", {
+    className: "dfl"
+  }, React.createElement("span", {
+    className: "dlb"
+  }, "When do you need it"), React.createElement("span", {
+    className: "dhint"
+  }, "A date, or tell me it can move."), React.createElement("div", {
+    className: "ddatewrap"
+  }, React.createElement("input", {
+    type: "date",
+    value: f.when,
+    onChange: set('when')
+  }), React.createElement("label", {
+    className: "dflex"
+  }, React.createElement("input", {
+    type: "checkbox",
+    checked: f.flexible,
+    onChange: set('flexible')
+  }), "Flexible")))) : React.createElement("div", {
     className: "dfields two"
   }, React.createElement("label", {
     className: "dfl"

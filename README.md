@@ -32,13 +32,20 @@ bat-mouse.js              Easter egg: find Bat's toy mouse, give it back to him 
 
 Scaffold Hub.html         The Backroom's entry (served at /backroom; /scaffold redirects there)
 Business Hub.html         The Business Hub CRM, door 02 of The Backroom — served at /business
-business-hub.jsx          Clients, leads (+ thread), projects (+ deliverables), invoices, notes, briefs inbox with AI triage
+business-hub.jsx          Clients, leads (+ thread), projects (+ deliverables), invoices, notes, briefs inbox with a drafted reply on each
 command-center-data.jsx   Backroom data layer: reads via /api/scaffold-read, writes via /api/scaffold-write (no Supabase key in the browser)
 
-api/design-brief.js       Public brief endpoint (email first, then DB, uploads, AI triage, client confirmation, event log). GET = health check / keep-alive
+api/design-brief.js       Public brief endpoint (email first, then DB, uploads, triage, client confirmation, event log). GET = health check / keep-alive
+api/job.js                The job workflow: the client's actions from /j/<token> (accept, pick, changes, approve, pay) and Carter's (send an email, mark sent, mark paid, files)
+job-state.js              Who has the ball on a job and what is next. One answer for the Hub's chips and "Next" line, Needs you, and the morning digest
+lib/receipts.js           The automatic emails a client gets when they send a brief or press a button on their page
+lib/digest.js             The morning digest email (what needs you today), sent by the daily cron
 api/brief-reply.js        Backroom only: re-run triage, approve & send a reply, or reject
-lib/                      Server helpers: session tokens, rate limiting, Supabase/Resend helpers, AI triage, write validation (validate.js), CRM follow-up tasks / audit trail / client merge (crm.js)
+lib/                      Server helpers: session tokens, rate limiting, Supabase/Resend helpers, brief triage (brief-triage.js: a script, no AI), write validation (validate.js), CRM follow-up tasks / audit trail / client merge (crm.js)
 scripts/check-crm.mjs     `npm test`: checks the write validation and audit diff (no network)
+scripts/check-flow.mjs    `npm test`: walks one job from brief to paid through the real API handlers, checking stage, who has the ball and every email
+scripts/fake-backend.mjs  In-memory Supabase, Resend and Stripe for the test above and for `npm run dev`
+scripts/dev-server.mjs    `npm run dev`: the whole site on localhost:8787 with seeded test jobs. Nothing is sent and live data is never touched
 supabase-schema.sql       Record of the live schema
 supabase/migrations/      Changes still to apply, in order (see the top of each file)
 ```
@@ -90,10 +97,9 @@ Variables — set directly there, never committed):
 | `RESEND_API_KEY` | `api/contact.js`, `api/design-brief.js`, `api/brief-reply.js` | Email |
 | `RESEND_FROM` | same | **New.** e.g. `The Scaffold <studio@cargroff.com>`, on a domain verified in Resend. Until set, mail goes from Resend's test sender and client-facing email (brief confirmations, approved replies) is switched off, because the test sender can only reach the account owner |
 | `NOTIFY_EMAIL` | `lib/server.js` | Optional. Where new briefs and failure alerts go (default car.groff@gmail.com) |
-| `ANTHROPIC_API_KEY` | `lib/brief-triage.js` | AI triage on incoming briefs. Without it, briefs still work and the Hub just shows "No AI triage yet" |
-| `TRIAGE_MODEL`, `TRIAGE_DAILY_CAP` | `lib/brief-triage.js` | Optional. Model override, and the daily cap on automatic triage (default 40) |
 | `STRIPE_SECRET_KEY` | `lib/stripe.js` (from `api/job.js`, `api/stripe-webhook.js`, `api/scaffold-write.js`) | Makes a one-payment Stripe Payment Link when the client presses Pay, and switches it off once the invoice is paid |
-| `STRIPE_WEBHOOK_SECRET` | `api/stripe-webhook.js` | Set. The Stripe dashboard side (endpoint → `/api/stripe-webhook`, event `checkout.session.completed`) is still to do; until then use "Mark paid" |
+| `STRIPE_WEBHOOK_SECRET` | `api/stripe-webhook.js` | Set. The Stripe dashboard side is still to do: endpoint → `/api/stripe-webhook`, events `checkout.session.completed`, `checkout.session.async_payment_succeeded` and `checkout.session.async_payment_failed` (the last two are bank payments, which clear days later). Until then use "Mark paid" |
+| `CRON_SECRET` | `api/design-brief.js` | Optional. When set, only Vercel's own cron call can trigger the morning digest |
 
 The Supabase project URL and the publishable (anon) key in `data.jsx` only
 read `site_content`, the public portfolio's own content. Every other table
@@ -101,4 +107,5 @@ has no public-read policy (`supabase/migrations/20261104_lockdown.sql`).
 
 A daily Vercel Cron (`vercel.json`) calls `GET /api/design-brief`, which
 runs one query so the free-tier Supabase project never pauses from
-inactivity.
+inactivity, and sends the morning digest (`lib/digest.js`): one email with
+what needs you today, at 13:17 UTC, skipped on a day with nothing to do.

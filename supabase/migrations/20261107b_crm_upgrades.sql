@@ -1,5 +1,6 @@
 -- 20261107b_crm_upgrades.sql — CRM upgrades for the Backroom.
 --
+-- APPLIED: confirmed on the live database 2026-11-11. The note below is from before it ran.
 -- NOT APPLIED YET. Apply it right before the code that reads these columns
 -- goes live (the Business Hub, Docket and api/scaffold-write.js use them).
 -- Safe to re-run; nothing is dropped and no rows are deleted.

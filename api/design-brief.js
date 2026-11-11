@@ -7,7 +7,7 @@
 //   1. Spam checks: hidden honeypot field + per-IP rate limit.
 //   2. Email Carter the FULL brief first (with its reference number).
 //   3. Save the brief + a job at "new" to Supabase, then any attached files.
-//   4. AI triage (lib/brief-triage.js): prepares a summary and draft reply
+//   4. Triage (lib/brief-triage.js, a script, no AI): a summary and draft reply
 //      for approval in the Business Hub. Never sends anything itself.
 //   5. Confirmation email to the client (only once RESEND_FROM is a verified
 //      domain; Resend's test sender can't reach clients).
@@ -17,10 +17,13 @@
 //
 // GET /api/design-brief (also /api/health via vercel.json) is the daily
 // keep-alive: one tiny query so the free-tier Supabase project never sits
-// idle long enough to pause. Hit by the Vercel Cron in vercel.json.
+// idle long enough to pause. Hit by the Vercel Cron in vercel.json. When it is
+// the cron calling, it also sends the morning digest (lib/digest.js).
 import { openTask, dueIn, findClientByEmail, KEYS } from '../lib/crm.js';
-import { sb, sbHeaders, sendEmail, esc, parseBody, logEvent, SUPABASE_URL, BRAND, BRAND_FULL, NOTIFY_EMAIL, FROM_VERIFIED } from '../lib/server.js';
+import { sb, sbHeaders, sendEmail, parseBody, logEvent, SUPABASE_URL, BRAND, NOTIFY_EMAIL, FROM_VERIFIED } from '../lib/server.js';
 import { renderEmail } from '../lib/mail.js';
+import { renderReceipt } from '../lib/receipts.js';
+import { morningDigest } from '../lib/digest.js';
 import { clientIp, hit } from '../lib/rate-limit.js';
 import { triageAndSave } from '../lib/brief-triage.js';
 import { randomUUID } from 'node:crypto';
@@ -169,17 +172,33 @@ async function uploadFiles(briefId, files) {
   return saved;
 }
 
-async function healthCheck(res) {
+// The cron's own request: Vercel sends "Authorization: Bearer <CRON_SECRET>"
+// when that variable is set, and a vercel-cron user agent either way. Anyone
+// can fake the user agent, so the digest also refuses to run twice in a day.
+function fromCron(req) {
+  const secret = process.env.CRON_SECRET;
+  if (secret) return req.headers.authorization === `Bearer ${secret}`;
+  return /vercel-cron/i.test(req.headers['user-agent'] || '');
+}
+
+async function healthCheck(req, res) {
   try {
     await sb('site_content?select=id&limit=1');
-    res.status(200).json({ ok: true, db: 'up', at: new Date().toISOString() });
+    let digest;
+    if (fromCron(req)) {
+      try { digest = await morningDigest(); } catch (e) {
+        digest = { sent: false, why: 'failed' };
+        await logEvent({ kind: 'digest', ok: false, detail: e.message.slice(0, 500) });
+      }
+    }
+    res.status(200).json({ ok: true, db: 'up', at: new Date().toISOString(), ...(digest ? { digest } : {}) });
   } catch (e) {
     res.status(503).json({ ok: false, db: 'down', error: e.message.slice(0, 200) });
   }
 }
 
 export default async function handler(req, res) {
-  if (req.method === 'GET') return healthCheck(res);
+  if (req.method === 'GET') return healthCheck(req, res);
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;
@@ -224,12 +243,14 @@ export default async function handler(req, res) {
     lane, name, email, about,
     need: Array.isArray(body.need) ? body.need.filter((n) => allowedNeeds.includes(n)) : [],
     business: text(body.business, 200),
-    where: text(body.where, 500),
+    // The design-only answers are dropped on a tools brief: someone who filled
+    // them in and then switched lanes should not send stale answers along.
+    where: lane === 'design' ? text(body.where, 500) : null,
     when_date: typeof body.when === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.when) ? body.when : null,
     flexible: !!body.flexible,
-    assets: ASSETS.includes(body.assets) ? body.assets : null,
-    copy: text(body.copy),
-    refs: text(body.refs, 2000),
+    assets: lane === 'design' && ASSETS.includes(body.assets) ? body.assets : null,
+    copy: lane === 'design' ? text(body.copy) : null,
+    refs: lane === 'design' ? text(body.refs, 2000) : null,
     notes: text(body.notes),
     budget: BUDGETS.includes(body.budget) ? body.budget : null,
     auto_slow: lane === 'automation' ? text(body.auto_slow) : null,
@@ -255,10 +276,12 @@ export default async function handler(req, res) {
           { k: 'Reference', v: brief.reference }, { k: 'From', v: `${name} <${email}>` },
           ...(brief.need.length ? [{ k: 'Needs', v: brief.need.join(', ') }] : []),
           ...(brief.budget ? [{ k: 'Budget', v: brief.budget }] : []),
-          ...(brief.when_date ? [{ k: 'Needed by', v: brief.when_date }] : []),
+          ...(brief.when_date ? [{ k: 'Needed by', v: brief.when_date }] : brief.flexible ? [{ k: 'Needed by', v: 'Flexible' }] : []),
+          ...(files.length || plan ? [{ k: 'Files', v: String(files.length + (plan ? 1 : 0)) }] : []),
           ...(bat ? [{ k: "Bat's favour", v: '5% off the final price' }] : []),
         ] }],
-        button: { label: 'Open it in the Backroom', url: 'https://scaffold.cargroff.com/backroom' },
+        // Straight to this brief's job (the Hub finds it by its reference).
+        button: { label: 'Open it in the Backroom', url: `https://scaffold.cargroff.com/business#brief=${brief.reference}` },
       }).html,
     });
     emailed = true;
@@ -269,6 +292,7 @@ export default async function handler(req, res) {
   // 2. Save to the database.
   let saved = null;
   let saveError = null;
+  let jobToken = null;
   try {
     [saved] = await sb('design_briefs', {
       method: 'POST', prefer: 'return=representation',
@@ -284,6 +308,7 @@ export default async function handler(req, res) {
           title: (brief.need.length ? brief.need.join(', ') : about.slice(0, 80)) + (brief.business ? ` for ${brief.business}` : ''),
         },
       });
+      jobToken = job.token;
       await sb(`design_briefs?id=eq.${saved.id}`, { method: 'PATCH', body: { job_id: job.id } });
       // A returning client: attach the job to the client already on the books
       // (matched by email), and put "reply to the brief" on the Docket.
@@ -326,37 +351,16 @@ export default async function handler(req, res) {
         body: { design_brief_id: saved.id, bucket: PLAN_BUCKET, storage_path: plan.path, filename: plan.filename, content_type: plan.type },
       }).catch((e) => logEvent({ kind: 'plan_attach', ok: false, reference: brief.reference, detail: e.message.slice(0, 300) }));
     }
-    const t = await triageAndSave({ ...brief, id: saved.id, attachment_count: files.length }, { timeoutMs: 12000 });
+    const t = await triageAndSave({ ...brief, id: saved.id, attachment_count: files.length + (plan ? 1 : 0), bat });
     if (!t.ok) await logEvent({ kind: 'triage', ok: false, reference: brief.reference, detail: String(t.error).slice(0, 500) });
   }
 
-  // 5. Client confirmation (verified domain only).
+  // 5. Client confirmation (verified domain only). The wording is in
+  // lib/receipts.js with the other automatic emails.
   if (FROM_VERIFIED) {
     try {
-      await sendEmail({
-        from: FROM_VERIFIED, to: email, replyTo: NOTIFY_EMAIL,
-        subject: `Got your brief — ${brief.reference}`,
-        text: `Hi ${name},\n\nThanks, your brief reached me. Your reference is ${brief.reference}.\n\nWhat happens next: I read it properly and reply with a price and a delivery date, usually within one business day. If anything's missing, I'll ask for exactly that.\n\nHere's what you sent:\n\n${lines.slice(3).join('\n')}\n\nCarter\n${BRAND_FULL}`,
-        html: renderEmail({
-          stage: 0, eyebrow: 'Brief received', heading: 'Your brief made it in. The lamps are on.',
-          preheader: `Got your brief, reference ${brief.reference}`,
-          body: `Hi ${name.split(' ')[0] || name},\n\nThanks. It's on my desk now, and I'll read it properly, not skim it.`,
-          panels: [
-            { type: 'ref', value: brief.reference },
-            { type: 'steps', title: 'What happens next', items: [
-              'I read every word of it.',
-              'You get a price and a delivery date, usually within one business day.',
-              "If anything's missing, I'll ask for exactly that, nothing more.",
-            ] },
-            { type: 'facts', title: 'What you sent', rows: [
-              ...(brief.need.length ? [{ k: 'Needs', v: brief.need.join(', ') }] : []),
-              ...(brief.budget ? [{ k: 'Budget', v: brief.budget }] : []),
-              ...(brief.when_date ? [{ k: 'Needed by', v: brief.when_date }] : []),
-              ...(bat ? [{ k: "Bat's favour", v: '5% off your final price' }] : []),
-            ] },
-          ],
-        }).html,
-      });
+      const r = renderReceipt('confirm', { name, token: jobToken }, { reference: brief.reference, need: brief.need, budget: brief.budget, when_date: brief.when_date, bat });
+      await sendEmail({ from: FROM_VERIFIED, to: email, replyTo: NOTIFY_EMAIL, subject: r.subject, text: r.text, html: r.html });
     } catch (e) {
       await logEvent({ kind: 'client_confirmation', ok: false, reference: brief.reference, detail: e.message.slice(0, 500) });
     }

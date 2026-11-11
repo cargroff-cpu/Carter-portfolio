@@ -22,7 +22,7 @@ const {
 } = window.CC;
 
 const STAGES = [
-  ['new', 'New'], ['proposed', 'Proposed'], ['drafts', 'Drafts'], ['final', 'Final'], ['paid', 'Paid'],
+  ['new', 'New'], ['proposed', 'Proposed'], ['drafts', 'Directions'], ['final', 'Final'], ['paid', 'Paid'],
 ];
 const STAGE_LABEL = Object.fromEntries([...STAGES, ['closed', 'Closed']]);
 const JOB_URL = (token) => 'https://scaffold.cargroff.com/j/' + token;
@@ -46,12 +46,32 @@ const TEMPLATES = {
     body: "Hi {first},\n\nThe early takes on {title} are ready. This is the fun part: nothing is locked in yet, so tell me what grabs you and what doesn't.", button: 'Pick a direction' },
   final: { when: 'When the finished work is ready to review. Moves the job to Final.', label: 'Final ready', subject: 'Your final is ready to review: {title}', heading: "It's finished. Come and see it.",
     body: "Hi {first},\n\nThe finished {title} is ready for you. Take your time with it. If it's right, approve it; if something is off, tell me and I'll fix it ({left} round{leftS} of changes left).", button: 'Review the final' },
+  revised: { when: 'When the changes they asked for are done. Keeps the job in Final.', label: 'Revised final', subject: 'Your changes are in: {title}', heading: 'Revised, and ready for another look.',
+    body: "Hi {first},\n\nI've worked through your notes on {title} and the new version is on your project page. If it's right, approve it; if anything is still off, tell me ({left} round{leftS} of changes left).", button: 'Review the revision' },
   invoice: { when: 'When money is due and ready to pay on their page.', label: 'Invoice', subject: 'Your invoice: {title}', heading: 'One small step, then the work begins.',
     body: 'Hi {first},\n\n{due} is ready to pay on your project page, by card or bank. Thank you.', button: 'Pay now' },
   reminder: { when: 'A gentle nudge for anything waiting on the client.', label: 'Reminder', subject: 'A quick nudge: {title}', heading: "I've kept a lamp lit for you.",
     body: "Hi {first},\n\nJust checking in on {title}. Your project page is exactly as you left it, and it's ready whenever you are. No rush.", button: 'Pick up where you left off' },
+  overdue: { when: 'When an invoice has sat unpaid for two weeks. Firmer than the nudge.', label: 'Invoice overdue', subject: 'Still open: your invoice for {title}', heading: 'A quick word about the invoice.',
+    body: "Hi {first},\n\n{due} for {title} is still open. It takes a minute to pay on your project page, by card or bank.\n\nIf something is holding it up, or you'd rather pay another way, just reply and we'll sort it out.", button: 'Pay now' },
+  thanks: { when: 'When the job is paid in full: the wrap-up, and the ask.', label: 'Thank you', subject: 'Thank you: {title}', heading: 'That is a wrap. Thank you.',
+    body: "Hi {first},\n\nThanks for trusting me with {title}. Your files stay on your project page, yours to keep.\n\nTwo small asks, only if you were happy with it: a sentence or two I could quote on my site, and my name passed along if you know someone who needs this kind of work. Either one means a lot to a one-person studio.", button: 'Get your files' },
+  closing: { when: 'When a job has gone quiet and you are about to close it. Leaves the door open.', label: 'Closing the file', subject: 'Closing the file on {title} for now', heading: 'I will set this aside for now.',
+    body: "Hi {first},\n\nI haven't heard back on {title}, so I'll close it out on my side for now. No hard feelings: timing is everything.\n\nIf it comes back around, reply to this email and we'll pick it up where we left off.", button: 'Open your project page' },
   note: { when: 'A blank message in the same frame.', label: 'Blank', subject: '{title}', heading: '', body: 'Hi {first},\n\n\n\n', button: 'Open your project page' },
 };
+
+// The receipts a client gets on their own, the moment they press a button on
+// their project page. The wording lives in lib/receipts.js; these are only the
+// names, for the Mail tab.
+const AUTO_EMAILS = [
+  ['confirm', 'Brief received', 'Right after they send a brief. Carries their reference and the link to their project page.'],
+  ['accepted', 'Proposal accepted', 'Right after they accept. Asks for the deposit when the job is split 50/50.'],
+  ['picked', 'Direction picked', 'Right after they pick a direction.'],
+  ['changes', 'Changes received', 'Right after they ask for changes on the final.'],
+  ['approved', 'Final approved', 'Right after they approve. Asks for the balance when there is one.'],
+  ['paid', 'Payment received', 'Right after Stripe confirms a payment. The last one hands over the files.'],
+];
 
 // Made-up values so a template can be previewed without picking a job.
 const SAMPLE_FIELDS = { first: 'Dana', name: 'Dana Reyes', title: 'Booking tool', business: 'Reyes Plumbing', total: '$2,000', billing: 'half to start and half when you approve the final', left: 2, leftS: 's', due: 'Deposit (50%) ($1,000)' };
@@ -75,33 +95,31 @@ const markInvoicePaid = (i) => (i.job_id
   ? jobAction(i.job_id, 'mark-paid', { invoice_id: i.id })
   : saveInvoice({ id: i.id, status: 'paid', paid_at: new Date().toISOString() }));
 
-// ── Needs you: what is waiting on Carter, oldest first ─────────────────
-function needsYou(jobs, proposals, invoices, briefs, events) {
-  const out = [];
-  const briefOf = (j) => briefs.find((b) => b.id === j.brief_id);
-  const propOf = (j) => proposals.find((p) => p.job_id === j.id);
-  const lastClient = (j) => events.find((e) => e.job_id === j.id && e.who === 'client');
-  // Did Carter already send this kind of email after the client's last move?
-  // (Clears "send the directions" / "revise and resend" once that is done.)
-  const sentSince = (j, kind, after) => events.some((e) => e.job_id === j.id && e.kind === 'email' && e.meta && e.meta.kind === kind
-    && new Date(e.created_at) > new Date(after.created_at));
-  for (const j of jobs) {
-    if (j.stage === 'closed' || j.stage === 'paid') continue;
-    const b = briefOf(j); const p = propOf(j); const lc = lastClient(j);
-    if (j.stage === 'new' && b && b.status !== 'answered' && !p) out.push({ j, what: 'Reply to the brief', age: daysSince(j.created_at), hot: true });
-    else if (j.stage === 'new' && (!p || p.status === 'draft')) out.push({ j, what: 'Write and send the proposal', age: daysSince(j.created_at), hot: daysSince(j.created_at) >= 2 });
-    if (j.stage === 'proposed' && p && p.status === 'sent' && daysSince(p.sent_at) >= 5) out.push({ j, what: 'Proposal waiting ' + daysSince(p.sent_at) + ' days: nudge them', age: daysSince(p.sent_at) });
-    if (j.stage === 'drafts' && lc && lc.kind === 'accepted' && !sentSince(j, 'drafts', lc)) out.push({ j, what: 'Proposal accepted: send the directions', age: daysSince(lc.created_at), hot: true });
-    if (j.stage === 'drafts' && lc && lc.kind === 'picked') out.push({ j, what: 'Direction picked: make and send the final', age: daysSince(lc.created_at), hot: true });
-    if (j.stage === 'final' && lc && lc.kind === 'changes' && !sentSince(j, 'final', lc)) out.push({ j, what: 'Changes asked for: revise and resend', age: daysSince(lc.created_at), hot: true });
-  }
-  for (const i of invoices) {
-    if (i.status === 'sent' && daysSince(i.sent_at) >= 14) {
-      const j = jobs.find((x) => x.id === i.job_id);
-      if (j) out.push({ j, what: `${i.label || 'Invoice'} unpaid ${daysSince(i.sent_at)} days: send a reminder`, age: daysSince(i.sent_at) });
-    }
-  }
-  return out.sort((a, b) => (b.hot ? 1 : 0) - (a.hot ? 1 : 0) || b.age - a.age);
+// ── Who has the ball ───────────────────────────────────────────────────
+// job-state.js (loaded as a module in Business Hub.html, window.JobState)
+// answers, for any job: is it Carter's move or the client's, what exactly is
+// waiting, and for how long. The board chips, the "Next" line on a job, Needs
+// you and the morning digest email all read that one answer.
+const stateFor = (j, d) => window.JobState.jobState(j, {
+  brief: d.briefs.find((b) => b.id === j.brief_id) || null,
+  proposal: d.proposals.find((p) => p.job_id === j.id) || null,
+  invoices: d.invoices, events: d.events,
+});
+// Needs you: every job that is Carter's move or worth a nudge, plus follow-up
+// tasks that are due. An automatic follow-up is dropped when its job is
+// already listed, so nothing shows twice.
+function buildNeeds(d) {
+  const s = window.JobState.summarize(d);
+  const derived = [...s.yours, ...s.nudge];
+  const listed = new Set(derived.map((r) => r.j.id));
+  const due = taskNeeds(d.jobs, d.tasks).filter((n) => !(n.auto && listed.has(n.j.id)));
+  const needs = [...derived, ...due].sort((a, b) => (b.hot ? 1 : 0) - (a.hot ? 1 : 0) || b.age - a.age);
+  return { needs, waiting: s.waiting, states: new Map(d.jobs.map((j) => [j.id, stateFor(j, d)])) };
+}
+function BallChip({ st }) {
+  if (!st || st.who === 'done') return null;
+  if (st.who === 'you') return pill('Your move', 'warn');
+  return pill(st.stale ? 'Nudge them' : 'With client', st.stale ? 'warn' : 'mute');
 }
 
 // ── The tools ──────────────────────────────────────────────────────────
@@ -268,7 +286,7 @@ function MonthBars({ months }) {
 }
 
 function Today({ data, open, go }) {
-  const { needs, invoices, events, jobs, proposals } = data;
+  const { needs, waiting, invoices, events, jobs, proposals } = data;
   const jobOf = (id) => jobs.find((j) => j.id === id);
   const isOpen = (j) => j.stage !== 'paid' && j.stage !== 'closed';
   const openJobs = jobs.filter(isOpen);
@@ -303,6 +321,16 @@ function Today({ data, open, go }) {
               <button key={k} className="minirow" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(n.j.id)}>
                 <span className="mtxt"><b>{n.j.title}</b> · {n.what}</span>
                 <span className={'mono mval' + (n.hot ? ' hot' : '')}>{n.age ? n.age + 'd' : 'today'}</span>
+              </button>
+            ))}
+          </div>
+        </Widget>}
+        {waiting.length > 0 && <Widget title="With your clients" badge={waiting.length + ' waiting'}>
+          <div className="minirows">
+            {waiting.map((n) => (
+              <button key={n.j.id} className="minirow plain" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(n.j.id)}>
+                <span className="mtxt"><b>{n.j.title}</b> · {n.what.replace(/^Waiting on (them to |the )/, '')}</span>
+                <span className="mono mval">{n.age ? n.age + 'd' : 'today'}</span>
               </button>
             ))}
           </div>
@@ -376,14 +404,18 @@ function Jobs({ data, open, reload, startNew }) {
               <div className="jcards">
                 {col.map((j) => {
                   const p = propOf(j);
+                  const st = data.states.get(j.id);
                   return (
-                    <button key={j.id} className="reclist" onClick={() => open(j.id)}>
-                      <div style={{ fontSize: 14, fontWeight: 500 }}>{j.title}</div>
+                    <button key={j.id} className={'reclist' + (st && st.who === 'you' ? ' mine' : '')} onClick={() => open(j.id)}>
+                      <div className="between" style={{ gap: 8, alignItems: 'flex-start' }}>
+                        <span style={{ fontSize: 14, fontWeight: 500 }}>{j.title}</span>
+                        <BallChip st={st} />
+                      </div>
                       <div className="between" style={{ marginTop: 5, gap: 8 }}>
                         <span className="sub">{j.business || j.name}</span>
                         <span className="sub mono">{p && Number(p.total) ? usd(p.total) : ''}</span>
                       </div>
-                      <div className="sub" style={{ marginTop: 4 }}>{daysSince(j.last_activity_at) ? daysSince(j.last_activity_at) + 'd since last move' : 'Moved today'}</div>
+                      <div className="sub" style={{ marginTop: 4 }}>{st ? st.what : ''}{st && st.who !== 'done' ? ' · ' + (st.age ? st.age + 'd' : 'today') : ''}</div>
                     </button>
                   );
                 })}
@@ -412,7 +444,7 @@ function BriefPanel({ job, briefs, reload }) {
     ? [['What is slow today', b.auto_slow], ['Tools they use', b.auto_tools], ['Who does it now', b.auto_who]]
     : [['Where it will be used', b.where], ['Assets', b.assets], ['Copy', b.copy], ['References', b.refs]];
   return (
-    <section className="tile">
+    <section className="tile" id="p-brief">
       <div className="tilehead"><h2 className="h2">The brief</h2><span className="lbl">{b.reference} · {fdate(b.created_at)}</span></div>
       <p style={{ margin: '0 0 10px', whiteSpace: 'pre-wrap' }}>{b.about}</p>
       <div className="vrow"><span className="lbl">Needs</span><span>{(b.need || []).join(', ') || '—'}</span></div>
@@ -430,8 +462,8 @@ function BriefPanel({ job, briefs, reload }) {
   );
 }
 
-// The reply to a brief. With an AI triage it starts from the draft reply;
-// without one (no ANTHROPIC_API_KEY, or the triage failed) Carter writes the
+// The reply to a brief. It starts from the draft the triage script wrote
+// (lib/brief-triage.js: rules, no AI); without one Carter writes the
 // reply himself. Either way nothing goes out until he presses Send.
 function TriageCard({ b, reload }) {
   const t = b.triage && b.triage.summary ? b.triage : null;
@@ -453,8 +485,8 @@ function TriageCard({ b, reload }) {
   return (
     <div style={{ marginTop: 14, padding: '12px 14px', border: '1px solid var(--line)' }}>
       <div className="between" style={{ gap: 8, flexWrap: 'wrap' }}>
-        <span className="lbl">{t ? 'AI summary · ' + t.scope + (t.suggested_price ? ' · ' + t.suggested_price : '') : 'Your reply'}</span>
-        {pill(st === 'sent' ? 'reply sent' : st === 'rejected' ? 'no reply' : t ? 'draft reply ready' : 'not answered', decided ? 'mute' : 'warn')}
+        <span className="lbl">{t ? 'Summary · ' + t.scope + ' job' + (t.suggested_price ? ' · ' + t.suggested_price : '') : 'Your reply'}</span>
+        {pill(st === 'sent' ? 'reply sent' : st === 'rejected' ? 'no reply' : b.status === 'answered' ? 'answered with the proposal' : t ? 'draft reply ready' : 'not answered', decided ? 'mute' : 'warn')}
       </div>
       {t && (
         <React.Fragment>
@@ -468,7 +500,7 @@ function TriageCard({ b, reload }) {
       {!decided && (
         <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
           <button className="btn sm" disabled={!!busy || reply.trim().length < 10} onClick={() => run('send', { reply })}>{busy === 'send' ? 'Sending…' : 'Send this reply'}</button>
-          <button className="btn ghost sm" disabled={!!busy} onClick={() => run('triage')}>{busy === 'triage' ? 'Working…' : t ? 'Redo the summary' : 'Draft it with AI'}</button>
+          <button className="btn ghost sm" disabled={!!busy} onClick={() => run('triage')}>{busy === 'triage' ? 'Working…' : t ? 'Start the draft over' : 'Draft a reply'}</button>
           <button className="btn quiet sm" disabled={!!busy} onClick={() => run('reject')}>No reply needed</button>
         </div>
       )}
@@ -477,8 +509,10 @@ function TriageCard({ b, reload }) {
   );
 }
 
-function ProposalPanel({ job, proposal, reload, compose }) {
-  const blank = { summary: '', items: [{ label: '', amount: '' }], timeline: '', terms: 'Two rounds of changes included. Files are yours once paid.', billing: job.billing || 'split' };
+function ProposalPanel({ job, proposal, brief, bat, reload, compose }) {
+  // A new proposal starts from the brief: one priced line per thing they asked for.
+  const lines = brief && (brief.need || []).length ? brief.need.filter((n) => n !== 'Something else').map((n) => ({ label: n, amount: '' })) : [];
+  const blank = { summary: '', items: lines.length ? lines : [{ label: '', amount: '' }], timeline: '', terms: 'Two rounds of changes included. Files are yours once paid.', billing: job.billing || 'split' };
   const [p, setP] = React.useState(proposal ? { ...proposal, items: proposal.items && proposal.items.length ? proposal.items : blank.items } : blank);
   const [msg, setMsg] = React.useState('');
   React.useEffect(() => { if (proposal) setP({ ...proposal, items: proposal.items && proposal.items.length ? proposal.items : blank.items }); }, [proposal && proposal.updated_at]);
@@ -498,7 +532,7 @@ function ProposalPanel({ job, proposal, reload, compose }) {
     save().then(() => jobAction(job.id, 'mark-sent')).then(() => { setMsg('Marked as sent. Share their project link.'); reload(); }).catch((e) => setMsg(e.message));
   };
   return (
-    <section className="tile">
+    <section className="tile" id="p-proposal">
       <div className="tilehead"><h2 className="h2">Proposal</h2>{proposal ? pill(proposal.status, proposal.status === 'accepted' ? 'ok' : proposal.status === 'sent' ? 'warn' : 'mute') : pill('not written', 'mute')}</div>
       <Field label="What you'll do"><textarea className="input" rows={3} style={{ width: '100%' }} disabled={locked} value={p.summary || ''} onChange={(e) => setP({ ...p, summary: e.target.value })} placeholder="One or two sentences on the job and the outcome." /></Field>
       <span className="lbl" style={{ display: 'block', marginBottom: 5 }}>What's included, with prices</span>
@@ -511,6 +545,8 @@ function ProposalPanel({ job, proposal, reload, compose }) {
       ))}
       {!locked && <button className="btn quiet sm" onClick={() => setP((s) => ({ ...s, items: [...s.items, { label: '', amount: '' }] }))}>Add a line</button>}
       <div className="vrow" style={{ marginTop: 8 }}><span className="lbl">Total</span><span className="mono">{usd(total)}</span></div>
+      {bat && !locked && <p className="sub" style={{ margin: '0 0 8px' }}>Bat's favour: they found the toy mouse, so 5% comes off. On {usd(total)} that is {usd(Math.round(total * 5) / 100)}; add it as a line with a minus price, or price it in.</p>}
+      {brief && (brief.budget || brief.when_date) && !locked && <p className="sub" style={{ margin: '0 0 8px' }}>From the brief: {[brief.budget ? 'budget ' + brief.budget : '', brief.when_date ? 'needed by ' + fdate(brief.when_date + 'T12:00:00') : ''].filter(Boolean).join(', ')}.</p>}
       <Field label="Timeline"><input className="input" style={{ width: '100%' }} disabled={locked} value={p.timeline || ''} onChange={(e) => setP({ ...p, timeline: e.target.value })} placeholder="e.g. Directions in 2 business days, final within a week of your pick" /></Field>
       <Field label="Terms"><input className="input" style={{ width: '100%' }} disabled={locked} value={p.terms || ''} onChange={(e) => setP({ ...p, terms: e.target.value })} /></Field>
       <Field label="Payment">
@@ -554,7 +590,7 @@ function FilesPanel({ job, kind, files, reload, compose }) {
   const remove = (f) => jobAction(job.id, 'remove-file', { file_id: f.id }).then(reload).catch((e) => setMsg(e.message));
   const title = kind === 'final' ? 'Final' : 'Directions';
   return (
-    <section className="tile">
+    <section className="tile" id={'p-' + kind}>
       <div className="tilehead"><h2 className="h2">{title}</h2><span className="lbl">{kind === 'final' ? `Round ${round} · ${job.revisions_used} of ${job.revisions_included} changes used` : 'Usually three'}</span></div>
       <div className="minirows">
         {mine.map((f) => (
@@ -571,7 +607,7 @@ function FilesPanel({ job, kind, files, reload, compose }) {
         <input ref={fileRef} className="input" type="file" multiple />
         <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
           <button className="btn ghost sm" disabled={busy} onClick={add}>{busy ? 'Adding…' : 'Add'}</button>
-          <button className="btn sm" disabled={!mine.length} onClick={() => compose(kind === 'final' ? 'final' : 'drafts')}>{kind === 'final' ? 'Email: final ready' : 'Email: directions ready'}</button>
+          <button className="btn sm" disabled={!mine.length} onClick={() => compose(kind === 'final' ? (job.revisions_used > 0 ? 'revised' : 'final') : 'drafts')}>{kind === 'final' ? (job.revisions_used > 0 ? 'Email: revision ready' : 'Email: final ready') : 'Email: directions ready'}</button>
         </div>
       </div>
       {msg && <p className="sub" style={{ marginTop: 6, color: 'var(--warn)' }}>{msg}</p>}
@@ -608,18 +644,19 @@ function Modal({ title, sub, onClose, children, foot, wide }) {
 function EmailPreview({ jobId, kind, heading, body, button, buttonLabel, subject }) {
   const [html, setHtml] = React.useState('');
   const [err, setErr] = React.useState('');
+  const [autoSubject, setAutoSubject] = React.useState('');
   React.useEffect(() => {
     let live = true;
     const t = setTimeout(() => {
       jobAction(jobId || null, 'preview', { kind, heading, body, button: !!button, button_label: buttonLabel })
-        .then((r) => { if (live) { setHtml(r.html); setErr(''); } })
+        .then((r) => { if (live) { setHtml(r.html); setAutoSubject(r.subject || ''); setErr(''); } })
         .catch((e) => { if (live) setErr(e.message); });
     }, 250);
     return () => { live = false; clearTimeout(t); };
   }, [jobId, kind, heading, body, button, buttonLabel]);
   return (
     <div className="mail-prev" aria-label="Email preview">
-      {subject != null && <div className="mp-subj"><span>Subject</span>{subject || '(no subject)'}</div>}
+      {(subject != null || autoSubject) && <div className="mp-subj"><span>Subject</span>{subject || autoSubject || '(no subject)'}</div>}
       {err ? <p className="sub" style={{ color: 'var(--warn)' }}>The preview did not load: {err}</p> : null}
       <iframe title="Email preview" className="mp-frame" srcDoc={html} sandbox="" style={{ width: '100%', height: 760, border: 0, borderRadius: 6, background: '#0f0a06' }} />
     </div>
@@ -643,7 +680,7 @@ function Composer({ job, proposal, invoices, kind, onClose, onSent }) {
       .then(() => { setRes({ ok: true, text: test ? 'A test went to your own inbox.' : 'Sent to ' + job.email + '.' }); if (!test) { setDone(true); setTimeout(onSent, 900); } })
       .catch((e) => setRes({ ok: false, text: e.message })).finally(() => setBusy(''));
   };
-  const moves = { proposal: 'proposed', drafts: 'drafts', final: 'final' }[k];
+  const moves = { proposal: 'proposed', drafts: 'drafts', final: 'final', revised: 'final' }[k];
   return (
     <Modal wide title={'Email ' + job.name} onClose={onClose}
       sub="Sent from The Scaffold's email, with a button to their project page, and logged on the job. Replies come to you. Words in {braces} fill in from the job."
@@ -676,7 +713,28 @@ function Composer({ job, proposal, invoices, kind, onClose, onSent }) {
   );
 }
 
-function JobPage({ jobId, data, reload, reloadTasks, back }) {
+// The one line that says where a job stands: whose move it is, what is
+// waiting, how long, and a button for the thing that moves it on.
+function NextLine({ job, st, compose, setStage }) {
+  if (!st) return null;
+  const jump = (id) => () => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  const cta = {
+    reply: ['Reply to the brief', jump('p-brief')], proposal: ['Write the proposal', jump('p-proposal')],
+    drafts: ['Add the directions', jump('p-draft')], final: ['Add the final', jump('p-final')], revised: ['Add the revision', jump('p-final')],
+    invoice: [st.stale ? 'Email: invoice overdue' : 'Email: invoice ready', () => compose(st.stale ? 'overdue' : 'invoice')],
+    reminder: ['Send a nudge', () => compose('reminder')], thanks: ['Send a thank-you', () => compose('thanks')],
+  }[st.act] || (st.who === 'you' && job.stage === 'final' && job.approved_at ? ['Move to Paid', () => setStage('paid')] : null);
+  const whose = st.who === 'you' ? 'Your move' : st.who === 'client' ? 'With ' + firstName(job.name) : 'Done';
+  return (
+    <div className={'nextline ' + st.who + (st.stale ? ' stale' : '')} role="status">
+      <span className="nl-who">{whose}</span>
+      <span className="nl-what">{st.what}{st.who !== 'done' ? <span className="sub"> · {st.age ? st.age + (st.age === 1 ? ' day' : ' days') : 'today'}</span> : null}</span>
+      {cta && <button className={'btn sm' + (st.who === 'you' || st.stale ? '' : ' ghost')} onClick={cta[1]}>{cta[0]}</button>}
+    </div>
+  );
+}
+
+function JobPage({ jobId, data, tick, reload, reloadTasks, back }) {
   const job = data.jobs.find((j) => j.id === jobId);
   const [files, setFiles] = React.useState([]);
   const [events, setEvents] = React.useState([]);
@@ -688,11 +746,13 @@ function JobPage({ jobId, data, reload, reloadTasks, back }) {
     fetchJobFiles(jobId).then(setFiles).catch(() => {});
     fetchJobEvents(jobId).then(setEvents).catch(() => {});
   }, [jobId]);
-  React.useEffect(loadMine, [loadMine]);
+  React.useEffect(loadMine, [loadMine, tick]);
   if (!job) return <p className="sub">That job is not here. <button className="btn quiet sm" onClick={back}>Back to Jobs</button></p>;
   const proposal = data.proposals.find((p) => p.job_id === job.id);
   const invoices = data.invoices.filter((i) => i.job_id === job.id);
   const refresh = () => { reload(); loadMine(); };
+  const brief = data.briefs.find((b) => b.id === job.brief_id) || null;
+  const bat = events.some((e) => e.meta && e.meta.bat);
   const copy = () => { navigator.clipboard && navigator.clipboard.writeText(JOB_URL(job.token)).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }); };
   const addNote = () => { if (!note.trim()) return; saveJobEvent({ job_id: job.id, kind: 'note', who: 'me', body: note.trim(), meta: { type: noteType } }).then(() => { setNote(''); loadMine(); }); };
   const setStage = (stage) => {
@@ -732,10 +792,12 @@ function JobPage({ jobId, data, reload, reloadTasks, back }) {
         <h2 className="h2" style={{ marginTop: 12 }}>{job.title}</h2>
         <p className="sub">{job.name}{job.business ? ', ' + job.business : ''}{job.email ? ' · ' + job.email : ''} · {job.lane === 'automation' ? 'Tools' : 'Design'}{job.client_id && matchClient ? ' · client: ' + matchClient.name : ''}</p>
         <div className="row stagetrack" style={{ gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
-          {STAGES.map(([id, label]) => <span key={id}>{pill(label, id === job.stage ? stageKind(id) : 'mute')}</span>)}
+          {STAGES.map(([id, label], k) => { const at = STAGES.findIndex((x) => x[0] === job.stage); return <span key={id} aria-current={k === at ? 'step' : undefined}>{pill((at > k ? '✓ ' : '') + label, k === at ? 'warn' : at > k ? 'ok' : 'mute')}</span>; })}
           {job.stage === 'closed' && pill('Closed', 'bad')}
+          {bat && pill("Bat's favour: 5% off", 'warn')}
           {job.stage === 'closed' && job.close_reason && <span className="sub">{job.close_reason}</span>}
         </div>
+        <NextLine job={job} st={data.states.get(job.id)} compose={setCompose} setStage={setStage} />
         <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
           <span className="sub">Move by hand:</span>
           <select className="input" value={job.stage} onChange={(e) => setStage(e.target.value)}>
@@ -745,7 +807,7 @@ function JobPage({ jobId, data, reload, reloadTasks, back }) {
       </section>
       {compose && <Composer job={job} proposal={proposal} invoices={data.invoices} kind={compose} onClose={() => setCompose(null)} onSent={() => { setCompose(null); refresh(); }} />}
       <BriefPanel job={job} briefs={data.briefs} reload={refresh} />
-      <ProposalPanel job={job} proposal={proposal} reload={refresh} compose={setCompose} />
+      <ProposalPanel job={job} proposal={proposal} brief={brief} bat={bat} reload={refresh} compose={setCompose} />
       <FilesPanel job={job} kind="draft" files={files} reload={loadMine} compose={setCompose} />
       <FilesPanel job={job} kind="final" files={files} reload={loadMine} compose={setCompose} />
       <section className="tile">
@@ -765,14 +827,14 @@ function JobPage({ jobId, data, reload, reloadTasks, back }) {
       <section className="tile">
         <div className="tilehead"><h2 className="h2">History</h2></div>
         <div className="row" style={{ gap: 8, marginBottom: 10 }}>
-          <select className="input" value={noteType} onChange={(e) => setNoteType(e.target.value)} aria-label="Kind of entry"><option value="note">Note</option><option value="call">Call</option><option value="meeting">Meeting</option></select>
+          <select className="input" style={{ flex: 'none', width: 'auto' }} value={noteType} onChange={(e) => setNoteType(e.target.value)} aria-label="Kind of entry"><option value="note">Note</option><option value="call">Call</option><option value="meeting">Meeting</option></select>
           <input className="input" style={{ flex: 1 }} placeholder="Add a note, call or meeting (only you see it)" value={note} onChange={(e) => setNote(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') addNote(); }} />
           <button className="btn ghost sm" onClick={addNote}>Add</button>
         </div>
         <div className="minirows">
           {events.map((e) => (
             <div className="minirow plain" key={e.id} style={{ alignItems: 'flex-start' }}>
-              <span className="mtxt" style={{ whiteSpace: 'pre-wrap' }}><b>{e.who === 'client' ? job.name.split(' ')[0] : e.who === 'me' ? 'You' : 'System'}</b> · {e.kind === 'note' && e.meta && e.meta.type ? e.meta.type : e.kind}{e.body ? ': ' + e.body.slice(0, 400) : ''}</span>
+              <span className="mtxt" style={{ whiteSpace: 'pre-wrap' }}><b>{e.who === 'client' ? job.name.split(' ')[0] : e.who === 'me' ? 'You' : 'Automatic'}</b> · {e.kind === 'note' && e.meta && e.meta.type ? e.meta.type : e.kind === 'email' && e.meta && e.meta.auto ? 'receipt to client' : e.kind}{e.body ? ': ' + e.body.slice(0, 400) : ''}</span>
               <span className="mono mval">{fdate(e.created_at)}</span>
             </div>
           ))}
@@ -812,6 +874,7 @@ function Proposals({ data, open }) {
 
 function Mail({ data, open }) {
   const [view, setView] = React.useState(null);
+  const [auto, setAuto] = React.useState(null);
   const sent = data.events.filter((e) => e.kind === 'email');
   const jobOf = (id) => data.jobs.find((j) => j.id === id);
   return (
@@ -821,7 +884,7 @@ function Mail({ data, open }) {
         <div className="minirows pad">
           {sent.map((e) => (
             <button key={e.id} className="minirow plain" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 0 }} onClick={() => open(e.job_id)}>
-              <span className="mtxt"><b>{jobOf(e.job_id) ? jobOf(e.job_id).name : 'Client'}</b> · {String(e.body || '').split('\n')[0]}</span>
+              <span className="mtxt"><b>{jobOf(e.job_id) ? jobOf(e.job_id).name : 'Client'}</b> · {String(e.body || '').split('\n')[0]}{e.meta && e.meta.auto ? <span className="sub"> · automatic</span> : null}</span>
               <span className="mono mval">{fdate(e.created_at)}</span>
             </button>
           ))}
@@ -842,6 +905,23 @@ function Mail({ data, open }) {
           ))}
         </div>
       </section>
+      <section>
+        <div className="widget-h" style={{ borderBottom: 0, paddingBottom: 4 }}><h2 className="h2">Sent for you</h2><span className="widget-b">{AUTO_EMAILS.length} automatic</span></div>
+        <p className="sub" style={{ marginBottom: 14 }}>Short receipts your client gets the moment they do something on their project page, so they are never left wondering if it worked. Each one is logged on the job. You still hear about every move in your own inbox.</p>
+        <div className="tplgrid">
+          {AUTO_EMAILS.map(([id, label, when]) => (
+            <button key={id} type="button" className="tplcard" onClick={() => setAuto(id)}>
+              <span className="tpl-name">{label}</span>
+              <span className="tpl-when">{when}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+      {auto && (() => { const a = AUTO_EMAILS.find((x) => x[0] === auto); return (
+        <Modal title={a[1]} sub={a[2]} onClose={() => setAuto(null)}
+          foot={<span className="cmp-res">Shown with made-up details. Sent automatically; nothing to press.</span>}>
+          <EmailPreview kind={'auto:' + auto} />
+        </Modal>); })()}
       {view && (() => { const t = TEMPLATES[view]; return (
         <Modal title={t.label} sub={t.when} onClose={() => setView(null)}
           foot={<span className="cmp-res">Shown with made-up details. On a job, your client's own details fill in.</span>}>
@@ -1241,7 +1321,7 @@ function taskNeeds(jobs, tasks) {
   const t = todayStr();
   return tasks.filter((x) => !x.done_at && x.job_id && x.due_on && x.due_on <= t).map((x) => {
     const j = jobs.find((y) => y.id === x.job_id);
-    return j ? { j, what: (x.due_on < t ? 'Overdue: ' : 'Due today: ') + x.title, age: daysSince(x.due_on + 'T12:00:00'), hot: x.due_on < t } : null;
+    return j ? { j, what: (x.due_on < t ? 'Overdue: ' : 'Due today: ') + x.title, age: daysSince(x.due_on + 'T12:00:00'), hot: x.due_on < t, auto: !!x.auto_key } : null;
   }).filter(Boolean);
 }
 function dueLabel(d) {
@@ -1618,8 +1698,11 @@ function BusinessHub() {
   const fromHash = () => {
     const id = (location.hash.match(/job=([0-9a-f-]{36})/) || [])[1] || null;
     const cid = (location.hash.match(/client=([0-9a-f-]{36})/) || [])[1] || null;
+    // #brief=TS-261104-AB12 is the link in the new-brief email: it is written
+    // before the brief has a job, so the job is looked up once the data is in.
+    const ref = (location.hash.match(/brief=(TS-[0-9]{6}-[A-Z0-9]{4})/) || [])[1] || null;
     const t = location.hash.slice(1);
-    return { tab: id ? 'jobs' : cid ? 'clients' : (TABS.includes(t) ? t : 'today'), id, cid };
+    return { tab: id ? 'jobs' : cid ? 'clients' : ref ? 'leads' : (TABS.includes(t) ? t : 'today'), id, cid, ref };
   };
   const [tab, setTab] = React.useState(() => fromHash().tab);
   const [jobId, setJobId] = React.useState(() => fromHash().id);
@@ -1639,7 +1722,34 @@ function BusinessHub() {
   const error = e1 || e2 || e3 || e4 || e5 || e6;
   const loading = [jobs, proposals, invoices, clients, briefs, events, tasks].some((r) => r === null);
   const reloadAll = () => { reloadJobs(); reloadProposals(); reloadInvoices(); reloadClients(); reloadBriefs(); reloadEvents(); reloadTasks(); };
-  const data = loading ? null : { jobs, proposals, invoices, clients, briefs, events, tasks, needs: [...taskNeeds(jobs, tasks), ...needsYou(jobs, proposals, invoices, briefs, events)] };
+  const data = React.useMemo(() => {
+    if (loading) return null;
+    const d = { jobs, proposals, invoices, clients, briefs, events, tasks };
+    return { ...d, ...buildNeeds(d) };
+  }, [jobs, proposals, invoices, clients, briefs, events, tasks]);
+  // Stay current without a reload: refresh when the tab or the home-screen app
+  // comes back into view, and once a minute while it is in view. A client's
+  // accept, pick, approval or payment shows up on its own.
+  const [tick, setTick] = React.useState(0);
+  const live = React.useRef(null);
+  live.current = () => { reloadAll(); setTick((n) => n + 1); };
+  React.useEffect(() => {
+    let last = Date.now();
+    const pull = (minGap) => { if (document.visibilityState !== 'visible' || Date.now() - last < minGap) return; last = Date.now(); live.current(); };
+    const onShow = () => pull(5000);
+    const timer = setInterval(() => pull(55000), 60000);
+    document.addEventListener('visibilitychange', onShow);
+    window.addEventListener('focus', onShow);
+    return () => { clearInterval(timer); document.removeEventListener('visibilitychange', onShow); window.removeEventListener('focus', onShow); };
+  }, []);
+  // The new-brief email's link (#brief=<reference>) opens that brief's job.
+  React.useEffect(() => {
+    const ref = fromHash().ref;
+    if (!ref || !data) return;
+    const b = data.briefs.find((x) => x.reference === ref);
+    const j = b && data.jobs.find((x) => x.brief_id === b.id);
+    if (j) open(j.id);
+  }, [!!data]);
   const [startNew, setStartNew] = React.useState(false);
   const [intro, setIntro] = React.useState(introWanted);
   const endIntro = React.useCallback(() => setIntro(false), []);
@@ -1685,7 +1795,7 @@ function BusinessHub() {
             <React.Fragment>
               {tab === 'today' && <Today data={data} open={open} go={go} />}
               {tab === 'leads' && <Leads data={data} open={open} go={go} reload={reloadAll} reloadClients={reloadClients} reloadTasks={reloadTasks} />}
-              {tab === 'jobs' && (jobId ? <JobPage jobId={jobId} data={data} reload={reloadAll} reloadTasks={reloadTasks} back={() => go('jobs')} /> : <Jobs data={data} open={open} reload={reloadAll} startNew={startNew} />)}
+              {tab === 'jobs' && (jobId ? <JobPage jobId={jobId} data={data} tick={tick} reload={reloadAll} reloadTasks={reloadTasks} back={() => go('jobs')} /> : <Jobs data={data} open={open} reload={reloadAll} startNew={startNew} />)}
               {tab === 'proposals' && <Proposals data={data} open={open} />}
               {tab === 'mail' && <Mail data={data} open={open} />}
               {tab === 'money' && <Money data={data} open={open} reload={reloadAll} />}

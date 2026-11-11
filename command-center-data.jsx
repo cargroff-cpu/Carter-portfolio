@@ -58,7 +58,7 @@ const fetchProposals = () => ccFetch('proposals?select=*&order=updated_at.desc')
 const saveProposal = (row) => ccWrite('proposals', row);
 const fetchJobFiles = (jobId) => ccFetch(`job_files?select=*&job_id=eq.${jobId}&order=created_at.asc`);
 const fetchJobEvents = (jobId) => ccFetch(`job_events?select=*&job_id=eq.${jobId}&order=created_at.desc`);
-const fetchAllEvents = (limit = 200) => ccFetch(`job_events?select=*&order=created_at.desc&limit=${limit}`);
+const fetchAllEvents = (limit = 1000) => ccFetch(`job_events?select=*&order=created_at.desc&limit=${limit}`);
 const saveJobEvent = (row) => ccWrite('job_events', row);
 const jobAction = (jobId, action, extra = {}) => post('/api/job', { job_id: jobId, action, ...extra });
 
@@ -83,7 +83,7 @@ const deleteTask = (id) => ccDelete('crm_tasks', id);
 const fetchDesignBriefs = () => ccFetch('design_briefs?select=*&order=created_at.desc');
 const saveDesignBrief = (row) => ccWrite('design_briefs', row);
 const fetchDesignBriefAttachments = (briefId) => ccFetch(`design_brief_attachments?select=*&design_brief_id=eq.${briefId}`);
-// AI triage on a brief (api/brief-reply.js): 'triage' re-runs it, 'send'
+// Triage on a brief (api/brief-reply.js; a script, no AI): 'triage' re-runs it, 'send'
 // emails the (edited) reply and marks it answered, 'reject' marks it answered.
 const briefAction = (id, action, extra = {}) => post('/api/brief-reply', { id, action, ...extra });
 

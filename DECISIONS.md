@@ -1,5 +1,62 @@
 # Decisions
 
+## 2026-11-11 — Workflow audit: brief to paid, end to end
+
+Read every step (form, brief route, job route, webhook, Hub, client page,
+emails) and checked the live database and Vercel settings. What was wrong, and
+what changed:
+
+- **Automatic follow-ups were not being created.** `crm_tasks.auto_key` was
+  missing on the live database, so every "reply to the brief / nudge the
+  proposal / chase the invoice" task failed without a sound. Migration
+  `20261109` applied (the table was empty).
+- **One answer to "whose move is it".** `job-state.js` says, for any job, whether
+  it is Carter's move or the client's, what is waiting and for how long. The
+  board chips ("Your move", "With client", "Nudge them"), the "Next" line and
+  button on a job, Needs you, the new "With your clients" list and the morning
+  digest all read it. It replaces the Hub's own rules, which lost a job from
+  Needs you as soon as the client paid the deposit through Stripe.
+- **A deposit that is not paid is the client's move.** The proposal email says
+  the work begins once it lands, so an accepted job waits on the deposit, then
+  becomes "Make and send the directions".
+- **The client hears back every time.** Short automatic receipts
+  (`lib/receipts.js`) go out when they accept, pick, ask for changes, approve
+  and pay; the accept and approve ones carry the amount due and a Pay button,
+  the last payment hands over the files. Each is logged on the job and listed
+  under Mail > Sent for you. The brief confirmation now carries the link to
+  their project page.
+- **Four more templates:** Revised final, Invoice overdue, Thank you (with the
+  ask for a quote and a referral), Closing the file. The reminder's "Waiting on
+  you" panel now says what is really waiting (it said "Pick a direction" for an
+  unpaid deposit).
+- **Staying current.** The Hub refreshes when it comes back into view and once
+  a minute; the client's page refreshes when they return to it and for a
+  minute after paying. A morning digest email lists what needs Carter (daily
+  cron, nothing sent on a quiet day).
+- **Bank payments.** Stripe reports a bank payment as "complete" before the
+  money moves. The webhook now waits for it to clear, tells Carter it is
+  clearing, and reopens the invoice if it fails.
+- **Smaller fixes.** Sending a proposal marks the brief answered (the Leads
+  badge used to stay lit). Accepting a proposal puts the client on the books
+  and links the job. Approving a job with nothing left to pay moves it to
+  Paid. The new-brief email opens that brief's job, and the link survives the
+  sign-in page (which also no longer follows a `next` to another site). Tools
+  briefs ask for a deadline and drop design-only answers left from switching
+  lanes. A new proposal starts with the brief's needs as its lines and shows
+  the budget, the deadline and Bat's favour. The stage is "Directions"
+  everywhere (the board said "Drafts").
+- **Checks.** `npm test` now walks a job from brief to paid through the real
+  handlers; `npm run dev` runs the site locally on made-up jobs.
+- **Triage is a script, not AI** (Carter, same day: an AI call per brief is a
+  cost he does not want). `lib/brief-triage.js` now works from plain rules: a
+  summary, small / medium / large, what is missing, red flags (a rush date, a
+  budget under the site's starting price), "starts from" using the public
+  prices, and a draft reply that asks for exactly what is missing. Free,
+  instant, the same answer every time. `ANTHROPIC_API_KEY`, `TRIAGE_MODEL`
+  and `TRIAGE_DAILY_CAP` are no longer read. Nothing still sends on its own.
+- **Left for Carter:** finish the Stripe webhook in the dashboard with the
+  three events in the README, and set `SESSION_SECRET`.
+
 ## 2026-11-06 operations audit: fixes before the first real client
 
 An end-to-end audit (code, Supabase, Vercel) found the workflow sound but
