@@ -7,7 +7,7 @@
 //   1. Spam checks: hidden honeypot field + per-IP rate limit.
 //   2. Email Carter the FULL brief first (with its reference number).
 //   3. Save the brief + a job at "new" to Supabase, then any attached files.
-//   4. AI triage (lib/brief-triage.js): prepares a summary and draft reply
+//   4. Triage (lib/brief-triage.js, a script, no AI): a summary and draft reply
 //      for approval in the Business Hub. Never sends anything itself.
 //   5. Confirmation email to the client (only once RESEND_FROM is a verified
 //      domain; Resend's test sender can't reach clients).
@@ -351,7 +351,7 @@ export default async function handler(req, res) {
         body: { design_brief_id: saved.id, bucket: PLAN_BUCKET, storage_path: plan.path, filename: plan.filename, content_type: plan.type },
       }).catch((e) => logEvent({ kind: 'plan_attach', ok: false, reference: brief.reference, detail: e.message.slice(0, 300) }));
     }
-    const t = await triageAndSave({ ...brief, id: saved.id, attachment_count: files.length + (plan ? 1 : 0), bat }, { timeoutMs: 12000 });
+    const t = await triageAndSave({ ...brief, id: saved.id, attachment_count: files.length + (plan ? 1 : 0), bat });
     if (!t.ok) await logEvent({ kind: 'triage', ok: false, reference: brief.reference, detail: String(t.error).slice(0, 500) });
   }
 

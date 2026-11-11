@@ -15,7 +15,6 @@ process.env.NOTIFY_EMAIL = 'carter@example.com';
 process.env.ADMIN_PASSWORD = 'test-password';
 process.env.STRIPE_SECRET_KEY = 'sk_test';
 process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test';
-delete process.env.ANTHROPIC_API_KEY;
 
 const { install } = await import('./fake-backend.mjs');
 const { db, emails, call } = install();
@@ -61,6 +60,13 @@ assert.match(toClient()[0].subject, /Got your brief/);
 assert.deepEqual(openTasks(), ['brief']);
 assert.ok(db.job_events.some((e) => e.meta && e.meta.bat), "Bat's favour is on the job");
 assert.equal(state().who, 'you'); assert.equal(state().act, 'reply');
+// The triage script has already drafted the reply: no AI, no outside call.
+const tri = db.design_briefs[0].triage;
+assert.equal(tri.model, 'rules'); assert.equal(tri.scope, 'medium'); assert.equal(tri.suggested_price, 'starts from $475');
+assert.deepEqual(tri.missing, ['the exact wording', 'brand assets']);
+assert.match(tri.summary, /^Dana Reyes at Reyes Plumbing wants social graphics, brand basics: A five-post series for spring\. Needed by 2026-12-01, budget \$500–\$1,500, found Bat's mouse/);
+assert.match(tri.draft_reply, /^Hi Dana,/); assert.match(tri.draft_reply, /- The exact wording/); assert.match(tri.draft_reply, /Bat's favour stands/);
+assert.doesNotMatch(tri.draft_reply, /\$\d/, 'the draft never names a price');
 
 // A tools brief drops design-only answers left over from the other lane.
 r = await call(brief, { body: { lane: 'automation', name: 'Sam Okafor', email: 'sam@example.com', about: 'Stop copying inquiries by hand.', where: 'Instagram', copy: 'Old copy', assets: 'Yes', when: '2026-12-15', auto_slow: 'Replying' } });
@@ -68,6 +74,18 @@ assert.equal(r.status, 200);
 const tools = db.design_briefs[1];
 assert.equal(tools.where, null); assert.equal(tools.copy, null); assert.equal(tools.assets, null);
 assert.equal(tools.when_date, '2026-12-15', 'a tools brief keeps its deadline'); assert.equal(tools.auto_slow, 'Replying');
+assert.equal(tools.triage.scope, 'large'); assert.deepEqual(tools.triage.missing, ['what exactly to make', 'the tools they use', 'who does it now', 'a budget range']);
+{
+  const { triageBrief } = await import('../lib/brief-triage.js');
+  const now = new Date('2026-11-11T15:00:00Z'); // a Wednesday
+  const t1 = triageBrief({ lane: 'design', name: 'Al', need: ['Document or report', 'Presentation or deck'], about: 'A 24 page annual report and a deck to match it, for our board.', copy: 'x', where: 'print', assets: 'Yes', when_date: '2026-11-13', budget: '$150–$500' }, { now }).triage;
+  assert.deepEqual(t1.red_flags, ['Rush: needed in 2 business days', 'Budget ($150–$500) is under the starting price ($800)']);
+  assert.equal(t1.scope, 'large'); assert.deepEqual(t1.missing, []); assert.match(t1.draft_reply, /I have what I need/); assert.match(t1.draft_reply, /That date is close/);
+  const t2 = triageBrief({ lane: 'design', name: 'Bo', need: ['Social graphics'], about: 'One post announcing our new opening hours next month.', copy: 'Open 9 to 5', where: 'Instagram', assets: 'Yes', flexible: true }, { now }).triage;
+  assert.equal(t2.scope, 'small'); assert.deepEqual(t2.missing, ['a budget range']); assert.deepEqual(t2.red_flags, []);
+  assert.match(t2.draft_reply, /I have what I need/, 'a missing budget alone is not worth a round trip');
+  assert.deepEqual(triageBrief({ lane: 'automation', name: 'Cy', need: ['AI assistants'], about: 'x', budget: 'Under $150', when_date: '2026-11-01' }, { now }).triage.red_flags, ['The date they gave has already passed', 'Budget (Under $150) is low for a custom tool']);
+}
 
 // The honeypot looks like success and saves nothing.
 r = await call(brief, { body: { name: 'Bot', email: 'b@b.co', about: 'spam', website: 'http://spam' } });

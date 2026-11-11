@@ -462,8 +462,8 @@ function BriefPanel({ job, briefs, reload }) {
   );
 }
 
-// The reply to a brief. With an AI triage it starts from the draft reply;
-// without one (no ANTHROPIC_API_KEY, or the triage failed) Carter writes the
+// The reply to a brief. It starts from the draft the triage script wrote
+// (lib/brief-triage.js: rules, no AI); without one Carter writes the
 // reply himself. Either way nothing goes out until he presses Send.
 function TriageCard({ b, reload }) {
   const t = b.triage && b.triage.summary ? b.triage : null;
@@ -485,7 +485,7 @@ function TriageCard({ b, reload }) {
   return (
     <div style={{ marginTop: 14, padding: '12px 14px', border: '1px solid var(--line)' }}>
       <div className="between" style={{ gap: 8, flexWrap: 'wrap' }}>
-        <span className="lbl">{t ? 'AI summary · ' + t.scope + (t.suggested_price ? ' · ' + t.suggested_price : '') : 'Your reply'}</span>
+        <span className="lbl">{t ? 'Summary · ' + t.scope + ' job' + (t.suggested_price ? ' · ' + t.suggested_price : '') : 'Your reply'}</span>
         {pill(st === 'sent' ? 'reply sent' : st === 'rejected' ? 'no reply' : b.status === 'answered' ? 'answered with the proposal' : t ? 'draft reply ready' : 'not answered', decided ? 'mute' : 'warn')}
       </div>
       {t && (
@@ -500,7 +500,7 @@ function TriageCard({ b, reload }) {
       {!decided && (
         <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
           <button className="btn sm" disabled={!!busy || reply.trim().length < 10} onClick={() => run('send', { reply })}>{busy === 'send' ? 'Sending…' : 'Send this reply'}</button>
-          <button className="btn ghost sm" disabled={!!busy} onClick={() => run('triage')}>{busy === 'triage' ? 'Working…' : t ? 'Redo the summary' : 'Draft it with AI'}</button>
+          <button className="btn ghost sm" disabled={!!busy} onClick={() => run('triage')}>{busy === 'triage' ? 'Working…' : t ? 'Start the draft over' : 'Draft a reply'}</button>
           <button className="btn quiet sm" disabled={!!busy} onClick={() => run('reject')}>No reply needed</button>
         </div>
       )}

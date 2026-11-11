@@ -47,9 +47,15 @@ what changed:
   everywhere (the board said "Drafts").
 - **Checks.** `npm test` now walks a job from brief to paid through the real
   handlers; `npm run dev` runs the site locally on made-up jobs.
-- **Left for Carter:** set `ANTHROPIC_API_KEY` (AI triage is off without it),
-  finish the Stripe webhook in the dashboard with the three events in the
-  README, and set `SESSION_SECRET`.
+- **Triage is a script, not AI** (Carter, same day: an AI call per brief is a
+  cost he does not want). `lib/brief-triage.js` now works from plain rules: a
+  summary, small / medium / large, what is missing, red flags (a rush date, a
+  budget under the site's starting price), "starts from" using the public
+  prices, and a draft reply that asks for exactly what is missing. Free,
+  instant, the same answer every time. `ANTHROPIC_API_KEY`, `TRIAGE_MODEL`
+  and `TRIAGE_DAILY_CAP` are no longer read. Nothing still sends on its own.
+- **Left for Carter:** finish the Stripe webhook in the dashboard with the
+  three events in the README, and set `SESSION_SECRET`.
 
 ## 2026-11-06 operations audit: fixes before the first real client
 

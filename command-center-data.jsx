@@ -83,7 +83,7 @@ const deleteTask = (id) => ccDelete('crm_tasks', id);
 const fetchDesignBriefs = () => ccFetch('design_briefs?select=*&order=created_at.desc');
 const saveDesignBrief = (row) => ccWrite('design_briefs', row);
 const fetchDesignBriefAttachments = (briefId) => ccFetch(`design_brief_attachments?select=*&design_brief_id=eq.${briefId}`);
-// AI triage on a brief (api/brief-reply.js): 'triage' re-runs it, 'send'
+// Triage on a brief (api/brief-reply.js; a script, no AI): 'triage' re-runs it, 'send'
 // emails the (edited) reply and marks it answered, 'reject' marks it answered.
 const briefAction = (id, action, extra = {}) => post('/api/brief-reply', { id, action, ...extra });
 
