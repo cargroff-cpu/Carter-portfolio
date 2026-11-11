@@ -333,14 +333,32 @@ details.more > div { padding-top: 14px; display: flex; flex-direction: column; g
     var b = app.querySelector('.badge'); if (b) b.remove();
   }
 
-  function load(flash) {
+  var seen = '';
+  // quiet: a background refresh. It redraws only if something changed, never
+  // while the client is typing, and a failed check leaves the page as it is.
+  function load(flash, quiet) {
     if (!token) { fail('This link is not complete. Use the button in Carter’s email.'); return; }
     fetch('/api/job?t=' + encodeURIComponent(token), { cache: 'no-store' })
       .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || 'This link is not valid.'); return j; }); })
-      .then(function (d) { render(d, typeof flash === 'string' ? flash : ''); window.scrollTo(0, 0); })
-      .catch(function (e) { fail(e.message); });
+      .then(function (d) {
+        // Signed file links change on every load, so compare without them.
+        var sig = JSON.stringify(d, function (k, v) { return k === 'href' ? undefined : v; });
+        if (quiet) {
+          var typing = Array.prototype.some.call(document.querySelectorAll('textarea'), function (t) { return t.value.trim() || t === document.activeElement; });
+          if (sig === seen || typing) return;
+        }
+        seen = sig;
+        render(d, typeof flash === 'string' ? flash : '');
+        if (!quiet) window.scrollTo(0, 0);
+      })
+      .catch(function (e) { if (!quiet) fail(e.message); });
   }
   load();
+  // Keep the page current: when they come back to the tab (Carter may have
+  // sent the next step meanwhile), and for a minute after paying, while Stripe
+  // tells us the payment landed.
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') load('', true); });
+  if (new URLSearchParams(location.search).get('paid') === '1') [4000, 10000, 20000, 40000, 60000].forEach(function (ms) { setTimeout(function () { load('', true); }, ms); });
 })();
 </script>
 </body>

@@ -58,7 +58,7 @@ const fetchProposals = () => ccFetch('proposals?select=*&order=updated_at.desc')
 const saveProposal = (row) => ccWrite('proposals', row);
 const fetchJobFiles = (jobId) => ccFetch(`job_files?select=*&job_id=eq.${jobId}&order=created_at.asc`);
 const fetchJobEvents = (jobId) => ccFetch(`job_events?select=*&job_id=eq.${jobId}&order=created_at.desc`);
-const fetchAllEvents = (limit = 200) => ccFetch(`job_events?select=*&order=created_at.desc&limit=${limit}`);
+const fetchAllEvents = (limit = 1000) => ccFetch(`job_events?select=*&order=created_at.desc&limit=${limit}`);
 const saveJobEvent = (row) => ccWrite('job_events', row);
 const jobAction = (jobId, action, extra = {}) => post('/api/job', { job_id: jobId, action, ...extra });
 

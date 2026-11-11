@@ -1,6 +1,7 @@
 -- 20261108_crm_tasks_fields.sql — follow-up tasks, client custom fields,
 -- and a lookup index for duplicate checks. Business Hub CRM features.
 --
+-- APPLIED: confirmed on the live database 2026-11-11. The note below is from before it ran.
 -- NOT APPLIED. Review it, then run it in the Supabase SQL editor. The Hub
 -- works without it: Tasks shows a "set up" note, and client custom fields
 -- stay hidden until the column exists. Safe to re-run.

@@ -9,6 +9,9 @@
 //   direction, ask for changes, approve the final, pay an invoice. Each one
 //   is recorded on the job and emailed to Carter.
 //
+//   Each client action also sends the client a short receipt
+//   (lib/receipts.js), so they are never left wondering if it worked.
+//
 //   Carter, from the Backroom (needs the Backroom session cookie): send a
 //   branded email to the client (which also moves the job to its next stage),
 //   mark a proposal sent without emailing it (shared another way), mark an
@@ -26,7 +29,9 @@ import { verifySessionToken, SESSION_COOKIE } from '../lib/session.js';
 import { renderEmail, jobUrl } from '../lib/mail.js';
 import { paymentLinkFor, deactivateLink } from '../lib/stripe.js';
 import { clientIp, hit } from '../lib/rate-limit.js';
-import { openTask, closeTasks, closeJobTasks, dueIn, KEYS } from '../lib/crm.js';
+import { openTask, closeTasks, closeJobTasks, dueIn, findClientByEmail, KEYS } from '../lib/crm.js';
+import { sendReceipt, renderReceipt, RECEIPTS, RECEIPT_SAMPLES } from '../lib/receipts.js';
+import { jobState, STAGE_NAMES } from '../job-state.js';
 
 const FILES_BUCKET = 'job-files';
 const RATE = { limit: 30, windowMs: 10 * 60 * 1000 };
@@ -64,10 +69,35 @@ async function tellCarter(job, subject, lines) {
   const { html, text } = renderEmail({
     tone: 'internal', eyebrow: `${job.name}${job.business ? ', ' + job.business : ''}`, heading: subject,
     body: [...lines].filter((l) => l != null && l !== '').join('\n\n'),
-    panels: [{ type: 'facts', rows: [{ k: 'Job', v: job.title }, { k: 'Stage', v: job.stage || 'new' }] }],
+    panels: [{ type: 'facts', rows: [{ k: 'Job', v: job.title }, { k: 'Stage', v: STAGE_NAMES[job.stage] || 'New' }] }],
     button: { label: 'Open the job in the Backroom', url: `https://scaffold.cargroff.com/business#job=${job.id}` },
   });
   await sendEmail({ to: NOTIFY_EMAIL, from: FROM_INTERNAL, replyTo: job.email || undefined, subject: `${subject}: ${job.title}`, text, html }).catch(() => {});
+}
+
+// A brief counts as answered once Carter has replied in any way: a reply, a
+// proposal by email, or a proposal marked as sent. Without this a brief whose
+// first answer was the proposal itself stayed "waiting for a reply" for good.
+async function markBriefAnswered(job) {
+  if (!job.brief_id) return;
+  await sb(`design_briefs?id=eq.${job.brief_id}&status=eq.new`, { method: 'PATCH', body: { status: 'answered', answered_at: now() } }).catch(() => {});
+}
+
+// Whoever accepts a proposal is a client. Put them on the books (matched by
+// email, or added) and tie the job to them, so invoices, history and the
+// "where work comes from" report line up without a manual "Save as client".
+async function ensureClient(job) {
+  if (job.client_id || !job.email) return;
+  try {
+    let c = await findClientByEmail(job.email);
+    if (!c) {
+      [c] = await sb('clients', { method: 'POST', prefer: 'return=representation', body: {
+        name: job.business || job.name, contact: job.business ? job.name : null, email: job.email.trim().toLowerCase(),
+        since: now().slice(0, 10), source: job.brief_id ? 'brief' : null,
+      } });
+    }
+    if (c) { await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { client_id: c.id } }); job.client_id = c.id; }
+  } catch (e) { console.error('ensureClient', e.message); }
 }
 
 // What the client's page shows. Nothing secret: no notes, no history, only
@@ -115,13 +145,16 @@ async function clientAction(req, res, body) {
     await sb(`proposals?id=eq.${p.id}`, { method: 'PATCH', body: { status: 'accepted', accepted_at: now(), updated_at: now() } });
     const patch = { stage: 'drafts', billing: p.billing, updated_at: now() };
     await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: patch });
+    await ensureClient(job);
+    let dep = null;
     if (p.billing === 'split' && Number(p.total) > 0) {
       const deposit = Math.round(Number(p.total) * 50) / 100;
-      const [dep] = await sb('invoices', { method: 'POST', prefer: 'return=representation', body: { job_id: job.id, client_id: job.client_id, amount: deposit, label: 'Deposit (50%)', status: 'sent', sent_at: now() } });
+      [dep] = await sb('invoices', { method: 'POST', prefer: 'return=representation', body: { job_id: job.id, client_id: job.client_id, amount: deposit, label: 'Deposit (50%)', status: 'sent', sent_at: now() } });
       if (dep) await openTask(KEYS.invoice(dep.id), { t: `Chase the deposit: ${job.title}`, due: dueIn(7), job_id: job.id, client_id: job.client_id });
     }
     await closeTasks(KEYS.proposal(job.id));
     await event(job, 'accepted', 'client', comment || 'Accepted the proposal.');
+    await sendReceipt('accepted', { ...job, stage: 'drafts' }, { total: p.total, deposit: dep });
     await tellCarter(job, 'Proposal accepted', [`${job.name} accepted the proposal (${money(p.total)}, ${p.billing === 'split' ? '50% deposit now, 50% on approval' : 'paid at the end'}).`, comment ? `They wrote: ${comment}` : '']);
     return res.status(200).json({ ok: true });
   }
@@ -134,6 +167,8 @@ async function clientAction(req, res, body) {
     await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { picked_file_id: f.id, updated_at: now() } });
     await closeTasks(KEYS.drafts(job.id));
     await event(job, 'picked', 'client', comment || null, { file_id: f.id, label: f.label || f.filename });
+    // One receipt for the first pick; changing their mind afterwards does not send another.
+    if (!job.picked_file_id) await sendReceipt('picked', job, { label: f.label || f.filename, comment });
     await tellCarter(job, 'Direction picked', [`${job.name} picked "${f.label || f.filename}".`, comment ? `They wrote: ${comment}` : '']);
     return res.status(200).json({ ok: true });
   }
@@ -144,6 +179,7 @@ async function clientAction(req, res, body) {
     await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { revisions_used: job.revisions_used + 1, updated_at: now() } });
     await closeTasks(KEYS.final(job.id));
     await event(job, 'changes', 'client', comment, { round: job.revisions_used + 1 });
+    await sendReceipt('changes', job, { round: job.revisions_used + 1, included: job.revisions_included });
     const over = job.revisions_used + 1 > job.revisions_included;
     await tellCarter(job, 'Changes requested', [`${job.name} asked for changes (round ${job.revisions_used + 1} of ${job.revisions_included} included${over ? ', past what is included' : ''}):`, comment]);
     return res.status(200).json({ ok: true });
@@ -163,6 +199,11 @@ async function clientAction(req, res, body) {
     }
     await closeTasks(KEYS.final(job.id));
     await event(job, 'approved', 'client', comment || 'Approved the final.');
+    // Nothing left to pay (already paid in full, or a job with no price):
+    // approval is the end, so the job moves to Paid instead of sitting in Final.
+    const stillOpen = rest > 0 ? 1 : (await sb(`invoices?job_id=eq.${job.id}&status=in.(sent,overdue)&select=id`)).length;
+    if (!stillOpen) { await sb(`jobs?id=eq.${job.id}`, { method: 'PATCH', body: { stage: 'paid', updated_at: now() } }); await closeJobTasks(job.id); }
+    await sendReceipt('approved', job, { rest, label: billed > 0 ? 'Final (50%)' : 'Full payment' });
     await tellCarter(job, 'Final approved', [`${job.name} approved the final.${rest > 0 ? ` The final invoice (${money(rest)}) is now on their page.` : ''}`, comment ? `They wrote: ${comment}` : '']);
     return res.status(200).json({ ok: true });
   }
@@ -187,14 +228,26 @@ async function clientAction(req, res, body) {
 }
 
 // Which stage a sent email moves the job to (never backwards).
-const STAGE_FOR = { proposal: 'proposed', drafts: 'drafts', final: 'final' };
+const STAGE_FOR = { proposal: 'proposed', drafts: 'drafts', final: 'final', revised: 'final' };
+// Every kind of email Carter can send from a job.
+const KINDS = ['reply', 'proposal', 'drafts', 'final', 'revised', 'invoice', 'reminder', 'overdue', 'thanks', 'closing', 'note'];
 const ORDER = ['new', 'proposed', 'drafts', 'final', 'paid'];
 
 // What each kind of client email adds to the frame: the stage track, a short
 // "step N of 5" line, and one panel that puts the key fact up front (the price,
 // the amount due, the rounds left). Built from the job's own data.
 const STAGE_IX = { new: 0, proposed: 1, drafts: 2, final: 3, paid: 4 };
-const WAITING = { new: 'Your proposal is on its way', proposed: 'Accept the proposal', drafts: 'Pick a direction', final: 'Review the final', paid: 'Nothing, you are all done' };
+// What a reminder says is waiting, from the job's real state (job-state.js),
+// so a nudge about an unpaid deposit never says "Pick a direction".
+async function waitingOn(job, proposal, invoices) {
+  if (job.sample) return 'Pick a direction';
+  let events = [];
+  try { events = await sb(`job_events?job_id=eq.${job.id}&select=job_id,kind,who,meta,created_at&order=created_at.desc&limit=200`); } catch (e) { events = []; }
+  const s = jobState(job, { proposal, invoices: invoices.map((i) => ({ ...i, job_id: job.id })), events });
+  if (s.who !== 'client') return null;
+  if (s.act === 'invoice') return `Pay the ${String((invoices.find((i) => i.status === 'sent') || {}).label || 'invoice').toLowerCase()}`;
+  return { proposed: 'Accept the proposal', drafts: 'Pick a direction', final: 'Review the final' }[job.stage] || null;
+}
 const SAMPLE_JOB = { id: 'sample', token: 'preview', name: 'Dana Reyes', title: 'Booking tool', stage: 'drafts', billing: 'split', revisions_included: 2, revisions_used: 0, sample: true };
 
 async function emailExtras(kind, job) {
@@ -203,8 +256,8 @@ async function emailExtras(kind, job) {
     proposal = { total: 2000, billing: 'split' };
     invoices = [{ label: 'Deposit (50%)', amount: 1000, status: 'sent' }];
   } else {
-    try { [proposal] = await sb(`proposals?job_id=eq.${job.id}&select=total,billing&limit=1`); } catch (e) { proposal = null; }
-    try { invoices = await sb(`invoices?job_id=eq.${job.id}&select=label,amount,status&order=created_at`); } catch (e) { invoices = []; }
+    try { [proposal] = await sb(`proposals?job_id=eq.${job.id}&select=total,billing,status,sent_at&limit=1`); } catch (e) { proposal = null; }
+    try { invoices = await sb(`invoices?job_id=eq.${job.id}&select=label,amount,status,sent_at&order=created_at`); } catch (e) { invoices = []; }
   }
   const url = jobUrl(job.token);
   const ix = STAGE_IX[job.stage] ?? 0;
@@ -220,14 +273,21 @@ async function emailExtras(kind, job) {
     panels: [{ type: 'steps', title: 'What I need from you', items: [{ t: 'Pick the one you like best', s: 'One click on your project page.' }, { t: 'Tell me anything you would change', s: 'Leave a note beside it, as rough as you like.' }] }] };
   if (kind === 'final') return { stage: 3, eyebrow: step(4, 'The final'), button2: { label: 'Ask for changes', url }, note: 'Both open your project page. Nothing is final until you say so.',
     panels: [{ type: 'pips', label: 'Rounds of changes left', on: left, total: job.revisions_included || left, text: `${left} round${left === 1 ? '' : 's'} left` }] };
-  if (kind === 'invoice') {
-    if (!due) return { stage: ix, eyebrow: `Invoice · ${job.title}` };
+  if (kind === 'revised') return { stage: 3, eyebrow: step(4, 'The revised final'), button2: { label: 'Ask for changes', url }, note: 'Both open your project page. Nothing is final until you say so.',
+    panels: [{ type: 'pips', label: 'Rounds of changes left', on: left, total: job.revisions_included || left, text: `${left} round${left === 1 ? '' : 's'} left` }] };
+  if (kind === 'invoice' || kind === 'overdue') {
+    const eyebrow = `${kind === 'overdue' ? 'Still open' : 'Invoice'} · ${job.title}`;
+    if (!due) return { stage: ix, eyebrow };
     const after = Math.max(0, total - paid - Number(due.amount));
-    return { stage: ix, eyebrow: `Invoice · ${job.title}`, note: 'Paid through Stripe. A receipt lands in your inbox right after.',
+    return { stage: ix, eyebrow, note: 'Paid through Stripe. A receipt lands in your inbox right after.',
       panels: [{ type: 'amount', label: 'Amount due', value: money(due.amount), sub: due.label || '', meta: [{ k: 'Pay by', v: 'Card or bank transfer' }, ...(after > 0 ? [{ k: 'Balance after', v: `${money(after)}, when you approve the final` }] : [])] }] };
   }
-  if (kind === 'reminder') return { stage: ix, eyebrow: `A quick nudge · ${job.title}`, note: 'Need more time, or has something changed? Just reply.',
-    panels: [{ type: 'waiting', value: WAITING[job.stage] || WAITING.new }] };
+  if (kind === 'reminder') {
+    const waiting = await waitingOn(job, proposal, invoices);
+    return { stage: ix, eyebrow: `A quick nudge · ${job.title}`, note: 'Need more time, or has something changed? Just reply.',
+      panels: waiting ? [{ type: 'waiting', value: waiting }] : [] };
+  }
+  if (kind === 'thanks') return { stage: 4, eyebrow: `All done · ${job.title}` };
   return { letter: true };
 }
 
@@ -239,7 +299,14 @@ async function adminAction(req, res, body) {
   if (body.action === 'preview') {
     const job = isId(body.job_id) ? await loadJob(`id=eq.${body.job_id}`) : null;
     const j = job || SAMPLE_JOB;
-    const kind = ['proposal', 'drafts', 'final', 'invoice', 'reminder', 'note'].includes(body.kind) ? body.kind : 'note';
+    // "auto:accepted" and friends: the receipts the client gets on their own
+    // (lib/receipts.js), shown with made-up details.
+    const auto = typeof body.kind === 'string' && body.kind.startsWith('auto:') ? body.kind.slice(5) : null;
+    if (auto && RECEIPTS[auto]) {
+      const r = renderReceipt(auto, { ...SAMPLE_JOB, stage: auto === 'paid' ? 'paid' : SAMPLE_JOB.stage }, RECEIPT_SAMPLES[auto]);
+      return res.status(200).json({ ok: true, html: r.html, subject: r.subject });
+    }
+    const kind = KINDS.includes(body.kind) ? body.kind : 'note';
     const extra = await emailExtras(kind, j);
     const button = body.button === false ? null : { label: str(body.button_label, 60) || 'Open your project page', url: jobUrl(j.token) };
     const { html } = renderEmail({ heading: str(body.heading, 200), body: str(body.body, 8000), button, ...extra, button2: body.button === false ? null : extra.button2 });
@@ -252,7 +319,7 @@ async function adminAction(req, res, body) {
   const a = body.action;
 
   if (a === 'send') {
-    const kind = ['reply', 'proposal', 'drafts', 'final', 'invoice', 'reminder', 'note'].includes(body.kind) ? body.kind : 'note';
+    const kind = KINDS.includes(body.kind) ? body.kind : 'note';
     const subject = str(body.subject, 200), heading = str(body.heading, 200), text = str(body.body, 8000);
     if (!subject || !text) return res.status(400).json({ error: 'A subject and a message are needed.' });
     const test = !!body.test;
@@ -276,9 +343,9 @@ async function adminAction(req, res, body) {
     await event(job, 'email', 'me', `${subject}\n\n${text}`, { kind });
     // Follow-ups on the Docket: nudge a proposal, a direction pick or a final
     // that goes quiet. Sending again reopens the same task with a new date.
-    const nudge = { proposal: ['proposal', 'Follow up on the proposal'], drafts: ['drafts', 'Follow up on the directions'], final: ['final', 'Check in on the final'] }[kind];
+    const nudge = { proposal: ['proposal', 'Follow up on the proposal'], drafts: ['drafts', 'Follow up on the directions'], final: ['final', 'Check in on the final'], revised: ['final', 'Check in on the revised final'] }[kind];
     if (nudge) await openTask(KEYS[nudge[0]](job.id), { t: `${nudge[1]}: ${job.title}`, due: dueIn(3), job_id: job.id, client_id: job.client_id });
-    if (kind === 'proposal' || kind === 'reply') await closeTasks(KEYS.brief(job.id));
+    if (kind === 'proposal' || kind === 'reply') { await closeTasks(KEYS.brief(job.id)); await markBriefAnswered(job); }
     return res.status(200).json({ ok: true });
   }
 
@@ -294,6 +361,7 @@ async function adminAction(req, res, body) {
     await event(job, 'note', 'me', 'Proposal marked as sent (shared without the email).');
     await openTask(KEYS.proposal(job.id), { t: `Follow up on the proposal: ${job.title}`, due: dueIn(3), job_id: job.id, client_id: job.client_id });
     await closeTasks(KEYS.brief(job.id));
+    await markBriefAnswered(job);
     return res.status(200).json({ ok: true });
   }
 

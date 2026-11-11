@@ -1,7 +1,9 @@
 // api/stripe-webhook.js — Stripe calls this when a Payment Link's checkout
 // completes. Verifies the signature by hand (no Stripe SDK — this repo has
 // no build step or node_modules) using STRIPE_WEBHOOK_SECRET, then marks the
-// matching invoice paid. Not gated by middleware.js: Stripe isn't logged
+// matching invoice paid. Events to send here from the Stripe dashboard:
+// checkout.session.completed, checkout.session.async_payment_succeeded and
+// checkout.session.async_payment_failed (the last two are for bank payments). Not gated by middleware.js: Stripe isn't logged
 // into the Scaffold, its signature is the auth. TODO(carter): after setting
 // STRIPE_SECRET_KEY (see lib/stripe.js), add a webhook
 // endpoint in the Stripe dashboard pointed at /api/stripe-webhook for the
@@ -15,6 +17,7 @@ import { sb, sendEmail, NOTIFY_EMAIL, SUPABASE_URL } from '../lib/server.js';
 import { renderEmail } from '../lib/mail.js';
 import { deactivateLink } from '../lib/stripe.js';
 import { closeTasks, closeJobTasks, KEYS } from '../lib/crm.js';
+import { sendReceipt } from '../lib/receipts.js';
 
 export const config = { api: { bodyParser: false } };
 
@@ -70,8 +73,44 @@ export default async function handler(req, res) {
     return;
   }
 
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object;
+  // A bank payment (ACH) completes checkout before the money has moved:
+  // Stripe sends checkout.session.completed with payment_status "unpaid",
+  // then async_payment_succeeded (or _failed) days later. Only money that has
+  // arrived marks an invoice paid.
+  const session = event.data && event.data.object ? event.data.object : {};
+  const settled = (event.type === 'checkout.session.completed' && session.payment_status !== 'unpaid')
+    || event.type === 'checkout.session.async_payment_succeeded';
+  const pending = event.type === 'checkout.session.completed' && session.payment_status === 'unpaid';
+  const failed = event.type === 'checkout.session.async_payment_failed';
+
+  if ((pending || failed) && session.payment_link) {
+    try {
+      const [inv] = await sb(`invoices?stripe_payment_link_id=eq.${encodeURIComponent(session.payment_link)}&select=id,job_id,label,amount`);
+      const [job] = inv && inv.job_id ? await sb(`jobs?id=eq.${inv.job_id}&select=id,name,title,token`) : [];
+      if (job) {
+        const amount = '$' + Number(inv.amount).toFixed(2);
+        await sb('job_events', { method: 'POST', body: { job_id: job.id, kind: 'note', who: 'system', body: failed
+          ? `Bank payment FAILED for ${inv.label || 'invoice'} (${amount}). The invoice is still unpaid.`
+          : `Bank payment started for ${inv.label || 'invoice'} (${amount}). It shows as paid once the bank clears it, usually in a few business days.` } });
+        if (failed) {
+          // The link took its one payment attempt; clear it so the next Pay makes a fresh one.
+          await deactivateLink(session.payment_link);
+          await sb(`invoices?id=eq.${inv.id}`, { method: 'PATCH', body: { stripe_url: null, stripe_payment_link_id: null } });
+        }
+        const { html, text } = renderEmail({
+          tone: 'internal', eyebrow: failed ? 'Payment failed' : 'Payment on its way',
+          heading: failed ? `${String(job.name).split(' ')[0]}'s bank payment failed.` : `${String(job.name).split(' ')[0]} paid by bank. It is clearing.`,
+          body: failed ? `The bank payment for ${inv.label || 'an invoice'} (${amount}) did not go through. The invoice is unpaid again and they can press Pay for a fresh link.`
+            : `${job.name} paid ${inv.label || 'an invoice'} (${amount}) by bank transfer. It is not money yet: the invoice is marked paid when the bank clears it.`,
+          panels: [{ type: 'facts', rows: [{ k: 'Invoice', v: inv.label || 'Invoice' }, { k: 'Job', v: job.title }] }],
+          button: { label: 'Open the job in the Backroom', url: `https://scaffold.cargroff.com/business#job=${job.id}` },
+        });
+        await sendEmail({ to: NOTIFY_EMAIL, subject: `${failed ? 'Bank payment failed' : 'Bank payment clearing'}: ${job.title}`, html, text });
+      }
+    } catch (e) { console.error('webhook pending/failed', e.message); }
+  }
+
+  if (settled) {
     const paymentLinkId = session.payment_link;
     if (paymentLinkId) {
       let paid = [];
@@ -120,6 +159,9 @@ export default async function handler(req, res) {
             button: { label: 'Open the job in the Backroom', url: `https://scaffold.cargroff.com/business#job=${job.id}` },
           });
           await sendEmail({ to: NOTIFY_EMAIL, subject: `${done ? 'Paid in full' : 'Payment received'}: ${job.title}`, html, text });
+          // And the client's own receipt (the last one hands over the files).
+          const sentDirections = await sb(`job_events?job_id=eq.${job.id}&kind=eq.email&meta->>kind=eq.drafts&select=id&limit=1`).catch(() => []);
+          await sendReceipt('paid', { ...job, stage: done ? 'paid' : job.stage }, { amount: inv.amount, label: inv.label, done, toCome, directionsSent: sentDirections.length > 0, stage: { new: 0, proposed: 1, drafts: 2, final: 3, paid: 4 }[job.stage] });
         } catch (e) {
           console.error('webhook job update', e.message);
         }

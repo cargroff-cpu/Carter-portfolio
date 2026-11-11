@@ -8,7 +8,8 @@
     "build:pages": "node scripts/build-design.mjs && node scripts/build-portfolio.mjs",
     "test:cat": "node scripts/cat-test/suite.cjs",
     "test:cat:sizes": "node scripts/cat-test/sizes.cjs",
-    "test": "node scripts/check-crm.mjs"
+    "test": "node scripts/check-crm.mjs && node scripts/check-flow.mjs",
+    "dev": "node scripts/dev-server.mjs"
   },
   "devDependencies": {
     "@babel/standalone": "7.29.0"

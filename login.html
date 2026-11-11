@@ -63,7 +63,10 @@
     const form = document.getElementById('f');
     const btn = document.getElementById('btn');
     const err = document.getElementById('err');
-    const next = new URLSearchParams(location.search).get('next') || '/backroom';
+    // Only ever a path on this site (never another site or a script), and the
+    // #job=… part of an emailed link survives the sign-in.
+    const asked = new URLSearchParams(location.search).get('next') || '';
+    const next = (/^\/(?![\/\\])/.test(asked) ? asked : '/backroom') + location.hash;
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       btn.disabled = true; btn.textContent = 'Checking…'; err.textContent = '';

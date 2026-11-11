@@ -864,6 +864,12 @@ const Brief = React.forwardRef(function Brief(props, ref) {
                     <textarea rows={2} value={f.auto_tools} onChange={set('auto_tools')} placeholder="Gmail, Google Sheets, Square" /></label>
                   <label className="dfl"><span className="dlb">Who does it now</span>
                     <input value={f.auto_who} onChange={set('auto_who')} placeholder="Me, after hours" /></label>
+                  <div className="dfl"><span className="dlb">When do you need it</span><span className="dhint">A date, or tell me it can move.</span>
+                    <div className="ddatewrap">
+                      <input type="date" value={f.when} onChange={set('when')} />
+                      <label className="dflex"><input type="checkbox" checked={f.flexible} onChange={set('flexible')} />Flexible</label>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="dfields two">

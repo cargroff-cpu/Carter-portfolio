@@ -36,6 +36,14 @@ body { min-height: 100vh; background: linear-gradient(180deg, #1e1509, var(--bg)
 .jcards .reclist { text-align: left; }
 @media (max-width: 1100px) { .jboard { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 700px) { .jboard { grid-template-columns: minmax(0, 1fr); } }
+/* The "Next" line on a job, and the ball-holder chip on board cards */
+.nextline { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; margin-top: 14px; padding: 12px 14px; border: 1px solid var(--line-2); border-left: 3px solid var(--text-3); background: rgba(236,217,178,.03); }
+.nextline.you, .nextline.stale { border-left-color: var(--accent-lit); background: rgba(217,154,61,.08); }
+.nl-who { font-family: var(--ui); font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); white-space: nowrap; }
+.nextline.you .nl-who, .nextline.stale .nl-who { color: var(--accent-lit); }
+.nl-what { flex: 1 1 220px; min-width: 0; font-size: 16px; color: var(--text); }
+.jcol .reclist.mine { box-shadow: inset 2px 0 0 var(--accent-lit); }
+.jcol .reclist .pill { flex: none; }
 /* Mail: template boxes, the dialog, the email preview (the real email is paper-coloured) */
 .tplgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .tplcard { text-align: left; display: flex; flex-direction: column; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-top: 2px solid var(--accent); padding: 16px 18px; min-width: 0; }
@@ -360,6 +368,8 @@ th { font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--text
   <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <!-- Who has the ball on each job: one module shared with the server's morning digest. -->
+  <script type="module">import * as JobState from './job-state.js'; window.JobState = JobState;</script>
   <script type="text/babel" src="command-center-data.jsx"></script>
   <script type="text/babel" src="business-hub.jsx"></script>
 </body>

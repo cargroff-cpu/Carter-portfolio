@@ -1,5 +1,6 @@
 -- 20261104_lockdown.sql — from the 2026-11-04 assessment.
 --
+-- APPLIED: confirmed on the live database 2026-11-11. The note below is from before it ran.
 -- NOT APPLIED YET. Run it in the Supabase SQL editor (or via the Supabase
 -- MCP) only AFTER the code on this branch is deployed to production. The
 -- Business Hub and the Docket now read through /api/scaffold-read; if you

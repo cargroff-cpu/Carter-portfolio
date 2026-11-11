@@ -1,5 +1,6 @@
 -- 20261106_workflow.sql — the Scaffold's job workflow (brief to paid).
 --
+-- APPLIED: confirmed on the live database 2026-11-11. The note below is from before it ran.
 -- NOT APPLIED YET. Apply it right before the code on this branch goes live
 -- (the new Backroom reads these tables). Every table it drops was empty on
 -- 2026-11-06 (checked row counts), so nothing is lost. Safe to re-run.
