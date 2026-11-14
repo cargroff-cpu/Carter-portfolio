@@ -1084,12 +1084,14 @@ function HeroLamp({
     }
   }, React.createElement("div", {
     className: "dhero-candle"
-  }), React.createElement(GasLamp, {
+  }), React.createElement("div", {
+    className: "dlamp-post"
+  }, React.createElement(GasLamp, {
     height: height,
     out: out,
     variant: row + '-' + side.toUpperCase(),
     onGlobeClick: () => setOut(o => !o)
-  }), false && v.iron.length > 0 && React.createElement("svg", {
+  })), false && v.iron.length > 0 && React.createElement("svg", {
     className: "dlamp-iron",
     viewBox: "0 0 200 900",
     "aria-hidden": "true"
@@ -2339,6 +2341,44 @@ function Footer() {
     href: "mailto:car.groff@gmail.com"
   }, "car.groff@gmail.com"), React.createElement("span", null, "\xA9 ", new Date().getFullYear(), " Carter Groff"))));
 }
+function useFrameGuard() {
+  React.useEffect(() => {
+    let raf = 0,
+      last = 0,
+      n = 0,
+      slow = 0,
+      rounds = 0,
+      since = 0;
+    const tick = t => {
+      raf = 0;
+      const d = t - last;
+      last = t;
+      if (!since) since = t;
+      if (d > 0 && d < 1000 && !document.hidden && window.scrollY < window.innerHeight * 0.5) {
+        n++;
+        if (d > 30) slow++;
+      }
+      if (t - since >= 2500) {
+        if (n >= 5 && slow / n > 0.35) {
+          document.documentElement.classList.add('lite');
+          return;
+        }
+        if (++rounds >= 4) return;
+        n = 0;
+        slow = 0;
+        since = t;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    const wait = setTimeout(() => {
+      raf = requestAnimationFrame(tick);
+    }, 6000);
+    return () => {
+      clearTimeout(wait);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+}
 function useReveal() {
   React.useEffect(() => {
     const els = document.querySelectorAll('.up');
@@ -2373,6 +2413,7 @@ function useReveal() {
 function TheScaffold() {
   const briefRef = React.useRef(null);
   useReveal();
+  useFrameGuard();
   const onAddNeed = (lane, v) => {
     if (briefRef.current) briefRef.current.addNeed(lane, v);
     document.getElementById('brief').scrollIntoView({

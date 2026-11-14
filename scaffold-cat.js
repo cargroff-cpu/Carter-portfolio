@@ -226,7 +226,7 @@ class Lane {
     this.rows = ROWS.map((name) => {
       const L = hero.querySelector('.dhero-lamp.l.' + name), R = hero.querySelector('.dhero-lamp.r.' + name);
       const a = this.rel(L), b = this.rel(R);
-      const f = parseFilter(getComputedStyle(L).filter);
+      const f = parseFilter(getComputedStyle(L.querySelector('.dlamp-post') || L).filter);
       return { name, L, R, y: (a.y + a.h + b.y + b.h) / 2, ppm: (a.h + b.h) / 2 / LAMP_M,
         xl: a.x + a.w / 2, xr: b.x + b.w / 2, bright: f.bright, blur: f.blur };
     });
@@ -546,7 +546,7 @@ class Cat {
     Object.assign(canvas.style, { position: 'absolute', left: '0', top: '0', pointerEvents: 'none', zIndex: '6',
       opacity: '0', transition: 'opacity 1.2s ease', willChange: 'transform' });
     hero.appendChild(canvas);
-    const r = this.renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
+    const r = this.renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power', failIfMajorPerformanceCaveat: !DEBUG });
     r.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
     r.setClearColor(0x000000, 0);
     r.outputColorSpace = THREE.SRGBColorSpace;
@@ -2209,7 +2209,8 @@ async function start(hero) {
   window.dispatchEvent(new Event('scaffoldcat:ready'));
   if (DEBUG) { window.__cat = cat; cat.POUNCE = POUNCE; cat.GAIT = GAIT_SPEED; if (/catdebug=lines/.test(location.search)) debugLayer(cat); }
 
-  let visible = true, last = performance.now(), raf = 0;
+  let visible = true, last = performance.now(), raf = 0, skip = false;
+  const LITE = document.documentElement.classList;
   const io = new IntersectionObserver((es) => { visible = es[0].isIntersecting; kick(); }, { threshold: 0.02 });
   io.observe(hero);
   const ro = new ResizeObserver(() => cat.remeasure()); ro.observe(hero);
@@ -2234,6 +2235,8 @@ async function start(hero) {
     raf = 0;
     const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
     if (!running()) return;
+    // a machine that is struggling (html.lite, set by the page) draws him every other frame
+    if (LITE.contains('lite') && !cat.manual && (skip = !skip)) { last = now - dt * 1000; raf = requestAnimationFrame(frame); return; }
     if (!cat.manual) cat.update(dt);   // ?catdebug tests can drive it frame by frame
     raf = requestAnimationFrame(frame);
   }

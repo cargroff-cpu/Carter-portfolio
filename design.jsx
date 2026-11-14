@@ -204,7 +204,7 @@ function HeroLamp({ side, row, height }) {
     <div className={'dhero-lamp ' + side + ' ' + row + (out ? ' out' : '')} aria-hidden="true">
       <div className="dlamp-vary" style={{ '--lean': v.lean + 'deg', '--sc': v.sc }}>
         <div className="dhero-candle" />
-        <GasLamp height={height} out={out} variant={row + '-' + side.toUpperCase()} onGlobeClick={() => setOut((o) => !o)} />
+        <div className="dlamp-post"><GasLamp height={height} out={out} variant={row + '-' + side.toUpperCase()} onGlobeClick={() => setOut((o) => !o)} /></div>
         {false && v.iron.length > 0 && <svg className="dlamp-iron" viewBox="0 0 200 900" aria-hidden="true">{v.iron.map((k) => <Ironwork key={k} kind={k} />)}</svg>}
       </div>
     </div>
@@ -987,6 +987,29 @@ function Footer() {
 
 // Fades .up-marked elements in as they enter view — a scoped stand-in for
 // the source's reveal(), see cargroff-design.css.
+// Slow machines: once the hero has settled, time its frames. If most of them
+// run long, html.lite switches off the costliest loops (see cargroff-design.css).
+function useFrameGuard() {
+  React.useEffect(() => {
+    let raf = 0, last = 0, n = 0, slow = 0, rounds = 0, since = 0;
+    const tick = (t) => {
+      raf = 0;
+      const d = t - last; last = t;
+      if (!since) since = t;
+      // only frames drawn back to back with the hero on screen count
+      if (d > 0 && d < 1000 && !document.hidden && window.scrollY < window.innerHeight * 0.5) { n++; if (d > 30) slow++; }
+      if (t - since >= 2500) {
+        if (n >= 5 && slow / n > 0.35) { document.documentElement.classList.add('lite'); return; }
+        if (++rounds >= 4) return;
+        n = 0; slow = 0; since = t;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    const wait = setTimeout(() => { raf = requestAnimationFrame(tick); }, 6000);
+    return () => { clearTimeout(wait); if (raf) cancelAnimationFrame(raf); };
+  }, []);
+}
+
 function useReveal() {
   React.useEffect(() => {
     const els = document.querySelectorAll('.up');
@@ -1009,6 +1032,7 @@ function useReveal() {
 function TheScaffold() {
   const briefRef = React.useRef(null);
   useReveal();
+  useFrameGuard();
   const onAddNeed = (lane, v) => {
     if (briefRef.current) briefRef.current.addNeed(lane, v);
     document.getElementById('brief').scrollIntoView({ behavior: 'smooth' });
