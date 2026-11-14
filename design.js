@@ -1358,11 +1358,11 @@ function Dial() {
   }, []);
   React.useEffect(() => {
     if (!entered) return;
-    const t = setTimeout(() => setSettled(true), reduce() ? 0 : 2300);
+    const t = setTimeout(() => setSettled(true), 2300);
     return () => clearTimeout(t);
   }, [entered]);
   React.useEffect(() => {
-    if (!auto || !seen || !settled || held || reduce()) return;
+    if (!auto || !seen || !settled || held) return;
     const t = setInterval(() => setTurn(a => a + 1), 3800);
     return () => clearInterval(t);
   }, [auto, seen, settled, held]);

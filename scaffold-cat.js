@@ -19,11 +19,10 @@
 //     row, so walking into the distance fades it smoothly into the fog.
 //
 // Plain ES module, no build step. Needs the importmap for "three" in the page.
-// Desktop only (the lane is hidden under 900px); skipped for reduced motion.
+// Desktop only (the lane is hidden under 900px). Runs under reduced motion too.
 // ?catdebug exposes window.__cat; ?catdebug=lines also draws the measured lane.
 
 const DESK = matchMedia('(min-width: 900px)');
-const CALM = matchMedia('(prefers-reduced-motion: reduce)');
 const DEBUG = /[?&]catdebug\b/.test(location.search);
 const GLB = new URL('assets/cat/scaffold-cat.glb', document.baseURI).href;
 
@@ -2269,7 +2268,6 @@ function debugLayer(cat) {
 }
 
 async function boot() {
-  if (CALM.matches) return;
   if (document.readyState !== 'complete') await new Promise((r) => window.addEventListener('load', r, { once: true }));
   const hero = await waitFor(() => { const h = document.querySelector('.dhero'); return h && h.querySelector('.dhero-lamp.back.r') && h.querySelector('.dhero-veil.mid') ? h : null; }, 20000);
   if (!hero) return;

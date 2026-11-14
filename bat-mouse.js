@@ -354,7 +354,7 @@ function dialog(pages) {
 }
 
 (async function boot() {
-  if (!matchMedia('(min-width: 900px)').matches || matchMedia('(prefers-reduced-motion: reduce)').matches) return;   // no Bat here, so no mouse
+  if (!matchMedia('(min-width: 900px)').matches) return;   // no Bat here, so no mouse
   const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
   if (get(KEY)) {                                        // he already has it: it waits where he sits
     const keep = () => cat() && cat().keep(toyEl());
