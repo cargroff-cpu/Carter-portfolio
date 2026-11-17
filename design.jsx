@@ -14,7 +14,7 @@
 const SITE = {
   showPrices: false,
   headline: 'Design that looks right. Tools that work right.',
-  deck: 'Websites, graphics and print, and the tools that take busywork off your plate.',
+  deck: 'For small businesses: the websites, graphics and print your customers see, and the tools that answer inquiries, send quotes and book jobs for you.',
   whyHead: 'I’m Carter.',
   whyIntro: 'A marketer, designer and builder in Harrisonburg, Virginia. By day I lead marketing and automation at a local company, so I know what small teams actually need.',
   rules: ['Prove it by hand before automating it.', 'Automate the bottleneck, not everything.', 'A person approves anything that reaches a customer.'],
@@ -243,6 +243,7 @@ function Hero({ onAddNeed }) {
         <p className="ddeck">{SITE.deck}</p>
         <div className="dacts">
           <a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('design'); }}>Start a brief</a>
+          <a className="dhero-more" href="#make">See what I make</a>
         </div>
       </div>
     </header>
@@ -256,12 +257,14 @@ const DRAFTS = [
   { cls: 'd2', body: <React.Fragment><span>Spring menu</span><i>from March 4th</i></React.Fragment> },
   { cls: 'd3', body: <React.Fragment><span>spring<br /><b>menu</b></span><i>March 4</i></React.Fragment> },
 ];
+// The tools example as a plain-English timeline: when, what happens, and
+// whether it happened on its own or waited for you.
 const SESSION = [
-  ['$', 'inquiry in', '# kitchen remodel, website form'],
-  ['+', 'auto-reply sent', ''],
-  ['+', 'quote drafted from your prices', ''],
-  ['?', 'send it?', '# you approve'],
-  ['+', 'follow-up set for three days out', ''],
+  ['9:14 pm', 'A customer asks about a kitchen remodel on your website.', ''],
+  ['9:15 pm', 'They get a friendly reply right away.', 'automatic'],
+  ['9:16 pm', 'A quote is drafted from your price list.', 'automatic'],
+  ['8:02 am', 'You read it over and press send.', 'you'],
+  ['3 days on', 'No answer yet? A polite follow-up goes out.', 'automatic'],
 ];
 
 function Doors({ onAddNeed }) {
@@ -279,7 +282,7 @@ function Doors({ onAddNeed }) {
     <section id="doors" className="dsection ddoors dsoft">
       <div className="dwrap">
         <div className="dshead up">
-          <h2 className="ddisplay">What each half looks like.</h2>
+          <h2 className="ddisplay">Here’s what that looks like.</h2>
         </div>
         <div className="dduo">
           <div className="ddoor up">
@@ -295,21 +298,20 @@ function Doors({ onAddNeed }) {
                 ))}
               </div>
             </div>
-            <p className="dcap">Example: a spring menu flyer. Pick a draft.</p>
+            <p className="dcap">Example: a spring menu flyer. You get three drafts and choose one; tap them to try.</p>
             <p><a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('design'); }}>Start a design brief</a></p>
           </div>
           <div className="ddoor dauto up">
             <span className="dk">Tools</span>
-            <h3 className="ddisplay">An inquiry, handled.</h3>
+            <h3 className="ddisplay">An inquiry, handled overnight.</h3>
             <div className={'dsession' + (typed ? ' on' : '')} ref={sessionRef} aria-label="Example: an inquiry gets an auto-reply, a drafted quote you approve, then a follow-up">
               <ol>
-                {SESSION.map(([p, t, c], i) => (
-                  <li key={i} style={{ transitionDelay: (i * 0.4) + 's' }}><span className="dsp">{p}</span><span>{t}{c && <span className="dsc"> {c}</span>}</span></li>
+                {SESSION.map(([when, what, who], i) => (
+                  <li key={i} className={who === 'you' ? 'dyou' : undefined} style={{ transitionDelay: (i * 0.4) + 's' }}><span className="dsp">{when}</span><span>{what}{who && <span className="dsc">{who === 'you' ? 'You' : 'Automatic'}</span>}</span></li>
                 ))}
-                <li style={{ transitionDelay: (SESSION.length * 0.4) + 's' }}><span className="dsp">$</span><span><span className="dcursor" aria-hidden="true" /></span></li>
               </ol>
             </div>
-            <p className="dcap">Example: one tool. You approve what customers see.</p>
+            <p className="dcap">Example: one tool. Nothing reaches a customer without your OK.</p>
             <p><a className="p-btn" href="#brief" onClick={(e) => { e.preventDefault(); onAddNeed('automation'); }}>Start a tools brief</a></p>
           </div>
         </div>
@@ -1017,9 +1019,9 @@ function TheScaffold() {
     <div className="cgd p-grain">
       <Nav />
       <Hero onAddNeed={onAddNeed} />
+      <Make onAddNeed={onAddNeed} />
       <Doors onAddNeed={onAddNeed} />
       <Dial />
-      <Make onAddNeed={onAddNeed} />
       <Why />
       <Brief ref={briefRef} />
       <Faq />

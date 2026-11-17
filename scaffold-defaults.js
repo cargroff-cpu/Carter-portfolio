@@ -1,7 +1,7 @@
 // scaffold-defaults.js — GENERATED from design.jsx by scripts/build-design.mjs. Do not edit.
 window.SCAFFOLD_DEFAULTS = {
   "headline": "Design that looks right. Tools that work right.",
-  "deck": "Websites, graphics and print, and the tools that take busywork off your plate.",
+  "deck": "For small businesses: the websites, graphics and print your customers see, and the tools that answer inquiries, send quotes and book jobs for you.",
   "showPrices": false,
   "whyHead": "I’m Carter.",
   "whyIntro": "A marketer, designer and builder in Harrisonburg, Virginia. By day I lead marketing and automation at a local company, so I know what small teams actually need.",

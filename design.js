@@ -631,7 +631,7 @@ function GasLamp({
 const SITE = {
   showPrices: false,
   headline: 'Design that looks right. Tools that work right.',
-  deck: 'Websites, graphics and print, and the tools that take busywork off your plate.',
+  deck: 'For small businesses: the websites, graphics and print your customers see, and the tools that answer inquiries, send quotes and book jobs for you.',
   whyHead: 'I’m Carter.',
   whyIntro: 'A marketer, designer and builder in Harrisonburg, Virginia. By day I lead marketing and automation at a local company, so I know what small teams actually need.',
   rules: ['Prove it by hand before automating it.', 'Automate the bottleneck, not everything.', 'A person approves anything that reaches a customer.']
@@ -1190,7 +1190,10 @@ function Hero({
       e.preventDefault();
       onAddNeed('design');
     }
-  }, "Start a brief"))));
+  }, "Start a brief"), React.createElement("a", {
+    className: "dhero-more",
+    href: "#make"
+  }, "See what I make"))));
 }
 const DRAFTS = [{
   cls: 'd1',
@@ -1202,7 +1205,7 @@ const DRAFTS = [{
   cls: 'd3',
   body: React.createElement(React.Fragment, null, React.createElement("span", null, "spring", React.createElement("br", null), React.createElement("b", null, "menu")), React.createElement("i", null, "March 4"))
 }];
-const SESSION = [['$', 'inquiry in', '# kitchen remodel, website form'], ['+', 'auto-reply sent', ''], ['+', 'quote drafted from your prices', ''], ['?', 'send it?', '# you approve'], ['+', 'follow-up set for three days out', '']];
+const SESSION = [['9:14 pm', 'A customer asks about a kitchen remodel on your website.', ''], ['9:15 pm', 'They get a friendly reply right away.', 'automatic'], ['9:16 pm', 'A quote is drafted from your price list.', 'automatic'], ['8:02 am', 'You read it over and press send.', 'you'], ['3 days on', 'No answer yet? A polite follow-up goes out.', 'automatic']];
 function Doors({
   onAddNeed
 }) {
@@ -1235,7 +1238,7 @@ function Doors({
     className: "dshead up"
   }, React.createElement("h2", {
     className: "ddisplay"
-  }, "What each half looks like.")), React.createElement("div", {
+  }, "Here\u2019s what that looks like.")), React.createElement("div", {
     className: "dduo"
   }, React.createElement("div", {
     className: "ddoor up"
@@ -1262,7 +1265,7 @@ function Doors({
     className: "dprint-n"
   }, i + 1, React.createElement("small", null, "Your pick")))))), React.createElement("p", {
     className: "dcap"
-  }, "Example: a spring menu flyer. Pick a draft."), React.createElement("p", null, React.createElement("a", {
+  }, "Example: a spring menu flyer. You get three drafts and choose one; tap them to try."), React.createElement("p", null, React.createElement("a", {
     className: "p-btn",
     href: "#brief",
     onClick: e => {
@@ -1275,31 +1278,23 @@ function Doors({
     className: "dk"
   }, "Tools"), React.createElement("h3", {
     className: "ddisplay"
-  }, "An inquiry, handled."), React.createElement("div", {
+  }, "An inquiry, handled overnight."), React.createElement("div", {
     className: 'dsession' + (typed ? ' on' : ''),
     ref: sessionRef,
     "aria-label": "Example: an inquiry gets an auto-reply, a drafted quote you approve, then a follow-up"
-  }, React.createElement("ol", null, SESSION.map(([p, t, c], i) => React.createElement("li", {
+  }, React.createElement("ol", null, SESSION.map(([when, what, who], i) => React.createElement("li", {
     key: i,
+    className: who === 'you' ? 'dyou' : undefined,
     style: {
       transitionDelay: i * 0.4 + 's'
     }
   }, React.createElement("span", {
     className: "dsp"
-  }, p), React.createElement("span", null, t, c && React.createElement("span", {
+  }, when), React.createElement("span", null, what, who && React.createElement("span", {
     className: "dsc"
-  }, " ", c)))), React.createElement("li", {
-    style: {
-      transitionDelay: SESSION.length * 0.4 + 's'
-    }
-  }, React.createElement("span", {
-    className: "dsp"
-  }, "$"), React.createElement("span", null, React.createElement("span", {
-    className: "dcursor",
-    "aria-hidden": "true"
-  }))))), React.createElement("p", {
+  }, who === 'you' ? 'You' : 'Automatic')))))), React.createElement("p", {
     className: "dcap"
-  }, "Example: one tool. You approve what customers see."), React.createElement("p", null, React.createElement("a", {
+  }, "Example: one tool. Nothing reaches a customer without your OK."), React.createElement("p", null, React.createElement("a", {
     className: "p-btn",
     href: "#brief",
     onClick: e => {
@@ -2383,11 +2378,11 @@ function TheScaffold() {
     className: "cgd p-grain"
   }, React.createElement(Nav, null), React.createElement(Hero, {
     onAddNeed: onAddNeed
+  }), React.createElement(Make, {
+    onAddNeed: onAddNeed
   }), React.createElement(Doors, {
     onAddNeed: onAddNeed
-  }), React.createElement(Dial, null), React.createElement(Make, {
-    onAddNeed: onAddNeed
-  }), React.createElement(Why, null), React.createElement(Brief, {
+  }), React.createElement(Dial, null), React.createElement(Why, null), React.createElement(Brief, {
     ref: briefRef
   }), React.createElement(Faq, null), React.createElement(Footer, null));
 }
