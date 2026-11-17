@@ -95,10 +95,12 @@ function Nav() {
     <React.Fragment>
     <nav className="cg-nav" style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
-      background: scrolled ? 'rgba(15, 10, 6, 0.78)' : 'transparent',
-      backdropFilter: scrolled ? 'blur(14px)' : 'none',
+      // Near-opaque instead of a backdrop blur: a blur behind a fixed bar has
+      // to be recomputed on every scroll frame over the moving page and was
+      // the last big cost making the animations stutter while scrolling.
+      background: scrolled ? 'rgba(15, 10, 6, 0.97)' : 'transparent',
       borderBottom: scrolled ? '1px solid var(--rule)' : '1px solid transparent',
-      transition: 'background .4s ease, border-color .4s ease, backdrop-filter .4s ease',
+      transition: 'background .4s ease, border-color .4s ease',
       padding: '22px 64px',
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       fontFamily: 'var(--ui-font)',
@@ -142,8 +144,8 @@ function Nav() {
     </nav>
 
     {/* Mobile slide-in drawer — a sibling of <nav>, not nested inside it.
-        <nav> applies a backdrop-filter once scrolled, which creates a new
-        CSS containing block for any position:fixed descendant — that was
+        <nav> used to apply a backdrop-filter once scrolled, which creates a
+        new CSS containing block for any position:fixed descendant — that was
         collapsing this drawer to the nav's own height instead of the
         full viewport whenever the menu was opened while scrolled down. */}
     <div className={'cg-nav-drawer' + (menuOpen ? ' is-open' : '')}
@@ -447,7 +449,12 @@ function Hero() {
   // warm candle glow on top.
   const glow = lampOut && spots.length ? litCount / spots.length : (lampOut ? 0 : 1);
   const sceneBright = lampOut ? (0.12 + 0.88 * glow) : 1;
-  const contentLit = { filter: `brightness(${sceneBright.toFixed(3)})`, transition: 'filter 0.7s ease' };
+  // Only carry a filter while the easter egg is running: a standing
+  // brightness(1) still made the whole headline block its own filtered
+  // surface for the life of the page.
+  const contentLit = lampOut || sceneBright < 1
+    ? { filter: `brightness(${sceneBright.toFixed(3)})`, transition: 'filter 0.7s ease' }
+    : { transition: 'filter 0.7s ease' };
   const nameGlow = lampOut
     ? `0 0 ${(18 + 46 * glow).toFixed(0)}px rgba(220,150,45,${(0.32 * glow).toFixed(3)}), 0 0 ${(8 * glow).toFixed(0)}px rgba(255,205,110,${(0.22 * glow).toFixed(3)})`
     : 'none';
@@ -477,7 +484,7 @@ function Hero() {
       <div className="cg-fadeup cg-fadeup-3 cg-hero-lamp" style={{ position: 'absolute',
         right: '6vw', bottom: 0, zIndex: 2, pointerEvents: 'none' }}>
         <div style={{ position: 'relative' }}>
-          <GasLamp height={680} variant="near-R" out={lampOut} onGlobeClick={toggleLamp} />
+          <GasLamp height={680} variant="near-R" out={lampOut} onGlobeClick={toggleLamp} layeredHalo />
         </div>
       </div>
 
@@ -1958,7 +1965,14 @@ function Portfolio() {
       entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); } });
     }, { threshold: 0.15 });
     document.querySelectorAll('.cg-reveal, .cg-botanical').forEach((el) => io.observe(el));
-    return () => io.disconnect();
+    // Pause the ambient loops (fog, candle flicker, lamp halo, TV pins…) in
+    // any section that is well off screen, so scrolling only has to drive
+    // what is actually visible. Resumes a little before it scrolls back in.
+    const idle = new IntersectionObserver((entries) => {
+      entries.forEach((e) => e.target.classList.toggle('cg-offscreen', !e.isIntersecting));
+    }, { rootMargin: '200px 0px' });
+    document.querySelectorAll('#cg-main > section, .cg-root > footer').forEach((el) => idle.observe(el));
+    return () => { io.disconnect(); idle.disconnect(); };
   }, []);
   // The middle sections' scroll order is editable from the admin's Page
   // Order panel (D.sectionOrder); Hero and Footer always stay fixed.
@@ -1989,6 +2003,10 @@ function Portfolio() {
       <Lightbox open={lb.open} item={lb} onClose={() => setLb({ ...lb, open: false })} />
       <style>{`
         html { scroll-behavior: smooth; }
+        /* Off-screen sections hold their ambient animations (see Portfolio).
+           The portrait's scroll-driven reveal is exempt: it must track scroll. */
+        .cg-offscreen *, .cg-offscreen *::before, .cg-offscreen *::after { animation-play-state: paused !important; }
+        .cg-offscreen .cg-portrait-reveal { animation-play-state: running !important; }
 
         /* Hero action: the one filled button on the page */
         .cg-root .cg-hero-cta { transition: background-color .2s ease, border-color .2s ease, transform .2s ease; }

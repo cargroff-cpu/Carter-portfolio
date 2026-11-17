@@ -86,8 +86,12 @@ window.CG_THEME = PARLOR;
       content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 100;
       background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 0.85  0 0 0 0 0.55  0 0 0 0.45 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
       background-size: 220px 220px;
-      mix-blend-mode: overlay;
-      opacity: var(--grain);
+      /* Plain alpha, not mix-blend-mode: a fixed full-viewport blend layer
+         makes the browser re-blend the whole screen on every scroll frame
+         and drags every animation under it off the compositor (the stutter
+         and freezing while scrolling). At this strength it reads the same. */
+      opacity: calc(var(--grain) * 0.35);
+      transform: translateZ(0);
     }
 
     /* Vertical wood-panel rhythm — used on certain sections.
@@ -143,16 +147,29 @@ window.CG_THEME = PARLOR;
     .cg-candlelight {
       position: absolute; pointer-events: none; border-radius: 50%;
       background: radial-gradient(circle, var(--amber-glow) 0%, rgba(217,154,61,0.06) 40%, transparent 70%);
+      /* Flicker animates opacity only, so it stays on the compositor and
+         never repaints while scrolling; no blend mode (a warm translucent
+         gradient over near-black looks the same in normal blending). */
       animation: cg-flicker 7s ease-in-out infinite;
-      mix-blend-mode: screen;
+      will-change: opacity;
     }
     @keyframes cg-flicker {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      45% { opacity: 0.95; transform: scale(1.02); }
-      48% { opacity: 0.78; transform: scale(0.99); }
-      52% { opacity: 0.92; transform: scale(1.01); }
-      70% { opacity: 0.88; transform: scale(1); }
+      0%, 100% { opacity: 1; }
+      45% { opacity: 0.95; }
+      48% { opacity: 0.78; }
+      52% { opacity: 0.92; }
+      70% { opacity: 0.88; }
     }
+
+    /* Gas-lamp halo flicker (was a SMIL <animate>; see GasLamp) */
+    @keyframes cg-lamp-halo-flicker {
+      0%, 45% { opacity: 0.95; }
+      52%     { opacity: 0.6; }
+      60%, 82% { opacity: 0.95; }
+      88%     { opacity: 0.7; }
+      100%    { opacity: 0.95; }
+    }
+    .cg-lamp-halo { animation: cg-lamp-halo-flicker 9s linear infinite; will-change: opacity; }
 
     /* Fade-in entrance */
     @keyframes cg-fadeup {
@@ -213,10 +230,12 @@ window.CG_THEME = PARLOR;
     }
     .cg-fog-band {
       position: absolute; pointer-events: none; left: -30%; right: -30%;
-      height: 460px; filter: blur(46px); will-change: transform, opacity;
-      mix-blend-mode: screen;
-      background: radial-gradient(ellipse 50% 100% at 50% 50%,
-        rgba(230,222,205,0.30) 0%, rgba(205,196,176,0.15) 40%, transparent 70%);
+      /* No blur filter or blend mode: a 46px blur over a band 1.6x the
+         viewport wide was re-rasterised every frame. The gradient is given a
+         longer, softer falloff instead, which reads as the same haze. */
+      height: 560px; margin-top: -50px; will-change: transform, opacity;
+      background: radial-gradient(ellipse 50% 50% at 50% 50%,
+        rgba(230,222,205,0.24) 0%, rgba(215,206,186,0.15) 30%, rgba(205,196,176,0.06) 60%, rgba(205,196,176,0.015) 82%, transparent 100%);
     }
 
     /* ── Lamp-top man (silhouette, hangs + swings + waves) ───────── */
@@ -769,7 +788,8 @@ function GasLamp({
   style = {},
   out = false,
   onGlobeClick,
-  variant
+  variant,
+  layeredHalo = false
 }) {
   const halo = {
     opacity: out ? 0 : 1,
@@ -779,13 +799,38 @@ function GasLamp({
     opacity: out ? 1 : 0,
     transition: `opacity ${out ? 0.3 : 0.5}s ease`
   };
-  return React.createElement("svg", {
+  const W = height * 200 / 900;
+  const haloBlobs = React.createElement(React.Fragment, null, React.createElement("ellipse", {
+    cx: "104",
+    cy: "96",
+    rx: "300",
+    ry: "250",
+    fill: "url(#lamp-halo)"
+  }), React.createElement("ellipse", {
+    cx: "70",
+    cy: "150",
+    rx: "190",
+    ry: "230",
+    fill: "url(#lamp-halo)",
+    opacity: "0.7"
+  }), React.createElement("ellipse", {
+    cx: "140",
+    cy: "70",
+    rx: "170",
+    ry: "150",
+    fill: "url(#lamp-halo)",
+    opacity: "0.6"
+  }));
+  const lamp = React.createElement("svg", {
     viewBox: "0 0 200 900",
-    width: height * 200 / 900,
+    width: W,
     height: height,
     style: {
       display: 'block',
       overflow: 'visible',
+      ...(layeredHalo ? {
+        position: 'relative'
+      } : null),
       ...style
     }
   }, React.createElement("defs", null, React.createElement("linearGradient", {
@@ -875,7 +920,7 @@ function GasLamp({
     offset: "100%",
     stopColor: "#c98a34",
     stopOpacity: "0"
-  }))), React.createElement("g", {
+  }))), !layeredHalo && React.createElement("g", {
     style: halo
   }, React.createElement("g", {
     transform: variant ? 'translate(0 22.5)' : undefined
@@ -885,27 +930,7 @@ function GasLamp({
     keyTimes: "0;0.45;0.52;0.6;0.82;0.88;1",
     dur: "9s",
     repeatCount: "indefinite"
-  }), React.createElement("ellipse", {
-    cx: "104",
-    cy: "96",
-    rx: "300",
-    ry: "250",
-    fill: "url(#lamp-halo)"
-  }), React.createElement("ellipse", {
-    cx: "70",
-    cy: "150",
-    rx: "190",
-    ry: "230",
-    fill: "url(#lamp-halo)",
-    opacity: "0.7"
-  }), React.createElement("ellipse", {
-    cx: "140",
-    cy: "70",
-    rx: "170",
-    ry: "150",
-    fill: "url(#lamp-halo)",
-    opacity: "0.6"
-  }))), variant ? React.createElement("g", null, React.createElement("ellipse", {
+  }), haloBlobs)), variant ? React.createElement("g", null, React.createElement("ellipse", {
     cx: "100",
     cy: "899",
     rx: "88",
@@ -1392,6 +1417,33 @@ function GasLamp({
       WebkitTapHighlightColor: 'transparent'
     }
   }));
+  if (!layeredHalo) return lamp;
+  return React.createElement("div", {
+    style: {
+      position: 'relative',
+      width: W,
+      height
+    }
+  }, React.createElement("div", {
+    "aria-hidden": "true",
+    style: {
+      position: 'absolute',
+      inset: 0,
+      pointerEvents: 'none',
+      ...halo
+    }
+  }, React.createElement("svg", {
+    className: "cg-lamp-halo",
+    viewBox: "0 0 200 900",
+    width: W,
+    height: height,
+    style: {
+      display: 'block',
+      overflow: 'visible'
+    }
+  }, React.createElement("g", {
+    transform: variant ? 'translate(0 22.5)' : undefined
+  }, haloBlobs))), lamp);
 }
 function hash(i) {
   const x = Math.sin(i * 12.9898 + 78.233) * 43758.5453;
@@ -2785,10 +2837,9 @@ function Nav() {
       left: 0,
       right: 0,
       zIndex: 50,
-      background: scrolled ? 'rgba(15, 10, 6, 0.78)' : 'transparent',
-      backdropFilter: scrolled ? 'blur(14px)' : 'none',
+      background: scrolled ? 'rgba(15, 10, 6, 0.97)' : 'transparent',
       borderBottom: scrolled ? '1px solid var(--rule)' : '1px solid transparent',
-      transition: 'background .4s ease, border-color .4s ease, backdrop-filter .4s ease',
+      transition: 'background .4s ease, border-color .4s ease',
       padding: '22px 64px',
       display: 'flex',
       alignItems: 'center',
@@ -3427,8 +3478,10 @@ function Hero() {
   };
   const glow = lampOut && spots.length ? litCount / spots.length : lampOut ? 0 : 1;
   const sceneBright = lampOut ? 0.12 + 0.88 * glow : 1;
-  const contentLit = {
+  const contentLit = lampOut || sceneBright < 1 ? {
     filter: `brightness(${sceneBright.toFixed(3)})`,
+    transition: 'filter 0.7s ease'
+  } : {
     transition: 'filter 0.7s ease'
   };
   const nameGlow = lampOut ? `0 0 ${(18 + 46 * glow).toFixed(0)}px rgba(220,150,45,${(0.32 * glow).toFixed(3)}), 0 0 ${(8 * glow).toFixed(0)}px rgba(255,205,110,${(0.22 * glow).toFixed(3)})` : 'none';
@@ -3508,7 +3561,8 @@ function Hero() {
     height: 680,
     variant: "near-R",
     out: lampOut,
-    onGlobeClick: toggleLamp
+    onGlobeClick: toggleLamp,
+    layeredHalo: true
   }))), React.createElement("div", {
     style: {
       position: 'absolute',
@@ -6294,7 +6348,16 @@ function Portfolio() {
       threshold: 0.15
     });
     document.querySelectorAll('.cg-reveal, .cg-botanical').forEach(el => io.observe(el));
-    return () => io.disconnect();
+    const idle = new IntersectionObserver(entries => {
+      entries.forEach(e => e.target.classList.toggle('cg-offscreen', !e.isIntersecting));
+    }, {
+      rootMargin: '200px 0px'
+    });
+    document.querySelectorAll('#cg-main > section, .cg-root > footer').forEach(el => idle.observe(el));
+    return () => {
+      io.disconnect();
+      idle.disconnect();
+    };
   }, []);
   const DEFAULT_SECTION_ORDER = ['about', 'videos', 'designs', 'resume', 'contact'];
   const SECTION_RENDERERS = {
@@ -6343,6 +6406,10 @@ function Portfolio() {
     })
   }), React.createElement("style", null, `
         html { scroll-behavior: smooth; }
+        /* Off-screen sections hold their ambient animations (see Portfolio).
+           The portrait's scroll-driven reveal is exempt: it must track scroll. */
+        .cg-offscreen *, .cg-offscreen *::before, .cg-offscreen *::after { animation-play-state: paused !important; }
+        .cg-offscreen .cg-portrait-reveal { animation-play-state: running !important; }
 
         /* Hero action: the one filled button on the page */
         .cg-root .cg-hero-cta { transition: background-color .2s ease, border-color .2s ease, transform .2s ease; }
