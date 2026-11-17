@@ -4,7 +4,8 @@ function GasLamp({
   style = {},
   out = false,
   onGlobeClick,
-  variant
+  variant,
+  layeredHalo = false
 }) {
   const halo = {
     opacity: out ? 0 : 1,
@@ -14,13 +15,38 @@ function GasLamp({
     opacity: out ? 1 : 0,
     transition: `opacity ${out ? 0.3 : 0.5}s ease`
   };
-  return React.createElement("svg", {
+  const W = height * 200 / 900;
+  const haloBlobs = React.createElement(React.Fragment, null, React.createElement("ellipse", {
+    cx: "104",
+    cy: "96",
+    rx: "300",
+    ry: "250",
+    fill: "url(#lamp-halo)"
+  }), React.createElement("ellipse", {
+    cx: "70",
+    cy: "150",
+    rx: "190",
+    ry: "230",
+    fill: "url(#lamp-halo)",
+    opacity: "0.7"
+  }), React.createElement("ellipse", {
+    cx: "140",
+    cy: "70",
+    rx: "170",
+    ry: "150",
+    fill: "url(#lamp-halo)",
+    opacity: "0.6"
+  }));
+  const lamp = React.createElement("svg", {
     viewBox: "0 0 200 900",
-    width: height * 200 / 900,
+    width: W,
     height: height,
     style: {
       display: 'block',
       overflow: 'visible',
+      ...(layeredHalo ? {
+        position: 'relative'
+      } : null),
       ...style
     }
   }, React.createElement("defs", null, React.createElement("linearGradient", {
@@ -110,7 +136,7 @@ function GasLamp({
     offset: "100%",
     stopColor: "#c98a34",
     stopOpacity: "0"
-  }))), React.createElement("g", {
+  }))), !layeredHalo && React.createElement("g", {
     style: halo
   }, React.createElement("g", {
     transform: variant ? 'translate(0 22.5)' : undefined
@@ -120,27 +146,7 @@ function GasLamp({
     keyTimes: "0;0.45;0.52;0.6;0.82;0.88;1",
     dur: "9s",
     repeatCount: "indefinite"
-  }), React.createElement("ellipse", {
-    cx: "104",
-    cy: "96",
-    rx: "300",
-    ry: "250",
-    fill: "url(#lamp-halo)"
-  }), React.createElement("ellipse", {
-    cx: "70",
-    cy: "150",
-    rx: "190",
-    ry: "230",
-    fill: "url(#lamp-halo)",
-    opacity: "0.7"
-  }), React.createElement("ellipse", {
-    cx: "140",
-    cy: "70",
-    rx: "170",
-    ry: "150",
-    fill: "url(#lamp-halo)",
-    opacity: "0.6"
-  }))), variant ? React.createElement("g", null, React.createElement("ellipse", {
+  }), haloBlobs)), variant ? React.createElement("g", null, React.createElement("ellipse", {
     cx: "100",
     cy: "899",
     rx: "88",
@@ -627,6 +633,33 @@ function GasLamp({
       WebkitTapHighlightColor: 'transparent'
     }
   }));
+  if (!layeredHalo) return lamp;
+  return React.createElement("div", {
+    style: {
+      position: 'relative',
+      width: W,
+      height
+    }
+  }, React.createElement("div", {
+    "aria-hidden": "true",
+    style: {
+      position: 'absolute',
+      inset: 0,
+      pointerEvents: 'none',
+      ...halo
+    }
+  }, React.createElement("svg", {
+    className: "cg-lamp-halo",
+    viewBox: "0 0 200 900",
+    width: W,
+    height: height,
+    style: {
+      display: 'block',
+      overflow: 'visible'
+    }
+  }, React.createElement("g", {
+    transform: variant ? 'translate(0 22.5)' : undefined
+  }, haloBlobs))), lamp);
 }
 const SITE = {
   showPrices: false,

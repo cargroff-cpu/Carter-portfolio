@@ -68,13 +68,26 @@ function PaperFrame({ children, tilt = 0, padding = 0, style = {} }) {
 // frosted globe (≈12% of height) → neck → slender shaft with three
 // decorative collar bands → flared bell base → ground plinth.
 // Lit by a warm amber halo from inside the globe.
-function GasLamp({ height = 640, style = {}, out = false, onGlobeClick, variant }) {
+function GasLamp({ height = 640, style = {}, out = false, onGlobeClick, variant, layeredHalo = false }) {
   // Transition timing: snuff fast (0.3s), reignite a touch slower (0.5s).
   const halo = { opacity: out ? 0 : 1, transition: `opacity ${out ? 0.3 : 0.5}s ease` };
   const darkGlobe = { opacity: out ? 1 : 0, transition: `opacity ${out ? 0.3 : 0.5}s ease` };
-  return (
-    <svg viewBox="0 0 200 900" width={(height * 200) / 900} height={height}
-      style={{ display: 'block', overflow: 'visible', ...style }}>
+  const W = (height * 200) / 900;
+  // Halo — large, diffuse, irregular (overlapping offset blobs) so it reads
+  // as ambient haze rather than a perfect circle of light. No blur filter —
+  // the gradient itself already fades out gradually, and a large-radius
+  // feGaussianBlur here was rendering as a corrupted black blob on some
+  // Windows/GPU combinations (Opera in particular).
+  const haloBlobs = (
+    <React.Fragment>
+      <ellipse cx="104" cy="96" rx="300" ry="250" fill="url(#lamp-halo)" />
+      <ellipse cx="70" cy="150" rx="190" ry="230" fill="url(#lamp-halo)" opacity="0.7" />
+      <ellipse cx="140" cy="70" rx="170" ry="150" fill="url(#lamp-halo)" opacity="0.6" />
+    </React.Fragment>
+  );
+  const lamp = (
+    <svg viewBox="0 0 200 900" width={W} height={height}
+      style={{ display: 'block', overflow: 'visible', ...(layeredHalo ? { position: 'relative' } : null), ...style }}>
       <defs>
         {/* Cast iron — dark with a hint of warmth on the lit right edge */}
         <linearGradient id="lamp-iron" x1="0" y1="0" x2="1" y2="0">
@@ -110,23 +123,19 @@ function GasLamp({ height = 640, style = {}, out = false, onGlobeClick, variant 
         </radialGradient>
       </defs>
 
-      {/* Halo — large, diffuse, irregular (overlapping offset blobs) so it
-         reads as ambient haze rather than a perfect circle of light. No blur
-         filter — the gradient itself already fades out gradually, and a
-         large-radius feGaussianBlur here was rendering as a corrupted black
-         blob on some Windows/GPU combinations (Opera in particular).
-         Outer group fades the whole halo on/off; inner group keeps its flicker. */}
-      <g style={halo}>
-      <g transform={variant ? 'translate(0 22.5)' : undefined}>
-        <animate attributeName="opacity"
-          values="0.95;0.95;0.6;0.95;0.95;0.7;0.95"
-          keyTimes="0;0.45;0.52;0.6;0.82;0.88;1"
-          dur="9s" repeatCount="indefinite" />
-        <ellipse cx="104" cy="96" rx="300" ry="250" fill="url(#lamp-halo)" />
-        <ellipse cx="70" cy="150" rx="190" ry="230" fill="url(#lamp-halo)" opacity="0.7" />
-        <ellipse cx="140" cy="70" rx="170" ry="150" fill="url(#lamp-halo)" opacity="0.6" />
-      </g>
-      </g>
+      {/* Outer group fades the whole halo on/off; inner group keeps its
+         flicker. (layeredHalo draws it as its own layer instead; see below.) */}
+      {!layeredHalo && (
+        <g style={halo}>
+        <g transform={variant ? 'translate(0 22.5)' : undefined}>
+          <animate attributeName="opacity"
+            values="0.95;0.95;0.6;0.95;0.95;0.7;0.95"
+            keyTimes="0;0.45;0.52;0.6;0.82;0.88;1"
+            dur="9s" repeatCount="indefinite" />
+          {haloBlobs}
+        </g>
+        </g>
+      )}
 
       {variant ? (
         <g>
@@ -311,6 +320,23 @@ function GasLamp({ height = 640, style = {}, out = false, onGlobeClick, variant 
           style={{ cursor: 'pointer', pointerEvents: 'auto', outline: 'none', WebkitTapHighlightColor: 'transparent' }} />
       )}
     </svg>
+  );
+  if (!layeredHalo) return lamp;
+  // Layered: the halo is its own layer under the lamp. The outer div fades it
+  // on/off and the inner svg flickers with a CSS opacity animation
+  // (.cg-lamp-halo in themes.jsx), so both run on the compositor. The SMIL
+  // <animate> above repaints the whole lamp svg, images and all, on every
+  // frame, which is what stuttered and froze on the portfolio while scrolling.
+  return (
+    <div style={{ position: 'relative', width: W, height }}>
+      <div aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', ...halo }}>
+        <svg className="cg-lamp-halo" viewBox="0 0 200 900" width={W} height={height}
+          style={{ display: 'block', overflow: 'visible' }}>
+          <g transform={variant ? 'translate(0 22.5)' : undefined}>{haloBlobs}</g>
+        </svg>
+      </div>
+      {lamp}
+    </div>
   );
 }
 

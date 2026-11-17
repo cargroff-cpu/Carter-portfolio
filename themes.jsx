@@ -106,8 +106,12 @@ window.CG_THEME = PARLOR;
       content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 100;
       background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 0.85  0 0 0 0 0.55  0 0 0 0.45 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
       background-size: 220px 220px;
-      mix-blend-mode: overlay;
-      opacity: var(--grain);
+      /* Plain alpha, not mix-blend-mode: a fixed full-viewport blend layer
+         makes the browser re-blend the whole screen on every scroll frame
+         and drags every animation under it off the compositor (the stutter
+         and freezing while scrolling). At this strength it reads the same. */
+      opacity: calc(var(--grain) * 0.35);
+      transform: translateZ(0);
     }
 
     /* Vertical wood-panel rhythm — used on certain sections.
@@ -163,16 +167,29 @@ window.CG_THEME = PARLOR;
     .cg-candlelight {
       position: absolute; pointer-events: none; border-radius: 50%;
       background: radial-gradient(circle, var(--amber-glow) 0%, rgba(217,154,61,0.06) 40%, transparent 70%);
+      /* Flicker animates opacity only, so it stays on the compositor and
+         never repaints while scrolling; no blend mode (a warm translucent
+         gradient over near-black looks the same in normal blending). */
       animation: cg-flicker 7s ease-in-out infinite;
-      mix-blend-mode: screen;
+      will-change: opacity;
     }
     @keyframes cg-flicker {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      45% { opacity: 0.95; transform: scale(1.02); }
-      48% { opacity: 0.78; transform: scale(0.99); }
-      52% { opacity: 0.92; transform: scale(1.01); }
-      70% { opacity: 0.88; transform: scale(1); }
+      0%, 100% { opacity: 1; }
+      45% { opacity: 0.95; }
+      48% { opacity: 0.78; }
+      52% { opacity: 0.92; }
+      70% { opacity: 0.88; }
     }
+
+    /* Gas-lamp halo flicker (was a SMIL <animate>; see GasLamp) */
+    @keyframes cg-lamp-halo-flicker {
+      0%, 45% { opacity: 0.95; }
+      52%     { opacity: 0.6; }
+      60%, 82% { opacity: 0.95; }
+      88%     { opacity: 0.7; }
+      100%    { opacity: 0.95; }
+    }
+    .cg-lamp-halo { animation: cg-lamp-halo-flicker 9s linear infinite; will-change: opacity; }
 
     /* Fade-in entrance */
     @keyframes cg-fadeup {
@@ -233,10 +250,12 @@ window.CG_THEME = PARLOR;
     }
     .cg-fog-band {
       position: absolute; pointer-events: none; left: -30%; right: -30%;
-      height: 460px; filter: blur(46px); will-change: transform, opacity;
-      mix-blend-mode: screen;
-      background: radial-gradient(ellipse 50% 100% at 50% 50%,
-        rgba(230,222,205,0.30) 0%, rgba(205,196,176,0.15) 40%, transparent 70%);
+      /* No blur filter or blend mode: a 46px blur over a band 1.6x the
+         viewport wide was re-rasterised every frame. The gradient is given a
+         longer, softer falloff instead, which reads as the same haze. */
+      height: 560px; margin-top: -50px; will-change: transform, opacity;
+      background: radial-gradient(ellipse 50% 50% at 50% 50%,
+        rgba(230,222,205,0.24) 0%, rgba(215,206,186,0.15) 30%, rgba(205,196,176,0.06) 60%, rgba(205,196,176,0.015) 82%, transparent 100%);
     }
 
     /* ── Lamp-top man (silhouette, hangs + swings + waves) ───────── */
